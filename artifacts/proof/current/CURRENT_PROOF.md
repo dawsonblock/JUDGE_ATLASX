@@ -58,7 +58,7 @@
 
 ## Current Proof Facts
 
-- backend pytest: 2743 passed, 4 skipped
+- backend pytest: 2793 passed, 4 skipped
 - backend import proof: PASS (103 routes)
 - frontend contracts: 38 passed
 - public API boundary: 33 passed

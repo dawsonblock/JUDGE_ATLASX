@@ -82,11 +82,15 @@ def _serialize_review_item(entity_type: str, entity) -> dict:
         "source_type": source_type,
         "review_status": entity.review_status,
         "public_visibility": entity_public_visibility(entity),
-        "reviewed_by": entity.reviewed_by,
-        "reviewed_at": entity.reviewed_at.isoformat() if entity.reviewed_at else None,
-        "review_notes": entity.review_notes,
-        "correction_note": entity.correction_note,
-        "dispute_note": entity.dispute_note,
+        "reviewed_by": getattr(entity, "reviewed_by", None),
+        "reviewed_at": (
+            getattr(entity, "reviewed_at").isoformat()
+            if getattr(entity, "reviewed_at", None)
+            else None
+        ),
+        "review_notes": getattr(entity, "review_notes", None),
+        "correction_note": getattr(entity, "correction_note", None),
+        "dispute_note": getattr(entity, "dispute_note", None),
     }
 
 
@@ -245,12 +249,15 @@ async def admin_review_decision(
     now = datetime.now(timezone.utc)
 
     entity.review_status = new_status
-    entity.reviewed_by = reviewer
-    entity.reviewed_at = now
-    entity.review_notes = payload.get("notes")
-    if new_status == "corrected":
+    if hasattr(entity, "reviewed_by"):
+        entity.reviewed_by = reviewer
+    if hasattr(entity, "reviewed_at"):
+        entity.reviewed_at = now
+    if hasattr(entity, "review_notes"):
+        entity.review_notes = payload.get("notes")
+    if new_status == "corrected" and hasattr(entity, "correction_note"):
         entity.correction_note = payload.get("correction_note") or payload.get("notes")
-    if new_status == "disputed":
+    if new_status == "disputed" and hasattr(entity, "dispute_note"):
         entity.dispute_note = payload.get("dispute_note") or payload.get("notes")
     if public_visibility:
         decision = can_publish_entity(db, entity_type, entity)

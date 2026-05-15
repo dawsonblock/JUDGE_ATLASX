@@ -9,7 +9,7 @@ describe("public map and detail contract", () => {
   it("accepts reviewed public map markers", () => {
     const payload = {
       items: [
-        { entity_id: "event-1", lat: 52.13, lon: -106.67, label: "Reviewed" },
+        { entity_id: "event-1", lat: 52.13, lon: -106.67, label: "Reviewed", review_status: "verified_court_record", public_visibility: true },
       ],
     };
     expect(publicMapMarkersResponseSchema.safeParse(payload).success).toBe(true);

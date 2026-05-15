@@ -102,6 +102,8 @@ def _make_source() -> MagicMock:
     source.base_url = "https://example.gc.ca/"
     source.parser_version = "1.0"
     source.source_key = "test_source"
+    source.public_record_authority = "official_open_data"
+    source.creates = '["CrimeIncident", "ReviewItem"]'
     return source
 
 

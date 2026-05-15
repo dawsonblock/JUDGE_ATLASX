@@ -72,6 +72,7 @@ def _make_source(db_session, *, source_key: str = "justice_canada_laws_xml") -> 
         existing.base_url = "https://laws-lois.justice.gc.ca/eng/XML/Legis.xml"
         existing.allowed_domains = '["laws-lois.justice.gc.ca", "lois-laws.justice.gc.ca"]'
         existing.public_record_authority = "official_legislation"
+        existing.creates = '["LegalInstrument", "LegalSection", "ReviewItem", "SourceSnapshot"]'
         existing.is_active = True
         db_session.flush()
         return existing
@@ -98,7 +99,7 @@ def _make_source(db_session, *, source_key: str = "justice_canada_laws_xml") -> 
         base_url="https://laws-lois.justice.gc.ca/eng/XML/Legis.xml",
         allowed_domains='["laws-lois.justice.gc.ca", "lois-laws.justice.gc.ca"]',
         parser="laws_justice_xml",
-        creates='["ReviewItem"]',
+        creates='["LegalInstrument", "LegalSection", "ReviewItem", "SourceSnapshot"]',
         public_publish_default=False,
         terms_url="https://laws-lois.justice.gc.ca/eng/licence.html",
         source_class="machine_ingest",
@@ -178,7 +179,7 @@ def test_persist_xml_result_writes_snapshot_legal_rows_and_review_items(db_sessi
         .filter_by(source_id=source.id, unique_id="C-46", language="eng")
         .one()
     )
-    assert eng.review_status == "pending"
+    assert eng.review_status == "pending_review"
     assert eng.public_visibility == "private"
     assert eng.raw_snapshot_id is not None
     assert db_session.query(LegalSection).filter_by(legal_instrument_id=eng.id).count() == 2

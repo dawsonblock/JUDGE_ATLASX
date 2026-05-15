@@ -14,13 +14,25 @@ export const CANONICAL_REVIEW_STATUSES = [
 
 export type CanonicalReviewStatus = (typeof CANONICAL_REVIEW_STATUSES)[number];
 
+// Only the four public-domain statuses may appear on the public map.
+// Non-public statuses (pending_review, news_only_context, disputed, rejected,
+// removed_from_public) must never be sent to the frontend public map endpoint.
+export const PUBLIC_MAP_REVIEW_STATUSES = [
+  "verified_court_record",
+  "official_police_open_data_report",
+  "official_statistics_aggregate",
+  "corrected",
+] as const;
+
+export type PublicMapReviewStatus = (typeof PUBLIC_MAP_REVIEW_STATUSES)[number];
+
 export const publicMapMarkerSchema = z.object({
   entity_id: z.string(),
   lat: z.number(),
   lon: z.number(),
   label: z.string().optional(),
-  review_status: z.enum(CANONICAL_REVIEW_STATUSES).optional(),
-  public_visibility: z.boolean().optional(),
+  review_status: z.enum(PUBLIC_MAP_REVIEW_STATUSES),
+  public_visibility: z.literal(true),
   source_quality: z.string().optional(),
   is_context_only: z.boolean().optional(),
   evidence_type: z.string().optional(),

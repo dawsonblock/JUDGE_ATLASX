@@ -79,6 +79,11 @@ def entity_review_status(entity: Any) -> str | None:
     return str(status) if status is not None else None
 
 
+_NON_PUBLIC_RELATIONSHIP_STATES: frozenset[str] = frozenset(
+    {"rejected", "disputed", "removed", "removed_from_public"}
+)
+
+
 def relationship_public_status(entity: Any) -> str:
     """Derive a canonical review status from RelationshipEvidence workflow fields.
 
@@ -88,7 +93,10 @@ def relationship_public_status(entity: Any) -> str:
     """
     verification = getattr(entity, "verification_status", None)
     relationship = getattr(entity, "relationship_status", None)
-    if verification in ("rejected",) or relationship in ("rejected",):
+    if (
+        verification in _NON_PUBLIC_RELATIONSHIP_STATES
+        or relationship in _NON_PUBLIC_RELATIONSHIP_STATES
+    ):
         return REJECTED
     if verification == "verified" and relationship in ("verified", "approved"):
         return VERIFIED_COURT_RECORD

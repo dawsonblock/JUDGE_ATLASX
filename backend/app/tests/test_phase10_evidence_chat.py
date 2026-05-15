@@ -79,6 +79,8 @@ def _make_evidence(
         confidence=confidence,
         public_visibility=True,
         relationship_status=relationship_status,
+        verification_status="verified",
+        review_status="verified_court_record",
     )
     db.add(ev)
     db.flush()
@@ -205,6 +207,8 @@ def test_case_id_evidence_returned(db_session):
         confidence=0.9,
         public_visibility=True,
         relationship_status="approved",
+        verification_status="verified",
+        review_status="verified_court_record",
     )
     db_session.add(ev)
     db_session.flush()

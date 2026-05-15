@@ -12,6 +12,7 @@ Create Date: 2026-05-15
 
 from __future__ import annotations
 
+import sqlalchemy as sa
 from alembic import op
 
 
@@ -39,17 +40,20 @@ def upgrade() -> None:
     dialect = bind.dialect.name
 
     if dialect == "postgresql":
+        # CREATE UNIQUE INDEX CONCURRENTLY cannot run inside a transaction.
+        # Use regular (non-concurrent) creation here; the table is pre-production
+        # alpha-scale so a brief table lock is acceptable.
         bind.execute(
-            op.get_bind().text(
-                "CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS"
+            sa.text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS"
                 " uq_crime_incidents_ingestion_identity_hash"
                 " ON crime_incidents (ingestion_identity_hash)"
                 " WHERE ingestion_identity_hash IS NOT NULL"
             )
         )
         bind.execute(
-            op.get_bind().text(
-                "CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS"
+            sa.text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS"
                 " uq_review_items_ingestion_identity_hash"
                 " ON review_items (ingestion_identity_hash)"
                 " WHERE ingestion_identity_hash IS NOT NULL"
@@ -58,7 +62,7 @@ def upgrade() -> None:
     else:
         # SQLite / other: partial unique via WHERE clause (supported since SQLite 3.8.9)
         bind.execute(
-            op.get_bind().text(
+            sa.text(
                 "CREATE UNIQUE INDEX IF NOT EXISTS"
                 " uq_crime_incidents_ingestion_identity_hash"
                 " ON crime_incidents (ingestion_identity_hash)"
@@ -66,7 +70,7 @@ def upgrade() -> None:
             )
         )
         bind.execute(
-            op.get_bind().text(
+            sa.text(
                 "CREATE UNIQUE INDEX IF NOT EXISTS"
                 " uq_review_items_ingestion_identity_hash"
                 " ON review_items (ingestion_identity_hash)"
@@ -81,23 +85,23 @@ def downgrade() -> None:
 
     if dialect == "postgresql":
         bind.execute(
-            op.get_bind().text(
-                "DROP INDEX CONCURRENTLY IF EXISTS uq_crime_incidents_ingestion_identity_hash"
-            )
-        )
-        bind.execute(
-            op.get_bind().text(
-                "DROP INDEX CONCURRENTLY IF EXISTS uq_review_items_ingestion_identity_hash"
-            )
-        )
-    else:
-        bind.execute(
-            op.get_bind().text(
+            sa.text(
                 "DROP INDEX IF EXISTS uq_crime_incidents_ingestion_identity_hash"
             )
         )
         bind.execute(
-            op.get_bind().text(
+            sa.text(
+                "DROP INDEX IF EXISTS uq_review_items_ingestion_identity_hash"
+            )
+        )
+    else:
+        bind.execute(
+            sa.text(
+                "DROP INDEX IF EXISTS uq_crime_incidents_ingestion_identity_hash"
+            )
+        )
+        bind.execute(
+            sa.text(
                 "DROP INDEX IF EXISTS uq_review_items_ingestion_identity_hash"
             )
         )

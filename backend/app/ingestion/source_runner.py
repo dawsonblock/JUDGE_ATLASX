@@ -19,8 +19,11 @@ from .adapters import (
 )
 from .external_id import stable_record_identity
 from .quarantine import quarantine_run
+from .source_rules import check_record_type_allowed
 from .statuses import PENDING, QUARANTINED
+from ..policies.publication_policy import PENDING_REVIEW
 from ..services.constants import AI_PUBLISH_RECOMMENDATIONS
+from sqlalchemy.exc import IntegrityError
 from ..models.entities import (
     CrimeIncident,
     IngestionRun,
@@ -190,7 +193,12 @@ def _insert_crime_incident(
         review_status="pending_review",
         source_snapshot_id=snapshot.id,
     )
-    db.add(incident)
+    try:
+        db.add(incident)
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        return False
     return True
 
 
@@ -250,7 +258,12 @@ def _insert_review_item(
         status=PENDING,
         ingestion_run_id=run_record.id,
     )
-    db.add(rv)
+    try:
+        db.add(rv)
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        return False
     return True
 
 
@@ -286,7 +299,7 @@ def _insert_or_update_legal_instrument(
             source_id=source.id,
             unique_id=instrument.unique_id,
             language=instrument.language,
-            review_status=PENDING,
+            review_status=PENDING_REVIEW,
             public_visibility="private",
         )
         db.add(row)
@@ -307,7 +320,7 @@ def _insert_or_update_legal_instrument(
     row.raw_snapshot_id = snapshot.id
     row.parser_version = p.get("parser_version") or "1.0"
     if row.review_status not in {"verified_court_record", "corrected"}:
-        row.review_status = PENDING
+        row.review_status = PENDING_REVIEW
         row.public_visibility = "private"
 
     db.flush()
@@ -458,6 +471,19 @@ def persist_ingestion_result(
                 "source_key_mismatch_record_rejected",
             )
             continue
+        # Phase 6: enforce source authority before persisting
+        authority_violation = check_record_type_allowed(
+            "CrimeIncident",
+            source.public_record_authority,
+            source.creates,
+        )
+        if authority_violation is not None:
+            summary.failed_records += 1
+            _summarize_warning_code(
+                summary,
+                f"authority_violation:{authority_violation.detail[:80]}",
+            )
+            continue
         try:
             if _insert_crime_incident(db, record, snapshot):
                 summary.persisted_incidents += 1
@@ -482,6 +508,19 @@ def persist_ingestion_result(
                 "source_key_mismatch_legal_rejected",
             )
             continue
+        # Phase 6: enforce source authority before persisting
+        authority_violation = check_record_type_allowed(
+            "LegalInstrument",
+            source.public_record_authority,
+            source.creates,
+        )
+        if authority_violation is not None:
+            summary.failed_records += 1
+            _summarize_warning_code(
+                summary,
+                f"authority_violation:{authority_violation.detail[:80]}",
+            )
+            continue
         try:
             _insert_or_update_legal_instrument(
                 db,
@@ -502,6 +541,19 @@ def persist_ingestion_result(
             _summarize_warning_code(
                 summary,
                 "source_key_mismatch_review_item_rejected",
+            )
+            continue
+        # Phase 6: enforce source authority before persisting
+        authority_violation = check_record_type_allowed(
+            "ReviewItem",
+            source.public_record_authority,
+            source.creates,
+        )
+        if authority_violation is not None:
+            summary.review_items_skipped += 1
+            _summarize_warning_code(
+                summary,
+                f"authority_violation_review_item:{authority_violation.detail[:80]}",
             )
             continue
         try:
