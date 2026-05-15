@@ -30,6 +30,9 @@ SKIP_DIRS: frozenset[str] = frozenset({
     ".tox",
     "node_modules",
     "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
 })
 
 # Match whitespace chars plus DEL (0x7F) and other ASCII control chars (0x00–0x1F)
@@ -57,7 +60,7 @@ def scan_repo(root: Path) -> list[str]:
             if _has_bad_chars(entry.name):
                 violations.append(rel_str)
 
-            if entry.is_dir():
+            if entry.is_dir() and not entry.is_symlink():
                 if entry.name in SKIP_DIRS:
                     continue
                 _walk(entry, child_parts)

@@ -176,7 +176,7 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
                 name_lower = Path(rel_path).name.lower()
                 if name_lower in FORBIDDEN_FILE_NAMES:
                     report["errors"].append(f"forbidden_secret_file:{info.filename}")
-                if name_lower.endswith(FORBIDDEN_FILE_SUFFIXES):
+                elif name_lower.endswith(FORBIDDEN_FILE_SUFFIXES):
                     report["errors"].append(f"forbidden_secret_or_log_suffix:{info.filename}")
 
             stale_proof_name = f"{root}/artifacts/proof/release_readiness.md"
