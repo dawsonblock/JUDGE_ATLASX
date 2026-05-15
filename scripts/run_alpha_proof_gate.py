@@ -47,7 +47,7 @@ def _load_release_gate_checks() -> dict[str, str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--archive")
-    parser.add_argument("--expected-root", default="JUDGE_ATLAS-main")
+    parser.add_argument("--expected-root", default="JUDGE_ATLASX-main")
     parser.add_argument("--skip-frontend-if-missing-deps", action="store_true")
     parser.add_argument("--quick", action="store_true")
     parser.add_argument("--full", action="store_true")
