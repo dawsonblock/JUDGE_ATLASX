@@ -1,6 +1,13 @@
 {
-  "generated_at_utc": "2026-05-14T06:18:38.494065+00:00",
+  "generated_at_utc": "2026-05-15T04:43:16.096005+00:00",
   "total_sources": 26,
+  "summary": {
+    "total_sources": 26,
+    "machine_ingest_sources": 7,
+    "runnable_now": 1,
+    "enable_ready": 5,
+    "deprecated": 3
+  },
   "sources": [
     {
       "source_key": "justice_canada_laws_xml",
@@ -8,24 +15,20 @@
       "jurisdiction": "Canada",
       "source_class": "machine_ingest",
       "source_type": "legislation",
-      "lifecycle_state": "runnable_disabled",
+      "lifecycle_state": "runnable",
       "canonical_replacement_key": null,
-      "status_reason": "Justice Canada Laws XML feed is the gold-standard Canadian legislation ingestion path. Adapter and parser are ready; awaiting operator /enable.",
-      "operator_next_step": "Confirm base_url is reachable, then /enable via admin panel.",
-      "automation_status": "machine_ready_disabled",
+      "status_reason": "Pinned as canonical real local data source. Adapter (laws_justice_xml_v1) and parser are verified. Feed reachable at base_url. Manual review gate remains active before any public publish.",
+      "operator_next_step": "None. Source is pinned and enabled. Monitor ingestion runs and review queue for new snapshots.",
+      "automation_status": "machine_ready_enabled",
       "adapter_key": "laws_justice_xml",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "laws_justice_xml",
       "requires_manual_review": true,
-      "runnable_now": false,
+      "runnable_now": true,
       "canonical_now": true,
-      "enable_ready": true,
-      "blockers": [
-        "lifecycle_state=runnable_disabled",
-        "automation_status=machine_ready_disabled",
-        "adapter_registry_unavailable"
-      ],
+      "enable_ready": false,
+      "blockers": [],
       "alpha_status": "configured"
     },
     {
@@ -67,8 +70,8 @@
       "operator_next_step": "Migrate any references from scc_judgments to scc_decisions and remove this entry.",
       "automation_status": "machine_ready_disabled",
       "adapter_key": "scc_lexum_api",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "scc_lexum_api",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -77,7 +80,6 @@
       "blockers": [
         "lifecycle_state=deprecated",
         "automation_status=machine_ready_disabled",
-        "adapter_registry_unavailable",
         "deprecated_source_noncanonical"
       ],
       "alpha_status": "configured"
@@ -94,8 +96,8 @@
       "operator_next_step": "Migrate any references from federal_court_canada_decisions to federal_court_canada and remove this entry.",
       "automation_status": "adapter_missing",
       "adapter_key": "federal_court_html",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "federal_court_html",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -105,7 +107,6 @@
         "non_machine_ingest_source",
         "lifecycle_state=deprecated",
         "automation_status=adapter_missing",
-        "adapter_registry_unavailable",
         "deprecated_source_noncanonical"
       ],
       "alpha_status": "configured"
@@ -122,8 +123,8 @@
       "operator_next_step": "Monitor StatsCan API roadmap; build adapter if open data endpoint is published.",
       "automation_status": "adapter_missing",
       "adapter_key": "statscan_table",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "statscan_table",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -132,8 +133,7 @@
       "blockers": [
         "non_machine_ingest_source",
         "lifecycle_state=portal_reference",
-        "automation_status=adapter_missing",
-        "adapter_registry_unavailable"
+        "automation_status=adapter_missing"
       ],
       "alpha_status": "configured"
     },
@@ -176,8 +176,8 @@
       "operator_next_step": "Check data.saskatoon.ca for CSV/JSON endpoint; write adapter if machine-readable.",
       "automation_status": "adapter_missing",
       "adapter_key": "ckan_api",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "ckan_api",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -186,8 +186,7 @@
       "blockers": [
         "non_machine_ingest_source",
         "lifecycle_state=portal_reference",
-        "automation_status=adapter_missing",
-        "adapter_registry_unavailable"
+        "automation_status=adapter_missing"
       ],
       "alpha_status": "configured"
     },
@@ -203,8 +202,8 @@
       "operator_next_step": "Check data.saskatoon.ca for updated CSV/JSON endpoint; write adapter if machine-readable.",
       "automation_status": "adapter_missing",
       "adapter_key": "saskatoon_csv",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "saskatoon_csv",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -213,8 +212,7 @@
       "blockers": [
         "non_machine_ingest_source",
         "lifecycle_state=portal_reference",
-        "automation_status=adapter_missing",
-        "adapter_registry_unavailable"
+        "automation_status=adapter_missing"
       ],
       "alpha_status": "configured"
     },
@@ -230,8 +228,8 @@
       "operator_next_step": "Monitor Saskatoon Police data portal for a machine-readable feed.",
       "automation_status": "adapter_missing",
       "adapter_key": "saskatoon_police_csv",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "saskatoon_police_csv",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -240,8 +238,7 @@
       "blockers": [
         "non_machine_ingest_source",
         "lifecycle_state=portal_reference",
-        "automation_status=adapter_missing",
-        "adapter_registry_unavailable"
+        "automation_status=adapter_missing"
       ],
       "alpha_status": "configured"
     },
@@ -257,8 +254,8 @@
       "operator_next_step": "Evaluate whether a scraper is required or remove this stub.",
       "automation_status": "adapter_missing",
       "adapter_key": "crawlee_police_release",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "crawlee_police_release",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -267,8 +264,7 @@
       "blockers": [
         "non_machine_ingest_source",
         "lifecycle_state=disabled_stub",
-        "automation_status=adapter_missing",
-        "adapter_registry_unavailable"
+        "automation_status=adapter_missing"
       ],
       "alpha_status": "configured"
     },
@@ -284,8 +280,8 @@
       "operator_next_step": "Confirm terms of use, then /enable via admin panel.",
       "automation_status": "machine_ready_disabled",
       "adapter_key": "canlii_api",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "canlii_api",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -293,8 +289,7 @@
       "enable_ready": true,
       "blockers": [
         "lifecycle_state=runnable_disabled",
-        "automation_status=machine_ready_disabled",
-        "adapter_registry_unavailable"
+        "automation_status=machine_ready_disabled"
       ],
       "alpha_status": "configured"
     },
@@ -310,8 +305,8 @@
       "operator_next_step": "Confirm terms of use, then /enable via admin panel.",
       "automation_status": "machine_ready_disabled",
       "adapter_key": "canlii_api",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "canlii_api",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -319,8 +314,7 @@
       "enable_ready": true,
       "blockers": [
         "lifecycle_state=runnable_disabled",
-        "automation_status=machine_ready_disabled",
-        "adapter_registry_unavailable"
+        "automation_status=machine_ready_disabled"
       ],
       "alpha_status": "configured"
     },
@@ -336,8 +330,8 @@
       "operator_next_step": "Monitor StatsCan open data API for a machine-readable CCJS endpoint.",
       "automation_status": "adapter_missing",
       "adapter_key": "statscan_table",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "statscan_table",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -346,8 +340,7 @@
       "blockers": [
         "non_machine_ingest_source",
         "lifecycle_state=portal_reference",
-        "automation_status=adapter_missing",
-        "adapter_registry_unavailable"
+        "automation_status=adapter_missing"
       ],
       "alpha_status": "configured"
     },
@@ -363,8 +356,8 @@
       "operator_next_step": "Monitor StatsCan open data API for a machine-readable UCR endpoint.",
       "automation_status": "adapter_missing",
       "adapter_key": "statscan_table",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "statscan_table",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -373,8 +366,7 @@
       "blockers": [
         "non_machine_ingest_source",
         "lifecycle_state=portal_reference",
-        "automation_status=adapter_missing",
-        "adapter_registry_unavailable"
+        "automation_status=adapter_missing"
       ],
       "alpha_status": "configured"
     },
@@ -390,8 +382,8 @@
       "operator_next_step": "Negotiate data access agreement with CanLII, or use only as a reference link.",
       "automation_status": "adapter_missing",
       "adapter_key": "canlii_api",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "canlii_api",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -400,8 +392,7 @@
       "blockers": [
         "non_machine_ingest_source",
         "lifecycle_state=portal_reference",
-        "automation_status=adapter_missing",
-        "adapter_registry_unavailable"
+        "automation_status=adapter_missing"
       ],
       "alpha_status": "configured"
     },
@@ -417,8 +408,8 @@
       "operator_next_step": "Confirm base_url is reachable and terms permit ingest, then /enable via admin panel.",
       "automation_status": "machine_ready_disabled",
       "adapter_key": "federal_court_html",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "federal_court_html",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -426,8 +417,7 @@
       "enable_ready": true,
       "blockers": [
         "lifecycle_state=runnable_disabled",
-        "automation_status=machine_ready_disabled",
-        "adapter_registry_unavailable"
+        "automation_status=machine_ready_disabled"
       ],
       "alpha_status": "configured"
     },
@@ -443,8 +433,8 @@
       "operator_next_step": "Confirm base_url is reachable and terms permit ingest, then /enable via admin panel.",
       "automation_status": "machine_ready_disabled",
       "adapter_key": "scc_lexum_api",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "scc_lexum_api",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -452,8 +442,7 @@
       "enable_ready": true,
       "blockers": [
         "lifecycle_state=runnable_disabled",
-        "automation_status=machine_ready_disabled",
-        "adapter_registry_unavailable"
+        "automation_status=machine_ready_disabled"
       ],
       "alpha_status": "configured"
     },
@@ -469,8 +458,8 @@
       "operator_next_step": "Define what specific data is needed, then write a targeted adapter.",
       "automation_status": "adapter_missing",
       "adapter_key": "crawlee_gov_news",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "crawlee_gov_news",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -479,8 +468,7 @@
       "blockers": [
         "non_machine_ingest_source",
         "lifecycle_state=disabled_stub",
-        "automation_status=adapter_missing",
-        "adapter_registry_unavailable"
+        "automation_status=adapter_missing"
       ],
       "alpha_status": "configured"
     },
@@ -496,8 +484,8 @@
       "operator_next_step": "Confirm base_url is reachable and terms permit ingest, then /enable via admin panel.",
       "automation_status": "machine_ready_disabled",
       "adapter_key": "sk_legislature_html",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "sk_legislature_html",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -505,8 +493,7 @@
       "enable_ready": true,
       "blockers": [
         "lifecycle_state=runnable_disabled",
-        "automation_status=machine_ready_disabled",
-        "adapter_registry_unavailable"
+        "automation_status=machine_ready_disabled"
       ],
       "alpha_status": "configured"
     },
@@ -522,8 +509,8 @@
       "operator_next_step": "Validate open.canada.ca API endpoint and write adapter.",
       "automation_status": "adapter_missing",
       "adapter_key": "ckan_api",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "ckan_api",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -532,8 +519,7 @@
       "blockers": [
         "non_machine_ingest_source",
         "lifecycle_state=portal_reference",
-        "automation_status=adapter_missing",
-        "adapter_registry_unavailable"
+        "automation_status=adapter_missing"
       ],
       "alpha_status": "configured"
     },
@@ -549,8 +535,8 @@
       "operator_next_step": "Evaluate whether a scraper is required or remove this stub.",
       "automation_status": "adapter_missing",
       "adapter_key": "crawlee_police_release",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "crawlee_police_release",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -559,8 +545,7 @@
       "blockers": [
         "non_machine_ingest_source",
         "lifecycle_state=disabled_stub",
-        "automation_status=adapter_missing",
-        "adapter_registry_unavailable"
+        "automation_status=adapter_missing"
       ],
       "alpha_status": "configured"
     },
@@ -604,8 +589,8 @@
       "operator_next_step": "Prefer specific source_key entries per dataset.",
       "automation_status": "adapter_missing",
       "adapter_key": "ckan_api",
-      "adapter_exists": null,
-      "adapter_state": "unknown",
+      "adapter_exists": true,
+      "adapter_state": "found",
       "parser": "ckan_api",
       "requires_manual_review": true,
       "runnable_now": false,
@@ -614,8 +599,7 @@
       "blockers": [
         "non_machine_ingest_source",
         "lifecycle_state=portal_reference",
-        "automation_status=adapter_missing",
-        "adapter_registry_unavailable"
+        "automation_status=adapter_missing"
       ],
       "alpha_status": "configured"
     },
@@ -701,6 +685,6 @@
       "alpha_status": "configured"
     }
   ],
-  "adapter_registry_size": 0,
-  "adapter_registry_available": false
+  "adapter_registry_size": 13,
+  "adapter_registry_available": true
 }

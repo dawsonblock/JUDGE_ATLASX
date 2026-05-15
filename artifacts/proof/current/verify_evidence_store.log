@@ -4,5 +4,8 @@ verified_snapshots=3
 integrity_failures=0
 corrupt_snapshots=0
 duplicate_hashes=0
+missing_snapshot_files=0
+orphan_files=0
+orphan_snapshot_rows=0
 rejected_or_quarantined_count=0
 RESULT: PASS

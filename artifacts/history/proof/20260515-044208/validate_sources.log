@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/tools/validate_sources.py", line 21, in <module>
+    from app.seed.source_registry import _merged_sources, validate_machine_ingest_source_spec
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/seed/source_registry.py", line 23, in <module>
+    from app.models.entities import SourceRegistry
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/models/__init__.py", line 1, in <module>
+    from app.models.entities import (  # noqa: F401
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/models/entities.py", line 20, in <module>
+    from app.db.session import Base
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/db/session.py", line 6, in <module>
+    from app.core.config import get_settings
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/core/config.py", line 6, in <module>
+    class Settings(BaseSettings):
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/core/config.py", line 9, in Settings
+    courtlistener_api_token: str | None = None
+TypeError: unsupported operand type(s) for |: 'type' and 'NoneType'

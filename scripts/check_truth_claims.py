@@ -186,6 +186,13 @@ ALLOWED_POLICY_FILES: dict[str, AllowedPolicyPhrase] = {
         ),
         phrases=("convicted of",),
     ),
+    "backend/app/tests/test_memory_derivative_boundary.py": AllowedPolicyPhrase(
+        reason=(
+            "Boundary test uses 'convicted of' as an example input phrase "
+            "to verify the derivative memory boundary guard, not a platform claim."
+        ),
+        phrases=("convicted of",),
+    ),
     "backend/app/tests/test_extract_claims.py": AllowedPolicyPhrase(
         reason=(
             "Tests extract-claims parser on prohibited-phrase inputs "
@@ -218,6 +225,7 @@ SKIP_DIRS = {
     "__pycache__",
     "artifacts",
     "external",
+    "research",
     "node_modules",
     "target",
 }

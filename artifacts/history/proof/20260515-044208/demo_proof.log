@@ -1,0 +1,9 @@
+[proof_demo] PASS: demo database initialized
+Traceback (most recent call last):
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/demo/scripts/seed_demo_data.py", line 57, in <module>
+    from app.auth.admin import log_mutation
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/auth/admin.py", line 10, in <module>
+    from app.auth.jwt_handler import decode_token
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/auth/jwt_handler.py", line 15, in <module>
+    from jose import JWTError, jwt
+ModuleNotFoundError: No module named 'jose'

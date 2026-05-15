@@ -1,4 +1,7 @@
-API CONTRACTS: PASS
-contracts_checked=7
-frontend_contracts=PASS
-backend_contracts=PASS
+API CONTRACTS: FAIL
+  frontend_contracts:FAIL
+> judgetracker-atlas-frontend@0.1.0 test:contracts
+> vitest run tests/contracts tests/*.contract.test.ts
+
+
+sh: vitest: command not found

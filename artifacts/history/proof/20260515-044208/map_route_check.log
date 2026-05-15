@@ -1,0 +1,3 @@
+RESULT: FAIL
+  map reviewed-only proof tests failed
+  pytest_stderr=E   TypeError: unsupported operand type(s) for |: 'type' and 'NoneType'

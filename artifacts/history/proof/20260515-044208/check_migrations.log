@@ -1,0 +1,4 @@
+MIGRATIONS: FAIL alembic_heads_command
+
+/Users/dawsonblock/.pyenv/versions/3.9.7/bin/python3: No module named alembic.__main__; 'alembic' is a package and cannot be directly executed
+

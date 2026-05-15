@@ -1,0 +1,1 @@
+ERROR: Cannot import ADAPTER_REGISTRY: unsupported operand type(s) for |: 'type' and 'NoneType'

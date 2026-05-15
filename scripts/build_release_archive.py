@@ -45,6 +45,7 @@ DEFAULT_INCLUDE_FILES = (
 )
 
 EXCLUDED_PREFIXES = (
+    "research/",
     "external/",
     "node_modules/",
     "frontend/node_modules/",

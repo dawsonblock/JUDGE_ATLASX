@@ -1,0 +1,13 @@
+[proof_egress_proxy] STAGE: environment
+[proof_egress_proxy] Backend Python: /Users/dawsonblock/.pyenv/versions/3.9.7/bin/python3
+[proof_egress_proxy] STAGE: production startup egress policy tests
+ImportError while loading conftest '/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/conftest.py'.
+app/tests/conftest.py:30: in <module>
+    from app.db.session import Base, SessionLocal, engine  # noqa: E402
+app/db/session.py:6: in <module>
+    from app.core.config import get_settings
+app/core/config.py:6: in <module>
+    class Settings(BaseSettings):
+app/core/config.py:9: in Settings
+    courtlistener_api_token: str | None = None
+E   TypeError: unsupported operand type(s) for |: 'type' and 'NoneType'

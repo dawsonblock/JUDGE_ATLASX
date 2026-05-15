@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/tools/verify_evidence_store.py", line 25, in <module>
+    from app.db.session import SessionLocal  # noqa: E402  # type: ignore[import-not-found]
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/db/session.py", line 6, in <module>
+    from app.core.config import get_settings
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/core/config.py", line 6, in <module>
+    class Settings(BaseSettings):
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/core/config.py", line 9, in Settings
+    courtlistener_api_token: str | None = None
+TypeError: unsupported operand type(s) for |: 'type' and 'NoneType'

@@ -1,12 +1,12 @@
 # REPAIR_REPORT
 
-- generated_at_utc: 2026-05-14T02:56:11.359060+00:00
-- commit_hash: 42241cd0bd55d9e98aca775dd40f4e1b7fdb2889
-- alpha_gate_passed: true
+- generated_at_utc: 2026-05-15T04:43:28.908943+00:00
+- commit_hash: 16d6b61c15cc3785033a4c0435f2da1f81eb4e0d
+- alpha_gate_passed: false
 
 ## Phase Results
 
-- 1. Alpha Gate Truthfulness: PASS (artifacts/proof/current/release_gate.json)
+- 1. Alpha Gate Truthfulness: FAIL (artifacts/proof/current/release_gate.json)
 - 2. Canonical Proof Artifacts: PASS (artifacts/proof/current/CURRENT_PROOF.md)
 - 3. Generated Alpha Status: PASS (artifacts/proof/current/CURRENT_ALPHA_STATUS.md)
 - 4. Source Registry Governance: PASS (artifacts/proof/current/source_registry_status.json)
@@ -17,10 +17,20 @@
 - 9. Justice XML Proof Coverage: PASS (artifacts/proof/current/backend_pytest.log)
 - 10. Public Review Gate Coverage: PASS (artifacts/proof/current/public_api_boundary.log)
 - 11. Derivative Memory Boundary Coverage: PASS (artifacts/proof/current/public_api_boundary.log)
-- 12. Frontend Node 20 Gate: PASS (artifacts/proof/current/frontend_node_gate.log)
+- 12. Frontend Node 20 Gate: FAIL (artifacts/proof/current/frontend_node_gate.log)
 - 13. CI/Local Gate Parity Baseline: PASS (artifacts/proof/current/release_readiness.md)
 - 14. Repair Report Generated: PASS (artifacts/proof/current/REPAIR_REPORT.md)
 
 ## Remaining Blockers
 
-- none
+- check_false_claims
+- postgis_proof
+- frontend_node_gate
+- frontend_install
+- frontend_lint
+- frontend_typecheck
+- frontend_contracts
+- frontend_build
+- check_api_contracts
+- repo_generated_files
+- archive_validation

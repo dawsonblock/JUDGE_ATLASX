@@ -49,6 +49,9 @@ chain_version, and actor_auth_method to audit_logs.
 INFO  [alembic.runtime.migration] Running upgrade 20260509_0002 -> 20260511_0001, Add legal_instruments and legal_sections tables.
 INFO  [alembic.runtime.migration] Running upgrade 20260511_0001 -> 20260512_0001, Add lifecycle_state, canonical_replacement_key, status_reason,
 operator_next_step to source_registry.
+INFO  [alembic.runtime.migration] Running upgrade 20260512_0001 -> 20260514_0001, Add legal section key/hash/version and revision history table.
+INFO  [alembic.runtime.migration] Running upgrade 20260514_0001 -> 20260514_0002, Add validity and activity fields to legal_sections and legal_section_revisions.
+INFO  [alembic.runtime.migration] Running upgrade 20260514_0002 -> 20260515_0001, Add section_key column to source_registry table.
 [proof_demo] PASS: synthetic data seeded
 INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
 INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
