@@ -1232,7 +1232,7 @@ def main() -> int:
                 "bash",
                 "-lc",
                 (
-                    f'JTA_DATABASE_URL="{proof_db_url}" {python_exe} '
+                    f'JTA_DATABASE_URL="{proof_db_url}" "{python_exe}" '
                     "-m pytest backend/app/tests -x --tb=short -q"
                 ),
             ],
@@ -1315,7 +1315,7 @@ def main() -> int:
                 "bash",
                 "-lc",
                 (
-                    f'JTA_DATABASE_URL="{proof_db_url}" {python_exe} '
+                    f'JTA_DATABASE_URL="{proof_db_url}" "{python_exe}" '
                     "backend/tools/verify_evidence_store.py"
                 ),
             ],
@@ -1327,7 +1327,7 @@ def main() -> int:
                 "bash",
                 "-lc",
                 (
-                    f'JTA_DATABASE_URL="{proof_db_url}" {python_exe} '
+                    f'JTA_DATABASE_URL="{proof_db_url}" "{python_exe}" '
                     "backend/tools/verify_audit_chain.py"
                 ),
             ],
@@ -1363,7 +1363,7 @@ def main() -> int:
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
                     " nvm use 20 >/dev/null 2>&1"
                     " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
-                    f" {python_exe} scripts/check_frontend_node_gate.py --expected-major 20"
+                    f" \"{python_exe}\" scripts/check_frontend_node_gate.py --expected-major 20"
                 ),
             ],
         ),

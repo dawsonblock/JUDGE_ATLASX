@@ -1,0 +1,57 @@
+Built clean release archive: /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.mgo6aeCKWI/judge_atlas_archive.zip
+archive_sha256=42b26baa615bed65165b45535a7ca867f4d002e24e791a9191b6a79141ffcbd6
+file_count=902
+Archive validation written to /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/artifacts/proof/current/archive_validation.md
+PASS
+PASS
+[archive_validation] INFO: archive=/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.mgo6aeCKWI/judge_atlas_archive.zip
+[archive_validation] INFO: archive_filename=judge_atlas_archive.zip
+[archive_validation] INFO: archive_sha256=42b26baa615bed65165b45535a7ca867f4d002e24e791a9191b6a79141ffcbd6
+[archive_validation] INFO: archive_top_level_dirs=./JUDGE_ATLAS-main
+[archive_validation] INFO: extract_dir=/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.mgo6aeCKWI/extract
+[archive_validation] PASS: located repository root at /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.mgo6aeCKWI/extract/JUDGE_ATLAS-main
+[archive_validation] INFO: release_gate.json proof_input_tree_hash=def4e318dc8c4ae512281db711bc0e06b90b2290aa0f11418d5759945a1cb198
+ERROR: unsupported platform claim phrases detected:
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.mgo6aeCKWI/extract/JUDGE_ATLAS-main/backend/app/tests/test_memory_derivative_boundary.py:134: unsupported claim phrase 'convicted of'
+[archive_validation] FAIL: check_false_claims rc=1
+ERROR: unsupported platform claim phrases detected:
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.mgo6aeCKWI/extract/JUDGE_ATLAS-main/backend/app/tests/test_memory_derivative_boundary.py:134: unsupported claim phrase 'convicted of'
+[archive_validation] FAIL: check_truth_claims rc=1
+PASS: proof artifacts are fresh
+proof_input_tree_hash=def4e318dc8c4ae512281db711bc0e06b90b2290aa0f11418d5759945a1cb198
+[archive_validation] PASS: check_proof_freshness
+PASS: proof artifacts are fresh
+proof_input_tree_hash=def4e318dc8c4ae512281db711bc0e06b90b2290aa0f11418d5759945a1cb198
+[archive_validation] PASS: check_proof_freshness_strict
+OK: No committed bytecode files
+[archive_validation] PASS: check_no_pyc
+OK: 2 experimental package(s) have NOT_RUNTIME sentinel.
+OK: No unauthorised runtime imports from experimental packages.
+OK: No imports from external sub-repo packages found.
+[archive_validation] PASS: check_external_boundaries
+OK: 2 experimental package(s) have NOT_RUNTIME sentinel.
+OK: No unauthorised runtime imports from experimental packages.
+OK: No imports from external sub-repo packages found.
+[archive_validation] PASS: check_repo_boundaries
+OK: 14 adapter file(s) checked — no direct network client imports found.
+OK: No unauthorised runtime imports from experimental packages found.
+OK: Ingestion tree checked — no unauthorised direct network client imports found outside allowlisted modules.
+[archive_validation] PASS: check_no_direct_ingestion_network_clients
+PASS  26 source(s) across 1 file(s) validated OK
+[archive_validation] PASS: validate_workflows
+[archive_validation] PASS: required_proof_manifest
+[archive_validation] PASS: required_release_gate
+[archive_validation] PASS: required_release_readiness
+[archive_validation] PASS: required_current_alpha_status
+[archive_validation] PASS: required_source_registry_status
+[archive_validation] PASS: required_proof_policy
+[archive_validation] PASS: forbid_python_bytecode
+[archive_validation] PASS: forbid_pycache_dirs
+[archive_validation] PASS: forbid_backend_venv
+[archive_validation] PASS: forbid_repo_venv
+[archive_validation] PASS: forbid_frontend_node_modules
+[archive_validation] PASS: forbid_repo_node_modules
+[archive_validation] PASS: forbid_git_dir
+[archive_validation] INFO: proof_freshness actual_hash=def4e318dc8c4ae512281db711bc0e06b90b2290aa0f11418d5759945a1cb198
+[archive_validation] FAIL: extracted archive checks completed
+Archive validation log written: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/artifacts/proof/current/archive_validation.log

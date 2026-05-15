@@ -1,0 +1,8 @@
+Built clean release archive: /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.6GtesZX0uJ/judge_atlas_archive.zip
+archive_sha256=3a5233684aae862322216959a3e1324976585940ab7a029aa7c928cffe4088a5
+file_count=910
+Archive validation written to /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/artifacts/proof/current/archive_validation.md
+PASS
+PASS
+scripts/validate_archive_proof.sh: line 83: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main: is a directory
+[archive_validation] ERROR: failed to resolve repository root

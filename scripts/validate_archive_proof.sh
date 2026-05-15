@@ -80,7 +80,7 @@ if [[ ! -x "${HELPER_PYTHON_BIN}" ]]; then
   HELPER_PYTHON_BIN="python3"
 fi
 
-if ! JUDGE_MAIN_ROOT="$(${HELPER_PYTHON_BIN} "${ARCHIVE_HELPER}" --extract-dir "${EXTRACT_DIR}")"; then
+if ! JUDGE_MAIN_ROOT="$("${HELPER_PYTHON_BIN}" "${ARCHIVE_HELPER}" --extract-dir "${EXTRACT_DIR}")"; then
   log "ERROR: failed to resolve repository root"
   exit 1
 fi
