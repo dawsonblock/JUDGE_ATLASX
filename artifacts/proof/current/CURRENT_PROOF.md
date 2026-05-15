@@ -1,7 +1,7 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-15T07:14:02.392569+00:00
-- commit_hash: 35e0263fe3062a11e4d73f45304f99c2cc377de0
+- generated_at_utc: 2026-05-15T07:24:58.369721+00:00
+- commit_hash: 58f055d0bb56c4d69ebd6407ca6ad950b843b27f
 - alpha_gate_status: PASS
 - alpha_gate_passed: true
 - release_gate_check_count: 37
@@ -17,8 +17,8 @@
 
 ## Runtime Metadata
 
-- gate_runner_python_version: 3.11.7
-- gate_runner_python_executable: /Users/dawsonblock/.pyenv/versions/3.11.7/bin/python3
+- gate_runner_python_version: 3.11.14
+- gate_runner_python_executable: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/bin/python3
 - backend_test_python_version: 3.11.14
 - backend_test_python_executable: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/bin/python
 - backend_required_python: >=3.11
