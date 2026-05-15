@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from app.auth.admin import (
     enforce_jwt_mutation_authority,
     require_admin_review,
-    require_admin_token,
 )
 from app.auth.actor import AdminActor
 from app.core.rate_limit import rate_limit_admin
@@ -18,34 +17,25 @@ from app.models.entities import (
     CrimeIncident,
     Event,
     EvidenceReview,
+    LegalInstrument,
     LegalSource,
     ReviewActionLog,
     ReviewItem,
-    SourceSnapshot,
+)
+from app.policies.publication_policy import (
+    PUBLIC_REVIEW_STATUSES,
+    REVIEW_STATUSES,
+    can_publish_entity,
+    entity_public_visibility,
+    public_status_for_decision,
+    set_entity_public_visibility,
 )
 from app.serializers.public import (
     entity_by_type,
-    entity_public_visibility,
     event_options,
-    set_entity_public_visibility,
 )
-from app.services.constants import PUBLIC_REVIEW_STATUSES, REVIEW_STATUSES
 
 router = APIRouter()
-
-
-def _default_approved_status(entity) -> str:
-    if isinstance(entity, CrimeIncident):
-        return "official_police_open_data_report"
-    if isinstance(entity, LegalSource) and entity.source_type == "news":
-        return "news_only_context"
-    if isinstance(entity, Event) and entity.event_type == "news_coverage":
-        return "news_only_context"
-    return "verified_court_record"
-
-
-def _public_visibility_for_status(status: str) -> bool:
-    return status in PUBLIC_REVIEW_STATUSES
 
 
 def _status_from_decision(entity, payload: dict) -> str:
@@ -55,18 +45,17 @@ def _status_from_decision(entity, payload: dict) -> str:
         or payload.get("review_status")
         or ""
     ).strip()
-    if decision in REVIEW_STATUSES:
-        return decision
-    if decision == "approve":
-        return str(payload.get("approved_status") or _default_approved_status(entity))
-    if decision == "reject":
-        return "rejected"
-    if decision == "correct":
-        return "corrected"
-    if decision == "dispute":
-        return "disputed"
-    if decision == "remove":
-        return "removed_from_public"
+    requested = payload.get("approved_status") or payload.get("public_status")
+    status = public_status_for_decision(
+        "crime_incident" if isinstance(entity, CrimeIncident)
+        else "legal_instrument" if isinstance(entity, LegalInstrument)
+        else "source" if isinstance(entity, LegalSource)
+        else "event",
+        decision,
+        requested_status=str(requested).strip() if requested else None,
+    )
+    if status in REVIEW_STATUSES:
+        return status
     raise HTTPException(status_code=422, detail="Unsupported review decision")
 
 
@@ -244,7 +233,7 @@ async def admin_review_decision(
     new_status = _status_from_decision(entity, payload)
     if new_status not in REVIEW_STATUSES:
         raise HTTPException(status_code=422, detail="Unsupported review status")
-    public_visibility = _public_visibility_for_status(new_status)
+    public_visibility = new_status in PUBLIC_REVIEW_STATUSES
     reviewer = str(payload.get("reviewed_by") or actor.actor_id)
     now = datetime.now(timezone.utc)
 
@@ -256,14 +245,22 @@ async def admin_review_decision(
         entity.correction_note = payload.get("correction_note") or payload.get("notes")
     if new_status == "disputed":
         entity.dispute_note = payload.get("dispute_note") or payload.get("notes")
-    if public_visibility and hasattr(entity, "source_snapshot_id"):
-        snap_id = getattr(entity, "source_snapshot_id", None)
-        snap = db.get(SourceSnapshot, snap_id) if snap_id is not None else None
-        if snap is None or not snap.content_hash:
+    if public_visibility:
+        decision = can_publish_entity(db, entity_type, entity)
+        if not decision.allowed:
             raise HTTPException(
                 status_code=422,
-                detail="Evidence snapshot with content_hash required before publishing entity.",
+                detail={
+                    "message": "Publication policy blocked this entity.",
+                    "Evidence snapshot": (
+                        "Evidence snapshot with content_hash"
+                        " required before publishing entity."
+                    ),
+                    "reasons": decision.reasons,
+                },
             )
+    else:
+        public_visibility = False
     set_entity_public_visibility(entity, public_visibility)
 
     db.add(

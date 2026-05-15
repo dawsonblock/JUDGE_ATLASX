@@ -54,9 +54,16 @@ class TestRetryEndpoint:
                 source_key="_test_retry_src",
                 source_name="Test Retry Source",
                 source_class="machine_ingest",
-                parser="csv",
+                parser="laws_justice_xml",
+                parser_version="1.0",
                 source_type="police",
                 public_record_authority="municipal",
+                allowed_domains='["example.com"]',
+                base_url="https://example.com/feed",
+                requires_manual_review=True,
+                public_publish_default=False,
+                automation_status="machine_ready_enabled",
+                lifecycle_state="runnable",
                 is_active=True,
             )
             db.add(src)

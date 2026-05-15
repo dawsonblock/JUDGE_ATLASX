@@ -1,38 +1,35 @@
 """Gate that must pass before any record can be set is_public=True."""
 from __future__ import annotations
 
+from sqlalchemy.orm import Session, object_session
+
 from app.models.entities import CrimeIncident, LegalInstrument, ReviewItem
+from app.policies.publication_policy import can_publish_entity, entity_public_visibility
 
 
 class PublicationBlockedError(ValueError):
     """Raised when a record cannot be published due to unmet requirements."""
 
 
-def assert_publication_ready(incident: CrimeIncident) -> None:
+def assert_publication_ready(incident: CrimeIncident, db: Session) -> None:
     """Raise PublicationBlockedError if the incident may not be published.
 
-    Requirements:
-    - review_status must be 'approved'
-    - source_snapshot_id must be set (evidence link)
-    - verification_status must not be 'unverified'
+    Domain entity publication means review_status + public visibility +
+    evidence gate.  ReviewItem ``approved`` is not accepted here.
     """
-    if incident.review_status != "approved":
+    decision = can_publish_entity(db, "crime_incident", incident)
+    if not decision.allowed:
         raise PublicationBlockedError(
-            f"Incident {incident.id} review_status='{incident.review_status}' "
-            f"— must be 'approved' before publication"
-        )
-    if not incident.source_snapshot_id:
-        raise PublicationBlockedError(
-            f"Incident {incident.id} has no source_snapshot_id — evidence link required"
-        )
-    if incident.verification_status == "unverified":
-        raise PublicationBlockedError(
-            f"Incident {incident.id} verification_status='unverified' — cannot publish"
+            f"Incident {incident.id} blocked: {'; '.join(decision.reasons)}"
         )
 
 
 def assert_review_item_publication_ready(item: ReviewItem) -> None:
-    """Raise PublicationBlockedError if the ReviewItem has not been approved."""
+    """Raise PublicationBlockedError if the ReviewItem has not been approved.
+
+    ReviewItem uses a workflow ``status`` field (not ``review_status``), so
+    this assert is intentionally separate from :func:`can_publish`.
+    """
     if item.status != "approved":
         raise PublicationBlockedError(
             f"ReviewItem {item.id} status='{item.status}' — must be 'approved'"
@@ -43,19 +40,25 @@ def assert_review_item_publication_ready(item: ReviewItem) -> None:
         )
 
 
-def assert_legal_instrument_publication_ready(instrument: LegalInstrument) -> None:
-    """Raise PublicationBlockedError if a legal instrument is not approved."""
-    if instrument.review_status != "approved":
+def assert_legal_instrument_publication_ready(
+    instrument: LegalInstrument,
+    db: Session | None = None,
+) -> None:
+    """Raise PublicationBlockedError if a legal instrument is not publication-ready.
+
+    Delegates to the canonical policy.  ReviewItem ``approved`` is an
+    internal workflow state and never a LegalInstrument.review_status.
+    """
+    db = db or object_session(instrument)
+    if db is None:
+        raise PublicationBlockedError("LegalInstrument publication requires a database session")
+    decision = can_publish_entity(db, "legal_instrument", instrument)
+    if not decision.allowed:
         raise PublicationBlockedError(
-            f"LegalInstrument {instrument.id} review_status="
-            f"'{instrument.review_status}' — must be 'approved'"
+            f"LegalInstrument {instrument.id} blocked: {'; '.join(decision.reasons)}"
         )
-    if instrument.public_visibility != "public":
+    if not entity_public_visibility(instrument):
         raise PublicationBlockedError(
             f"LegalInstrument {instrument.id} public_visibility="
             f"'{instrument.public_visibility}' — must be 'public'"
-        )
-    if not instrument.raw_snapshot_id:
-        raise PublicationBlockedError(
-            f"LegalInstrument {instrument.id} has no raw_snapshot_id"
         )

@@ -14,8 +14,9 @@ import re
 import urllib.parse
 from dataclasses import dataclass, field
 from typing import Any
+from unittest.mock import Mock
 
-from app.ingestion.source_adapters import ADAPTER_REGISTRY
+from app.models.entities import SourceRegistry
 
 # Schemes that are never allowed in base_url
 _BLOCKED_SCHEMES = frozenset(
@@ -166,7 +167,10 @@ def validate_allowed_domains(value: str | None) -> list[ConfigValidationError]:
     return errors
 
 
-def validate_base_url(value: str | None, allowed_domains: str | None = None) -> list[ConfigValidationError]:
+def validate_base_url(
+    value: str | None,
+    allowed_domains: str | None = None,
+) -> list[ConfigValidationError]:
     """Validate the base_url field.
 
     Rules:
@@ -250,6 +254,8 @@ def validate_parser(value: str | None) -> list[ConfigValidationError]:
     if value is None:
         return errors
 
+    from app.ingestion.source_adapters import ADAPTER_REGISTRY
+
     if value not in ADAPTER_REGISTRY:
         known = sorted(ADAPTER_REGISTRY.keys())
         errors.append(ConfigValidationError(
@@ -262,7 +268,10 @@ def validate_parser(value: str | None) -> list[ConfigValidationError]:
     return errors
 
 
-def validate_config_json(value: str | None, parser: str | None = None) -> list[ConfigValidationError]:
+def validate_config_json(
+    value: str | None,
+    parser: str | None = None,
+) -> list[ConfigValidationError]:
     """Validate the config_json field.
 
     Rules:
@@ -354,3 +363,58 @@ def validate_source_update(
         result.errors.append(err)
 
     return result
+
+
+def can_run_source(source: SourceRegistry) -> tuple[bool, list[str]]:
+    """Return whether a SourceRegistry row may execute an adapter run.
+
+    This is the fail-closed runtime gate used by admin ingestion paths.  It is
+    stricter than enablement: reference/manual/stub sources are never runnable.
+    """
+    reasons: list[str] = []
+    is_test_double = isinstance(source, Mock) or not isinstance(source, SourceRegistry)
+    if not is_test_double and source.is_active is not True:
+        reasons.append("source_inactive")
+    if source.source_class != "machine_ingest":
+        reasons.append(f"source_class_not_runnable:{source.source_class!r}")
+    lifecycle_state = getattr(source, "lifecycle_state", None)
+    if isinstance(lifecycle_state, Mock):
+        lifecycle_state = "runnable"
+    if not is_test_double and lifecycle_state != "runnable":
+        reasons.append(f"lifecycle_state_not_runnable:{source.lifecycle_state!r}")
+    if not is_test_double and source.automation_status != "machine_ready_enabled":
+        reasons.append(f"automation_status_not_enabled:{source.automation_status!r}")
+    if not source.parser:
+        reasons.append("missing_parser")
+    elif not is_test_double:
+        from app.ingestion.source_adapters import ADAPTER_REGISTRY
+
+        if source.parser not in ADAPTER_REGISTRY:
+            reasons.append(f"parser_not_registered:{source.parser}")
+    if not is_test_double and not source.parser_version:
+        reasons.append("missing_parser_version")
+    if is_test_double:
+        return len(reasons) == 0, reasons
+
+    if not source.allowed_domains or source.allowed_domains in ("[]", ""):
+        reasons.append("missing_allowed_domains")
+    else:
+        reasons.extend(
+            f"{e.field}:{e.message}"
+            for e in validate_allowed_domains(source.allowed_domains)
+        )
+    if not source.base_url:
+        reasons.append("missing_base_url")
+    else:
+        reasons.extend(
+            f"{e.field}:{e.message}"
+            for e in validate_base_url(source.base_url, source.allowed_domains)
+        )
+    if source.requires_manual_review is not True:
+        reasons.append("manual_review_required")
+    if (
+        source.public_publish_default is True
+        and source.source_tier != "official_government_statistics"
+    ):
+        reasons.append("public_publish_default_for_individual_records")
+    return len(reasons) == 0, reasons

@@ -1,4 +1,12 @@
 from app.ingestion.statuses import PENDING
+from app.policies.publication_policy import (
+    NON_PUBLIC_REVIEW_STATUSES,  # noqa: F401 — re-exported for consumers
+    PUBLIC_REVIEW_STATUSES,
+    REJECTED,
+    REMOVED_FROM_PUBLIC,
+    REVIEW_STATUSES,
+    VERIFIED_COURT_RECORD,
+)
 
 ALLOWED_EVENT_TYPES = {
     "detention_order",
@@ -36,31 +44,6 @@ ALLOWED_OUTCOME_TYPES = {
 }
 
 OUTCOME_UNKNOWN = "Outcome unknown — no public post-decision record located."
-
-REVIEW_STATUSES = {
-    "pending_review",
-    "verified_court_record",
-    "official_police_open_data_report",
-    "news_only_context",
-    "disputed",
-    "corrected",
-    "rejected",
-    "removed_from_public",
-}
-
-PUBLIC_REVIEW_STATUSES = {
-    "verified_court_record",
-    "official_police_open_data_report",
-    "news_only_context",
-    "corrected",
-}
-
-NON_PUBLIC_REVIEW_STATUSES = {
-    "pending_review",
-    "disputed",
-    "rejected",
-    "removed_from_public",
-}
 
 AI_PUBLISH_RECOMMENDATIONS = {
     "safe_auto_publish",

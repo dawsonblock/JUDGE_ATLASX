@@ -8,6 +8,7 @@ from app.core.config import Settings, get_settings
 from app.core.rate_limit import rate_limit_map
 from app.db.session import get_db
 from app.policies.relationship_arc_policy import evaluate_arc_request
+from app.policies.publication_policy import can_show_public_entity
 from app.models.entities import (
     Court,
     CrimeIncident,
@@ -170,7 +171,10 @@ def map_events(
         "official_government_open_data",
     )
     if official_only is True and not source_type:
-        from app.models.entities import Event as _Ev, EventSource as _EvSrc  # local to avoid circular
+        from app.models.entities import (  # local to avoid circular
+            Event as _Ev,
+            EventSource as _EvSrc,
+        )
         stmt = (
             stmt.join(_EvSrc, _EvSrc.event_id == _Ev.id, isouter=False)
             .join(LegalSource, LegalSource.id == _EvSrc.source_id, isouter=False)
@@ -237,7 +241,9 @@ def map_crime_incidents(
     city: str | None = None,
     province_state: str | None = None,
     country: str | None = None,
-    jurisdiction: str | None = Query(None, description="Filter by Canadian province code (e.g., ON, QC)"),
+    jurisdiction: str | None = Query(
+        None, description="Filter by Canadian province code (e.g., ON, QC)"
+    ),
     start_date: str | None = Query(None, description="Filter by start date (YYYY-MM-DD)"),
     end_date: str | None = Query(None, description="Filter by end date (YYYY-MM-DD)"),
     incident_category: str | None = None,
@@ -345,7 +351,12 @@ def map_crime_incidents(
     )
     rows = db.scalars(stmt).all()
     truncated = len(rows) > limit
-    incidents = [r for r in rows[:limit] if is_public_crime_incident_mappable(r)]
+    incidents = [
+        r
+        for r in rows[:limit]
+        if is_public_crime_incident_mappable(r)
+        and can_show_public_entity(db, "crime_incident", r).allowed
+    ]
     filters_applied: dict = {
         "is_public": True,
         "review_status": list(PUBLIC_REVIEW_STATUSES),
@@ -450,7 +461,12 @@ def map_crime_aggregates(
     )
     rows = db.scalars(stmt).all()
     truncated = len(rows) > limit
-    aggregates = [r for r in rows[:limit] if is_public_crime_incident_mappable(r)]
+    aggregates = [
+        r
+        for r in rows[:limit]
+        if is_public_crime_incident_mappable(r)
+        and can_show_public_entity(db, "crime_incident", r).allowed
+    ]
     filters_applied: dict = {
         "is_public": True,
         "review_status": list(PUBLIC_REVIEW_STATUSES),

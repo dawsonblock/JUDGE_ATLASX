@@ -5,6 +5,11 @@ export const publicMapMarkerSchema = z.object({
   lat: z.number(),
   lon: z.number(),
   label: z.string().optional(),
+  review_status: z.string().optional(),
+  public_visibility: z.boolean().optional(),
+  source_quality: z.string().optional(),
+  is_context_only: z.boolean().optional(),
+  evidence_type: z.string().optional(),
 });
 
 export const publicMapMarkersResponseSchema = z.object({

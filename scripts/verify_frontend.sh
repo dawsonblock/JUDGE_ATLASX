@@ -15,25 +15,35 @@ echo "=== Frontend Verification — ${TIMESTAMP} ==="
 
 cd "${FRONTEND_DIR}"
 
+if [[ -s "${HOME}/.nvm/nvm.sh" ]]; then
+    # Honor the frontend Node contract before running the fail-closed check.
+    # If nvm is not installed, the normal PATH-based check below still applies.
+    # shellcheck source=/dev/null
+    source "${HOME}/.nvm/nvm.sh"
+    nvm use >/dev/null
+fi
+
 # ---------------------------------------------------------------------------
-# 1. Require Node 20+ — fail if below 20
+# 1. Require Node 25.9.x
 # ---------------------------------------------------------------------------
 echo ""
 echo "1. Checking Node version ..."
 NODE_VERSION="$(node --version 2>/dev/null || echo "not-found")"
 if [[ "${NODE_VERSION}" == "not-found" ]]; then
-    echo "ERROR: Node.js not found. Please install Node 20 or later."
+    echo "ERROR: Node.js not found. Please install Node 25.9.x."
     exit 1
 fi
-# Extract major version (handles v20.x.x, v22.x.x, v24.x.x, etc.)
+# Extract major/minor version (handles v25.9.x)
 NODE_MAJOR="${NODE_VERSION%%.*}"
 NODE_MAJOR="${NODE_MAJOR#v}"
-if [[ "${NODE_MAJOR}" -lt 20 ]]; then
-    echo "ERROR: Node 20 or later is required. Found: ${NODE_VERSION}"
-    echo "Install Node 20+ (e.g. via nvm: nvm install 20 && nvm use 20) and re-run."
+NODE_REST="${NODE_VERSION#v${NODE_MAJOR}.}"
+NODE_MINOR="${NODE_REST%%.*}"
+if [[ "${NODE_MAJOR}" -ne 25 || "${NODE_MINOR}" -ne 9 ]]; then
+    echo "ERROR: Node 25.9.x is required. Found: ${NODE_VERSION}"
+    echo "Install Node 25.9.0 (e.g. via nvm: nvm install 25.9.0 && nvm use 25.9.0) and re-run."
     exit 1
 fi
-echo "   Node: ${NODE_VERSION} — OK (Node 20+ supported)"
+echo "   Node: ${NODE_VERSION} — OK (Node 25.9.x supported)"
 echo "   npm:  $(npm --version)"
 
 # ---------------------------------------------------------------------------

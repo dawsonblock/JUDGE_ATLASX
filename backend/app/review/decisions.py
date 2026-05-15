@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.entities import LegalInstrument, ReviewItem, SourceRegistry
+from app.policies.publication_policy import PENDING_REVIEW
 
 APPROVED = "approved"
 REJECTED = "rejected"
@@ -49,7 +50,10 @@ def record_decision(
     item.reviewed_at = datetime.now(timezone.utc)
 
     if decision == APPROVED:
-        item.public_visibility = True
+        # ReviewItem approval is an internal workflow decision only.  It means
+        # "approved for promotion/draft/further review", not public
+        # publication authority.
+        item.public_visibility = False
 
     if item.record_type == "LegalInstrument":
         payload = item.suggested_payload_json or {}
@@ -72,8 +76,12 @@ def record_decision(
                 .first()
             )
             if instrument is not None:
-                instrument.review_status = decision
-                instrument.public_visibility = "public" if decision == APPROVED else "private"
+                if decision == APPROVED:
+                    instrument.review_status = PENDING_REVIEW
+                    instrument.public_visibility = "private"
+                elif decision == REJECTED:
+                    instrument.review_status = REJECTED
+                    instrument.public_visibility = "private"
 
     db.flush()
 

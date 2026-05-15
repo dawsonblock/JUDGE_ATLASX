@@ -14,23 +14,30 @@ from app.models.entities import (
     Event,
     EventDefendant,
     EventSource,
-    Judge,
+    LegalInstrument,
     LegalSource,
     Location,
 )
+from app.policies.publication_policy import (
+    PUBLIC_REVIEW_STATUSES,
+    entity_public_visibility,
+)
 from app.schemas.api import EventOut
-from app.services.constants import OUTCOME_UNKNOWN, PUBLIC_REVIEW_STATUSES
+from app.services.constants import OUTCOME_UNKNOWN
 from app.services.publish_rules import UNSAFE_MAP_PRECISIONS
 
 CRIME_INCIDENT_DISCLAIMER = (
-    "Reported incident; not proof of guilt or conviction. Locations represent a general public area, not an exact incident point, "
-    "and records may change due to late reporting, reclassification, correction, or unfounded reports."
+    "Reported incident; not proof of guilt or conviction. "
+    "Locations represent a general public area, not an exact incident point, "
+    "and records may change due to late reporting, reclassification, "
+    "correction, or unfounded reports."
 )
 
 _REDACTION_LABEL_RE = re.compile(r"\[REDACTED [^\]]+\]", re.IGNORECASE)
 _CASE_CAPTION_RE = re.compile(r"(?:\bv\.|\bvs\.|\bversus\b)", re.IGNORECASE)
 _UNSAFE_PUBLIC_TERMS_RE = re.compile(
-    r"\b(?:suspect|victim|address|residence|home|dob|date of birth|family|apartment|minor|juvenile)\b",
+    r"\b(?:suspect|victim|address|residence|home|dob"
+    r"|date of birth|family|apartment|minor|juvenile)\b",
     re.IGNORECASE,
 )
 
@@ -66,7 +73,7 @@ def is_mappable(location: Location | None) -> bool:
 def is_public_event(event: Event | None) -> bool:
     return bool(
         event
-        and event.public_visibility
+        and entity_public_visibility(event)
         and event.review_status in PUBLIC_REVIEW_STATUSES
     )
 
@@ -74,7 +81,7 @@ def is_public_event(event: Event | None) -> bool:
 def is_public_source(source: LegalSource | None) -> bool:
     return bool(
         source
-        and source.public_visibility
+        and entity_public_visibility(source)
         and source.review_status in PUBLIC_REVIEW_STATUSES
     )
 
@@ -82,7 +89,7 @@ def is_public_source(source: LegalSource | None) -> bool:
 def is_public_crime_incident(incident: CrimeIncident | None) -> bool:
     return bool(
         incident
-        and incident.is_public
+        and entity_public_visibility(incident)
         and incident.review_status in PUBLIC_REVIEW_STATUSES
     )
 
@@ -164,20 +171,9 @@ def entity_by_type(db: Session, entity_type: str, entity_id: str):
         return db.scalar(
             select(LegalSource).where(LegalSource.source_id == entity_id)
         ) or (db.get(LegalSource, int(entity_id)) if entity_id.isdigit() else None)
+    if entity_type == "legal_instrument":
+        return db.get(LegalInstrument, int(entity_id)) if entity_id.isdigit() else None
     return None
-
-
-def entity_public_visibility(entity) -> bool:
-    return bool(
-        getattr(entity, "is_public", getattr(entity, "public_visibility", False))
-    )
-
-
-def set_entity_public_visibility(entity, visible: bool) -> None:
-    if isinstance(entity, CrimeIncident):
-        entity.is_public = visible
-    else:
-        entity.public_visibility = visible
 
 
 def serialize_event(event: Event) -> EventOut:
@@ -262,6 +258,7 @@ def event_to_geojson_feature(event: Event) -> dict:
             "verified_flag": bool(event.verified_flag),
             "repeat_offender_indicator": bool(event.repeat_offender_indicator),
             "review_status": event.review_status,
+            "public_visibility": entity_public_visibility(event),
             "location_status": "mapped",
             "is_mappable": True,
             "title": sanitize_event_text(event.title, event, "Reviewed legal event"),
@@ -336,6 +333,7 @@ def crime_incident_to_geojson_feature(incident: CrimeIncident) -> dict:
             "source_url": incident.source_url,
             "verification_status": incident.verification_status,
             "review_status": incident.review_status,
+            "public_visibility": entity_public_visibility(incident),
             "source_count": source_count,
             "has_news": False,
             "has_court_links": bool(verified_court_links),
@@ -457,7 +455,10 @@ def source_panel_payload(entity_type: str, entity) -> dict:
                     ),
                     "quoted_excerpt": None,
                     "verification_status": entity.verification_status,
-                    "trust_reason": "Official reported-incident source; not proof of guilt or conviction.",
+                    "trust_reason": (
+                        "Official reported-incident source;"
+                        " not proof of guilt or conviction."
+                    ),
                     "reviewed_by": entity.reviewed_by,
                     "reviewed_at": (
                         entity.reviewed_at.isoformat() if entity.reviewed_at else None

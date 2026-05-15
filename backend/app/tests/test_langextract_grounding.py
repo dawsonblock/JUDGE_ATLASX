@@ -26,7 +26,10 @@ import pytest
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _make_snapshot(snapshot_id: int = 42, text: str = "Alice Smith was arrested in Regina.") -> MagicMock:
+def _make_snapshot(
+    snapshot_id: int = 42,
+    text: str = "Alice Smith was arrested in Regina.",
+) -> MagicMock:
     snap = MagicMock()
     snap.id = snapshot_id
     snap.extracted_text = text
@@ -310,7 +313,10 @@ class TestGroundedExtractionHappyPath:
         claim_mock.claim_key = "deadbeef"
 
         with patch("app.extraction.review_item_mapper.MemoryClaim", return_value=claim_mock):
-            with patch("app.extraction.review_item_mapper.MemoryEvidenceLink", side_effect=_capture_link):
+            with patch(
+                "app.extraction.review_item_mapper.MemoryEvidenceLink",
+                side_effect=_capture_link,
+            ):
                 map_to_review_items(extractions, db)
 
         assert len(created_links) == 1

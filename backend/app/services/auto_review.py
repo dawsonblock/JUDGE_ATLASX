@@ -246,9 +246,9 @@ def auto_review(
         and confidence >= _PUBLISH_CONFIDENCE_THRESHOLD
     ):
         return AutoReviewResult(
-            action="publish",
-            review_status="official_police_open_data_report",
-            public_visibility=True,
+            action="review_ready",
+            review_status="pending_review",
+            public_visibility=False,
             confidence=confidence,
             reasons=reasons,
             warnings=warnings,

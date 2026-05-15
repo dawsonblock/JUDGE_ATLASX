@@ -190,7 +190,7 @@ export default function JudgeClusterLayer({ incidents, events, onSelectRecord }:
         has_links: props.has_court_links ?? props.has_incident_links ?? false,
         disclaimer: props.disclaimer ?? "",
         review_status: props.review_status ?? "pending_review",
-        public_visibility: true,
+        public_visibility: Boolean(props.public_visibility),
         confidence: sourceQualityToConfidence(
           props.source_quality ?? props.verification_status ?? null,
           Boolean(props.verified_flag),

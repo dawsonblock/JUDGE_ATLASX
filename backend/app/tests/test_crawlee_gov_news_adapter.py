@@ -57,7 +57,7 @@ class TestCrawleeGovNewsRunWithDb:
         with patch(
             "app.ingestion.source_adapters.crawlee_gov_news.CrawleeRunner",
             return_value=mock_runner,
-        ) as MockRunner, patch(
+        ), patch(
             "app.ingestion.source_adapters.crawlee_gov_news.WebMonitorTarget"
         ) as MockTarget:
             MockTarget.return_value = MagicMock()

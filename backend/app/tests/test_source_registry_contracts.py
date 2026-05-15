@@ -12,11 +12,11 @@ from __future__ import annotations
 
 import pathlib
 
-import pytest
 import yaml
 
 from app.seed.source_registry import (
     _REPAIR_FIELDS,
+    validate_all_source_specs,
     validate_machine_ingest_source_spec,
 )
 
@@ -155,7 +155,7 @@ def test_multiple_violations_returned() -> None:
 
 
 def test_all_machine_ingest_sources_have_parser_version() -> None:
-    """Every source with source_class=machine_ingest must declare parser_version."""
+    """machine_ingest sources must declare parser_version."""
     sources = _load_yaml()
     violations: list[str] = []
     for s in sources:
@@ -179,7 +179,7 @@ def test_specific_machine_ingest_sources_have_parser_version() -> None:
 
 
 def test_machine_ingest_sources_pass_spec_validator() -> None:
-    """All machine_ingest sources in the YAML must pass the contract validator."""
+    """All machine_ingest sources must pass the contract validator."""
     sources = _load_yaml()
     failures: dict[str, list[str]] = {}
     for s in sources:
@@ -194,7 +194,24 @@ def test_machine_ingest_sources_pass_spec_validator() -> None:
 
 
 def test_parser_version_in_repair_fields() -> None:
-    """parser_version must be in _REPAIR_FIELDS so the repair function syncs it."""
+    """parser_version must be in _REPAIR_FIELDS for repair syncing."""
     assert "parser_version" in _REPAIR_FIELDS, (
-        "parser_version is not in seed._REPAIR_FIELDS — DB drift will not be corrected"
+        "parser_version is not in seed._REPAIR_FIELDS"
+        " — DB drift will not be corrected"
+    )
+
+
+# ── Zero-violation gate ──────────────────────────────────────────────────────
+
+
+def test_current_yaml_has_no_machine_ingest_violations() -> None:
+    """machine_ingest sources in the live YAML must pass the spec validator.
+
+    This is the CI gate that ensures no malformed source spec can be merged.
+    validate_all_source_specs() returns {source_key: [violations]} — an empty
+    dict means every source is clean.
+    """
+    violations = validate_all_source_specs()
+    assert violations == {}, (
+        f"machine_ingest spec violations found in YAML: {violations}"
     )

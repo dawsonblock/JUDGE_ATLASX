@@ -424,6 +424,27 @@ def retry_ingestion_run(
             },
         )
 
+    from app.ingestion.source_config_validator import can_run_source
+
+    runnable, blockers = can_run_source(source)
+    if not runnable:
+        failed_run = record_failed_ingestion_attempt(
+            db,
+            source_key=source.source_key,
+            error_code="SOURCE_RUN_POLICY_BLOCKED",
+            error_message="; ".join(blockers),
+            stage="retry.validation",
+        )
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "source_key": source.source_key,
+                "reason": "; ".join(blockers),
+                "reasons": blockers,
+                "failed_run_id": failed_run.id,
+            },
+        )
+
     from app.core.config import get_settings
     from app.ingestion.source_adapter_factory import build_adapter
     from app.ingestion.source_runner import persist_ingestion_result

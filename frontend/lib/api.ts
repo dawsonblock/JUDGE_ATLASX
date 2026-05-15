@@ -52,6 +52,7 @@ export type MapFeature = {
     repeat_offender_indicator: boolean;
     verified_flag: boolean;
     review_status: string;
+    public_visibility: boolean;
     location_status: "mapped";
     is_mappable: true;
     source_quality: string;
@@ -91,6 +92,7 @@ export type CrimeIncidentFeature = {
     source_url: string | null;
     verification_status: string;
     review_status: string;
+    public_visibility: boolean;
     source_count: number;
     has_news: boolean;
     has_court_links: boolean;

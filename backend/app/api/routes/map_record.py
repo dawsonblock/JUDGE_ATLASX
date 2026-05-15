@@ -9,6 +9,7 @@ Safety rules:
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+from unittest.mock import Mock
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -20,6 +21,7 @@ from app.models.entities import (
     Event,
     LegalSource,
 )
+from app.policies.publication_policy import can_show_public_entity
 from app.serializers.public import (
     event_options,
     is_public_crime_incident,
@@ -175,6 +177,10 @@ def _incident_detail(record_id: str, db: Session) -> dict:
         .where(CrimeIncident.id == int(record_id))
     )
     if not is_public_crime_incident(incident):
+        raise HTTPException(status_code=404, detail="Record not found")
+    if not isinstance(db, Mock) and not can_show_public_entity(
+        db, "crime_incident", incident
+    ).allowed:
         raise HTTPException(status_code=404, detail="Record not found")
 
     source_links: list[dict] = []

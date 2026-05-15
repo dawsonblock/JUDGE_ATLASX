@@ -176,11 +176,11 @@ def test_gate7_city_centroid_does_not_block():
 
 
 # ---------------------------------------------------------------------------
-# Happy path: high-confidence record → publish
+# Happy path: high-confidence record → private review-ready recommendation
 # ---------------------------------------------------------------------------
 
 
-def test_high_confidence_auto_publishes():
+def test_high_confidence_auto_review_stays_private():
     record = _rec(notes=None)
     result = auto_review(
         record,
@@ -188,8 +188,9 @@ def test_high_confidence_auto_publishes():
         has_snapshot_hash=True,
         official_identifier="FILE-2025-001",
     )
-    assert result.action == "publish"
-    assert result.public_visibility is True
+    assert result.action == "review_ready"
+    assert result.review_status == "pending_review"
+    assert result.public_visibility is False
     assert result.confidence >= 0.70
 
 

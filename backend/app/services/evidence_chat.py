@@ -24,6 +24,7 @@ from app.models.entities import (
     LegalSection,
     RelationshipEvidence,
 )
+from app.policies.publication_policy import PUBLIC_REVIEW_STATUSES
 from app.services.text import normalize_text
 
 _MAX_QUESTION_LEN: int = 500
@@ -95,8 +96,9 @@ def _legal_context_citations(
         db.query(LegalSection, LegalInstrument)
         .join(LegalInstrument, LegalInstrument.id == LegalSection.legal_instrument_id)
         .filter(
-            LegalInstrument.review_status == "approved",
+            LegalInstrument.review_status.in_(PUBLIC_REVIEW_STATUSES),
             LegalInstrument.public_visibility == "public",
+            LegalInstrument.raw_snapshot_id.is_not(None),
         )
         .limit(50)
         .all()

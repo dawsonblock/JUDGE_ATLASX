@@ -17,6 +17,7 @@ from .adapters import (
     CreatedReviewItem,
     IngestionResult,
 )
+from .external_id import stable_record_identity
 from .quarantine import quarantine_run
 from .statuses import PENDING, QUARANTINED
 from ..services.constants import AI_PUBLISH_RECOMMENDATIONS
@@ -139,6 +140,21 @@ def _insert_crime_incident(
     snapshot: SourceSnapshot,
 ) -> bool:
     """Insert one CrimeIncident row.  Returns False on dedup (no insert)."""
+    p = record.payload
+    identity_hash = stable_record_identity(
+        record.source_key,
+        "crime_incident",
+        p,
+        record.external_id,
+    )
+    exists = (
+        db.query(CrimeIncident.id)
+        .filter(CrimeIncident.ingestion_identity_hash == identity_hash)
+        .first()
+    )
+    if exists is not None:
+        return False
+
     if record.external_id is not None:
         exists = (
             db.query(CrimeIncident.id)
@@ -151,7 +167,6 @@ def _insert_crime_incident(
         if exists is not None:
             return False
 
-    p = record.payload
     incident = CrimeIncident(
         source_id=record.source_key,
         external_id=record.external_id,
@@ -168,6 +183,8 @@ def _insert_crime_incident(
         precision_level=p.get("precision_level") or "general_area",
         source_url=record.source_url or p.get("source_url"),
         source_name=record.source_key,
+        source_key=record.source_key,
+        ingestion_identity_hash=identity_hash,
         verification_status=p.get("verification_status") or "reported",
         is_public=False,
         review_status="pending_review",
@@ -205,27 +222,23 @@ def _insert_review_item(
         "language": item.payload.get("language"),
         "instrument_type": item.payload.get("instrument_type"),
     }
-    existing = (
-        db.query(ReviewItem)
-        .filter(
-            ReviewItem.record_type == identity["record_type"],
-            ReviewItem.status == PENDING,
-        )
-        .all()
+    identity_hash = stable_record_identity(
+        item.payload.get("source_key") or snapshot.source_key or "unknown",
+        identity["record_type"],
+        item.payload,
+        item.payload.get("external_id"),
     )
-    for row in existing:
-        payload = row.suggested_payload_json or {}
-        same_identity = (
-            payload.get("source_key") == identity["source_key"]
-            and payload.get("unique_id") == identity["unique_id"]
-            and payload.get("language") == identity["language"]
-            and payload.get("instrument_type") == identity["instrument_type"]
-        )
-        if same_identity:
-            return False
+    existing = (
+        db.query(ReviewItem.id)
+        .filter(ReviewItem.ingestion_identity_hash == identity_hash)
+        .first()
+    )
+    if existing is not None:
+        return False
 
     rv = ReviewItem(
         record_type=identity["record_type"],
+        ingestion_identity_hash=identity_hash,
         source_snapshot_id=snapshot.id,
         suggested_payload_json=item.payload,
         source_url=item.url,
@@ -293,7 +306,7 @@ def _insert_or_update_legal_instrument(
     row.link_to_html_toc = p.get("link_to_html_toc")
     row.raw_snapshot_id = snapshot.id
     row.parser_version = p.get("parser_version") or "1.0"
-    if row.review_status != "approved":
+    if row.review_status not in {"verified_court_record", "corrected"}:
         row.review_status = PENDING
         row.public_visibility = "private"
 

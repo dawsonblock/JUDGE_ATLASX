@@ -239,12 +239,14 @@ export default function MapV2Workspace() {
           />
           <input
             type="date"
+            title="Date from"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
             className="h-8 px-2 text-xs border border-gray-300 rounded"
           />
           <input
             type="date"
+            title="Date to"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
             className="h-8 px-2 text-xs border border-gray-300 rounded"
@@ -267,6 +269,7 @@ export default function MapV2Workspace() {
             className="h-8 px-2 text-xs border border-gray-300 rounded"
           />
           <select
+            title="Official sources filter"
             value={officialOnly === null ? "" : String(officialOnly)}
             onChange={(e) => setOfficialOnly(e.target.value === "" ? null : e.target.value === "true")}
             className="h-8 px-2 text-xs border border-gray-300 rounded bg-white"
@@ -276,6 +279,7 @@ export default function MapV2Workspace() {
             <option value="false">Non-official only</option>
           </select>
           <select
+            title="Incident type filter"
             value={incidentType}
             onChange={(e) => setIncidentType(e.target.value as "individual" | "aggregate" | "all")}
             className="h-8 px-2 text-xs border border-gray-300 rounded bg-white"

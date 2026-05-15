@@ -473,12 +473,16 @@ def _generate_release_readiness_from_manifest(
 
     node_version = manifest.get("node_version", "unknown")
     node_major = 0
+    node_minor = 0
     try:
-        node_major = int(str(node_version).lstrip("v").split(".")[0])
+        node_parts = str(node_version).lstrip("v").split(".")
+        node_major = int(node_parts[0])
+        node_minor = int(node_parts[1])
     except Exception:
         node_major = 0
-    if node_major != 20:
-        blockers.append(f"node_major_mismatch:Expected Node 20.x, found Node {node_version}")
+        node_minor = 0
+    if (node_major, node_minor) != (25, 9):
+        blockers.append(f"node_major_mismatch:Expected Node 25.9.x, found Node {node_version}")
 
     archive_entry = next(
         (entry for entry in manifest.get("proof_commands", []) if entry.get("name") == "archive_validation"),
@@ -792,7 +796,7 @@ def _write_repair_report_md(
             "artifacts/proof/current/public_api_boundary.log",
         ),
         (
-            "12. Frontend Node 20 Gate",
+            "12. Frontend Node 25.9 Gate",
             phase_status(checks.get("frontend_node_gate", {}).get("status") == "PASS"),
             "artifacts/proof/current/frontend_node_gate.log",
         ),
@@ -1361,9 +1365,9 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 20 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
-                    f" \"{python_exe}\" scripts/check_frontend_node_gate.py --expected-major 20"
+                    " nvm use 25.9.0 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 25.9.0 failed -- install Node 25.9.0 via: nvm install 25.9.0'; exit 1; };"
+                    f" \"{python_exe}\" scripts/check_frontend_node_gate.py --expected-major 25 --expected-minor 9"
                 ),
             ],
         ),
@@ -1374,8 +1378,8 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 20 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
+                    " nvm use 25.9.0 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 25.9.0 failed -- install Node 25.9.0 via: nvm install 25.9.0'; exit 1; };"
                     " npm ci --prefix frontend"
                 ),
             ],
@@ -1388,8 +1392,8 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 20 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
+                    " nvm use 25.9.0 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 25.9.0 failed -- install Node 25.9.0 via: nvm install 25.9.0'; exit 1; };"
                     " npm run lint --prefix frontend"
                 ),
             ],
@@ -1401,8 +1405,8 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 20 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
+                    " nvm use 25.9.0 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 25.9.0 failed -- install Node 25.9.0 via: nvm install 25.9.0'; exit 1; };"
                     " npm run typecheck --prefix frontend"
                 ),
             ],
@@ -1414,8 +1418,8 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 20 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
+                    " nvm use 25.9.0 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 25.9.0 failed -- install Node 25.9.0 via: nvm install 25.9.0'; exit 1; };"
                     " npm run test:contracts --prefix frontend"
                 ),
             ],
@@ -1427,8 +1431,8 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 20 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
+                    " nvm use 25.9.0 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 25.9.0 failed -- install Node 25.9.0 via: nvm install 25.9.0'; exit 1; };"
                     " npm run build --prefix frontend"
                 ),
             ],

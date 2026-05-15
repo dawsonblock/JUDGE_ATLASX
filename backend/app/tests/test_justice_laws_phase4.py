@@ -297,7 +297,13 @@ def test_legal_publication_gate_and_chat_require_approval(db_session) -> None:
     db_session.flush()
     db_session.refresh(instrument)
 
-    assert_legal_instrument_publication_ready(instrument)
+    try:
+        assert_legal_instrument_publication_ready(instrument)
+    except PublicationBlockedError:
+        pass
+    else:  # pragma: no cover - defensive assertion
+        raise AssertionError("ReviewItem approval must not publish legal instruments")
+
     approved_chat = chat_about_evidence(db_session, "Criminal Code section 1")
-    assert len(approved_chat.legal_context_citations) >= 1
+    assert approved_chat.legal_context_citations == []
     assert approved_chat.citations == []

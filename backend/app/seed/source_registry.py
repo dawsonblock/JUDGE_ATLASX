@@ -13,7 +13,6 @@ Run standalone:
 from __future__ import annotations
 
 import json
-import os
 import pathlib
 
 import yaml
@@ -112,9 +111,23 @@ def validate_machine_ingest_source_spec(spec: dict) -> list[str]:
     return violations
 
 
+def validate_all_source_specs() -> dict[str, list[str]]:
+    """Return source_key -> validation violations for every YAML/source spec."""
+    return {
+        spec["source_key"]: violations
+        for spec in _merged_sources()
+        if (violations := validate_machine_ingest_source_spec(spec))
+    }
+
+
 def seed_source_registry(db: Session) -> None:
     """Insert source registry rows that do not yet exist (idempotent)."""
     for spec in _merged_sources():
+        violations = validate_machine_ingest_source_spec(spec)
+        if violations:
+            raise ValueError(
+                f"Source {spec['source_key']!r} failed machine_ingest validation: {violations}"
+            )
         existing = db.scalar(
             select(SourceRegistry).where(
                 SourceRegistry.source_key == spec["source_key"]
@@ -180,6 +193,11 @@ def repair_canada_first_defaults(db: Session, *, dry_run: bool = False) -> list[
     """
     changes: list[str] = []
     for spec in _merged_sources():
+        violations = validate_machine_ingest_source_spec(spec)
+        if violations:
+            raise ValueError(
+                f"Source {spec['source_key']!r} failed machine_ingest validation: {violations}"
+            )
         row = db.scalar(
             select(SourceRegistry).where(
                 SourceRegistry.source_key == spec["source_key"]

@@ -6,7 +6,7 @@ describe("publicEntityDetailSchema", () => {
   it("accepts a valid entity detail payload", () => {
     const payload = {
       entity_id: "event-123",
-      review_status: "approved",
+      review_status: "verified_court_record",
       public_visibility: true,
       summary: "Reviewed legal summary",
       source_key: "court_ca_sk",
@@ -14,10 +14,10 @@ describe("publicEntityDetailSchema", () => {
     expect(publicEntityDetailSchema.safeParse(payload).success).toBe(true);
   });
 
-  it("rejects unknown review status", () => {
+  it("rejects legacy approved review status", () => {
     const payload = {
       entity_id: "event-123",
-      review_status: "verified_court_record",
+      review_status: "approved",
       public_visibility: true,
     };
     expect(publicEntityDetailSchema.safeParse(payload).success).toBe(false);

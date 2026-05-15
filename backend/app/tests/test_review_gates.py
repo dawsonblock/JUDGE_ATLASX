@@ -14,8 +14,9 @@ from fastapi.testclient import TestClient
 
 from app.db.session import SessionLocal
 from app.main import app
-from app.models.entities import Case, Court, Event, Location
+from app.models.entities import Case, Court, Event, EventSource, LegalSource, Location
 from app.services.publish_rules import TIER_AUTO, TIER_HOLD
+from app.services.linker import url_hash
 
 client = TestClient(app)
 
@@ -86,6 +87,23 @@ def _make_event(db, *, review_status: str, public_visibility: bool, title: str =
         source_quality="court_record",
     )
     db.add(event)
+    db.flush()
+    if public_visibility:
+        url = f"https://example.test/review-gates/{unique_id}/{title}"
+        source = LegalSource(
+            source_id=f"src-review-gates-{unique_id}-{title}",
+            source_type="court_record",
+            title=f"Source for {title}",
+            url=url,
+            url_hash=url_hash(url),
+            source_quality="court_record",
+            verified_flag=True,
+            review_status="verified_court_record",
+            public_visibility=True,
+        )
+        db.add(source)
+        db.flush()
+        db.add(EventSource(event_id=event.id, source_id=source.id))
     db.commit()
     db.refresh(event)
     return event

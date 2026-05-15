@@ -15,6 +15,7 @@ from app.models.entities import (
     Judge,
     LegalSource,
     Location,
+    SourceSnapshot,
 )
 from app.services.linker import url_hash
 from app.services.text import normalize_docket, normalize_name
@@ -429,6 +430,39 @@ def seed_sample_data(db: Session) -> None:
         ),
     ]
 
+    incident_snapshots = [
+        SourceSnapshot(
+            source_key="sample_saskatoon_police",
+            source_url="https://map.saskatoonpolice.ca/",
+            fetched_at=now,
+            content_hash="1" * 64,
+            raw_content="sample saskatoon police public incident evidence",
+        ),
+        SourceSnapshot(
+            source_key="sample_toronto_police",
+            source_url="https://www.tps.ca/data-maps/",
+            fetched_at=now,
+            content_hash="2" * 64,
+            raw_content="sample toronto police public incident evidence",
+        ),
+        SourceSnapshot(
+            source_key="sample_chicago_data",
+            source_url="https://data.cityofchicago.org/",
+            fetched_at=now,
+            content_hash="3" * 64,
+            raw_content="sample chicago public incident evidence",
+        ),
+        SourceSnapshot(
+            source_key="sample_los_angeles_data",
+            source_url="https://data.lacity.org/",
+            fetched_at=now,
+            content_hash="4" * 64,
+            raw_content="sample los angeles public incident evidence",
+        ),
+    ]
+    db.add_all(incident_snapshots)
+    db.flush()
+
     # Create crime incidents without explicit IDs
     crime_incidents = [
         CrimeIncident(
@@ -450,6 +484,7 @@ def seed_sample_data(db: Session) -> None:
             verification_status="reported",
             data_last_seen_at=now,
             is_public=True,
+            source_snapshot_id=incident_snapshots[0].id,
             notes="SAMPLE generalized public-area incident. Not adjudicated.",
         ),
         CrimeIncident(
@@ -471,6 +506,7 @@ def seed_sample_data(db: Session) -> None:
             verification_status="reported",
             data_last_seen_at=now,
             is_public=True,
+            source_snapshot_id=incident_snapshots[1].id,
             notes="SAMPLE generalized public-area incident. Not adjudicated.",
         ),
         CrimeIncident(
@@ -492,6 +528,7 @@ def seed_sample_data(db: Session) -> None:
             verification_status="reported",
             data_last_seen_at=now,
             is_public=True,
+            source_snapshot_id=incident_snapshots[2].id,
             notes="SAMPLE generalized public-area incident. Not adjudicated.",
         ),
         CrimeIncident(
@@ -513,6 +550,7 @@ def seed_sample_data(db: Session) -> None:
             verification_status="reported",
             data_last_seen_at=now,
             is_public=True,
+            source_snapshot_id=incident_snapshots[3].id,
             notes="SAMPLE generalized public-area incident. Not adjudicated.",
         ),
     ]

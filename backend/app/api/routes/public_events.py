@@ -22,7 +22,6 @@ from app.schemas.api import (
     CaseOut,
     EventCreate,
     EventOut,
-    JudgeOut,
     JudgeSummaryOut,
     SourceOut,
 )
@@ -31,17 +30,19 @@ from app.serializers.public import (
     case_to_public_dict,
     event_options,
     filtered_events_query,
-    is_public_event,
-    is_public_source,
     serialize_event,
     source_panel_payload,
     source_to_public_dict,
     entity_by_type,
-    is_public_crime_incident,
 )
 from app.services.constants import ALLOWED_EVENT_TYPES, PUBLIC_REVIEW_STATUSES
+from app.policies.publication_policy import can_show_public_entity
 
 router = APIRouter()
+
+
+def _policy_visible(db: Session, entity_type: str, entity) -> bool:
+    return can_show_public_entity(db, entity_type, entity).allowed
 
 
 @router.get("/health")
@@ -87,7 +88,11 @@ def list_events(
         .unique()
         .all()
     )
-    return [serialize_event(event) for event in events]
+    return [
+        serialize_event(event)
+        for event in events
+        if _policy_visible(db, "event", event)
+    ]
 
 
 @router.get("/api/events/{event_id}", response_model=EventOut)
@@ -95,7 +100,7 @@ def get_event(event_id: str, db: Session = Depends(get_db)):
     event = db.scalar(
         select(Event).options(*event_options()).where(Event.event_id == event_id)
     )
-    if not is_public_event(event):
+    if not event or not _policy_visible(db, "event", event):
         raise HTTPException(status_code=404, detail="Event not found")
     return serialize_event(event)
 
@@ -232,7 +237,11 @@ def judge_events(judge_id: int, db: Session = Depends(get_db)):
         .unique()
         .all()
     )
-    return [serialize_event(event) for event in events]
+    return [
+        serialize_event(event)
+        for event in events
+        if _policy_visible(db, "event", event)
+    ]
 
 
 @router.get("/api/cases", response_model=list[CaseOut])
@@ -290,7 +299,11 @@ def case_timeline(case_id: int, db: Session = Depends(get_db)):
         .unique()
         .all()
     )
-    return [serialize_event(event) for event in events]
+    return [
+        serialize_event(event)
+        for event in events
+        if _policy_visible(db, "event", event)
+    ]
 
 
 @router.get("/api/defendants/{defendant_id}")
@@ -314,7 +327,10 @@ def get_defendant(defendant_id: int, db: Session = Depends(get_db)):
         "id": defendant.id,
         "anonymized_id": defendant.anonymized_id,
         "display_label": defendant.anonymized_id,
-        "warning": "No personal location tracking. Events are mapped to courts and verified legal records only.",
+        "warning": (
+            "No personal location tracking. Events are mapped to courts"
+            " and verified legal records only."
+        ),
     }
 
 
@@ -335,7 +351,11 @@ def defendant_timeline(defendant_id: int, db: Session = Depends(get_db)):
         .unique()
         .all()
     )
-    return [serialize_event(event) for event in events]
+    return [
+        serialize_event(event)
+        for event in events
+        if _policy_visible(db, "event", event)
+    ]
 
 
 @router.get("/api/sources/{source_id}", response_model=SourceOut)
@@ -343,7 +363,7 @@ def get_source(source_id: str, db: Session = Depends(get_db)):
     source = db.scalar(select(LegalSource).where(LegalSource.source_id == source_id))
     if not source and source_id.isdigit():
         source = db.get(LegalSource, int(source_id))
-    if not is_public_source(source):
+    if not source or not _policy_visible(db, "source", source):
         raise HTTPException(status_code=404, detail="Source not found")
     return source_to_public_dict(source)
 
@@ -358,7 +378,11 @@ def list_sources(db: Session = Depends(get_db)):
         )
         .order_by(LegalSource.id)
     ).all()
-    return [source_to_public_dict(source) for source in sources]
+    return [
+        source_to_public_dict(source)
+        for source in sources
+        if _policy_visible(db, "source", source)
+    ]
 
 
 @router.get("/api/evidence/source-panel/{entity_type}/{entity_id}")
@@ -366,10 +390,10 @@ def source_panel(entity_type: str, entity_id: str, db: Session = Depends(get_db)
     entity = entity_by_type(db, entity_type, entity_id)
     if not entity:
         raise HTTPException(status_code=404, detail="Evidence not found")
-    if entity_type == "event" and not is_public_event(entity):
+    if entity_type == "event" and not _policy_visible(db, "event", entity):
         raise HTTPException(status_code=404, detail="Evidence not found")
-    if entity_type == "crime_incident" and not is_public_crime_incident(entity):
+    if entity_type == "crime_incident" and not _policy_visible(db, "crime_incident", entity):
         raise HTTPException(status_code=404, detail="Evidence not found")
-    if entity_type == "source" and not is_public_source(entity):
+    if entity_type == "source" and not _policy_visible(db, "source", entity):
         raise HTTPException(status_code=404, detail="Evidence not found")
     return source_panel_payload(entity_type, entity)

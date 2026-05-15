@@ -49,6 +49,9 @@ def _make_incident(source_name: str, snapshot_id: int | None = None) -> int:
             source_name=source_name,
             review_status="pending_review",
             source_snapshot_id=snapshot_id,
+            latitude_public=52.13,
+            longitude_public=-106.67,
+            precision_level="city_centroid",
         )
         db.add(inc)
         db.commit()

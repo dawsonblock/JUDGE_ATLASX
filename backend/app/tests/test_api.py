@@ -25,12 +25,30 @@ from app.services.linker import url_hash
 from app.services.text import normalize_docket
 
 
+def _add_public_event_source(db, event: Event, key: str) -> None:
+    url = f"https://example.test/{key}"
+    source = LegalSource(
+        source_id=f"SRC-{key.upper()}",
+        source_type="court_record",
+        title=f"Source for {key}",
+        url=url,
+        url_hash=url_hash(url),
+        source_quality="court_record",
+        verified_flag=True,
+        review_status="verified_court_record",
+        public_visibility=True,
+    )
+    db.add(source)
+    db.flush()
+    db.add(EventSource(event_id=event.id, source_id=source.id))
+
+
 def test_geojson_endpoint_returns_feature_collection(client):
     response = client.get("/api/map/events")
     assert response.status_code == 200
     payload = response.json()
     assert payload["type"] == "FeatureCollection"
-    assert len(payload["features"]) >= 8
+    assert len(payload["features"]) >= 7
     for feature in payload["features"]:
         assert feature["type"] == "Feature"
         assert feature["geometry"]["type"] == "Point"
@@ -235,6 +253,8 @@ def test_placeholder_location_with_coordinates_never_maps(client):
             public_visibility=True,
         )
         db.add(event)
+        db.flush()
+        _add_public_event_source(db, event, "placeholder-coords")
         db.commit()
 
     events_response = client.get("/api/events?event_type=sentencing&limit=500")
@@ -300,6 +320,8 @@ def test_zero_coordinate_courthouse_event_is_listed_but_not_mapped(client):
             public_visibility=True,
         )
         db.add(event)
+        db.flush()
+        _add_public_event_source(db, event, "zero-coords")
         db.commit()
 
     events_response = client.get("/api/events?event_type=sentencing&limit=500")
@@ -524,6 +546,8 @@ def test_corrected_event_remains_public_with_review_status(client):
             public_visibility=True,
         )
         db.add(event)
+        db.flush()
+        _add_public_event_source(db, event, "corrected-public")
         db.commit()
 
     events_response = client.get("/api/events?event_type=sentencing&limit=500")

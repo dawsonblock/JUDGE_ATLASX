@@ -57,7 +57,11 @@ def _run_cli(db_path: Path) -> subprocess.CompletedProcess[str]:
 
 def test_verify_audit_chain_cli_passes_on_seeded_chain(tmp_path, monkeypatch):
     session_factory = _make_session_factory(tmp_path)
-    _seed_chain(session_factory, monkeypatch, ["audit.seed.one", "audit.seed.two", "audit.seed.three"])
+    _seed_chain(
+        session_factory,
+        monkeypatch,
+        ["audit.seed.one", "audit.seed.two", "audit.seed.three"],
+    )
 
     result = _run_cli(tmp_path / "audit_cli.db")
     assert result.returncode == 0, result.stdout + result.stderr
@@ -67,7 +71,11 @@ def test_verify_audit_chain_cli_passes_on_seeded_chain(tmp_path, monkeypatch):
 
 def test_verify_audit_chain_cli_fails_on_tampered_payload(tmp_path, monkeypatch):
     session_factory = _make_session_factory(tmp_path)
-    _seed_chain(session_factory, monkeypatch, ["audit.seed.one", "audit.seed.two", "audit.seed.three"])
+    _seed_chain(
+        session_factory,
+        monkeypatch,
+        ["audit.seed.one", "audit.seed.two", "audit.seed.three"],
+    )
 
     with session_factory() as db:
         row = db.query(AuditLog).order_by(AuditLog.id.asc()).offset(1).first()

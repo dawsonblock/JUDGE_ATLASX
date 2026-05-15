@@ -422,7 +422,10 @@ def enable_source(
         )
 
     from app.core.config import get_settings
-    from app.ingestion.source_adapter_factory import build_adapter, missing_required_secret_for_parser
+    from app.ingestion.source_adapter_factory import (
+        build_adapter,
+        missing_required_secret_for_parser,
+    )
 
     settings = get_settings()
     missing_secret = missing_required_secret_for_parser(source.parser, settings)
@@ -697,7 +700,10 @@ class RunResult(BaseModel):
 
 
 _SOURCE_CLASS_NEXT_ACTION: dict[str | None, str] = {
-    "portal_reference": "Configure a supported machine-readable endpoint and adapter before enabling runs.",
+    "portal_reference": (
+        "Configure a supported machine-readable endpoint"
+        " and adapter before enabling runs."
+    ),
     "manual_reference": "Use as manual reference evidence only.",
     "requires_api_key": "Configure the required API key before enabling machine ingestion.",
     "disabled_stub": "Implement and test the adapter before marking this source runnable.",
@@ -778,6 +784,27 @@ def run_source_now(
             },
         )
 
+    from app.ingestion.source_config_validator import can_run_source
+
+    runnable, blockers = can_run_source(source)
+    if not runnable:
+        failed_run = record_failed_ingestion_attempt(
+            db,
+            source_key=source_key,
+            error_code=BLOCK_AUTOMATION_STATUS_PREVENTS_RUN,
+            error_message="; ".join(blockers),
+        )
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "source_key": source_key,
+                "reason": "; ".join(blockers),
+                "reasons": blockers,
+                "next_action": "Fix source runtime policy blockers before running.",
+                "failed_run_id": failed_run.id,
+            },
+        )
+
     allowed, reason = check_ingestion_allowed(source)
     if not allowed:
         error_code, _, error_msg = reason.partition("::")
@@ -798,7 +825,10 @@ def run_source_now(
         )
 
     from app.core.config import get_settings
-    from app.ingestion.source_adapter_factory import build_adapter, missing_required_secret_for_parser
+    from app.ingestion.source_adapter_factory import (
+        build_adapter,
+        missing_required_secret_for_parser,
+    )
     from app.ingestion.source_runner import persist_ingestion_result
 
     settings = get_settings()

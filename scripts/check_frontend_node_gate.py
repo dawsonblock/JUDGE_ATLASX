@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Fail-closed Node major-version gate for frontend proof.
+"""Fail-closed Node version gate for frontend proof.
 
 Expected behavior:
-- PASS only when Node major version matches required major (default: 20)
+- PASS only when Node major/minor version matches required version
 - Emit clear mismatch message for proof logs
 """
 
@@ -14,16 +14,17 @@ import subprocess
 import sys
 
 
-def _parse_major(node_version: str) -> int | None:
-    match = re.match(r"^v?(\d+)", node_version.strip())
+def _parse_major_minor(node_version: str) -> tuple[int, int] | None:
+    match = re.match(r"^v?(\d+)\.(\d+)", node_version.strip())
     if not match:
         return None
-    return int(match.group(1))
+    return int(match.group(1)), int(match.group(2))
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Frontend Node version gate")
-    parser.add_argument("--expected-major", type=int, default=20)
+    parser.add_argument("--expected-major", type=int, default=25)
+    parser.add_argument("--expected-minor", type=int, default=9)
     args = parser.parse_args()
 
     proc = subprocess.run(
@@ -37,13 +38,15 @@ def main() -> int:
         return 1
 
     version = proc.stdout.strip() or "unknown"
-    major = _parse_major(version)
-    if major is None:
+    parsed = _parse_major_minor(version)
+    if parsed is None:
         print(f"Unable to parse Node version: {version}")
         return 1
 
-    if major != args.expected_major:
-        print(f"Frontend release gate requires Node {args.expected_major}.x. Current Node: {version}. Use nvm use {args.expected_major}.")
+    major, minor = parsed
+    if (major, minor) != (args.expected_major, args.expected_minor):
+        expected = f"{args.expected_major}.{args.expected_minor}.x"
+        print(f"Frontend release gate requires Node {expected}. Current Node: {version}. Use nvm use {args.expected_major}.{args.expected_minor}.")
         return 1
 
     print(f"Node gate PASS: {version}")

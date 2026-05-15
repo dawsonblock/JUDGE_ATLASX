@@ -15,6 +15,11 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any
 
+from app.policies.publication_policy import (
+    PUBLIC_REVIEW_STATUSES,
+    UNSAFE_MAP_PRECISIONS,
+)
+
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
@@ -50,27 +55,9 @@ BLOCKED_PRECISION_LEVELS = {
     "private_residence",
 }
 
-# Unified set of precision levels that must NEVER appear on the public map.
-# Merges BLOCKED_PRECISION_LEVELS with additional geocoding precision labels
-# that resolve to individual rooftops, parcels, or residential addresses.
-UNSAFE_MAP_PRECISIONS: frozenset[str] = frozenset(
-    BLOCKED_PRECISION_LEVELS
-    | {
-        "rooftop",
-        "parcel",
-        "residential",
-        "exact",
-        "address_level",
-    }
-)
-
-# Review statuses that allow public visibility
-PUBLIC_REVIEW_STATUSES = {
-    "verified_court_record",
-    "official_police_open_data_report",
-    "news_only_context",
-    "corrected",
-}
+# Review/public status constants are re-exported from
+# app.policies.publication_policy.  Keep this module as a compatibility layer
+# for older imports; do not add competing status lists here.
 
 # Mapping: source_name → default tier
 _SOURCE_TIER_MAP: dict[str, str] = {

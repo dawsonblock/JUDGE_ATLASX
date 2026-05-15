@@ -251,6 +251,9 @@ class CrimeIncident(Base, TimestampMixin):
         UniqueConstraint(
             "source_name", "external_id", name="uq_crime_incident_source_external"
         ),
+        UniqueConstraint(
+            "source_key", "external_id", name="uq_crime_incident_sourcekey_external"
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -277,6 +280,12 @@ class CrimeIncident(Base, TimestampMixin):
     )
     source_url: Mapped[str | None] = mapped_column(Text)
     source_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    source_key: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, index=True
+    )  # FK-like reference to SourceRegistry.source_key (populated on ingest)
+    ingestion_identity_hash: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, index=True
+    )
     verification_status: Mapped[str] = mapped_column(
         String(80), default="reported", nullable=False, index=True
     )
@@ -362,6 +371,9 @@ class ReviewItem(Base):
     )
     public_visibility: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
+    )
+    ingestion_identity_hash: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, index=True
     )
     status: Mapped[str] = mapped_column(
         String(80), default=PENDING, nullable=False, index=True

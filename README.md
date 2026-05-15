@@ -109,6 +109,12 @@ GeoJSON endpoints for researchers and journalists. MIT licensed.
 ### Option 1 — Docker (Recommended)
 
 ```bash
+make dev        # copies .env.example → .env if needed, then docker compose up --build
+```
+
+Or manually:
+
+```bash
 cp .env.example .env
 docker compose up --build
 ```

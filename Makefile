@@ -1,4 +1,4 @@
-.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated
+.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup
 
 backend-install:
 	cd backend && python -m pip install -e ".[test]"
@@ -29,6 +29,24 @@ bootstrap-frontend:
 
 bootstrap:
 	bash scripts/bootstrap_all.sh
+
+# ---------------------------------------------------------------------------
+# Local development
+# ---------------------------------------------------------------------------
+
+# setup: copy .env.example → .env (if not present) then install all deps
+setup:
+	@if [ ! -f .env ]; then cp .env.example .env && echo "Created .env from .env.example — review tokens before production use"; fi
+	bash scripts/bootstrap_all.sh
+
+# dev: start the full stack via Docker Compose (creates .env automatically)
+dev:
+	@if [ ! -f .env ]; then cp .env.example .env && echo "Created .env from .env.example — review tokens before production use"; fi
+	docker compose up --build
+
+# stop: tear down Docker Compose services
+stop:
+	docker compose down
 
 truth-check:
 	python3 scripts/check_truth_claims.py --root .

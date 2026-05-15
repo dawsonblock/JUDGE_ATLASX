@@ -39,9 +39,9 @@ export type JudgeMapRecord = {
   has_news: boolean;
   has_links: boolean;
   disclaimer: string;
-  /** Review / moderation status string from backend (e.g. "pending_review", "approved"). */
+  /** Review / moderation status string from backend. */
   review_status: string;
-  /** Always true — backend filter guarantees all returned records are publicly visible. */
+  /** Backend publication visibility state for the returned public record. */
   public_visibility: boolean;
   /** 0–1 confidence score derived from source_quality / verification_status; null if unknown. */
   confidence: number | null;
@@ -67,7 +67,7 @@ export function courtEventToMapRecord(f: MapFeature): JudgeMapRecord {
     has_links: p.has_incident_links,
     disclaimer: p.disclaimer,
     review_status: p.review_status ?? "pending_review",
-    public_visibility: true,
+    public_visibility: Boolean(p.public_visibility),
     confidence: sourceQualityToConfidence(p.source_quality ?? null, Boolean(p.verified_flag)),
     evidence_count: p.source_count,
     relationship_warning: p.repeat_offender_indicator
@@ -92,7 +92,7 @@ export function crimeIncidentToMapRecord(f: CrimeIncidentFeature): JudgeMapRecor
     has_links: p.has_court_links,
     disclaimer: p.disclaimer,
     review_status: p.review_status ?? "pending_review",
-    public_visibility: true,
+    public_visibility: Boolean(p.public_visibility),
     confidence: sourceQualityToConfidence(p.verification_status ?? null, false),
     evidence_count: p.source_count,
     relationship_warning: p.has_court_links
