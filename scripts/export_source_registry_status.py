@@ -37,6 +37,19 @@ _PARSER_SECRET_NAMES: dict[str, str] = {
 }
 
 
+def _source_display_name(source: dict) -> str:
+    """Return the best available display name for a source registry entry.
+
+    Fallback chain: source_name → name → source_key → UNKNOWN_SOURCE.
+    """
+    return (
+        source.get("source_name")
+        or source.get("name")
+        or source.get("source_key")
+        or "UNKNOWN_SOURCE"
+    )
+
+
 def _required_secret_name(parser_key: str | None) -> str | None:
     if not parser_key:
         return None
@@ -299,7 +312,7 @@ def main(argv: list[str] | None = None) -> int:
             + " | ".join(
                 [
                     str(source.get("source_key", "")),
-                    str(source.get("name", "")),
+                    _source_display_name(source),
                     str(source.get("jurisdiction", "unknown")),
                     f"{source.get('source_class', 'unknown')}/{source.get('source_type', 'unknown')}",
                     str(source.get("automation_status", "unknown")),

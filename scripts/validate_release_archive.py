@@ -170,6 +170,10 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
                     report["errors"].append(f"forbidden_external_path:{info.filename}")
                 if "research" in parts[1:]:
                     report["errors"].append(f"forbidden_research_path:{info.filename}")
+                for segment in parts:
+                    if segment != segment.strip():
+                        report["errors"].append(f"whitespace_path_segment:{info.filename}")
+                        break
                 rel_path = "/".join(parts[1:]) if len(parts) > 1 else info.filename
                 if any(rel_path.startswith(prefix) for prefix in FORBIDDEN_RELATIVE_PREFIXES):
                     report["errors"].append(f"forbidden_release_surface_path:{info.filename}")

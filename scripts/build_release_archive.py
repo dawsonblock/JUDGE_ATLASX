@@ -13,8 +13,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUTPUT = REPO_ROOT / "dist" / "JUDGE_ATLAS-main.clean.zip"
-DEFAULT_ROOT_NAME = "JUDGE_ATLAS-main"
+DEFAULT_OUTPUT = REPO_ROOT / "dist" / "JUDGE_ATLASX-main.clean.zip"
+DEFAULT_ROOT_NAME = "JUDGE_ATLASX-main"
 
 DEFAULT_INCLUDE_TOP_LEVEL = (
     ".github",
@@ -145,12 +145,22 @@ def _normalize(path: Path) -> str:
 
 
 def _is_excluded(rel_path: str, include_external: bool, include_proof_archive: bool) -> bool:
-    if not include_external and rel_path.startswith("external/"):
+    # Normalise first path component (strip + casefold) so case/whitespace
+    # variants like "Research /" or "External/" are caught by EXCLUDED_PREFIXES.
+    _parts = Path(rel_path).parts
+    if _parts:
+        _norm_first = _parts[0].strip().casefold()
+        _rest = "/".join(_parts[1:]) if len(_parts) > 1 else ""
+        _norm_rel = (_norm_first + "/" + _rest) if _rest else _norm_first
+    else:
+        _norm_rel = rel_path
+
+    if not include_external and _norm_rel.startswith("external/"):
         return True
     if not include_proof_archive and rel_path.startswith("artifacts/proof/archive/"):
         return True
-    if any(rel_path.startswith(prefix) for prefix in EXCLUDED_PREFIXES):
-        if include_external and rel_path.startswith("external/"):
+    if any(_norm_rel.startswith(prefix) or rel_path.startswith(prefix) for prefix in EXCLUDED_PREFIXES):
+        if include_external and _norm_rel.startswith("external/"):
             return False
         if include_proof_archive and rel_path.startswith("artifacts/proof/archive/"):
             return False

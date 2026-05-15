@@ -28,8 +28,9 @@ artifacts/proof/temp/
 # These directories are present for research, vendored dependencies, or
 # developer tooling. They are NOT part of the release archive and MUST NOT
 # contain runtime product code or secrets.
-# research/   -- third-party research repos (vendored read-only)
-# external/   -- third-party vendored dependencies
+research/
+external/
+Research /
 # tools/CLI-Anything-main  -- external CLI tooling reference
 
 # Exclude any local builds that may be produced inside research subtrees

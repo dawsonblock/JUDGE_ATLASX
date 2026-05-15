@@ -602,6 +602,20 @@ def _write_current_alpha_status_md(repo_root: Path, out_dir: Path, payload: dict
     return str(output_path.relative_to(repo_root))
 
 
+def _source_display_name(source: dict) -> str:
+    """Return the best available display name for a source registry entry.
+
+    Fallback chain: source_name → name → source_key → UNKNOWN_SOURCE.
+    This is robust against stale JSON where an older export omitted one field.
+    """
+    return (
+        source.get("source_name")
+        or source.get("name")
+        or source.get("source_key")
+        or "UNKNOWN_SOURCE"
+    )
+
+
 def _write_source_registry_status_md(
     repo_root: Path,
     out_dir: Path,
@@ -648,7 +662,7 @@ def _write_source_registry_status_md(
             + " | ".join(
                 [
                     str(source.get("source_key", "")),
-                    str(source.get("name", "")),
+                    _source_display_name(source),
                     str(source.get("jurisdiction", "unknown")),
                     f"{source.get('source_class', 'unknown')}/{source.get('source_type', 'unknown')}",
                     str(source.get("automation_status", "unknown")),

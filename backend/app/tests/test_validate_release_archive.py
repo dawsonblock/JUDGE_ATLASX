@@ -157,3 +157,17 @@ def test_validate_release_archive_rejects_archive_validation_log(tmp_path: Path)
         error.startswith("forbidden_secret_file:") and "archive_validation.log" in error
         for error in report["errors"]
     )
+
+
+def test_validate_release_archive_rejects_trailing_whitespace_segment(tmp_path: Path) -> None:
+    module = _load_module()
+    archive = tmp_path / "whitespace-segment.zip"
+    files = _valid_files()
+    # "Research " (trailing space) is the canonical regression from the audit
+    files["JUDGE_ATLAS-main/Research /crawlee-python-master/foo.py"] = "crawlee\n"
+    _write_zip(archive, files)
+
+    report = module.inspect_archive(archive, expected_root="JUDGE_ATLAS-main")
+
+    assert report["valid"] is False
+    assert any(error.startswith("whitespace_path_segment:") for error in report["errors"])

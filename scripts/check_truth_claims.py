@@ -245,6 +245,25 @@ SKIP_SUFFIXES = {
     ".zip",
 }
 
+KNOWN_TOP_LEVEL_DIRS = frozenset({
+    "backend", "frontend", "docs", "scripts", "infra",
+    "demo", "tools", "artifacts", ".github",
+})
+
+
+def _normalize_to_repo_root(rel_path: str) -> str:
+    """Strip an archive-root prefix from rel_path if the first component is
+    not a known repo top-level directory.
+
+    This allows check() to work correctly when invoked with
+    root=parent-of-extracted-archive.
+    """
+    parts = rel_path.split("/", 1)
+    if len(parts) == 2 and parts[0] not in KNOWN_TOP_LEVEL_DIRS:
+        return parts[1]
+    return rel_path
+
+
 TRUTH_SENSITIVE_REL_PATHS = {
     "README.md",
     "CURRENT_STATUS.md",
@@ -289,7 +308,7 @@ def check(root: Path) -> int:
     violations: list[str] = []
     lowered = tuple(phrase.lower() for phrase in BANNED_PHRASES)
     for path in _iter_files(root):
-        rel_path = path.relative_to(root).as_posix()
+        rel_path = _normalize_to_repo_root(path.relative_to(root).as_posix())
         allow_rule = ALLOWED_POLICY_FILES.get(rel_path)
         allowed_phrases = {
             phrase.lower() for phrase in allow_rule.phrases
