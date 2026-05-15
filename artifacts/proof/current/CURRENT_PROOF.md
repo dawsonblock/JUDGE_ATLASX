@@ -108,3 +108,20 @@
 - artifacts/proof/current/SOURCE_REGISTRY_STATUS.md
 - artifacts/proof/current/PROOF_POLICY.md
 - artifacts/proof/current/REPAIR_REPORT.md
+
+## Hardening Pass — Review Status Normalization (applied after commit 58f055d)
+
+8 policy/data bugs fixed across 7 source files; 2 new Alembic migrations added.
+
+| # | Bug | File | Fix |
+|---|-----|------|-----|
+| 1 | `LegalInstrument.review_status` ORM default was wrong ingestion sentinel `"pending"` | `entities.py` | Default changed to literal `"pending_review"` |
+| 2 | Event evidence anchor did not verify linked source is reviewed AND public | `publication_policy.py` | Added `entity_review_status(source) in PUBLIC_REVIEW_STATUSES` + `entity_public_visibility(source)` checks |
+| 3 | `RelationshipEvidence` had no `review_status` column; policy fell through to `None` | `entities.py` | Added `review_status` column; added `relationship_public_status()` helper |
+| 4 | `is_publishable()` / `check_publication_safety()` had no deprecation notices | `publish_rules.py`, `ingestion/publish_rules.py` | Added `.. deprecated::` docstrings pointing to canonical policy functions |
+| 5a | `_legal_context_citations()` did not verify `SourceSnapshot.content_hash IS NOT NULL` | `evidence_chat.py` | Added `SourceSnapshot` join + `content_hash.is_not(None)` filter |
+| 5b | `chat_about_evidence()` allowed `relationship_status="pending"` | `evidence_chat.py` | Removed `"pending"` from allowlist |
+| 6 | `ingestion_identity_hash` indexes were plain non-unique; NULLs broke idempotency | Migrations 0003 + 0004 | Partial unique indexes `WHERE ingestion_identity_hash IS NOT NULL` |
+| 7 | `official_legislation` authority only allowed `ReviewItem`; blocked `LegalInstrument`/`LegalSection` | `ingestion/source_rules.py` | Expanded to `{SourceSnapshot, LegalInstrument, LegalSection, ReviewItem}` |
+| 8 | `LegalInstrument` missing from admin review queue `_review_statements()` | `admin_review.py` | Added `"legal_instrument"` branch + added to default `requested_types` |
+| 9 | `publicMapMarkerSchema.review_status` was `z.string()` — no enum validation | `frontend/lib/schemas/publicMap.ts` | Changed to `z.enum(CANONICAL_REVIEW_STATUSES)` with exported const array and type |

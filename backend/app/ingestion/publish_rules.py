@@ -1,6 +1,12 @@
 """Ingestion-layer publication policy bridge.
 
 Thin adapter between the ingestor pipeline and app.services.publish_rules.
+This module is for **ingestion-time** tier classification only.
+
+For display/API publication decisions use the canonical policy:
+  ``app.policies.publication_policy.can_show_public_entity``
+  ``app.policies.publication_policy.can_publish_entity``
+
 Exposes:
   - PublicationDecision: typed result of publication gate evaluation
   - evaluate_publication_policy(record): run gate, return PublicationDecision

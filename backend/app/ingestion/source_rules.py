@@ -27,7 +27,7 @@ from typing import Sequence
 _AUTHORITY_ALLOWED_CREATES: dict[str, frozenset[str]] = {
     "official_open_data": frozenset({"CrimeIncident", "ReviewItem"}),
     "official_statistics": frozenset({"CrimeIncident", "ReviewItem"}),
-    "official_legislation": frozenset({"ReviewItem"}),
+    "official_legislation": frozenset({"SourceSnapshot", "LegalInstrument", "LegalSection", "ReviewItem"}),
     "official_court_record": frozenset({"ReviewItem"}),
     "official_government": frozenset({"CrimeIncident", "ReviewItem"}),
     "news_context": frozenset({"ReviewItem"}),

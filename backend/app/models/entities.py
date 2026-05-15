@@ -456,7 +456,11 @@ class LegalInstrument(Base, TimestampMixin):
         String(50), nullable=False, default="1.0", server_default="1.0"
     )
     review_status: Mapped[str] = mapped_column(
-        String(50), nullable=False, default=PENDING, server_default=PENDING, index=True
+        String(50),
+        nullable=False,
+        default="pending_review",
+        server_default="pending_review",
+        index=True,
     )
     public_visibility: Mapped[str] = mapped_column(
         String(50), nullable=False, default="private", server_default="private", index=True
@@ -1124,6 +1128,11 @@ class RelationshipEvidence(Base):
     verification_status: Mapped[str | None] = mapped_column(String(50), nullable=True)
     relationship_status: Mapped[str | None] = mapped_column(
         String(50), nullable=True, server_default=PENDING
+    )
+    # Canonical review status used by publication_policy; derived from
+    # verification_status / relationship_status at record-promotion time.
+    review_status: Mapped[str] = mapped_column(
+        String(50), nullable=False, default="pending_review", server_default="pending_review", index=True
     )
     auto_publish_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
 

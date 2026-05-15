@@ -155,7 +155,7 @@ def test_event_requires_public_legal_source_anchor(db_session):
 
     blocked = can_publish_entity(db_session, "event", event)
     assert blocked.allowed is False
-    assert "event_missing_public_source_link" in blocked.reasons
+    assert "event_missing_public_reviewed_source_link" in blocked.reasons
 
     legal_source = LegalSource(
         source_id=f"ls-{_suffix()}",

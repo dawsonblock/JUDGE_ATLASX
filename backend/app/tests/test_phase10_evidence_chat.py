@@ -64,6 +64,7 @@ def _make_evidence(
     evidence_source: str = "mock_source",
     excerpt: str | None = None,
     confidence: float = 0.8,
+    relationship_status: str | None = "approved",
 ) -> RelationshipEvidence:
     ev = RelationshipEvidence(
         from_entity_type=entity_type,
@@ -77,6 +78,7 @@ def _make_evidence(
         extracted_by="test_runner",
         confidence=confidence,
         public_visibility=True,
+        relationship_status=relationship_status,
     )
     db.add(ev)
     db.flush()
@@ -202,6 +204,7 @@ def test_case_id_evidence_returned(db_session):
         extracted_by="test_runner",
         confidence=0.9,
         public_visibility=True,
+        relationship_status="approved",
     )
     db_session.add(ev)
     db_session.flush()

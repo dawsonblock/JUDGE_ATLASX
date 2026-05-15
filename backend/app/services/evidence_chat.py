@@ -23,6 +23,7 @@ from app.models.entities import (
     LegalInstrument,
     LegalSection,
     RelationshipEvidence,
+    SourceSnapshot,
 )
 from app.policies.publication_policy import PUBLIC_REVIEW_STATUSES
 from app.services.text import normalize_text
@@ -95,10 +96,12 @@ def _legal_context_citations(
     rows = (
         db.query(LegalSection, LegalInstrument)
         .join(LegalInstrument, LegalInstrument.id == LegalSection.legal_instrument_id)
+        .join(SourceSnapshot, SourceSnapshot.id == LegalInstrument.raw_snapshot_id)
         .filter(
             LegalInstrument.review_status.in_(PUBLIC_REVIEW_STATUSES),
             LegalInstrument.public_visibility == "public",
             LegalInstrument.raw_snapshot_id.is_not(None),
+            SourceSnapshot.content_hash.is_not(None),
         )
         .limit(50)
         .all()
@@ -283,7 +286,7 @@ def chat_about_evidence(
         or_(
             RelationshipEvidence.relationship_status.is_(None),
             RelationshipEvidence.relationship_status.in_(
-                ["pending", "approved", "verified"]
+                ["approved", "verified"]
             ),
         ),
         or_(

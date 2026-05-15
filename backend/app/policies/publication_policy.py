@@ -79,6 +79,24 @@ def entity_review_status(entity: Any) -> str | None:
     return str(status) if status is not None else None
 
 
+def relationship_public_status(entity: Any) -> str:
+    """Derive a canonical review status from RelationshipEvidence workflow fields.
+
+    Used at record-promotion time to set the ``review_status`` column.
+    The column is the authoritative publication gate; this function is the
+    upgrade path only — it must not be used as a runtime bypass.
+    """
+    verification = getattr(entity, "verification_status", None)
+    relationship = getattr(entity, "relationship_status", None)
+    if verification in ("rejected",) or relationship in ("rejected",):
+        return REJECTED
+    if verification == "verified" and relationship in ("verified", "approved"):
+        return VERIFIED_COURT_RECORD
+    if verification == "reviewed":
+        return OFFICIAL_POLICE_OPEN_DATA_REPORT
+    return PENDING_REVIEW
+
+
 def entity_public_visibility(entity: Any) -> bool:
     if isinstance(entity, CrimeIncident) or hasattr(entity, "is_public"):
         value = getattr(entity, "is_public", False)
@@ -130,9 +148,15 @@ def evidence_anchor_status(
     if entity_type == "event" or isinstance(entity, Event):
         for link in getattr(entity, "source_links", []) or []:
             source = getattr(link, "source", None)
-            if source and getattr(source, "url", None) and getattr(source, "url_hash", None):
+            if (
+                source
+                and getattr(source, "url", None)
+                and getattr(source, "url_hash", None)
+                and entity_review_status(source) in PUBLIC_REVIEW_STATUSES
+                and entity_public_visibility(source)
+            ):
                 return True, []
-        return False, ["event_missing_public_source_link"]
+        return False, ["event_missing_public_reviewed_source_link"]
 
     if entity_type == "crime_incident" or isinstance(entity, CrimeIncident):
         ok, reasons = _snapshot_has_hash(db, getattr(entity, "source_snapshot_id", None))

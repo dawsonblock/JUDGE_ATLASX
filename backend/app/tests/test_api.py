@@ -191,6 +191,9 @@ def test_unknown_court_event_appears_in_events_but_not_map(client):
         event = db.scalar(db.query(Event).filter_by(event_id=result.event_id).statement)
         event.review_status = "verified_court_record"
         event.public_visibility = True
+        for link in event.source_links:
+            link.source.review_status = "verified_court_record"
+            link.source.public_visibility = True
         db.commit()
         event_id = result.event_id
 
@@ -898,6 +901,9 @@ def test_persisted_docket_text_defendant_name_redacted_in_public_event(client):
         event_obj = db.scalar(select(Event).where(Event.event_id == result.event_id))
         event_obj.review_status = "verified_court_record"
         event_obj.public_visibility = True
+        for link in event_obj.source_links:
+            link.source.review_status = "verified_court_record"
+            link.source.public_visibility = True
         db.commit()
         event_id = result.event_id
 

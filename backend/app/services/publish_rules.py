@@ -267,10 +267,18 @@ def public_visibility_for_tier(tier: str) -> bool:
 
 
 def is_publishable(record: Any) -> tuple[bool, list[str]]:
-    """Check if a record can be published publicly per product safety rules.
+    """Check if a record passes pre-ingestion tier classification gates.
 
-    A record may be public only if:
-    - review_status is approved (in PUBLIC_REVIEW_STATUSES)
+    .. deprecated::
+        This helper is for **ingestion-time** tier classification only.
+        It must NOT be called from display routes, serializers, or API
+        responses that gate public access.  For display/publication
+        decisions use :func:`app.policies.publication_policy.can_show_public_entity`
+        or :func:`app.policies.publication_policy.can_publish_entity` instead.
+        Those functions are the canonical source of truth for publication.
+
+    A record passes if:
+    - review_status is in PUBLIC_REVIEW_STATUSES
     - source_url exists
     - source_tier is one of VALID_SOURCE_TIERS
     - location_precision is not in BLOCKED_PRECISION_LEVELS
@@ -344,8 +352,13 @@ def is_publishable(record: Any) -> tuple[bool, list[str]]:
 def check_publication_safety(record: Any) -> dict:
     """Run full publication safety check and return detailed report.
 
+    .. deprecated::
+        Wraps :func:`is_publishable` which is for ingestion-time tier
+        classification only.  For API responses that gate public display
+        use :func:`app.policies.publication_policy.can_show_public_entity`.
+
     This is a more verbose version of is_publishable() that returns
-    a full report suitable for API responses or logging.
+    a full report suitable for logging during ingestion.
     """
     is_ok, reasons = is_publishable(record)
 

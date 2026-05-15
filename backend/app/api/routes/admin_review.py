@@ -129,6 +129,13 @@ def _review_statements(
             data_stmt = data_stmt.where(LegalSource.source_type == source_type)
             count_stmt = count_stmt.where(LegalSource.source_type == source_type)
         return data_stmt, count_stmt
+    if entity_type == "legal_instrument":
+        data_stmt = select(LegalInstrument).order_by(LegalInstrument.id)
+        count_stmt = select(LegalInstrument.id)
+        if review_status:
+            data_stmt = data_stmt.where(LegalInstrument.review_status == review_status)
+            count_stmt = count_stmt.where(LegalInstrument.review_status == review_status)
+        return data_stmt, count_stmt
     raise HTTPException(status_code=404, detail="Unsupported entity type")
 
 
@@ -145,7 +152,7 @@ def admin_review_queue(
     db: Session = Depends(get_db),
 ):
     requested_types = (
-        [entity_type] if entity_type else ["event", "crime_incident", "source"]
+        [entity_type] if entity_type else ["event", "crime_incident", "source", "legal_instrument"]
     )
     total_count = 0
     items: list[dict] = []
