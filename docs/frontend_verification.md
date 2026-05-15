@@ -1,65 +1,65 @@
-# Frontend Verification Status (HISTORICAL)
+# Frontend Verification
 
-> ⚠️ **This is a historical artifact.** Committed proof logs reflect the state at the time of commit.
-> For current verification status, run `./scripts/verify_frontend.sh` from a clean checkout.
+## Node Version Requirement
 
-**Date:** 2025-04-28
+The frontend requires **Node 20.x**.  `frontend/package.json` specifies
+`engines: {"node": "20.x"}` and `frontend/.npmrc` sets `engine-strict=true`,
+which causes `npm ci` to fail if a non-matching Node version is active.
 
-## Environment
-
-- Node version required: 20 (`.nvmrc` = `20`, `Dockerfile` uses `node:20-slim`)
-- Node available in this environment: v24.14.0 (system)
-- `npm` available: No (`npm: command not found` in this environment)
-
-## Verification Steps
-
-The verification script is `scripts/verify_frontend.sh` which runs:
-
-1. `node --version` — Node 20+ check
-2. `npm ci` — clean install from `package-lock.json`
-3. `npm run lint` — ESLint via `next lint`
-4. `npm run typecheck` — `tsc --noEmit`
-5. `npm run build` — Next.js production build
-
-## Known Gap
-
-`npm` is not available in the current local runtime (`codex-primary-runtime`).
-Frontend verification **cannot be reproduced** in this environment.
-
-Verified state from Docker Dockerfile (`frontend/Dockerfile`):
-- Uses `node:20-slim` base image
-- Runs `npm ci` then `npm run build`
-- This is the canonical verification path
-
-## To Verify Locally
+## Local Setup
 
 ```bash
-nvm use 20   # or: node --version must show v20.x
+nvm install 20    # skip if Node 20 is already installed
+nvm use 20        # activate Node 20 for this shell session
+node --version    # should print v20.x.x
+```
+
+## Manual Verification Steps
+
+```bash
 cd frontend
 npm ci
 npm run lint
 npm run typecheck
+npm run test:contracts
 npm run build
 ```
 
-Or run the Docker build:
+## Common Failure: Wrong Node Version on PATH
+
+If you see `npm warn EBADENGINE` or a Node engine error, your shell is using a
+different Node (often the system default — e.g. Node 24.x from a Homebrew or
+system install).
+
+Always run `nvm use 20` **before** any frontend work in this repository.
+
+To auto-switch when entering the project directory, add to `~/.zshrc`:
 
 ```bash
-docker compose build frontend --no-cache
+autoload -U add-zsh-hook
+load-nvmrc() {
+  local nvmrc_path
+  nvmrc_path="$(nvm_find_nvmrc)"
+  if [ -n "$nvmrc_path" ]; then
+    nvm use
+  fi
+}
+add-zsh-hook chpwd load-nvmrc
+load-nvmrc
 ```
 
-## What Was Checked (Static Review)
+## CI
 
-| Check | Result |
-|---|---|
-| `.nvmrc` specifies Node 20 | PASS |
-| `Dockerfile` uses `node:20-slim` | PASS |
-| `package.json` has `lint` script | PASS |
-| `package.json` has `typecheck` script | PASS |
-| `package.json` has `build` script | PASS |
-| `tsconfig.json` present and valid | PASS |
-| `.eslintrc.json` present | PASS |
-| No banned privacy terms in TSX components (static grep) | PASS (see Phase 9) |
-| `SourcePanel.tsx` contains source-scope disclaimer | PASS (see Phase 9) |
-| Admin review page uses `X-JTA-Admin-Token` header | PASS |
-| Map component filters `repeat_offender_indicator` by name | PASS |
+GitHub Actions (`quality-gate.yml`) pins `node-version: "20"` via `actions/setup-node@v4`.
+
+Local `release_gate.py` sources nvm and runs `nvm use 20` before each npm step,
+emitting `BLOCKED_NODE_VERSION` and returning exit 1 if Node 20 is not installed
+under nvm.
+
+## Reference
+
+- `.nvmrc` — specifies `20`
+- `frontend/package.json` — `engines: {"node": "20.x"}`
+- `frontend/.npmrc` — `engine-strict=true`
+- `frontend/Dockerfile` — `FROM node:20-slim`
+

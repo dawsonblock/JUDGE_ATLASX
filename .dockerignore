@@ -1,5 +1,6 @@
-# External vendor / workspace siblings — never include in any image
+# External vendor / workspace siblings / research — never include in any image
 external/
+research/
 
 # Python artefacts
 __pycache__/

@@ -58,6 +58,8 @@ FORBIDDEN_FILE_NAMES = (
     ".env.development",
     "id_rsa",
     "id_ed25519",
+    "archive_validation.md",
+    "archive_validation.log",
 )
 FORBIDDEN_FILE_SUFFIXES = (
     ".pem",
@@ -166,6 +168,8 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
                     report["errors"].append(f"forbidden_path:{info.filename}")
                 if not allow_external and "external" in parts[1:]:
                     report["errors"].append(f"forbidden_external_path:{info.filename}")
+                if "research" in parts[1:]:
+                    report["errors"].append(f"forbidden_research_path:{info.filename}")
                 rel_path = "/".join(parts[1:]) if len(parts) > 1 else info.filename
                 if any(rel_path.startswith(prefix) for prefix in FORBIDDEN_RELATIVE_PREFIXES):
                     report["errors"].append(f"forbidden_release_surface_path:{info.filename}")

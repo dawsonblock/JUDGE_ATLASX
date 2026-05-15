@@ -100,6 +100,11 @@ jobs:
           source ./backend/.venv/bin/activate
           python scripts/check_no_generated_files.py --root .
 
+      - name: Guard — path hygiene
+        run: |
+          source ./backend/.venv/bin/activate
+          python scripts/check_path_hygiene.py --root .
+
       - name: Check no committed bytecode
         run: |
           chmod +x scripts/check_no_pyc.sh

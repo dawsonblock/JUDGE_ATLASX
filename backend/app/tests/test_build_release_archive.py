@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
+import sys
 import zipfile
+from contextlib import redirect_stdout
 from pathlib import Path
 
 
@@ -64,3 +67,45 @@ def test_build_release_archive_excludes_external_and_proof_archive_by_default(tm
         assert manifest["proof_path"] == "artifacts/proof/current"
         assert isinstance(manifest["archive_sha256"], str)
         assert len(manifest["archive_sha256"]) == 64
+
+
+def test_dry_run_does_not_write_zip(tmp_path: Path) -> None:
+    module = _load_module()
+    root = tmp_path / "repo"
+    _seed_repo(root)
+    module.REPO_ROOT = root
+
+    output = tmp_path / "dist" / "dry.zip"
+    old_argv = sys.argv
+    try:
+        sys.argv = ["prog", "--dry-run", "--output", str(output)]
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            ret = module.main()
+    finally:
+        sys.argv = old_argv
+
+    assert ret == 0
+    assert not output.exists(), "dry-run must not write the zip file"
+
+
+def test_archive_validation_files_excluded(tmp_path: Path) -> None:
+    module = _load_module()
+    root = tmp_path / "repo"
+    _seed_repo(root)
+    _write_file(root / "artifacts" / "proof" / "current" / "archive_validation.md", "val output\n")
+    _write_file(root / "artifacts" / "proof" / "current" / "archive_validation.log", "log output\n")
+    module.REPO_ROOT = root
+
+    output = tmp_path / "dist" / "clean.zip"
+    module.build_archive(
+        output=output,
+        root_name="JUDGE_ATLAS-main",
+        include_external=False,
+        include_proof_archive=False,
+    )
+
+    with zipfile.ZipFile(output, "r") as zf:
+        names = set(zf.namelist())
+        assert not any("archive_validation.md" in n for n in names)
+        assert not any("archive_validation.log" in n for n in names)

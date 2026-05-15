@@ -1139,7 +1139,13 @@ def main() -> int:
     if backend_venv_python.exists():
         python_exe = str(backend_venv_python)
     else:
-        python_exe = sys.executable
+        print(
+            f"[release_gate] ERROR: backend venv not found at {backend_venv_python}\n"
+            "[release_gate] Run: cd backend && uv venv && uv pip install -e '.[test]'\n"
+            "[release_gate] BLOCKED_BACKEND_VENV",
+            file=sys.stderr,
+        )
+        return 1
     backend_python_version = (
         subprocess.run(
             [python_exe, "-c", "import sys; print(sys.version.split()[0])"],
@@ -1337,45 +1343,81 @@ def main() -> int:
         GateStepSpec(
             "frontend_node_gate",
             "frontend_node_gate.log",
-            [python_exe, "scripts/check_frontend_node_gate.py", "--expected-major", "20"],
+            [
+                "bash", "-lc",
+                (
+                    'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
+                    f" {python_exe} scripts/check_frontend_node_gate.py --expected-major 20"
+                ),
+            ],
         ),
         GateStepSpec(
             "frontend_install",
             "frontend_install.log",
-            ["npm", "ci", "--prefix", str(repo_root / "frontend")],
+            [
+                "bash", "-lc",
+                (
+                    'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
+                    " npm ci --prefix frontend"
+                ),
+            ],
             timeout_seconds=900,
         ),
         GateStepSpec(
             "frontend_lint",
             "frontend_lint.log",
-            ["npm", "run", "lint", "--prefix", str(repo_root / "frontend")],
+            [
+                "bash", "-lc",
+                (
+                    'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
+                    " npm run lint --prefix frontend"
+                ),
+            ],
         ),
         GateStepSpec(
             "frontend_typecheck",
             "frontend_typecheck.log",
             [
-                "npm",
-                "run",
-                "typecheck",
-                "--prefix",
-                str(repo_root / "frontend"),
+                "bash", "-lc",
+                (
+                    'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
+                    " npm run typecheck --prefix frontend"
+                ),
             ],
         ),
         GateStepSpec(
             "frontend_contracts",
             "frontend_contracts.log",
             [
-                "npm",
-                "run",
-                "test:contracts",
-                "--prefix",
-                str(repo_root / "frontend"),
+                "bash", "-lc",
+                (
+                    'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
+                    " npm run test:contracts --prefix frontend"
+                ),
             ],
         ),
         GateStepSpec(
             "frontend_build",
             "frontend_build.log",
-            ["npm", "run", "build", "--prefix", str(repo_root / "frontend")],
+            [
+                "bash", "-lc",
+                (
+                    'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
+                    " npm run build --prefix frontend"
+                ),
+            ],
             timeout_seconds=900,
         ),
         GateStepSpec(

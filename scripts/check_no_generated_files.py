@@ -60,6 +60,8 @@ SKIP_DIRS: frozenset[str] = frozenset({
     "venv",
     ".nox",
     ".tox",
+    "research",
+    "external",
 })
 
 

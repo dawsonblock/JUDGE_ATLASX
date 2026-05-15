@@ -90,6 +90,8 @@ EXCLUDED_FILE_NAMES = {
     "Thumbs.db",
     "id_rsa",
     "id_ed25519",
+    "archive_validation.md",
+    "archive_validation.log",
 }
 TEXT_REDACT_SUFFIXES = {".md", ".json", ".txt", ".yml", ".yaml", ".toml"}
 LOCAL_PATH_PATTERNS = (
@@ -363,8 +365,31 @@ def main() -> int:
         action="store_true",
         help="Include artifacts/proof/archive/ in archive",
     )
+    parser.add_argument("--dry-run", action="store_true", help="List files that would be archived without writing")
     parser.add_argument("--json", action="store_true", help="Print JSON output")
     args = parser.parse_args()
+
+    if args.dry_run:
+        files, included_top_level, excluded_top_level = _collect_files(
+            REPO_ROOT,
+            include_external=args.include_external,
+            include_proof_archive=args.include_proof_archive,
+        )
+        result = {
+            "dry_run": True,
+            "root_name": args.root_name,
+            "file_count": len(files),
+            "included_top_level_paths": sorted(included_top_level),
+            "excluded_top_level_paths": sorted(excluded_top_level),
+            "files": [_normalize(f.relative_to(REPO_ROOT)) for f in files],
+        }
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            print(f"[dry-run] Would archive {result['file_count']} files under root '{args.root_name}'")
+            for f in result["files"]:
+                print(f"  {f}")
+        return 0
 
     output = Path(args.output).resolve()
     result = build_archive(

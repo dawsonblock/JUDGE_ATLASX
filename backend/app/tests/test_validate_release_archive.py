@@ -112,3 +112,48 @@ def test_validate_release_archive_rejects_env_file(tmp_path: Path) -> None:
 
     assert report["valid"] is False
     assert any(error.startswith("forbidden_secret_file:") for error in report["errors"])
+
+
+def test_validate_release_archive_rejects_research_path(tmp_path: Path) -> None:
+    module = _load_module()
+    archive = tmp_path / "research.zip"
+    files = _valid_files()
+    files["JUDGE_ATLAS-main/research/crawlee-python-master/foo.py"] = "crawlee\n"
+    _write_zip(archive, files)
+
+    report = module.inspect_archive(archive, expected_root="JUDGE_ATLAS-main")
+
+    assert report["valid"] is False
+    assert any(error.startswith("forbidden_research_path:") for error in report["errors"])
+
+
+def test_validate_release_archive_rejects_archive_validation_md(tmp_path: Path) -> None:
+    module = _load_module()
+    archive = tmp_path / "archive-val-md.zip"
+    files = _valid_files()
+    files["JUDGE_ATLAS-main/archive_validation.md"] = "validation output\n"
+    _write_zip(archive, files)
+
+    report = module.inspect_archive(archive, expected_root="JUDGE_ATLAS-main")
+
+    assert report["valid"] is False
+    assert any(
+        error.startswith("forbidden_secret_file:") and "archive_validation.md" in error
+        for error in report["errors"]
+    )
+
+
+def test_validate_release_archive_rejects_archive_validation_log(tmp_path: Path) -> None:
+    module = _load_module()
+    archive = tmp_path / "archive-val-log.zip"
+    files = _valid_files()
+    files["JUDGE_ATLAS-main/archive_validation.log"] = "log output\n"
+    _write_zip(archive, files)
+
+    report = module.inspect_archive(archive, expected_root="JUDGE_ATLAS-main")
+
+    assert report["valid"] is False
+    assert any(
+        error.startswith("forbidden_secret_file:") and "archive_validation.log" in error
+        for error in report["errors"]
+    )

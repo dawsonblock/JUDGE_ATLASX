@@ -23,7 +23,10 @@ if [ "${BACKEND_PYTHON#/}" = "$BACKEND_PYTHON" ]; then
 fi
 
 if [ ! -x "$BACKEND_PYTHON" ]; then
-    BACKEND_PYTHON="$(command -v python3)"
+    echo "[proof_postgis] ERROR: BACKEND_PYTHON not found or not executable: $BACKEND_PYTHON"
+    echo "[proof_postgis] HINT: Run 'cd backend && uv venv && uv pip install -e .[test]'"
+    echo "[proof_postgis] BLOCKED_BACKEND_VENV"
+    exit 1
 fi
 
 mkdir -p "$(dirname "$PROOF_LOG")"
@@ -34,6 +37,11 @@ exec > >(tee "$PROOF_LOG") 2>&1
 echo "[proof_postgis] Log path: $PROOF_LOG"
 echo "[proof_postgis] Backend Python: $BACKEND_PYTHON"
 echo "[proof_postgis] INFO: docker_timeout=${DOCKER_TIMEOUT_SECONDS}s pull_timeout=${PULL_TIMEOUT_SECONDS}s"
+
+echo "[proof_postgis] Stage: Python dependency preflight"
+"$BACKEND_PYTHON" -c "import sqlalchemy, geoalchemy2, psycopg, alembic" \
+    || { echo "[proof_postgis] BLOCKED_MISSING_PYTHON_DEPS: backend .venv is missing required packages (sqlalchemy/geoalchemy2/psycopg/alembic)"; exit 1; }
+echo "[proof_postgis] PASS: Python dependency preflight"
 
 fail_with_reason() {
     local reason="$1"
