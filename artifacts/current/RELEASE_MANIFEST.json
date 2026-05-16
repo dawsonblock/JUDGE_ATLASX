@@ -1,7 +1,7 @@
 {
   "release_mode": "alpha",
-  "generated_at": "2026-05-16T21:04:31.648834+00:00",
-  "git_commit": "505a93ea012837a27127931590a7a12820366133",
+  "generated_at": "2026-05-16T22:55:23.714801+00:00",
+  "git_commit": "5080f68ae80a3640ad9c9eeb63eb29c926c57f44",
   "included_directories": [
     "backend",
     "frontend",
@@ -32,7 +32,7 @@
     "tmp",
     "venv"
   ],
-  "file_count": 920,
+  "file_count": 926,
   "proof_scope": [
     "backend tests",
     "frontend contract tests",

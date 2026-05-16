@@ -39,7 +39,7 @@ PROOF_INPUT_PATTERNS = [
     "docs/DB_PROOF.md",
     "docs/LEGACY_AUTH_REMOVAL_PLAN.md",
     "docs/DEPENDENCY_REMEDIATION_PLAN.md",
-    "docs/FRONTEND_SECURITY_TRIAGE.md",
+    "docs/security/FRONTEND_SECURITY_TRIAGE.md",
     "docs/schema_audit.md",
     "README.md",
     "Makefile",

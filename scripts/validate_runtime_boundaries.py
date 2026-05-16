@@ -224,15 +224,34 @@ def _production_config_violations() -> list[str]:
     return violations
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--static-only",
+        action="store_true",
+        default=False,
+        help=(
+            "Run only dependency-free static checks (import scan, docker context, "
+            "manifest validation, production config). Skips source registry check "
+            "which requires backend dependencies to be installed."
+        ),
+    )
+    args = parser.parse_args(argv if argv is not None else [])
+
     violations: list[str] = []
 
     violations.extend(_scan_python_imports(REPO_ROOT / "backend" / "app"))
     violations.extend(_scan_frontend_imports(REPO_ROOT / "frontend"))
     violations.extend(_docker_context_violations())
     violations.extend(_proof_manifest_violations())
-    violations.extend(_source_registry_violations())
     violations.extend(_production_config_violations())
+
+    if args.static_only:
+        print("[static-only] skipping source registry check (requires backend install)")
+    else:
+        violations.extend(_source_registry_violations())
 
     if violations:
         print("runtime boundary validation: FAIL")
@@ -245,4 +264,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    import sys
+    raise SystemExit(main(sys.argv[1:]))

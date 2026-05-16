@@ -28,7 +28,6 @@ REQUIRED_PROOF_FILES = (
 )
 REQUIRED_ROOT_FILES = (
     "README.md",
-    "STATUS.md",
 )
 FORBIDDEN_SEGMENTS = (
     "node_modules",

@@ -1,0 +1,3 @@
+NPM AUDIT TRIAGE
+vulnerabilities=10
+RESULT: FAIL missing_triage_doc=docs/FRONTEND_SECURITY_TRIAGE.md

@@ -16,7 +16,7 @@ import re
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FRONTEND_DIR = REPO_ROOT / "frontend"
-TRIAGE_DOC = REPO_ROOT / "docs" / "FRONTEND_SECURITY_TRIAGE.md"
+TRIAGE_DOC = REPO_ROOT / "docs" / "security" / "FRONTEND_SECURITY_TRIAGE.md"
 
 
 def _triaged_packages(triage_text: str) -> set[str]:

@@ -24,6 +24,10 @@ coverage/
 artifacts/proof/*.log
 artifacts/proof/temp/
 
+# Release archives — produced by make build-clean-release; never commit
+JUDGE_ATLASX-*.zip
+judge_atlas_*.zip
+
 # ---- Non-shipping / reference trees ----------------------------------------
 # These directories are present for research, vendored dependencies, or
 # developer tooling. They are NOT part of the release archive and MUST NOT

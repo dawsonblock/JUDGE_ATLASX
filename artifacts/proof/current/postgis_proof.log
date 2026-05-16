@@ -163,11 +163,11 @@ Server:
 [proof_postgis] Stage: container start
 [proof_postgis] Starting PostGIS container...
 WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
-9cd6fcb3e4bfe42ae390ad3c91dae777de3df79af76d711739666e5f508d88de
+ef4b94c18c6ca349f654f94c605916c7f223b38eb8cf1115513e7a138d0e2dfc
 [proof_postgis] PASS: container start requested
 [proof_postgis] Stage: pg_isready wait loop
 [proof_postgis] Waiting for Postgres to be ready...
-[proof_postgis] Postgres ready after 4s
+[proof_postgis] Postgres ready after 3s
 [proof_postgis] PASS: pg_isready
 [proof_postgis] Stage: host connectivity wait loop
 [proof_postgis] PASS: host connectivity ready after 6s
@@ -275,7 +275,7 @@ app/tests/test_map_bbox.py::test_bbox_query_does_not_crash_with_postgresql_diale
 [proof_postgis] Stage: evidence snapshot immutability test
 [proof_postgis] Running evidence snapshot immutability proof...
 .................                                                        [100%]
-17 passed in 0.04s
+17 passed in 0.03s
 [proof_postgis] PASS: evidence snapshot immutability test
 [proof_postgis] Stage: cleanup
 [proof_postgis] Cleanup: removing container 'judge_postgis_proof'

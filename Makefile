@@ -1,4 +1,4 @@
-.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup release-zip build-clean-release validate-release-zip
+.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup release-zip build-clean-release validate-release-zip proof-static
 
 backend-install:
 	cd backend && python -m pip install -e ".[test]"
@@ -113,6 +113,12 @@ build-clean-release:
 
 validate-release-zip:
 	@python3 scripts/validate_release_zip.py
+
+# proof-static: dependency-free boundary checks (no backend install required)
+proof-static:
+	@python3 scripts/validate_runtime_boundaries.py --static-only
+	@python3 scripts/check_truth_claims.py --root .
+	@echo "Static boundary checks complete (no backend install required)"
 
 # release-zip: create a distributable archive excluding development artifacts
 release-zip:
