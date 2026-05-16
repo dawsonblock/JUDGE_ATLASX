@@ -1,0 +1,61 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  7%]
+........................................................................ [  9%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+.........................................F
+=================================== FAILURES ===================================
+____________________ test_non_allowlisted_docs_phrase_fails ____________________
+backend/app/tests/test_check_truth_claims.py:24: in test_non_allowlisted_docs_phrase_fails
+    module = _load_module()
+             ^^^^^^^^^^^^^^
+backend/app/tests/test_check_truth_claims.py:14: in _load_module
+    spec.loader.exec_module(module)
+<frozen importlib._bootstrap_external>:936: in exec_module
+    ???
+<frozen importlib._bootstrap_external>:1074: in get_code
+    ???
+<frozen importlib._bootstrap_external>:1004: in source_to_code
+    ???
+<frozen importlib._bootstrap>:241: in _call_with_frames_removed
+    ???
+E     File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/scripts/check_truth_claims.py", line 255
+E       }
+E       ^
+E   SyntaxError: closing parenthesis '}' does not match opening parenthesis '(' on line 136
+=============================== warnings summary ===============================
+app/tests/test_admin_security.py::TestAuditLogging::test_review_actions_need_audit_log
+app/tests/test_admin_security.py::TestAuditLogging::test_admin_api_calls_need_audit_log
+app/tests/test_ai_pipeline.py::test_approved_review_item_can_publish_safe_event
+app/tests/test_ai_pipeline.py::test_blocked_review_item_cannot_publish
+app/tests/test_ai_pipeline.py::test_ai_review_items_use_database_pagination
+app/tests/test_api.py::test_invalid_post_event_foreign_keys_return_422_with_admin_token
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/auth/admin.py:241: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token, authorization)
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_require_admin_token_returns_admin_actor
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_admin_security.py:246: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    else require_admin_token(x_jta_admin_token="test-secret-token")
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_actor_id_is_not_raw_token
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_admin_security.py:266: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token="super-secret-value-12345")
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_actor_id_is_stable_label
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_admin_security.py:350: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token="token-abc")
+
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/security/import_authority.py:51: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/app/tests/test_check_truth_claims.py::test_non_allowlisted_docs_phrase_fails
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 473 passed, 14 warnings in 12.14s

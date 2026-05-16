@@ -1,0 +1,4 @@
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/scripts/check_truth_claims.py", line 255
+    }
+    ^
+SyntaxError: closing parenthesis '}' does not match opening parenthesis '(' on line 136

@@ -1,0 +1,100 @@
+Built clean release archive: /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/judge_atlas_archive.zip
+archive_sha256=d8dd6e17694ea108f0df17df44cbc991c830d731e37629508c9ff2f1757e756b
+file_count=993
+Archive validation written to /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/artifacts/proof/current/archive_validation.md
+PASS
+PASS
+[archive_validation] INFO: archive=/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/judge_atlas_archive.zip
+[archive_validation] INFO: archive_filename=judge_atlas_archive.zip
+[archive_validation] INFO: archive_sha256=d8dd6e17694ea108f0df17df44cbc991c830d731e37629508c9ff2f1757e756b
+[archive_validation] INFO: archive_top_level_dirs=./JUDGE_ATLAS-main
+[archive_validation] INFO: extract_dir=/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/extract
+[archive_validation] PASS: located repository root at /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/extract/JUDGE_ATLAS-main
+[archive_validation] INFO: release_gate.json proof_input_tree_hash=unknown
+  File "/private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/extract/JUDGE_ATLAS-main/scripts/check_truth_claims.py", line 142
+    "docs/legal/LEGAL_RISK_BOUNDARIES.md": AllowedPolicyPhrase(
+                                         ^
+SyntaxError: positional argument follows keyword argument
+[archive_validation] FAIL: check_false_claims rc=1
+  File "/private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/extract/JUDGE_ATLAS-main/scripts/check_truth_claims.py", line 142
+    "docs/legal/LEGAL_RISK_BOUNDARIES.md": AllowedPolicyPhrase(
+                                         ^
+SyntaxError: positional argument follows keyword argument
+[archive_validation] FAIL: check_truth_claims rc=1
+Traceback (most recent call last):
+  File "/private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/extract/JUDGE_ATLAS-main/scripts/check_proof_freshness.py", line 428, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/extract/JUDGE_ATLAS-main/scripts/check_proof_freshness.py", line 377, in main
+    result = validate_stored_manifest(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/extract/JUDGE_ATLAS-main/scripts/check_proof_freshness.py", line 226, in validate_stored_manifest
+    discovered_file_list = discover_proof_input_files(repo_root)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/extract/JUDGE_ATLAS-main/scripts/check_proof_freshness.py", line 154, in discover_proof_input_files
+    for rel in _load_truth_claim_scanned_paths(repo_root):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/extract/JUDGE_ATLAS-main/scripts/check_proof_freshness.py", line 125, in _load_truth_claim_scanned_paths
+    spec.loader.exec_module(module)
+  File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 1074, in get_code
+  File "<frozen importlib._bootstrap_external>", line 1004, in source_to_code
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/extract/JUDGE_ATLAS-main/scripts/check_truth_claims.py", line 142
+    "docs/legal/LEGAL_RISK_BOUNDARIES.md": AllowedPolicyPhrase(
+                                         ^
+SyntaxError: positional argument follows keyword argument
+[archive_validation] FAIL: check_proof_freshness rc=1
+Traceback (most recent call last):
+  File "/private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/extract/JUDGE_ATLAS-main/scripts/check_proof_freshness.py", line 428, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/extract/JUDGE_ATLAS-main/scripts/check_proof_freshness.py", line 377, in main
+    result = validate_stored_manifest(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/extract/JUDGE_ATLAS-main/scripts/check_proof_freshness.py", line 226, in validate_stored_manifest
+    discovered_file_list = discover_proof_input_files(repo_root)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/extract/JUDGE_ATLAS-main/scripts/check_proof_freshness.py", line 154, in discover_proof_input_files
+    for rel in _load_truth_claim_scanned_paths(repo_root):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/extract/JUDGE_ATLAS-main/scripts/check_proof_freshness.py", line 125, in _load_truth_claim_scanned_paths
+    spec.loader.exec_module(module)
+  File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 1074, in get_code
+  File "<frozen importlib._bootstrap_external>", line 1004, in source_to_code
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8UzMW4UE9d/extract/JUDGE_ATLAS-main/scripts/check_truth_claims.py", line 142
+    "docs/legal/LEGAL_RISK_BOUNDARIES.md": AllowedPolicyPhrase(
+                                         ^
+SyntaxError: positional argument follows keyword argument
+[archive_validation] FAIL: check_proof_freshness_strict rc=1
+OK: No committed bytecode files
+[archive_validation] PASS: check_no_pyc
+OK: 2 experimental package(s) have NOT_RUNTIME sentinel.
+OK: No unauthorised runtime imports from experimental packages.
+OK: No imports from external sub-repo packages found.
+[archive_validation] PASS: check_external_boundaries
+OK: 2 experimental package(s) have NOT_RUNTIME sentinel.
+OK: No unauthorised runtime imports from experimental packages.
+OK: No imports from external sub-repo packages found.
+[archive_validation] PASS: check_repo_boundaries
+OK: 14 adapter file(s) checked — no direct network client imports found.
+OK: No unauthorised runtime imports from experimental packages found.
+OK: Ingestion tree checked — no unauthorised direct network client imports found outside allowlisted modules.
+[archive_validation] PASS: check_no_direct_ingestion_network_clients
+PASS  26 source(s) across 1 file(s) validated OK
+[archive_validation] PASS: validate_workflows
+[archive_validation] PASS: required_proof_manifest
+[archive_validation] PASS: required_release_gate
+[archive_validation] PASS: required_release_readiness
+[archive_validation] PASS: required_current_alpha_status
+[archive_validation] PASS: required_source_registry_status
+[archive_validation] PASS: required_proof_policy
+[archive_validation] PASS: forbid_python_bytecode
+[archive_validation] PASS: forbid_pycache_dirs
+[archive_validation] PASS: forbid_backend_venv
+[archive_validation] PASS: forbid_repo_venv
+[archive_validation] PASS: forbid_frontend_node_modules
+[archive_validation] PASS: forbid_repo_node_modules
+[archive_validation] PASS: forbid_git_dir

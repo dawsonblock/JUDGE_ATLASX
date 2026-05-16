@@ -28,6 +28,11 @@ artifacts/proof/temp/
 JUDGE_ATLASX-*.zip
 judge_atlas_*.zip
 
+# Proof-generated artifacts — produced by make proof; never commit
+REPAIR_REPORT.md
+*_PROOF.md
+*_PROOF_*.md
+
 # ---- Non-shipping / reference trees ----------------------------------------
 # These directories are present for research, vendored dependencies, or
 # developer tooling. They are NOT part of the release archive and MUST NOT

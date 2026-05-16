@@ -140,6 +140,13 @@ ALLOWED_POLICY_FILES: dict[str, AllowedPolicyPhrase] = {
         ),
         phrases=("criminal record",),
     ),
+    "docs/legal/LEGAL_RISK_BOUNDARIES.md": AllowedPolicyPhrase(
+        reason=(
+            "Explicitly states what the platform is NOT "
+            "(not a criminal records registry). Canonical location."
+        ),
+        phrases=("criminal record",),
+    ),
     "docs/RELEASE_BLOCKERS.md": AllowedPolicyPhrase(
         reason=(
             "Blocker item states these scores MUST have "
@@ -157,13 +164,6 @@ ALLOWED_POLICY_FILES: dict[str, AllowedPolicyPhrase] = {
             "statutory term, not a platform claim."
         ),
         phrases=("is a criminal", "criminal offence"),
-    ),
-    "docs/security/LEGAL_RISK_BOUNDARIES.md": AllowedPolicyPhrase(
-        reason=(
-            "Security/legal boundaries doc explicitly states what the platform"
-            " is NOT (not a criminal records registry)."
-        ),
-        phrases=("criminal record",),
     ),
     "docs/runtime/AI_LIMITATIONS.md": AllowedPolicyPhrase(
         reason="Runtime limitations doc documents prohibited outputs.",

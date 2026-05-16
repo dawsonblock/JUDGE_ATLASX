@@ -1,0 +1,4 @@
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/scripts/check_truth_claims.py", line 142
+    "docs/legal/LEGAL_RISK_BOUNDARIES.md": AllowedPolicyPhrase(
+                                         ^
+SyntaxError: positional argument follows keyword argument

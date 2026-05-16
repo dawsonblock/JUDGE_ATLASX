@@ -1,15 +1,15 @@
 # Archive Validation
 
-- validated_at_utc: 2026-05-16T23:11:36.541751+00:00
-- archive: /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.uhBlLjjQHG/judge_atlas_archive.zip
-- archive_sha256: 230915a3afff28984be4a3fe4e4c0b71971d5836f402b083ba2e4c5a02dad294
+- validated_at_utc: 2026-05-16T23:35:05.183222+00:00
+- archive: /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.eYlS5TjcH0/judge_atlas_archive.zip
+- archive_sha256: 2430547978dada0facaf4e0d9917ef899d9b1105f760a2de0a20a7d410ed66dc
 - expected_root: JUDGE_ATLAS-main
 - actual_root: JUDGE_ATLAS-main
 - top_level_roots: JUDGE_ATLAS-main
 - root_match: yes
 - valid: PASS
-- compressed_size_bytes: 1771125
-- uncompressed_size_bytes: 6447878
+- compressed_size_bytes: 1772372
+- uncompressed_size_bytes: 6450222
 
 ## Errors
 
@@ -24,7 +24,7 @@
 | JUDGE_ATLAS-main/frontend/tsconfig.tsbuildinfo | 153828 | 47467 |
 | JUDGE_ATLAS-main/backend/app/models/entities.py | 75663 | 11985 |
 | JUDGE_ATLAS-main/scripts/release_gate.py | 72841 | 14056 |
-| JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 66694 | 10296 |
+| JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 66690 | 10302 |
 | JUDGE_ATLAS-main/backend/app/ingestion/sources/canada_saskatchewan_sources.yaml | 44787 | 6232 |
 | JUDGE_ATLAS-main/backend/app/tests/test_api.py | 43068 | 7429 |
 | JUDGE_ATLAS-main/backend/app/tests/test_ingestion_runtime.py | 38018 | 5725 |
@@ -46,9 +46,9 @@
 |---|---:|
 | backend | 4406965 |
 | frontend | 844423 |
-| docs | 550065 |
-| scripts | 428266 |
-| artifacts | 137196 |
+| docs | 552431 |
+| scripts | 428253 |
+| artifacts | 137187 |
 | .github | 29006 |
 | demo | 26537 |
 | infra | 17264 |
