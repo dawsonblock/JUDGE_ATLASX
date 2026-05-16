@@ -23,6 +23,7 @@ FORBIDDEN_MARKERS = [
     "external_reference/",
     "artifacts/old/",
     "artifacts/archive/",
+    "artifacts/history/",
     "generated_logs/",
     "tmp/",
     "cache/",
@@ -36,6 +37,8 @@ FORBIDDEN_MARKERS = [
     ".venv/",
     "venv/",
     "docs/archive/",
+    "legacy_disabled/",
+    "reference_only/",
 ]
 
 

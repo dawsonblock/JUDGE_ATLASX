@@ -1,7 +1,7 @@
 {
   "release_mode": "alpha",
-  "generated_at": "2026-05-16T22:55:23.714801+00:00",
-  "git_commit": "5080f68ae80a3640ad9c9eeb63eb29c926c57f44",
+  "generated_at": "2026-05-16T23:11:55.231167+00:00",
+  "git_commit": "7051c4c4ae28a176853ddc9daffd0967894edcc6",
   "included_directories": [
     "backend",
     "frontend",
@@ -19,6 +19,7 @@
     ".venv",
     "__pycache__",
     "artifacts/archive",
+    "artifacts/history",
     "artifacts/old",
     "cache",
     "coverage",
@@ -27,12 +28,17 @@
     "duplicate_status_docs",
     "external_reference",
     "generated_logs",
+    "legacy_disabled",
     "node_modules",
     "old_phase_reports",
+    "reference_only",
+    "reports",
+    "research",
+    "skills",
     "tmp",
     "venv"
   ],
-  "file_count": 926,
+  "file_count": 927,
   "proof_scope": [
     "backend tests",
     "frontend contract tests",

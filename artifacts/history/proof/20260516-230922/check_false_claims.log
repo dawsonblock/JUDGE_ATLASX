@@ -1,0 +1,2 @@
+ERROR: unsupported platform claim phrases detected:
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/ai/narrative_pattern_assistance.py:28: unsupported claim phrase 'criminal history'

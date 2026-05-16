@@ -91,10 +91,17 @@ ALLOWED_POLICY_FILES: dict[str, AllowedPolicyPhrase] = {
             "danger_score",
         ),
     ),
-    "backend/app/ai/narrative_detection.py": AllowedPolicyPhrase(
+    "backend/app/ai/narrative_pattern_assistance.py": AllowedPolicyPhrase(
         reason=(
             "Detects prohibited phrases spoken by other sources - detection "
-            "list, not assertion."
+            "list, not assertion (canonical implementation)."
+        ),
+        phrases=("criminal history",),
+    ),
+    "backend/app/ai/narrative_detection.py": AllowedPolicyPhrase(
+        reason=(
+            "Backward-compatibility shim for narrative_pattern_assistance.py - "
+            "detects prohibited phrases spoken by other sources."
         ),
         phrases=("criminal history",),
     ),

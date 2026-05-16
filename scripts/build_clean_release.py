@@ -36,6 +36,7 @@ EXCLUDED_DIR_MARKERS = {
     "external_reference",
     "artifacts/old",
     "artifacts/archive",
+    "artifacts/history",
     "generated_logs",
     "tmp",
     "cache",
@@ -51,6 +52,11 @@ EXCLUDED_DIR_MARKERS = {
     ".venv",
     "venv",
     "docs/archive",
+    "legacy_disabled",
+    "reference_only",
+    "reports",
+    "research",
+    "skills",
 }
 
 EXCLUDED_FILE_SUFFIXES = {
