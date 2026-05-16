@@ -1,17 +1,21 @@
 """Record human review decisions on ReviewItem rows."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from sqlalchemy.orm import Session
-
 from app.models.entities import LegalInstrument, ReviewItem, SourceRegistry
 from app.policies.publication_policy import PENDING_REVIEW
+from app.policies.state_model import (
+    ReviewQueueDecision,
+    normalize_review_queue_decision,
+)
+from sqlalchemy.orm import Session
 
-APPROVED = "approved"
-REJECTED = "rejected"
-FLAGGED = "flagged"
+APPROVED = ReviewQueueDecision.APPROVED.value
+REJECTED = ReviewQueueDecision.REJECTED.value
+FLAGGED = ReviewQueueDecision.FLAGGED.value
 VALID_DECISIONS = frozenset({APPROVED, REJECTED, FLAGGED})
 
 
@@ -35,21 +39,28 @@ def record_decision(
 
     Returns ReviewDecisionResult with ok=False if item not found or decision invalid.
     """
-    if decision not in VALID_DECISIONS:
+    normalized_decision = normalize_review_queue_decision(decision)
+    if normalized_decision is None:
         return ReviewDecisionResult(
-            ok=False, item_id=item_id, new_status="", reason=f"invalid_decision: {decision}"
+            ok=False,
+            item_id=item_id,
+            new_status="",
+            reason=f"invalid_decision: {decision}",
         )
+    decision_value = normalized_decision.value
 
     item = db.query(ReviewItem).filter(ReviewItem.id == item_id).first()
     if item is None:
-        return ReviewDecisionResult(ok=False, item_id=item_id, new_status="", reason="not_found")
+        return ReviewDecisionResult(
+            ok=False, item_id=item_id, new_status="", reason="not_found"
+        )
 
-    item.status = decision
+    item.status = decision_value
     item.reviewer_id = reviewer_id
     item.reviewer_notes = notes
     item.reviewed_at = datetime.now(timezone.utc)
 
-    if decision == APPROVED:
+    if normalized_decision == ReviewQueueDecision.APPROVED:
         # ReviewItem approval is an internal workflow decision only.  It means
         # "approved for promotion/draft/further review", not public
         # publication authority.
@@ -76,13 +87,13 @@ def record_decision(
                 .first()
             )
             if instrument is not None:
-                if decision == APPROVED:
+                if normalized_decision == ReviewQueueDecision.APPROVED:
                     instrument.review_status = PENDING_REVIEW
                     instrument.public_visibility = "private"
-                elif decision == REJECTED:
+                elif normalized_decision == ReviewQueueDecision.REJECTED:
                     instrument.review_status = REJECTED
                     instrument.public_visibility = "private"
 
     db.flush()
 
-    return ReviewDecisionResult(ok=True, item_id=item_id, new_status=decision)
+    return ReviewDecisionResult(ok=True, item_id=item_id, new_status=decision_value)

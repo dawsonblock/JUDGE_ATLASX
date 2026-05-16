@@ -108,6 +108,38 @@ _BOOL_FIELDS: frozenset[str] = frozenset(
     }
 )
 
+_ALLOWED_MACHINE_INGEST_CONFIDENCE_CLASSES: frozenset[str] = frozenset(
+    {
+        "primary_official",
+        "secondary_official",
+        "tertiary",
+        "official_court",
+        "official_government",
+    }
+)
+
+_ALLOWED_MACHINE_INGEST_RETENTION_POLICIES: frozenset[str] = frozenset(
+    {"indefinite", "7_years", "rolling_90_days"}
+)
+
+_ALLOWED_MACHINE_INGEST_RATE_LIMIT_POLICIES: frozenset[str] = frozenset(
+    {"none", "polite_1rps", "polite_5s_delay", "api_key_required"}
+)
+
+_ALLOWED_MACHINE_INGEST_AUTOMATION_STATUSES: frozenset[str] = frozenset(
+    {"machine_ready_enabled", "machine_ready_disabled", "deprecated"}
+)
+
+_ALLOWED_MACHINE_INGEST_LIFECYCLE_STATES: frozenset[str] = frozenset(
+    {"runnable", "runnable_disabled", "deprecated"}
+)
+
+_AUTOMATION_TO_LIFECYCLE_EXPECTED: dict[str, str] = {
+    "machine_ready_enabled": "runnable",
+    "machine_ready_disabled": "runnable_disabled",
+    "deprecated": "deprecated",
+}
+
 
 def validate_machine_ingest_source_spec(spec: dict) -> list[str]:
     """Return violation slugs for a source spec that fails machine_ingest contracts.
@@ -131,6 +163,45 @@ def validate_machine_ingest_source_spec(spec: dict) -> list[str]:
                 violations.append(f"missing_{field}")
         elif not val or val == "[]":
             violations.append(f"missing_{field}")
+
+    if violations:
+        return violations
+
+    confidence_class = str(spec.get("confidence_class") or "")
+    if confidence_class not in _ALLOWED_MACHINE_INGEST_CONFIDENCE_CLASSES:
+        violations.append("invalid_confidence_class")
+
+    retention_policy = str(spec.get("retention_policy") or "")
+    if retention_policy not in _ALLOWED_MACHINE_INGEST_RETENTION_POLICIES:
+        violations.append("invalid_retention_policy")
+
+    rate_limit_policy = str(spec.get("rate_limit_policy") or "")
+    if rate_limit_policy not in _ALLOWED_MACHINE_INGEST_RATE_LIMIT_POLICIES:
+        violations.append("invalid_rate_limit_policy")
+
+    terms_verified = str(spec.get("terms_verified") or "").strip().lower()
+    if terms_verified in {"", "false", "true", "none", "null"}:
+        violations.append("invalid_terms_verified")
+
+    canonical_url = str(spec.get("canonical_url") or "")
+    if not (
+        canonical_url.startswith("http://") or canonical_url.startswith("https://")
+    ):
+        violations.append("invalid_canonical_url")
+
+    if spec.get("evidence_required") is not True:
+        violations.append("evidence_required_must_be_true")
+
+    automation_status = str(spec.get("automation_status") or "")
+    lifecycle_state = str(spec.get("lifecycle_state") or "")
+    if automation_status not in _ALLOWED_MACHINE_INGEST_AUTOMATION_STATUSES:
+        violations.append("invalid_automation_status")
+    if lifecycle_state not in _ALLOWED_MACHINE_INGEST_LIFECYCLE_STATES:
+        violations.append("invalid_lifecycle_state")
+
+    expected_lifecycle = _AUTOMATION_TO_LIFECYCLE_EXPECTED.get(automation_status)
+    if expected_lifecycle and lifecycle_state != expected_lifecycle:
+        violations.append("automation_lifecycle_mismatch")
     return violations
 
 

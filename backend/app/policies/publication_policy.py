@@ -12,8 +12,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy.orm import Session
-
 from app.models.entities import (
     CrimeIncident,
     Event,
@@ -23,6 +21,12 @@ from app.models.entities import (
     SourceRegistry,
     SourceSnapshot,
 )
+from app.policies.state_model import (
+    PublicationState,
+    normalize_review_decision,
+    publication_state_for_review_status,
+)
+from sqlalchemy.orm import Session
 
 PENDING_REVIEW = "pending_review"
 VERIFIED_COURT_RECORD = "verified_court_record"
@@ -77,6 +81,18 @@ class PublicationDecision:
 def entity_review_status(entity: Any) -> str | None:
     status = getattr(entity, "review_status", None)
     return str(status) if status is not None else None
+
+
+def canonical_publication_state(entity: Any) -> PublicationState:
+    """Return canonical publication lifecycle state for *entity*.
+
+    This adapter keeps existing ``review_status`` and visibility fields intact
+    while giving callers a typed state model for newer flows.
+    """
+    return publication_state_for_review_status(
+        entity_review_status(entity),
+        entity_public_visibility(entity),
+    )
 
 
 _NON_PUBLIC_RELATIONSHIP_STATES: frozenset[str] = frozenset(
@@ -167,7 +183,9 @@ def evidence_anchor_status(
         return False, ["event_missing_public_reviewed_source_link"]
 
     if entity_type == "crime_incident" or isinstance(entity, CrimeIncident):
-        ok, reasons = _snapshot_has_hash(db, getattr(entity, "source_snapshot_id", None))
+        ok, reasons = _snapshot_has_hash(
+            db, getattr(entity, "source_snapshot_id", None)
+        )
         return ok, _prefix_snapshot_reasons(reasons, "source")
 
     if entity_type in {"source", "legal_source"} or isinstance(entity, LegalSource):
@@ -182,7 +200,9 @@ def evidence_anchor_status(
         ok, reasons = _snapshot_has_hash(db, getattr(entity, "raw_snapshot_id", None))
         return ok, _prefix_snapshot_reasons(reasons, "raw")
 
-    if entity_type == "relationship_evidence" or isinstance(entity, RelationshipEvidence):
+    if entity_type == "relationship_evidence" or isinstance(
+        entity, RelationshipEvidence
+    ):
         return _snapshot_has_hash(db, getattr(entity, "evidence_snapshot_id", None))
 
     return False, [f"unknown_entity_type:{entity_type}"]
@@ -191,13 +211,20 @@ def evidence_anchor_status(
 def _has_safe_location(entity_type: str, entity: Any) -> list[str]:
     reasons: list[str] = []
     if entity_type == "crime_incident" or isinstance(entity, CrimeIncident):
-        if getattr(entity, "latitude_public", None) is None or getattr(entity, "longitude_public", None) is None:
+        if (
+            getattr(entity, "latitude_public", None) is None
+            or getattr(entity, "longitude_public", None) is None
+        ):
             reasons.append("missing_public_coordinates")
-        elif getattr(entity, "latitude_public", 0.0) == 0.0 or getattr(entity, "longitude_public", 0.0) == 0.0:
+        elif (
+            getattr(entity, "latitude_public", 0.0) == 0.0
+            or getattr(entity, "longitude_public", 0.0) == 0.0
+        ):
             reasons.append("invalid_public_coordinates")
         precision = str(getattr(entity, "precision_level", "") or "").lower()
         if precision in UNSAFE_MAP_PRECISIONS or any(
-            marker in precision for marker in ("exact", "address", "residence", "rooftop")
+            marker in precision
+            for marker in ("exact", "address", "residence", "rooftop")
         ):
             reasons.append(f"unsafe_precision:{precision}")
     return reasons
@@ -219,7 +246,9 @@ def _source_registry_reasons(entity: Any) -> list[str]:
     return reasons
 
 
-def can_publish_entity(db: Session, entity_type: str, entity: Any) -> PublicationDecision:
+def can_publish_entity(
+    db: Session, entity_type: str, entity: Any
+) -> PublicationDecision:
     status = entity_review_status(entity)
     reasons: list[str] = []
     if status not in REVIEW_STATUSES:
@@ -234,7 +263,9 @@ def can_publish_entity(db: Session, entity_type: str, entity: Any) -> Publicatio
     reasons.extend(_source_registry_reasons(entity))
 
     allowed = len(reasons) == 0
-    visibility_value: bool | str = "public" if isinstance(entity, LegalInstrument) else True
+    visibility_value: bool | str = (
+        "public" if isinstance(entity, LegalInstrument) else True
+    )
     return PublicationDecision(
         allowed=allowed,
         reasons=reasons,
@@ -266,13 +297,19 @@ def can_show_public_entity(
         if not evidence_ok:
             reasons.extend(evidence_reasons)
     reasons.extend(_has_safe_location(entity_type, entity))
-    if status == NEWS_ONLY_CONTEXT and entity_type in {"event", "crime_incident", "legal_instrument"}:
+    if status == NEWS_ONLY_CONTEXT and entity_type in {
+        "event",
+        "crime_incident",
+        "legal_instrument",
+    }:
         reasons.append("context_only_not_public_fact")
     return PublicationDecision(
         allowed=len(reasons) == 0,
         reasons=reasons,
         public_status=status if len(reasons) == 0 else None,
-        public_visibility_value=getattr(entity, "public_visibility", getattr(entity, "is_public", None)),
+        public_visibility_value=getattr(
+            entity, "public_visibility", getattr(entity, "is_public", None)
+        ),
     )
 
 
@@ -285,16 +322,21 @@ def public_status_for_decision(
         return requested_status
     if decision in REVIEW_STATUSES:
         return str(decision)
-    if decision == "approve":
+
+    normalized_decision = normalize_review_decision(decision)
+    if normalized_decision is None:
+        return str(decision or "")
+
+    if normalized_decision.value == "approve":
         if entity_type == "crime_incident":
             return OFFICIAL_POLICE_OPEN_DATA_REPORT
         return VERIFIED_COURT_RECORD
-    if decision == "reject":
+    if normalized_decision.value == "reject":
         return REJECTED
-    if decision == "correct":
+    if normalized_decision.value == "correct":
         return CORRECTED
-    if decision == "dispute":
+    if normalized_decision.value == "dispute":
         return DISPUTED
-    if decision == "remove":
+    if normalized_decision.value == "remove":
         return REMOVED_FROM_PUBLIC
     return str(decision or "")

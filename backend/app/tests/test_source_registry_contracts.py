@@ -3,7 +3,7 @@
 Verifies that:
 - machine_ingest sources without required fields are rejected by the validator
 - portal_reference/disabled_stub sources pass without parser_version
-- all 6 machine_ingest sources in the YAML have parser_version set
+- selected canonical machine_ingest sources in the YAML have parser_version set
 - validate_machine_ingest_source_spec returns correct violation slugs
 - parser_version is in _REPAIR_FIELDS so drift gets corrected
 """
@@ -57,6 +57,7 @@ def test_valid_machine_ingest_spec_passes() -> None:
         "public_publish_default": False,
         "terms_url": "https://example.com/terms",
         "automation_status": "machine_ready_disabled",
+        "lifecycle_state": "runnable_disabled",
         "allowed_domains": '["example.com"]',
         # Sprint C: provenance and access fields
         "confidence_class": "primary_official",
@@ -158,6 +159,63 @@ def test_multiple_violations_returned() -> None:
     assert "missing_allowed_domains" in violations
 
 
+def test_invalid_machine_ingest_value_sets_are_rejected() -> None:
+    spec = {
+        "source_key": "test_source",
+        "source_class": "machine_ingest",
+        "parser": "my_parser",
+        "parser_version": "1.0",
+        "base_url": "https://example.com/api",
+        "public_record_authority": "official_public_record",
+        "requires_manual_review": True,
+        "public_publish_default": False,
+        "terms_url": "https://example.com/terms",
+        "automation_status": "machine_ready_disabled",
+        "lifecycle_state": "runnable_disabled",
+        "allowed_domains": '["example.com"]',
+        "confidence_class": "invalid_class",
+        "retention_policy": "forever",
+        "canonical_url": "not-a-url",
+        "evidence_required": False,
+        "terms_verified": "false",
+        "authentication_required": False,
+        "rate_limit_policy": "unknown",
+    }
+    violations = validate_machine_ingest_source_spec(spec)
+    assert "invalid_confidence_class" in violations  # nosec B101
+    assert "invalid_retention_policy" in violations  # nosec B101
+    assert "invalid_rate_limit_policy" in violations  # nosec B101
+    assert "invalid_terms_verified" in violations  # nosec B101
+    assert "invalid_canonical_url" in violations  # nosec B101
+    assert "evidence_required_must_be_true" in violations  # nosec B101
+
+
+def test_machine_ingest_automation_lifecycle_mismatch_is_rejected() -> None:
+    spec = {
+        "source_key": "test_source",
+        "source_class": "machine_ingest",
+        "parser": "my_parser",
+        "parser_version": "1.0",
+        "base_url": "https://example.com/api",
+        "public_record_authority": "official_public_record",
+        "requires_manual_review": True,
+        "public_publish_default": False,
+        "terms_url": "https://example.com/terms",
+        "automation_status": "machine_ready_enabled",
+        "lifecycle_state": "runnable_disabled",
+        "allowed_domains": '["example.com"]',
+        "confidence_class": "primary_official",
+        "retention_policy": "indefinite",
+        "canonical_url": "https://example.com/api",
+        "evidence_required": True,
+        "terms_verified": "2026-05-06",
+        "authentication_required": False,
+        "rate_limit_policy": "polite_1rps",
+    }
+    violations = validate_machine_ingest_source_spec(spec)
+    assert "automation_lifecycle_mismatch" in violations  # nosec B101
+
+
 # ── YAML contract tests ──────────────────────────────────────────────────────
 
 
@@ -175,7 +233,7 @@ def test_all_machine_ingest_sources_have_parser_version() -> None:
 
 
 def test_specific_machine_ingest_sources_have_parser_version() -> None:
-    """The 6 known machine_ingest source keys must all have parser_version."""
+    """Selected canonical machine_ingest source keys must have parser_version."""
     sources = {s["source_key"]: s for s in _load_yaml()}
     for key in _MACHINE_INGEST_SOURCE_KEYS:
         source = sources.get(key)
@@ -195,6 +253,30 @@ def test_machine_ingest_sources_pass_spec_validator() -> None:
             if violations:
                 failures[s["source_key"]] = violations
     assert not failures, f"machine_ingest spec violations: {failures}"
+
+
+def test_machine_ingest_sources_have_valid_state_transitions() -> None:
+    """machine_ingest sources must keep automation and lifecycle states aligned."""
+    sources = _load_yaml()
+    failures: dict[str, list[str]] = {}
+    for s in sources:
+        if s.get("source_class") == "machine_ingest":
+            violations = validate_machine_ingest_source_spec(s)
+            state_violations = [
+                v
+                for v in violations
+                if v
+                in {
+                    "invalid_automation_status",
+                    "invalid_lifecycle_state",
+                    "automation_lifecycle_mismatch",
+                }
+            ]
+            if state_violations:
+                failures[s["source_key"]] = state_violations
+    assert (
+        not failures
+    ), f"machine_ingest state metadata violations: {failures}"  # nosec B101
 
 
 # ── _REPAIR_FIELDS coverage test ─────────────────────────────────────────────

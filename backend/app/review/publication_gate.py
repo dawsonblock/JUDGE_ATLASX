@@ -1,10 +1,14 @@
 """Gate that must pass before any record can be set is_public=True."""
-from __future__ import annotations
 
-from sqlalchemy.orm import Session, object_session
+from __future__ import annotations
 
 from app.models.entities import CrimeIncident, LegalInstrument, ReviewItem
 from app.policies.publication_policy import can_publish_entity, entity_public_visibility
+from app.policies.state_model import (
+    ReviewQueueDecision,
+    normalize_review_queue_decision,
+)
+from sqlalchemy.orm import Session, object_session
 
 
 class PublicationBlockedError(ValueError):
@@ -30,7 +34,7 @@ def assert_review_item_publication_ready(item: ReviewItem) -> None:
     ReviewItem uses a workflow ``status`` field (not ``review_status``), so
     this assert is intentionally separate from :func:`can_publish`.
     """
-    if item.status != "approved":
+    if normalize_review_queue_decision(item.status) != ReviewQueueDecision.APPROVED:
         raise PublicationBlockedError(
             f"ReviewItem {item.id} status='{item.status}' — must be 'approved'"
         )
@@ -51,7 +55,9 @@ def assert_legal_instrument_publication_ready(
     """
     db = db or object_session(instrument)
     if db is None:
-        raise PublicationBlockedError("LegalInstrument publication requires a database session")
+        raise PublicationBlockedError(
+            "LegalInstrument publication requires a database session"
+        )
     decision = can_publish_entity(db, "legal_instrument", instrument)
     if not decision.allowed:
         raise PublicationBlockedError(

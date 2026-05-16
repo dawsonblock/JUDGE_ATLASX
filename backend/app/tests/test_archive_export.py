@@ -1,4 +1,5 @@
 """Tests for the archive export and custody-grade verification."""
+
 from __future__ import annotations
 
 import json
@@ -6,7 +7,6 @@ import tempfile
 from pathlib import Path
 
 import pytest
-
 from app.archive.verify_export import verify_jsonl_export
 
 
@@ -40,8 +40,8 @@ class TestSnapshotVerification:
             path = Path(f.name)
             f.write(json.dumps(self._valid_snapshot()) + "\n")
         result = verify_jsonl_export(path)
-        assert result.ok
-        assert result.valid_records == 1
+        assert result.ok  # nosec B101
+        assert result.valid_records == 1  # nosec B101
         assert result.invalid_records == 0
 
     def test_missing_content_hash_fails(self) -> None:
@@ -84,7 +84,9 @@ class TestSnapshotVerification:
     def test_payload_not_dict_fails(self) -> None:
         with tempfile.NamedTemporaryFile(suffix=".jsonl", mode="w", delete=False) as f:
             path = Path(f.name)
-            f.write(json.dumps(self._valid_snapshot(payload=["not", "a", "dict"])) + "\n")
+            f.write(
+                json.dumps(self._valid_snapshot(payload=["not", "a", "dict"])) + "\n"
+            )
         result = verify_jsonl_export(path)
         assert not result.ok
 
@@ -120,6 +122,21 @@ class TestSnapshotVerification:
         assert not result.ok
         assert result.valid_records == 2
         assert result.invalid_records == 1
+
+    def test_canonical_archive_publication_status_values_are_valid(self) -> None:
+        with tempfile.NamedTemporaryFile(suffix=".jsonl", mode="w", delete=False) as f:
+            path = Path(f.name)
+            f.write(
+                json.dumps(
+                    self._valid_snapshot(
+                        publication_status="restricted",
+                    )
+                )
+                + "\n"
+            )
+        result = verify_jsonl_export(path)
+        assert result.ok  # nosec B101
+        assert result.valid_records == 1  # nosec B101
 
 
 # ── Memory claim verification ─────────────────────────────────────────────────
@@ -164,7 +181,9 @@ class TestMemoryClaimVerification:
         assert not result.ok
 
     def test_evidence_snapshot_ids_not_list_fails(self) -> None:
-        path = self._memory_path([self._valid_memory(evidence_snapshot_ids="not-a-list")])
+        path = self._memory_path(
+            [self._valid_memory(evidence_snapshot_ids="not-a-list")]
+        )
         result = verify_jsonl_export(path)
         assert not result.ok
 

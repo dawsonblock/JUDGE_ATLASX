@@ -1,18 +1,35 @@
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
+from app.ai.pipeline import run_ai_pipeline
+from app.auth.actor import AdminActor
+from app.auth.admin import (
+    enforce_jwt_mutation_authority,
+    log_mutation,
+    require_admin_review,
+)
+from app.db.session import get_db
+from app.models.entities import (
+    Case,
+    Court,
+    Event,
+    EventSource,
+    Judge,
+    LegalSource,
+    Location,
+    ReviewActionLog,
+    ReviewItem,
+)
+from app.policies.state_model import (
+    ReviewQueueDecision,
+    normalize_review_queue_decision,
+)
+from app.security.import_authority import require_ai_review_actor
+from app.services.constants import AI_REVIEW_ITEM_STATUSES, ALLOWED_EVENT_TYPES
+from app.services.linker import url_hash
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-
-from app.ai.pipeline import run_ai_pipeline
-from app.auth.admin import enforce_jwt_mutation_authority, log_mutation, require_admin_review
-from app.auth.actor import AdminActor
-from app.db.session import get_db
-from app.models.entities import Case, Court, Event, EventSource, Judge, LegalSource, Location, ReviewActionLog, ReviewItem
-from app.services.constants import AI_REVIEW_ITEM_STATUSES, ALLOWED_EVENT_TYPES
-from app.services.linker import url_hash
-from app.security.import_authority import require_ai_review_actor
 
 router = APIRouter()
 
@@ -39,7 +56,13 @@ def _serialize_ai_review_item(item: ReviewItem) -> dict:
     }
 
 
-def _transition_ai_review_item(db: Session, item_id: int, status: str, payload: dict | None = None, commit: bool = True) -> dict:
+def _transition_ai_review_item(
+    db: Session,
+    item_id: int,
+    status: str,
+    payload: dict | None = None,
+    commit: bool = True,
+) -> dict:
     if status not in AI_REVIEW_ITEM_STATUSES:
         raise HTTPException(status_code=422, detail="Unsupported AI review status")
     item = db.get(ReviewItem, item_id)
@@ -48,7 +71,9 @@ def _transition_ai_review_item(db: Session, item_id: int, status: str, payload: 
     payload = payload or {}
     before = _serialize_ai_review_item(item)
     item.status = status
-    item.reviewer_id = str(payload.get("reviewer_id") or payload.get("actor") or "admin")
+    item.reviewer_id = str(
+        payload.get("reviewer_id") or payload.get("actor") or "admin"
+    )
     item.reviewer_notes = payload.get("notes")
     item.reviewed_at = datetime.now(timezone.utc)
     db.add(
@@ -70,7 +95,10 @@ def _publish_review_item_as_event(db: Session, item: ReviewItem) -> Event:
     required = ["court_id", "case_id", "primary_location_id"]
     missing = [field for field in required if not payload.get(field)]
     if missing:
-        raise HTTPException(status_code=422, detail=f"Review item missing required event fields: {', '.join(missing)}")
+        raise HTTPException(
+            status_code=422,
+            detail=f"Review item missing required event fields: {', '.join(missing)}",
+        )
 
     court = db.get(Court, int(payload["court_id"]))
     case = db.get(Case, int(payload["case_id"]))
@@ -78,7 +106,10 @@ def _publish_review_item_as_event(db: Session, item: ReviewItem) -> Event:
     judge_id = payload.get("judge_id")
     judge = db.get(Judge, int(judge_id)) if judge_id else None
     if not court or not case or not location or (judge_id and not judge):
-        raise HTTPException(status_code=422, detail="Review item references missing court, case, location, or judge")
+        raise HTTPException(
+            status_code=422,
+            detail="Review item references missing court, case, location, or judge",
+        )
 
     event_type = _event_type_for_ai_payload(str(payload.get("event_type") or "unknown"))
     event = Event(
@@ -93,15 +124,24 @@ def _publish_review_item_as_event(db: Session, item: ReviewItem) -> Event:
         decision_date=_date_from_payload(payload.get("decision_date")),
         posted_date=None,
         title=str(payload.get("title") or "AI reviewed legal event"),
-        summary=str(payload.get("summary") or payload.get("neutral_summary") or "AI-assisted reviewed event pending human evidence review."),
+        summary=str(
+            payload.get("summary")
+            or payload.get("neutral_summary")
+            or "AI-assisted reviewed event pending human evidence review."
+        ),
         repeat_offender_indicator=bool(payload.get("repeat_offender_indicator")),
         verified_flag=False,
         source_quality=item.source_quality,
         last_verified_at=None,
         classifier_metadata={
             "source_excerpt": payload.get("source_quote"),
-            "verification_status": "indicator_only" if payload.get("repeat_offender_indicator") else "not_indicated",
-            "repeat_offender_indicators": payload.get("repeat_offender_indicators") or [],
+            "verification_status": (
+                "indicator_only"
+                if payload.get("repeat_offender_indicator")
+                else "not_indicated"
+            ),
+            "repeat_offender_indicators": payload.get("repeat_offender_indicators")
+            or [],
             "ai_review_item_id": item.id,
         },
         review_status="pending_review",
@@ -150,7 +190,9 @@ def _event_type_for_ai_payload(value: str) -> str:
     }
     event_type = mapping.get(value, value)
     if event_type not in ALLOWED_EVENT_TYPES:
-        raise HTTPException(status_code=422, detail="Review item event type is unsupported")
+        raise HTTPException(
+            status_code=422, detail="Review item event type is unsupported"
+        )
     return event_type
 
 
@@ -170,7 +212,9 @@ def ai_review_items(
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
 ):
-    stmt = select(ReviewItem).order_by(ReviewItem.created_at.desc(), ReviewItem.id.desc())
+    stmt = select(ReviewItem).order_by(
+        ReviewItem.created_at.desc(), ReviewItem.id.desc()
+    )
     count_stmt = select(ReviewItem.id)
     if status:
         stmt = stmt.where(ReviewItem.status == status)
@@ -180,10 +224,15 @@ def ai_review_items(
         count_stmt = count_stmt.where(ReviewItem.record_type == record_type)
     total = db.scalar(select(func.count()).select_from(count_stmt.subquery())) or 0
     items = db.scalars(stmt.offset(offset).limit(limit)).all()
-    return {"items": [_serialize_ai_review_item(item) for item in items], "total_count": total}
+    return {
+        "items": [_serialize_ai_review_item(item) for item in items],
+        "total_count": total,
+    }
 
 
-@router.get("/api/admin/review/items/{item_id}", dependencies=[Depends(require_admin_review)])
+@router.get(
+    "/api/admin/review/items/{item_id}", dependencies=[Depends(require_admin_review)]
+)
 def ai_review_item(item_id: int, db: Session = Depends(get_db)):
     item = db.get(ReviewItem, item_id)
     if not item:
@@ -215,7 +264,9 @@ def approve_ai_review_item(
         db.commit()
     except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Audit logging failed; mutation aborted")
+        raise HTTPException(
+            status_code=500, detail="Audit logging failed; mutation aborted"
+        )
     return result
 
 
@@ -243,7 +294,9 @@ def reject_ai_review_item(
         db.commit()
     except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Audit logging failed; mutation aborted")
+        raise HTTPException(
+            status_code=500, detail="Audit logging failed; mutation aborted"
+        )
     return result
 
 
@@ -256,7 +309,9 @@ def needs_more_sources_ai_review_item(
     actor: AdminActor = Depends(require_ai_review_actor),
 ):
     enforce_jwt_mutation_authority(actor)
-    result = _transition_ai_review_item(db, item_id, "needs_more_sources", payload, commit=False)
+    result = _transition_ai_review_item(
+        db, item_id, "needs_more_sources", payload, commit=False
+    )
     try:
         log_mutation(
             action="ai_review_item.needs_more_sources",
@@ -271,7 +326,9 @@ def needs_more_sources_ai_review_item(
         db.commit()
     except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Audit logging failed; mutation aborted")
+        raise HTTPException(
+            status_code=500, detail="Audit logging failed; mutation aborted"
+        )
     return result
 
 
@@ -299,7 +356,9 @@ def block_ai_review_item(
         db.commit()
     except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Audit logging failed; mutation aborted")
+        raise HTTPException(
+            status_code=500, detail="Audit logging failed; mutation aborted"
+        )
     return result
 
 
@@ -323,13 +382,23 @@ def publish_ai_review_item(
     if not item:
         raise HTTPException(status_code=404, detail="Review item not found")
     if item.status == "blocked" or item.publish_recommendation == "block":
-        raise HTTPException(status_code=422, detail="Blocked review items cannot publish")
+        raise HTTPException(
+            status_code=422, detail="Blocked review items cannot publish"
+        )
     if item.privacy_status == "privacy_risk":
-        raise HTTPException(status_code=422, detail="Privacy-risk review items require separate legal review before publishing")
-    if item.status != "approved":
-        raise HTTPException(status_code=422, detail="Review item must be approved before publishing")
+        raise HTTPException(
+            status_code=422,
+            detail="Privacy-risk review items require separate legal review before publishing",
+        )
+    if normalize_review_queue_decision(item.status) != ReviewQueueDecision.APPROVED:
+        raise HTTPException(
+            status_code=422, detail="Review item must be approved before publishing"
+        )
     if item.record_type != "legal_event":
-        raise HTTPException(status_code=422, detail="Only legal event review items can publish in this prototype")
+        raise HTTPException(
+            status_code=422,
+            detail="Only legal event review items can publish in this prototype",
+        )
 
     event = _publish_review_item_as_event(db, item)
     _transition_ai_review_item(db, item_id, "published", payload, commit=False)
@@ -347,7 +416,9 @@ def publish_ai_review_item(
         db.commit()
     except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Audit logging failed; mutation aborted")
+        raise HTTPException(
+            status_code=500, detail="Audit logging failed; mutation aborted"
+        )
     return {"review_item": _serialize_ai_review_item(item), "event_id": event.event_id}
 
 
@@ -364,7 +435,11 @@ def process_source_with_ai(
     if not source:
         raise HTTPException(status_code=404, detail="Source not found")
     raw = {
-        "record_type": "crime_incident" if source.source_type == "official_police_open_data" else "legal_event",
+        "record_type": (
+            "crime_incident"
+            if source.source_type == "official_police_open_data"
+            else "legal_event"
+        ),
         "source_url": source.url,
         "source_quality": source.source_quality,
         "title": source.title,
@@ -384,6 +459,8 @@ def process_source_with_ai(
         db.commit()
     except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Audit logging failed; mutation aborted")
+        raise HTTPException(
+            status_code=500, detail="Audit logging failed; mutation aborted"
+        )
     db.refresh(item)
     return {"review_item_id": item.id}

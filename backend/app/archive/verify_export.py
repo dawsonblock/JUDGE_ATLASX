@@ -16,6 +16,7 @@ Usage::
     result = verify_jsonl_export(Path("artifacts/exports/source_snapshots.jsonl"))
     print(result.to_dict())
 """
+
 from __future__ import annotations
 
 import json
@@ -23,6 +24,8 @@ import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+from app.policies.state_model import ArchivePublicationStatus
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +61,12 @@ _MEMORY_REQUIRED_FIELDS = frozenset(
 )
 
 # Fields that must be non-empty strings (not None, not "")
-_SNAPSHOT_NONEMPTY_FIELDS = frozenset({"record_id", "source_key", "source_url", "captured_at"})
-_MEMORY_NONEMPTY_FIELDS = frozenset({"record_id", "claim_key", "claim_type", "claim_text"})
+_SNAPSHOT_NONEMPTY_FIELDS = frozenset(
+    {"record_id", "source_key", "source_url", "captured_at"}
+)
+_MEMORY_NONEMPTY_FIELDS = frozenset(
+    {"record_id", "claim_key", "claim_type", "claim_text"}
+)
 
 # Valid review_status values for snapshot records.
 # These are archive-domain statuses, not ingestion pipeline statuses.
@@ -74,8 +81,10 @@ _VALID_REVIEW_STATUSES = frozenset(
     }
 )
 
-# Valid publication_status values
-_VALID_PUBLICATION_STATUSES = frozenset({"unpublished", "public", "restricted", "archived"})
+# Valid publication_status values (canonical archive publication states)
+_VALID_PUBLICATION_STATUSES = frozenset(
+    status.value for status in ArchivePublicationStatus
+)
 
 
 @dataclass

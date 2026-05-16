@@ -11,6 +11,7 @@ Usage::
     with SessionLocal() as db:
         count = export_snapshots_to_jsonl(db, Path("artifacts/exports/source_snapshots.jsonl"))
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -18,6 +19,11 @@ import json
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+from app.policies.state_model import (
+    PublicationState,
+    archive_publication_status_for_state,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -62,7 +68,9 @@ def export_snapshots_to_jsonl(db: "Session", out_path: Path) -> int:
                 "content_hash": snap.content_hash,
                 "evidence_type": "source_snapshot",
                 "review_status": "captured",
-                "publication_status": "unpublished",
+                "publication_status": archive_publication_status_for_state(
+                    PublicationState.DRAFT
+                ).value,
                 "fetch_url": snap.source_url,
                 "fetch_http_status": snap.http_status,
                 "fetch_content_type": snap.content_type,
