@@ -70,16 +70,16 @@ GeoJSON endpoints for researchers and journalists. MIT licensed.
 
 ## Technology Stack
 
-| Layer | Technology | Notes |
-|-------|-----------|-------|
-| **API** | Python 3.11, FastAPI >=0.115.0 | OpenAPI docs at `/docs` |
-| **Database** | PostgreSQL 16 + PostGIS | Spatial queries; geom index in place |
-| **Frontend** | Next.js 14, React 18 | App Router; SSR disabled for map components |
-| **Map v2** | MapLibre GL JS 4.x | OpenFreeMap tiles — no API key required |
-| **Map legacy** | Leaflet 1.x | Original `/map` route |
-| **CLI** | Click 8.1, `judgectl` | Local ingestion management; see [CLI Reference](#cli-judgectl) |
-| **Auth** | JWT mutation authority (legacy shared-token compatibility deprecated) | See [Known Gaps](#known-gaps) |
-| **Testing** | pytest (see canonical current proof artifacts for exact counts) | `make verify` and `make release-proof-local` |
+| Layer          | Technology                                                            | Notes                                                          |
+| -------------- | --------------------------------------------------------------------- | -------------------------------------------------------------- |
+| **API**        | Python 3.11, FastAPI >=0.115.0                                        | OpenAPI docs at `/docs`                                        |
+| **Database**   | PostgreSQL 16 + PostGIS                                               | Spatial queries; geom index in place                           |
+| **Frontend**   | Next.js 14, React 18                                                  | App Router; SSR disabled for map components                    |
+| **Map v2**     | MapLibre GL JS 4.x                                                    | OpenFreeMap tiles — no API key required                        |
+| **Map legacy** | Leaflet 1.x                                                           | Original `/map` route                                          |
+| **CLI**        | Click 8.1, `judgectl`                                                 | Local ingestion management; see [CLI Reference](#cli-judgectl) |
+| **Auth**       | JWT mutation authority (legacy shared-token compatibility deprecated) | See [Known Gaps](#known-gaps)                                  |
+| **Testing**    | pytest (see canonical current proof artifacts for exact counts)       | `make verify` and `make release-proof-local`                   |
 
 ---
 
@@ -131,6 +131,7 @@ docker compose up --build
 </details>
 
 **Backend (Terminal 1):**
+
 ```bash
 cd backend
 python -m venv .venv && source .venv/bin/activate
@@ -141,6 +142,7 @@ JTA_APP_ENV=development uvicorn app.main:app --reload --port 8000
 ```
 
 **Frontend (Terminal 2):**
+
 ```bash
 cd frontend
 npm install && npm run dev
@@ -148,14 +150,13 @@ npm install && npm run dev
 
 ### Available URLs
 
-| URL | Description |
-|-----|-------------|
-| `http://localhost:3000` | Frontend dashboard |
-| `http://localhost:3000/map-v2` | MapLibre GL map (v2) |
-| `http://localhost:3000/map` | Leaflet map (legacy) |
-| `http://localhost:8000/health` | Backend health check |
-| `http://localhost:8000/docs` | Swagger UI |
-| `http://localhost:8000/api/map/events` | GeoJSON court events |
+| URL                                             | Description             |
+| ----------------------------------------------- | ----------------------- |
+| `http://localhost:3000`                         | Frontend dashboard      |
+| `http://localhost:3000/map`                     | MapLibre GL map         |
+| `http://localhost:8000/health`                  | Backend health check    |
+| `http://localhost:8000/docs`                    | Swagger UI              |
+| `http://localhost:8000/api/map/events`          | GeoJSON court events    |
 | `http://localhost:8000/api/map/crime-incidents` | GeoJSON crime incidents |
 
 ```bash
@@ -209,12 +210,12 @@ $ judgectl --json sources list | jq '.[0].source_key'
 
 All records come from **verified official sources only**:
 
-| Source | Description |
-|--------|-------------|
-| **Court Records** | Federal court dockets via [CourtListener](https://www.courtlistener.com/) (RECAP/PACER) |
-| **Police Open Data** | Official crime statistics from participating departments |
-| **Government Stats** | Verified aggregate reports |
-| **News Context** | Secondary context only — never a primary source |
+| Source               | Description                                                                             |
+| -------------------- | --------------------------------------------------------------------------------------- |
+| **Court Records**    | Federal court dockets via [CourtListener](https://www.courtlistener.com/) (RECAP/PACER) |
+| **Police Open Data** | Official crime statistics from participating departments                                |
+| **Government Stats** | Verified aggregate reports                                                              |
+| **News Context**     | Secondary context only — never a primary source                                         |
 
 **Publication Gate** — every record must pass before appearing on the map:
 
@@ -256,8 +257,7 @@ All records come from **verified official sources only**:
 │
 ├── frontend/                            Next.js 14 frontend
 │   ├── app/
-│   │   ├── map-v2/                      MapLibre GL map (v2)
-│   │   ├── map/                         Leaflet map (legacy)
+│   │   ├── map/                         MapLibre GL map
 │   │   ├── judges/                      Judge index + detail pages
 │   │   ├── cases/                       Case pages
 │   │   └── admin/                       Admin review queue UI
@@ -295,17 +295,17 @@ All records come from **verified official sources only**:
 
 Key variables from `.env.example`:
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `JTA_DATABASE_URL` | (required) | PostgreSQL connection string |
-| `JTA_CORS_ORIGINS` | `http://localhost:3000` | Allowed CORS origins |
-| `JTA_ENABLE_ADMIN_REVIEW` | `false` | Enable review queue API |
-| `JTA_ADMIN_REVIEW_TOKEN` | (empty) | Admin token for review endpoints |
-| `JTA_ENABLE_ADMIN_IMPORTS` | `false` | Enable ingestion endpoints |
-| `JTA_ADMIN_TOKEN` | (empty) | Token for import endpoints — **server-side only; never sent to browser** |
-| `COURTLISTENER_API_TOKEN` | (empty) | CourtListener v4 API token |
-| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000` | Frontend → backend (browser) |
-| `BACKEND_INTERNAL_URL` | `http://backend:8000` | Frontend → backend (Docker) |
+| Variable                   | Default                 | Purpose                                                                  |
+| -------------------------- | ----------------------- | ------------------------------------------------------------------------ |
+| `JTA_DATABASE_URL`         | (required)              | PostgreSQL connection string                                             |
+| `JTA_CORS_ORIGINS`         | `http://localhost:3000` | Allowed CORS origins                                                     |
+| `JTA_ENABLE_ADMIN_REVIEW`  | `false`                 | Enable review queue API                                                  |
+| `JTA_ADMIN_REVIEW_TOKEN`   | (empty)                 | Admin token for review endpoints                                         |
+| `JTA_ENABLE_ADMIN_IMPORTS` | `false`                 | Enable ingestion endpoints                                               |
+| `JTA_ADMIN_TOKEN`          | (empty)                 | Token for import endpoints — **server-side only; never sent to browser** |
+| `COURTLISTENER_API_TOKEN`  | (empty)                 | CourtListener v4 API token                                               |
+| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000` | Frontend → backend (browser)                                             |
+| `BACKEND_INTERNAL_URL`     | `http://backend:8000`   | Frontend → backend (Docker)                                              |
 
 > **Fail-Closed by Default:** Admin features require explicit opt-in. All admin endpoints return `403` unless enabled.
 
@@ -315,16 +315,16 @@ Key variables from `.env.example`:
 
 ### Public Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/health` | Liveness check |
-| `GET` | `/api/events` | Public events (paginated) |
-| `GET` | `/api/events/{id}` | Single event detail |
-| `GET` | `/api/cases` | Public cases |
-| `GET` | `/api/judges` | Public judges |
-| `GET` | `/api/map/events` | GeoJSON court events |
-| `GET` | `/api/map/crime-incidents` | GeoJSON crime incidents |
-| `GET` | `/api/evidence/source-panel/{type}/{id}` | Source evidence panel |
+| Method | Path                                     | Description               |
+| ------ | ---------------------------------------- | ------------------------- |
+| `GET`  | `/health`                                | Liveness check            |
+| `GET`  | `/api/events`                            | Public events (paginated) |
+| `GET`  | `/api/events/{id}`                       | Single event detail       |
+| `GET`  | `/api/cases`                             | Public cases              |
+| `GET`  | `/api/judges`                            | Public judges             |
+| `GET`  | `/api/map/events`                        | GeoJSON court events      |
+| `GET`  | `/api/map/crime-incidents`               | GeoJSON crime incidents   |
+| `GET`  | `/api/evidence/source-panel/{type}/{id}` | Source evidence panel     |
 
 **Spatial Filtering:** Map endpoints support `?bbox=west,south,east,north` (WGS84). Uses lat/lon column comparisons (PostGIS geom column exists but not yet used for bbox queries).
 
@@ -344,11 +344,11 @@ Key variables from `.env.example`:
 <details>
 <summary><b>Review Queue</b> (requires <code>JTA_ENABLE_ADMIN_REVIEW=true</code> + token)</summary>
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/admin/review-queue` | Paginated review queue |
-| `POST` | `/api/admin/review-queue/{type}/{id}/decision` | Apply decision |
-| `GET` | `/api/admin/review-history` | Audit trail |
+| Method | Path                                           | Description            |
+| ------ | ---------------------------------------------- | ---------------------- |
+| `GET`  | `/api/admin/review-queue`                      | Paginated review queue |
+| `POST` | `/api/admin/review-queue/{type}/{id}/decision` | Apply decision         |
+| `GET`  | `/api/admin/review-history`                    | Audit trail            |
 
 **Valid decisions:** `approve`, `reject`, `correct`, `dispute`, `remove`
 
@@ -357,13 +357,13 @@ Key variables from `.env.example`:
 <details>
 <summary><b>Data Imports</b> (requires <code>JTA_ENABLE_ADMIN_IMPORTS=true</code> + token)</summary>
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/ingest/courtlistener` | Trigger CourtListener ingestion |
-| `POST` | `/api/admin/import/crime-incidents/manual-csv` | Upload crime CSV |
-| `POST` | `/api/admin/ai/verify-source/{type}/{id}` | Verify source with Ollama |
-| `GET` | `/api/admin/review/items` | AI review queue |
-| `POST` | `/api/admin/review/items/{id}/{action}` | Act on AI review item |
+| Method | Path                                           | Description                     |
+| ------ | ---------------------------------------------- | ------------------------------- |
+| `POST` | `/api/ingest/courtlistener`                    | Trigger CourtListener ingestion |
+| `POST` | `/api/admin/import/crime-incidents/manual-csv` | Upload crime CSV                |
+| `POST` | `/api/admin/ai/verify-source/{type}/{id}`      | Verify source with Ollama       |
+| `GET`  | `/api/admin/review/items`                      | AI review queue                 |
+| `POST` | `/api/admin/review/items/{id}/{action}`        | Act on AI review item           |
 
 </details>
 
@@ -395,17 +395,17 @@ IngestionRun    (per-run audit record: source, started_at, status, row counts)
 
 > Code-enforced protections, not just policy:
 
-| Rule | Implementation |
-|------|----------------|
-| **Anonymized Defendants** | Public API returns `DEF-000001` labels. Real names never exposed. |
-| **No Personal Addresses** | DOBs, family details, victim locations redacted by serializer + AI pipeline. |
-| **Court-Level Precision** | Map points are courthouse locations, never home/incident addresses. |
-| **Generalized Coordinates** | Crime incidents use neighborhood/city centroids. `exact_address` rejected at import. |
-| **Default Private** | CSV imports start `is_public=False`. Records require manual review. |
-| **Valid Source Required** | Crime incidents need valid HTTP/HTTPS `source_url` or are rejected. |
-| **Pending Review Default** | CourtListener events start `pending_review` / `public_visibility=False`. |
-| **Explicit Flags Only** | Repeat-offender flags require matched phrases in source text. Never inferred. |
-| **Verified Outcomes** | Outcomes require court/appeal/official sources. News is secondary only. |
+| Rule                        | Implementation                                                                           |
+| --------------------------- | ---------------------------------------------------------------------------------------- |
+| **Anonymized Defendants**   | Public API returns `DEF-000001` labels. Real names never exposed.                        |
+| **No Personal Addresses**   | DOBs, family details, victim locations redacted by serializer + AI pipeline.             |
+| **Court-Level Precision**   | Map points are courthouse locations, never home/incident addresses.                      |
+| **Generalized Coordinates** | Crime incidents use neighborhood/city centroids. `exact_address` rejected at import.     |
+| **Default Private**         | CSV imports start `is_public=False`. Records require manual review.                      |
+| **Valid Source Required**   | Crime incidents need valid HTTP/HTTPS `source_url` or are rejected.                      |
+| **Pending Review Default**  | CourtListener events start `pending_review` / `public_visibility=False`.                 |
+| **Explicit Flags Only**     | Repeat-offender flags require matched phrases in source text. Never inferred.            |
+| **Verified Outcomes**       | Outcomes require court/appeal/official sources. News is secondary only.                  |
 | **Review Status Preserved** | Maintained on re-ingestion unless safety fields change (then drops to `pending_review`). |
 
 ---
@@ -431,6 +431,7 @@ judgectl ingest run courtlistener_recap
 ### Manual CSV Import
 
 Upload a CSV with columns:
+
 ```
 source_id, incident_type, incident_category, reported_at, occurred_at,
 latitude_public, longitude_public, precision_level, city, province_state,
@@ -438,6 +439,7 @@ country, public_area_label, notes, source_name, source_url, is_public
 ```
 
 **Validation rejects:**
+
 - `exact_address` precision
 - Zero coordinates
 - Residence/victim terms in notes/labels
@@ -513,6 +515,7 @@ All decisions logged to `EvidenceReview` and queryable via `GET /api/admin/revie
 <summary><b>What each script does</b></summary>
 
 **`verify_backend.sh`** (hard-fail on any error):
+
 1. Locate Python 3 interpreter
 2. Create/reuse `backend/.venv`, run `pip install -e ".[test]"`
 3. Print versions
@@ -521,6 +524,7 @@ All decisions logged to `EvidenceReview` and queryable via `GET /api/admin/revie
 6. `python -m pytest -q`
 
 **`verify_frontend.sh`** (requires Node 20):
+
 1. Node version check
 2. `npm ci`
 3. `npm run lint`
@@ -531,16 +535,16 @@ All decisions logged to `EvidenceReview` and queryable via `GET /api/admin/revie
 
 ### Current Status
 
-| Check | Status | Notes |
-|-------|--------|-------|
-| `compileall` | ✅ Passing | Run `./scripts/verify_backend.sh` |
-| `pytest` | See current proof artifact | `artifacts/proof/current/backend_pytest.log` is authoritative |
-| Alembic migrations | See CI | SQLite test in verify script |
-| Frontend lint/typecheck/build | See CI | Run `./scripts/verify_frontend.sh` |
-| Docker Compose | Manual | Manual verification required |
-| PostGIS geometry | Ready | Migration exists; bbox uses lat/lon |
-| API split | Complete | Separate incidents/aggregates endpoints |
-| CLI (`judgectl`) | ✅ Implemented | `health`, `sources`, `ingest`, `audit` |
+| Check                         | Status                     | Notes                                                         |
+| ----------------------------- | -------------------------- | ------------------------------------------------------------- |
+| `compileall`                  | ✅ Passing                 | Run `./scripts/verify_backend.sh`                             |
+| `pytest`                      | See current proof artifact | `artifacts/proof/current/backend_pytest.log` is authoritative |
+| Alembic migrations            | See CI                     | SQLite test in verify script                                  |
+| Frontend lint/typecheck/build | See CI                     | Run `./scripts/verify_frontend.sh`                            |
+| Docker Compose                | Manual                     | Manual verification required                                  |
+| PostGIS geometry              | Ready                      | Migration exists; bbox uses lat/lon                           |
+| API split                     | Complete                   | Separate incidents/aggregates endpoints                       |
+| CLI (`judgectl`)              | ✅ Implemented             | `health`, `sources`, `ingest`, `audit`                        |
 
 ---
 
@@ -567,15 +571,15 @@ All decisions logged to `EvidenceReview` and queryable via `GET /api/admin/revie
 <details>
 <summary><b>Security (Partially Hardened)</b></summary>
 
-| Hardened | Gap |
-|----------|-----|
-| ✅ Rate limiting (in-memory: 100/min public, 30/min admin) | ❌ No security headers (CSP, HSTS) |
-| ✅ Request size limits | ❌ No secrets management — plain `.env` tokens |
-| ✅ CORS strict validation | ❌ No complete security audit |
-| ✅ Source verification with SSRF protection | |
-| ✅ SourceRegistry fail-closed ingestion | |
-| ✅ Admin token (`JTA_ADMIN_TOKEN`) server-side only | |
-| ✅ Source-class enforcement: only `machine_ingest` eligible for API enable/run | |
+| Hardened                                                                       | Gap                                            |
+| ------------------------------------------------------------------------------ | ---------------------------------------------- |
+| ✅ Rate limiting (in-memory: 100/min public, 30/min admin)                     | ❌ No security headers (CSP, HSTS)             |
+| ✅ Request size limits                                                         | ❌ No secrets management — plain `.env` tokens |
+| ✅ CORS strict validation                                                      | ❌ No complete security audit                  |
+| ✅ Source verification with SSRF protection                                    |                                                |
+| ✅ SourceRegistry fail-closed ingestion                                        |                                                |
+| ✅ Admin token (`JTA_ADMIN_TOKEN`) server-side only                            |                                                |
+| ✅ Source-class enforcement: only `machine_ingest` eligible for API enable/run |                                                |
 
 </details>
 

@@ -15,13 +15,13 @@ if [[ ! -f "${ROOT_DIR}/frontend/package.json" ]]; then
 fi
 
 cd "${ROOT_DIR}/frontend"
-echo "Starting full Next.js frontend on http://localhost:${PORT} (map route: /map-v2)"
-if [[ -n "${NEXT_PUBLIC_API_BASE_URL:-}" ]]; then
+echo "Starting full Next.js frontend on http://localhost:${PORT} (map route: /map)"
+if [[ -n ${NEXT_PUBLIC_API_BASE_URL-} ]]; then
 	echo "Frontend API base override: ${NEXT_PUBLIC_API_BASE_URL}"
 else
 	echo "Frontend API base: dynamic host resolution on port ${NEXT_PUBLIC_API_PORT}"
 fi
-if [[ -n "${DEMO_LAN_IP}" ]]; then
-	echo "iPhone UI URL: http://${DEMO_LAN_IP}:${PORT}/map-v2"
+if [[ -n ${DEMO_LAN_IP} ]]; then
+	echo "iPhone UI URL: http://${DEMO_LAN_IP}:${PORT}/map"
 fi
 exec npm run dev -- -p "${PORT}"

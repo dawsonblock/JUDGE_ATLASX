@@ -10,16 +10,16 @@
 
 ## Sprint Completion Summary
 
-| Sprint | Description                                                           | Status      |
-| ------ | --------------------------------------------------------------------- | ----------- |
-| A      | Repository audit & docs (9 audit docs + FUTURE_ARCHITECTURE.md)       | ✅ COMPLETE |
-| B      | docker-compose.yml legacy token fix                                   | ✅ COMPLETE |
-| C      | SourceRegistry model columns + YAML coercion + proof tests            | ✅ COMPLETE |
-| D      | Adapters, evidence chain, ingestion_state, CI guard fix               | ✅ COMPLETE |
-| H      | Startup guards, .env.production.example, docs/config_reference.md     | ✅ COMPLETE |
-| G      | MapWorkspace.tsx, /map canonical, /map-v2 redirect, records/[id] page | ✅ COMPLETE |
-| I      | /api/v1/sources/coverage + /api/v1/status/ingestion endpoints         | ✅ COMPLETE |
-| J      | Alembic 0013 migration, release-zip target, final report              | ✅ COMPLETE |
+| Sprint | Description                                                       | Status      |
+| ------ | ----------------------------------------------------------------- | ----------- |
+| A      | Repository audit & docs (9 audit docs + FUTURE_ARCHITECTURE.md)   | ✅ COMPLETE |
+| B      | docker-compose.yml legacy token fix                               | ✅ COMPLETE |
+| C      | SourceRegistry model columns + YAML coercion + proof tests        | ✅ COMPLETE |
+| D      | Adapters, evidence chain, ingestion_state, CI guard fix           | ✅ COMPLETE |
+| H      | Startup guards, .env.production.example, docs/config_reference.md | ✅ COMPLETE |
+| G      | MapWorkspace.tsx, /map canonical, records/[id] page               | ✅ COMPLETE |
+| I      | /api/v1/sources/coverage + /api/v1/status/ingestion endpoints     | ✅ COMPLETE |
+| J      | Alembic 0013 migration, release-zip target, final report          | ✅ COMPLETE |
 
 ---
 
@@ -57,8 +57,8 @@ Adds 7 columns to `source_registry`:
 ### Route Fix (Sprint G / Sprint I regression test fix)
 
 - `/map/page.tsx` now renders `MapWorkspace` directly (canonical route)
-- `/map-v2/page.tsx` redirects to `/map` (legacy alias)
-- Proof test `test_map_is_canonical_and_map_v2_redirects_to_map` updated to verify new contract
+- Legacy `/map-v2` route files removed
+- Proof test `test_map_is_canonical_and_map_v2_is_removed` updated to verify new contract
 
 ### Release Automation (Sprint J)
 

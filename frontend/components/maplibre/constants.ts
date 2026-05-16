@@ -1,5 +1,5 @@
 /**
- * constants.ts — static configuration for the MapLibre /map-v2 implementation.
+ * constants.ts — static configuration for the canonical MapLibre /map implementation.
  */
 
 import { getDisclaimer } from "@/lib/disclaimerService";
@@ -28,9 +28,9 @@ export const CLUSTER_RADIUS = 50;
 
 /** Dot colors by record type */
 export const DOT_COLOR = {
-  court_event: "#3b82f6",     // blue-500
+  court_event: "#3b82f6", // blue-500
   reported_incident: "#f59e0b", // amber-500
-  cluster: "#6366f1",          // indigo-500
+  cluster: "#6366f1", // indigo-500
 } as const;
 
 /** Default map viewport: Saskatoon, SK */

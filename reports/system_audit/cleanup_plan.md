@@ -41,11 +41,11 @@ Generated: 2026-05-16 | Prioritized from audit findings
 
 ## Priority 5 — Frontend / UI (Sprint G)
 
-| #   | Action                                                       | File(s)                     | Risk if Skipped                      |
-| --- | ------------------------------------------------------------ | --------------------------- | ------------------------------------ |
-| 5.1 | Move `MapV2Workspace.tsx` → `MapWorkspace.tsx` under `/map/` | `frontend/app/map/`         | Confusing `map-v2` URL in production |
-| 5.2 | Remove redirect stub from `/map/page.tsx`                    | `frontend/app/map/page.tsx` | Double redirect                      |
-| 5.3 | Create `frontend/app/records/[id]/page.tsx`                  | New file                    | No public record detail page         |
+| #   | Action                                                                 | File(s)                     | Risk if Skipped                      |
+| --- | ---------------------------------------------------------------------- | --------------------------- | ------------------------------------ |
+| 5.1 | ✅ Completed: moved to canonical `MapWorkspace.tsx` under `/map/`      | `frontend/app/map/`         | Confusing `map-v2` URL in production |
+| 5.2 | ✅ Completed: `/map/page.tsx` now renders canonical workspace directly | `frontend/app/map/page.tsx` | Double redirect                      |
+| 5.3 | Create `frontend/app/records/[id]/page.tsx`                            | New file                    | No public record detail page         |
 
 ## Priority 6 — New Endpoints (Sprint I)
 

@@ -134,18 +134,22 @@ and registered with `app.include_router(router)` in `backend/app/main.py`.
 
 ## Next.js App Routes (`frontend/app/`)
 
-| Route           | File                            | Status        | Notes                         |
-| --------------- | ------------------------------- | ------------- | ----------------------------- |
-| `/`             | `app/page.tsx`                  | Active        | Landing / redirect            |
-| `/map`          | `app/map/page.tsx`              | Redirect stub | → `/map-v2` (Sprint G target) |
-| `/map-v2`       | `app/map-v2/MapV2Workspace.tsx` | Active        | Primary map workspace         |
-| `/sources`      | `app/sources/page.tsx`          | Active        | Source registry page          |
-| `/records/[id]` | (not yet created)               | Missing       | Sprint G target               |
-| `/admin/*`      | `app/admin/`                    | Partial       | Admin review UI               |
+| Route           | File                        | Status  | Notes                        |
+| --------------- | --------------------------- | ------- | ---------------------------- |
+| `/`             | `app/page.tsx`              | Active  | Landing / redirect           |
+| `/map`          | `app/map/page.tsx`          | Active  | Canonical MapLibre workspace |
+| `/sources`      | `app/sources/page.tsx`      | Active  | Source registry page         |
+| `/records/[id]` | `app/records/[id]/page.tsx` | Active  | Public record detail page    |
+| `/admin/*`      | `app/admin/`                | Partial | Admin review UI              |
 
 ---
 
 ## Missing Endpoints (planned)
+
+Implemented in Sprint I:
+
+- `GET /api/v1/sources/coverage`
+- `GET /api/v1/status/ingestion`
 
 | Method | Path                       | Sprint   | Notes                        |
 | ------ | -------------------------- | -------- | ---------------------------- |

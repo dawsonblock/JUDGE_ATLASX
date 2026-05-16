@@ -20,7 +20,7 @@ Date: 2026-05-12
 ## Backend Entry Points
 
 - FastAPI entrypoint: [backend/app/main.py](../../backend/app/main.py)
-- Route registration: [backend/app/api/routes/__init__.py](../../backend/app/api/routes/__init__.py)
+- Route registration: [backend/app/api/routes/**init**.py](../../backend/app/api/routes/__init__.py)
 - CLI entrypoint: [backend/app/cli/main.py](../../backend/app/cli/main.py)
 
 ## Route Surface Summary
@@ -34,7 +34,7 @@ Date: 2026-05-12
 - JWT/shared-token admin handling lives in [backend/app/auth/admin.py](../../backend/app/auth/admin.py).
 - Import/admin role gating helpers live in [backend/app/security/import_authority.py](../../backend/app/security/import_authority.py).
 - Current admin mutation routes already call JWT authority helpers, but legacy shared-token compatibility still exists in code paths.
-- Frontend admin proxy auth helper lives in [frontend/app/api/admin/_auth.ts](../../frontend/app/api/admin/_auth.ts).
+- Frontend admin proxy auth helper lives in [frontend/app/api/admin/\_auth.ts](../../frontend/app/api/admin/_auth.ts).
 
 ## Source Registry and Ingestion Control
 
@@ -67,8 +67,8 @@ Date: 2026-05-12
 
 ## Map and Frontend Canonical Path
 
-- Canonical public map: [frontend/app/map-v2/page.tsx](../../frontend/app/map-v2/page.tsx)
-- Legacy map route redirect: [frontend/app/map/page.tsx](../../frontend/app/map/page.tsx)
+- Baseline canonical public map at audit time: [frontend/app/map-v2/page.tsx](../../frontend/app/map-v2/page.tsx)
+- Baseline legacy map route redirect at audit time: [frontend/app/map/page.tsx](../../frontend/app/map/page.tsx)
 - Admin review UI: [frontend/app/admin/review/page.tsx](../../frontend/app/admin/review/page.tsx)
 
 ## Model Summary
@@ -108,7 +108,7 @@ Current stub inventory from [STUBS_AND_PLACEHOLDERS.md](../../STUBS_AND_PLACEHOL
 - Canadian law modules under `backend/app/ingestion/laws` remain stubbed or partial
 - Web monitor police/government release adapters remain experimental/stubbed
 - Portal-root sources are automation stubs until machine-readable endpoints are proven
-- Legacy `/map` is legacy and must not be confused with `/map-v2`
+- At baseline time, `/map` was legacy and `/map-v2` was canonical
 - Memory semantic search remains experimental/derivative
 - memvid sidecar remains experimental/derivative
 - AI review/checks UI remains experimental
@@ -128,4 +128,4 @@ Current stub inventory from [STUBS_AND_PLACEHOLDERS.md](../../STUBS_AND_PLACEHOL
 2. Lock admin mutations to JWT authority in production.
 3. Harden external evidence vault startup/write/hash verification.
 4. Make the source registry the real ingestion control plane.
-5. Preserve review-gated public publishing and `/map-v2` as canonical.
+5. Preserve review-gated public publishing while consolidating to a single canonical map route.

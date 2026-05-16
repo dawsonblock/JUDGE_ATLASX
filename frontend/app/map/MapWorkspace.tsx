@@ -2,10 +2,10 @@
 
 /**
  * MapWorkspace — client component that owns fetch state and wires all
- * MapLibre components together for the /map-v2 route.
+ * MapLibre components together for the canonical /map route.
  *
  * Isolation guarantee: this file and all imports under components/maplibre/
- * are the only new code paths. The existing /map route is not touched.
+ * are the only map runtime code paths.
  *
  * Language note: all user-visible copy in this component describes factual
  * public data only. No language implies guilt, culpability, or misconduct.

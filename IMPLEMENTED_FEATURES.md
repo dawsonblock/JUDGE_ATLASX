@@ -23,7 +23,7 @@ This file lists implemented features only. Items that require missing credential
 - Next.js App Router frontend.
 - shadcn/Radix-style component library.
 - Dashboard, entity pages, source pages, admin source/review pages.
-- MapLibre map workspace under `/map-v2`.
+- MapLibre map workspace under `/map`.
 - Typed fetch API helpers.
 
 ## Operations
