@@ -192,6 +192,35 @@ def _validate_production_safety(settings) -> None:
     print("[STARTUP] Production safety checks passed")
 
 
+def _check_external_reference_not_loaded() -> None:
+    """Verify external_reference modules are not imported into runtime.
+    
+    This is a runtime sanity check (complementing the CI gate) to catch
+    accidental imports of archived/reference code.
+    """
+    import sys
+    
+    dangerous_prefixes = (
+        "external_reference",
+        "legacy_disabled",
+        "archived_research",
+    )
+    
+    loaded_external = []
+    for module_name in sys.modules:
+        for prefix in dangerous_prefixes:
+            if module_name.startswith(prefix):
+                loaded_external.append(module_name)
+    
+    if loaded_external:
+        print(
+            "[STARTUP WARNING] external_reference modules loaded into runtime. "
+            "This should not happen in production. Loaded modules:\n"
+            + "\n".join(f"  - {m}" for m in loaded_external),
+            file=sys.stderr,
+        )
+
+
 class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
     """Middleware to limit request body size using Content-Length header."""
 
@@ -277,6 +306,10 @@ def create_app() -> FastAPI:
         except RuntimeError as e:
             print(f"ERROR: Evidence store validation failed: {e}")
             sys.exit(1)
+        
+        # Check that external_reference is not accidentally loaded
+        _check_external_reference_not_loaded()
+
 
         # Warn loudly if the deprecated legacy shared-token admin path is enabled.
         # This path is disabled by default (JTA_ENABLE_LEGACY_ADMIN_TOKEN=false).

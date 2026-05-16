@@ -621,6 +621,20 @@ class IngestionRun(Base, TimestampMixin):
         String(80), nullable=True, index=True
     )
     quarantine_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    
+    # ─── Phase 4: Source Stability & Recovery (retry tracking) ───────────────
+    retry_count: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=0
+    )  # Number of retry attempts
+    scheduled_retry_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )  # When this run should be retried
+    recovery_classification: Mapped[str | None] = mapped_column(
+        String(20), nullable=True, index=True
+    )  # transient, permanent, or unknown
+    last_error_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )  # Timestamp of last error occurrence
 
 
 class AuditLog(Base):
@@ -1036,6 +1050,60 @@ class SourceRegistry(Base, TimestampMixin):
     rate_limit_policy: Mapped[str | None] = mapped_column(
         String(50), nullable=True
     )  # e.g. 'polite_1rps', 'bulk_10rps', 'no_limit'
+
+
+class SourceAdapterContract(Base, TimestampMixin):
+    """Registry of adapter parser_version contracts for ingestion validation.
+    
+    Each SourceAdapter must declare a parser_version. This table tracks which
+    versions are active and what schema they enforce. Mismatches between
+    IngestionResult.parser_version and the expected version trigger quarantine.
+    """
+
+    __tablename__ = "source_adapter_contracts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source_key: Mapped[str] = mapped_column(
+        String(100), nullable=False, index=True
+    )  # FK-like reference to SourceRegistry.source_key (not strict FK to allow deletion)
+    parser_version: Mapped[str] = mapped_column(
+        String(20), nullable=False, index=True
+    )  # e.g. "1.0", "1.1", "2.0"
+    adapter_class: Mapped[str] = mapped_column(
+        String(120), nullable=False
+    )  # Full class path (e.g. "app.ingestion.adapters.SaskCountyCourtsAdapter")
+    schema_hash: Mapped[str] = mapped_column(
+        String(64), nullable=False
+    )  # SHA-256 of expected schema (field names, types, constraints)
+    required_fields: Mapped[list | None] = mapped_column(
+        JSON, nullable=True
+    )  # List of mandatory fields in ParsedRecord
+    output_types: Mapped[list | None] = mapped_column(
+        JSON, nullable=True
+    )  # Types created by this adapter (e.g. ["CrimeIncident", "ReviewItem"])
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="active", index=True
+    )  # "active", "deprecated", "experimental"
+    deprecated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    successor_version: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # If deprecated, what version should replace it?
+    validation_rules: Mapped[dict | None] = mapped_column(
+        JSON, nullable=True
+    )  # Custom validation rules (e.g. {"required_confidence_min": 0.7})
+    documentation_url: Mapped[str | None] = mapped_column(
+        String(2048), nullable=True
+    )  # Link to adapter documentation
+    created_by: Mapped[str | None] = mapped_column(
+        String(120), nullable=True
+    )  # Admin who created this contract
+    notes: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
 
 class SourceTierConflict(Base, TimestampMixin):
