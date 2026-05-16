@@ -1,0 +1,16 @@
+NPM AUDIT TRIAGE
+vulnerabilities=10
+triage_doc=docs/FRONTEND_SECURITY_TRIAGE.md
+triaged_packages_in_doc=0
+vulnerable_packages=10
+RESULT: FAIL untriaged_packages
+  - untriaged: @next/eslint-plugin-next
+  - untriaged: @vitest/mocker
+  - untriaged: esbuild
+  - untriaged: eslint-config-next
+  - untriaged: glob
+  - untriaged: next
+  - untriaged: postcss
+  - untriaged: vite
+  - untriaged: vite-node
+  - untriaged: vitest

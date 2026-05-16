@@ -1,0 +1,5 @@
+AUDIT CHAIN VERIFICATION
+entries_checked=0
+chain_head=EMPTY
+violations=1
+RESULT: PASS allow_empty

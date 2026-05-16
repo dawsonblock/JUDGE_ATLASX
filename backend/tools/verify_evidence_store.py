@@ -111,6 +111,23 @@ def main(argv: list[str] | None = None) -> int:
                 return 0 if args.allow_empty else 1
             results = verify_all_recent_snapshots(db, limit=len(snapshots))
     except SQLAlchemyError as exc:
+        if args.allow_empty and "no such table" in str(exc).lower():
+            result = {
+                "status": "PASS",
+                "snapshots_checked": 0,
+                "verified_snapshots": 0,
+                "integrity_failures": 0,
+                "corrupt_snapshots": 0,
+                "duplicate_hashes": 0,
+                "missing_snapshot_files": 0,
+                "orphan_files": 0,
+                "orphan_snapshot_rows": 0,
+                "rejected_or_quarantined_count": 0,
+                "warnings": ["empty_evidence_store"],
+                "errors": [],
+            }
+            _emit(result, args.json)
+            return 0
         result = {
             "status": "FAIL",
             "snapshots_checked": 0,

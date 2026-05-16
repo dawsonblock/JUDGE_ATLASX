@@ -1,0 +1,36 @@
+Traceback (most recent call last):
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/scripts/check_truth_claims.py", line 355, in <module>
+    main()
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/scripts/check_truth_claims.py", line 351, in main
+    sys.exit(check(root))
+             ^^^^^^^^^^^
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/scripts/check_truth_claims.py", line 317, in check
+    text = path.read_text(encoding="utf-8")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dawsonblock/.local/share/uv/python/cpython-3.11.14-macos-aarch64-none/lib/python3.11/pathlib.py", line 1059, in read_text
+    return f.read()
+           ^^^^^^^^
+  File "<frozen codecs>", line 319, in decode
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/scripts/check_false_claims.py", line 23, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/scripts/check_false_claims.py", line 19, in main
+    return subprocess.run(cmd, cwd=repo_root).returncode
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dawsonblock/.local/share/uv/python/cpython-3.11.14-macos-aarch64-none/lib/python3.11/subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dawsonblock/.local/share/uv/python/cpython-3.11.14-macos-aarch64-none/lib/python3.11/subprocess.py", line 1201, in communicate
+    self.wait()
+  File "/Users/dawsonblock/.local/share/uv/python/cpython-3.11.14-macos-aarch64-none/lib/python3.11/subprocess.py", line 1264, in wait
+    return self._wait(timeout=timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dawsonblock/.local/share/uv/python/cpython-3.11.14-macos-aarch64-none/lib/python3.11/subprocess.py", line 2053, in _wait
+    (pid, sts) = self._try_wait(0)
+                 ^^^^^^^^^^^^^^^^^
+  File "/Users/dawsonblock/.local/share/uv/python/cpython-3.11.14-macos-aarch64-none/lib/python3.11/subprocess.py", line 2011, in _try_wait
+    (pid, sts) = os.waitpid(self.pid, wait_flags)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

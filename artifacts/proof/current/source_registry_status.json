@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-15T07:24:10.544512+00:00",
+  "generated_at_utc": "2026-05-16T22:01:32.500323+00:00",
   "total_sources": 26,
   "summary": {
     "total_sources": 26,
@@ -68,7 +68,7 @@
       "canonical_replacement_key": "scc_decisions",
       "status_reason": "Superseded by scc_decisions. Both point to the same Supreme Court of Canada dataset; scc_decisions is the canonical key.",
       "operator_next_step": "Migrate any references from scc_judgments to scc_decisions and remove this entry.",
-      "automation_status": "machine_ready_disabled",
+      "automation_status": "deprecated",
       "adapter_key": "scc_lexum_api",
       "adapter_exists": true,
       "adapter_state": "found",
@@ -79,7 +79,7 @@
       "enable_ready": false,
       "blockers": [
         "lifecycle_state=deprecated",
-        "automation_status=machine_ready_disabled",
+        "automation_status=deprecated",
         "deprecated_source_noncanonical"
       ],
       "alpha_status": "configured"
@@ -94,7 +94,7 @@
       "canonical_replacement_key": "federal_court_canada",
       "status_reason": "Superseded by federal_court_canada, which has a machine_ingest adapter. This portal_reference variant is no longer maintained.",
       "operator_next_step": "Migrate any references from federal_court_canada_decisions to federal_court_canada and remove this entry.",
-      "automation_status": "adapter_missing",
+      "automation_status": "deprecated",
       "adapter_key": "federal_court_html",
       "adapter_exists": true,
       "adapter_state": "found",
@@ -106,7 +106,7 @@
       "blockers": [
         "non_machine_ingest_source",
         "lifecycle_state=deprecated",
-        "automation_status=adapter_missing",
+        "automation_status=deprecated",
         "deprecated_source_noncanonical"
       ],
       "alpha_status": "configured"

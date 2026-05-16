@@ -1,0 +1,121 @@
+[proof_demo] PASS: demo database initialized
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> initial, Initial schema migration — matches ORM in app/models/entities.py exactly.
+INFO  [alembic.runtime.migration] Running upgrade initial -> add_incident_link_tables, Add crime_incident_sources and crime_incident_event_links tables.
+INFO  [alembic.runtime.migration] Running upgrade add_incident_link_tables -> add_boundaries_table, Add boundaries table for Natural Earth administrative data.
+INFO  [alembic.runtime.migration] Running upgrade add_boundaries_table -> 20260428_0003, add ai_correctness_checks and ai_correctness_findings tables
+INFO  [alembic.runtime.migration] Running upgrade 20260428_0003 -> 20260428_0004, add courtlistener_bulk_runs table
+INFO  [alembic.runtime.migration] Running upgrade 20260428_0004 -> 20260428_0005, Add cl_person_id, cl_bulk_provenance table, cl_provenance JSON cols, is_aggregate.
+INFO  [alembic.runtime.migration] Running upgrade 20260428_0005 -> 20260429_0006, Add PostGIS geometry column to locations table.
+INFO  [alembic.runtime.migration] Running upgrade 20260429_0006 -> 20260430_0007, Add source snapshots table for content archival and provenance.
+INFO  [alembic.runtime.migration] Running upgrade 20260430_0007 -> 20260430_0008, Add source registry table for source management and health tracking.
+INFO  [alembic.runtime.migration] Running upgrade 20260430_0008 -> 20260430_0009, Add source_snapshot_id foreign key to review_items.
+INFO  [alembic.runtime.migration] Running upgrade 20260430_0009 -> 20260501_0001, Add relationship_evidence table
+INFO  [alembic.runtime.migration] Running upgrade 20260501_0001 -> 20260501_0002, Add canonical_entities and entity_source_records tables
+INFO  [alembic.runtime.migration] Running upgrade 20260501_0002 -> 20260501_0003, Add source registry operational fields
+INFO  [alembic.runtime.migration] Running upgrade 20260501_0003 -> 20260501_0004, Add graph layer: entity_graph_edges and court_events tables
+INFO  [alembic.runtime.migration] Running upgrade 20260501_0004 -> 20260501_0005, Add CrimeIncident timeline fields
+INFO  [alembic.runtime.migration] Running upgrade 20260501_0005 -> 20260501_0006, Add ingestion_run_id to SourceSnapshot and ReviewItem.
+INFO  [alembic.runtime.migration] Running upgrade 20260501_0006 -> 20260501_0007, Add source_tier to SourceRegistry.
+INFO  [alembic.runtime.migration] Running upgrade 20260501_0007 -> 20260501_0008, Add unique constraint to relationship_evidence table.
+INFO  [alembic.runtime.migration] Running upgrade 20260501_0008 -> 20260501_0009, Add unique constraint to entity_graph_edges table.
+INFO  [alembic.runtime.migration] Running upgrade 20260501_0009 -> 20260502_0001, Add snapshot integrity fields to source_snapshots table.
+INFO  [alembic.runtime.migration] Running upgrade 20260502_0001 -> 20260502_0002, Add actor identity fields to audit_logs table.
+INFO  [alembic.runtime.migration] Running upgrade 20260502_0002 -> 20260502_0003, Expand source_registry.source_type length.
+INFO  [alembic.runtime.migration] Running upgrade 20260502_0003 -> 20260502_0004, Fix SourceRegistry.is_active server default to false.
+INFO  [alembic.runtime.migration] Running upgrade 20260502_0004 -> 20260502_0005, Add Phase 6 Fluid Memory State Engine tables.
+INFO  [alembic.runtime.migration] Running upgrade 20260502_0005 -> 20260502_0006, Add entity_evidence_links table.
+INFO  [alembic.runtime.migration] Running upgrade 20260502_0006 -> 20260502_0007, add memory claim lifecycle fields
+INFO  [alembic.runtime.migration] Running upgrade 20260502_0007 -> 20260502_0008, add confidence_score to canonical_entities and source_key to source_snapshots
+INFO  [alembic.runtime.migration] Running upgrade 20260502_0008 -> 20260502_0009, Add rebuild_reason to memory_rebuild_runs and public_visibility to review_items
+INFO  [alembic.runtime.migration] Running upgrade 20260502_0009 -> 20260503_0001, Add users table for JWT-based authentication.
+INFO  [alembic.runtime.migration] Running upgrade 20260503_0001 -> 20260503_0002, Add public_visibility, verification_status, relationship_status, auto_publish_reason to relationship_evidence.
+INFO  [alembic.runtime.migration] Running upgrade 20260503_0002 -> 20260503_0003, Add claim_embedding column to memory_claims.
+INFO  [alembic.runtime.migration] Running upgrade 20260503_0003 -> 20260504_0001, Add reliability_score column to source_registry.
+INFO  [alembic.runtime.migration] Running upgrade 20260504_0001 -> 20260504_0002, Add source_tier_conflicts table.
+INFO  [alembic.runtime.migration] Running upgrade 20260504_0002 -> 20260504_0003, Add chain_of_custody_logs table for evidence provenance tracking.
+INFO  [alembic.runtime.migration] Running upgrade 20260504_0003 -> 20260504_0008, Add pipeline_stage and quarantine_reason to ingestion_runs.
+INFO  [alembic.runtime.migration] Running upgrade 20260504_0008 -> 20260504_0009, Remove dead models: topics and event_topics tables.
+INFO  [alembic.runtime.migration] Running upgrade 20260504_0009 -> 20260504_0010, Add source_snapshot_id FK to crime_incidents table.
+INFO  [alembic.runtime.migration] Running upgrade 20260504_0010 -> 20260504_0011, add source registry metadata fields
+INFO  [alembic.runtime.migration] Running upgrade 20260504_0011 -> 20260505_0001, Add CheckConstraint on memory_rebuild_runs.rebuild_scope.
+INFO  [alembic.runtime.migration] Running upgrade 20260505_0001 -> 20260506_0001, Add source_class column to source_registry.
+INFO  [alembic.runtime.migration] Running upgrade 20260506_0001 -> 20260507_0001, Add user_sessions table for server-side refresh token revocation.
+INFO  [alembic.runtime.migration] Running upgrade 20260507_0001 -> 20260508_0001, Add automation_status column to source_registry.
+INFO  [alembic.runtime.migration] Running upgrade 20260508_0001 -> 20260509_0001, Add entry_hash and previous_entry_hash to audit_logs for persisted chain integrity.
+INFO  [alembic.runtime.migration] Running upgrade 20260509_0001 -> 20260509_0002, Complete audit-chain hash fields: add payload_hash, before_hash, after_hash,
+chain_version, and actor_auth_method to audit_logs.
+INFO  [alembic.runtime.migration] Running upgrade 20260509_0002 -> 20260511_0001, Add legal_instruments and legal_sections tables.
+INFO  [alembic.runtime.migration] Running upgrade 20260511_0001 -> 20260512_0001, Add lifecycle_state, canonical_replacement_key, status_reason,
+operator_next_step to source_registry.
+INFO  [alembic.runtime.migration] Running upgrade 20260512_0001 -> 20260514_0001, Add legal section key/hash/version and revision history table.
+INFO  [alembic.runtime.migration] Running upgrade 20260514_0001 -> 20260514_0002, Add validity and activity fields to legal_sections and legal_section_revisions.
+INFO  [alembic.runtime.migration] Running upgrade 20260514_0002 -> 20260515_0001, Add section_key column to source_registry table.
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0001 -> 20260515_0002, add ingestion identity hashes
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0002 -> 20260515_0003, unique ingestion identity hashes
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0003 -> 20260515_0004, add review_status to relationship_evidence and normalize legal_instrument default
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0004 -> 20260516_0001, Add Sprint C columns to source_registry
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0001 -> 20260516_0002, Migration: Phase 2 - Lock Canonical Data Model
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0002 -> 20260516_0003, Migration: Phase 3 - Ingestion Hardening (Adapter Contracts + Immutability Triggers)
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0003 -> 20260516_0004, Phase 4: Source Stability & Recovery - Add Retry Tracking
+Traceback (most recent call last):
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlite3.IntegrityError: AuditLog is append-only: UPDATE not allowed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/demo/scripts/seed_demo_data.py", line 469, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/demo/scripts/seed_demo_data.py", line 440, in main
+    log_mutation(
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/auth/admin.py", line 342, in log_mutation
+    append_audit_entry(
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/audit/append_log.py", line 87, in append_audit_entry
+    db.flush()
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4331, in flush
+    self._flush(objects)
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4466, in _flush
+    with util.safe_reraise():
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 121, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4427, in _flush
+    flush_context.execute()
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 85, in save_obj
+    _emit_update_statements(
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 912, in _emit_update_statements
+    c = connection.execute(
+        ^^^^^^^^^^^^^^^^^^^
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) AuditLog is append-only: UPDATE not allowed
+[SQL: UPDATE audit_logs SET entry_hash=? WHERE audit_logs.id = ?]
+[parameters: ('81c5bb255c5ecbdb23e33662a90333e9d2624f2639fb1d7806668a7a7d7a0015', 1)]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)

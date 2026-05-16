@@ -151,6 +151,31 @@ ALLOWED_POLICY_FILES: dict[str, AllowedPolicyPhrase] = {
         ),
         phrases=("is a criminal", "criminal offence"),
     ),
+    "docs/security/LEGAL_RISK_BOUNDARIES.md": AllowedPolicyPhrase(
+        reason=(
+            "Security/legal boundaries doc explicitly states what the platform"
+            " is NOT (not a criminal records registry)."
+        ),
+        phrases=("criminal record",),
+    ),
+    "docs/runtime/AI_LIMITATIONS.md": AllowedPolicyPhrase(
+        reason="Runtime limitations doc documents prohibited outputs.",
+        phrases=("danger score",),
+    ),
+    "docs/governance/JUVENILE_AND_SEALED_RECORDS.md": AllowedPolicyPhrase(
+        reason=(
+            "Governance policy quotes statutory language including 'is a criminal'"
+            " in prohibitory context."
+        ),
+        phrases=("is a criminal", "criminal offence"),
+    ),
+    "docs/data-model/CANONICAL_SCHEMA_PHASE2.md": AllowedPolicyPhrase(
+        reason=(
+            "Legacy phase doc preserved for historical schema context; phrase is"
+            " archival and not a current platform claim."
+        ),
+        phrases=("production-ready",),
+    ),
     "CURRENT_STATUS.md": AllowedPolicyPhrase(
         reason=(
             "Status doc explicitly states no AI module produces "
@@ -226,6 +251,8 @@ SKIP_DIRS = {
     "artifacts",
     "external",
     "research",
+    "external_reference",
+    "archive",
     "node_modules",
     "target",
 }

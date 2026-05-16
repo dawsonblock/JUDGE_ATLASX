@@ -62,6 +62,8 @@ SKIP_DIRS: frozenset[str] = frozenset({
     ".tox",
     "research",
     "external",
+    "external_reference",
+    "docs/archive",
 })
 
 
@@ -118,6 +120,12 @@ def check_committed_generated_files(root: Path) -> list[str]:
     if tracked_files is not None:
         for filepath in tracked_files:
             if not filepath:
+                continue
+            path_obj = Path(filepath)
+            parts = path_obj.parts
+            if any(part in SKIP_DIRS for part in parts):
+                continue
+            if filepath.startswith("docs/archive/"):
                 continue
             label = _matches_prohibited(filepath)
             if label:

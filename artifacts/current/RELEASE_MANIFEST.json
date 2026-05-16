@@ -1,0 +1,47 @@
+{
+  "release_mode": "alpha",
+  "generated_at": "2026-05-16T21:04:31.648834+00:00",
+  "git_commit": "505a93ea012837a27127931590a7a12820366133",
+  "included_directories": [
+    "backend",
+    "frontend",
+    "docs",
+    "deploy",
+    "scripts",
+    "tests",
+    "tools",
+    "artifacts/current"
+  ],
+  "excluded_directories": [
+    ".git",
+    ".next",
+    ".pytest_cache",
+    ".venv",
+    "__pycache__",
+    "artifacts/archive",
+    "artifacts/old",
+    "cache",
+    "coverage",
+    "dist",
+    "docs/archive",
+    "duplicate_status_docs",
+    "external_reference",
+    "generated_logs",
+    "node_modules",
+    "old_phase_reports",
+    "tmp",
+    "venv"
+  ],
+  "file_count": 920,
+  "proof_scope": [
+    "backend tests",
+    "frontend contract tests",
+    "runtime boundary validation",
+    "source registry validation",
+    "evidence store validation",
+    "ingestion replay tests",
+    "security startup blocker tests",
+    "publication gate tests"
+  ],
+  "optional_reference_bundle": "JUDGE_ATLASX-reference-bundle.zip"
+}

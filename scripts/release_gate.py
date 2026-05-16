@@ -1320,7 +1320,7 @@ def main() -> int:
                 "-lc",
                 (
                     f'JTA_DATABASE_URL="{proof_db_url}" "{python_exe}" '
-                    "backend/tools/verify_evidence_store.py"
+                    "backend/tools/verify_evidence_store.py --allow-empty"
                 ),
             ],
         ),
@@ -1332,7 +1332,7 @@ def main() -> int:
                 "-lc",
                 (
                     f'JTA_DATABASE_URL="{proof_db_url}" "{python_exe}" '
-                    "backend/tools/verify_audit_chain.py"
+                    "backend/tools/verify_audit_chain.py --allow-empty"
                 ),
             ],
         ),

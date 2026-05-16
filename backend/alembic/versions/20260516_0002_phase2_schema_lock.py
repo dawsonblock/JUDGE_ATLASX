@@ -33,23 +33,51 @@ branch_labels = None
 depends_on = None
 
 
+def _existing_index_names(table_name: str) -> set[str]:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    try:
+        indexes = inspector.get_indexes(table_name)
+    except Exception:
+        return set()
+    return {idx.get("name") for idx in indexes if idx.get("name")}
+
+
+def _create_index_if_missing(
+    index_name: str,
+    table_name: str,
+    columns: list[str],
+    *,
+    unique: bool = False,
+) -> None:
+    if index_name in _existing_index_names(table_name):
+        return
+    op.create_index(index_name, table_name, columns, unique=unique)
+
+
+def _drop_index_if_exists(index_name: str, *, table_name: str) -> None:
+    if index_name not in _existing_index_names(table_name):
+        return
+    op.drop_index(index_name, table_name=table_name)
+
+
 def upgrade():
     """Apply Phase 2 schema lock."""
     
     # 1. SourceRegistry: Add missing fields
     # (Note: most fields already exist; this adds any gaps)
-    op.create_index(
+    _create_index_if_missing(
         'ix_source_registry_source_key',
         'source_registry',
         ['source_key'],
         unique=True,
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_source_registry_automation_status',
         'source_registry',
         ['automation_status'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_source_registry_parser_version',
         'source_registry',
         ['parser_version'],
@@ -57,12 +85,12 @@ def upgrade():
     
     # 2. SourceSnapshot: Lock immutability
     # Add constraint that prevents UPDATEs (via trigger in Phase 3)
-    op.create_index(
+    _create_index_if_missing(
         'ix_source_snapshots_source_key_content_hash',
         'source_snapshots',
         ['source_key', 'content_hash'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_source_snapshots_ingestion_run_id',
         'source_snapshots',
         ['ingestion_run_id'],
@@ -71,78 +99,78 @@ def upgrade():
     # 3. IngestionRun: Ensure counters exist
     # Add check constraint: persisted + skipped + error = fetched
     # (This is enforced at application level, but document it)
-    op.create_index(
+    _create_index_if_missing(
         'ix_ingestion_runs_status',
         'ingestion_runs',
         ['status'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_ingestion_runs_pipeline_stage',
         'ingestion_runs',
         ['pipeline_stage'],
     )
     
     # 4. ReviewItem: Standardize status and add indices
-    op.create_index(
+    _create_index_if_missing(
         'ix_review_items_status',
         'review_items',
         ['status'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_review_items_source_snapshot_id',
         'review_items',
         ['source_snapshot_id'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_review_items_ingestion_run_id',
         'review_items',
         ['ingestion_run_id'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_review_items_record_type',
         'review_items',
         ['record_type'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_review_items_publish_recommendation',
         'review_items',
         ['publish_recommendation'],
     )
     
     # 5. AuditLog: Add chain integrity indices
-    op.create_index(
+    _create_index_if_missing(
         'ix_audit_logs_created_at',
         'audit_logs',
         ['created_at'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_audit_logs_entity_type_entity_id',
         'audit_logs',
         ['entity_type', 'entity_id'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_audit_logs_action',
         'audit_logs',
         ['action'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_audit_logs_entry_hash',
         'audit_logs',
         ['entry_hash'],
     )
     
     # 6. CanonicalEntity: Add indices
-    op.create_index(
+    _create_index_if_missing(
         'ix_canonical_entities_entity_type',
         'canonical_entities',
         ['entity_type'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_canonical_entities_status',
         'canonical_entities',
         ['status'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_canonical_entities_canonical_name',
         'canonical_entities',
         ['canonical_name'],
@@ -151,44 +179,44 @@ def upgrade():
     # 7. RelationshipEvidence: Ensure unique constraint
     # (Should already exist, but verify)
     # Unique: (from_entity_type, from_entity_id, to_entity_type, to_entity_id, relationship_type)
-    op.create_index(
+    _create_index_if_missing(
         'ix_relationship_evidence_from_to',
         'relationship_evidence',
         ['from_entity_type', 'from_entity_id', 'to_entity_type', 'to_entity_id'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_relationship_evidence_relationship_type',
         'relationship_evidence',
         ['relationship_type'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_relationship_evidence_evidence_snapshot_id',
         'relationship_evidence',
         ['evidence_snapshot_id'],
     )
     
     # 8. MemoryClaim: Add indices
-    op.create_index(
+    _create_index_if_missing(
         'ix_memory_claims_entity_id_status',
         'memory_claims',
         ['entity_id', 'status'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_memory_claims_source_snapshot_id',
         'memory_claims',
         ['source_snapshot_id'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_memory_claims_status',
         'memory_claims',
         ['status'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_memory_claims_claim_type',
         'memory_claims',
         ['claim_type'],
     )
-    op.create_index(
+    _create_index_if_missing(
         'ix_memory_claims_claim_key',
         'memory_claims',
         ['claim_key'],
@@ -200,37 +228,37 @@ def downgrade():
     """Rollback Phase 2 schema lock."""
     
     # Drop all indices created in upgrade()
-    op.drop_index('ix_source_registry_source_key', table_name='source_registry')
-    op.drop_index('ix_source_registry_automation_status', table_name='source_registry')
-    op.drop_index('ix_source_registry_parser_version', table_name='source_registry')
+    _drop_index_if_exists('ix_source_registry_source_key', table_name='source_registry')
+    _drop_index_if_exists('ix_source_registry_automation_status', table_name='source_registry')
+    _drop_index_if_exists('ix_source_registry_parser_version', table_name='source_registry')
     
-    op.drop_index('ix_source_snapshots_source_key_content_hash', table_name='source_snapshots')
-    op.drop_index('ix_source_snapshots_ingestion_run_id', table_name='source_snapshots')
+    _drop_index_if_exists('ix_source_snapshots_source_key_content_hash', table_name='source_snapshots')
+    _drop_index_if_exists('ix_source_snapshots_ingestion_run_id', table_name='source_snapshots')
     
-    op.drop_index('ix_ingestion_runs_status', table_name='ingestion_runs')
-    op.drop_index('ix_ingestion_runs_pipeline_stage', table_name='ingestion_runs')
+    _drop_index_if_exists('ix_ingestion_runs_status', table_name='ingestion_runs')
+    _drop_index_if_exists('ix_ingestion_runs_pipeline_stage', table_name='ingestion_runs')
     
-    op.drop_index('ix_review_items_status', table_name='review_items')
-    op.drop_index('ix_review_items_source_snapshot_id', table_name='review_items')
-    op.drop_index('ix_review_items_ingestion_run_id', table_name='review_items')
-    op.drop_index('ix_review_items_record_type', table_name='review_items')
-    op.drop_index('ix_review_items_publish_recommendation', table_name='review_items')
+    _drop_index_if_exists('ix_review_items_status', table_name='review_items')
+    _drop_index_if_exists('ix_review_items_source_snapshot_id', table_name='review_items')
+    _drop_index_if_exists('ix_review_items_ingestion_run_id', table_name='review_items')
+    _drop_index_if_exists('ix_review_items_record_type', table_name='review_items')
+    _drop_index_if_exists('ix_review_items_publish_recommendation', table_name='review_items')
     
-    op.drop_index('ix_audit_logs_created_at', table_name='audit_logs')
-    op.drop_index('ix_audit_logs_entity_type_entity_id', table_name='audit_logs')
-    op.drop_index('ix_audit_logs_action', table_name='audit_logs')
-    op.drop_index('ix_audit_logs_entry_hash', table_name='audit_logs')
+    _drop_index_if_exists('ix_audit_logs_created_at', table_name='audit_logs')
+    _drop_index_if_exists('ix_audit_logs_entity_type_entity_id', table_name='audit_logs')
+    _drop_index_if_exists('ix_audit_logs_action', table_name='audit_logs')
+    _drop_index_if_exists('ix_audit_logs_entry_hash', table_name='audit_logs')
     
-    op.drop_index('ix_canonical_entities_entity_type', table_name='canonical_entities')
-    op.drop_index('ix_canonical_entities_status', table_name='canonical_entities')
-    op.drop_index('ix_canonical_entities_canonical_name', table_name='canonical_entities')
+    _drop_index_if_exists('ix_canonical_entities_entity_type', table_name='canonical_entities')
+    _drop_index_if_exists('ix_canonical_entities_status', table_name='canonical_entities')
+    _drop_index_if_exists('ix_canonical_entities_canonical_name', table_name='canonical_entities')
     
-    op.drop_index('ix_relationship_evidence_from_to', table_name='relationship_evidence')
-    op.drop_index('ix_relationship_evidence_relationship_type', table_name='relationship_evidence')
-    op.drop_index('ix_relationship_evidence_evidence_snapshot_id', table_name='relationship_evidence')
+    _drop_index_if_exists('ix_relationship_evidence_from_to', table_name='relationship_evidence')
+    _drop_index_if_exists('ix_relationship_evidence_relationship_type', table_name='relationship_evidence')
+    _drop_index_if_exists('ix_relationship_evidence_evidence_snapshot_id', table_name='relationship_evidence')
     
-    op.drop_index('ix_memory_claims_entity_id_status', table_name='memory_claims')
-    op.drop_index('ix_memory_claims_source_snapshot_id', table_name='memory_claims')
-    op.drop_index('ix_memory_claims_status', table_name='memory_claims')
-    op.drop_index('ix_memory_claims_claim_type', table_name='memory_claims')
-    op.drop_index('ix_memory_claims_claim_key', table_name='memory_claims')
+    _drop_index_if_exists('ix_memory_claims_entity_id_status', table_name='memory_claims')
+    _drop_index_if_exists('ix_memory_claims_source_snapshot_id', table_name='memory_claims')
+    _drop_index_if_exists('ix_memory_claims_status', table_name='memory_claims')
+    _drop_index_if_exists('ix_memory_claims_claim_type', table_name='memory_claims')
+    _drop_index_if_exists('ix_memory_claims_claim_key', table_name='memory_claims')

@@ -1,0 +1,2 @@
+[proof_demo] PASS: demo database initialized
+/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/bin/python: can't open file '/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/demo/scripts/seed_demo_data.py': [Errno 2] No such file or directory

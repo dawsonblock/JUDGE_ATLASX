@@ -1,0 +1,40 @@
+{
+  "generated_at": "2026-05-16T21:54:08.390249+00:00",
+  "release_mode": "alpha",
+  "environment": {},
+  "git_commit": "unknown",
+  "checks_total": 37,
+  "checks_failed": 1,
+  "checks_warnings": 0,
+  "covered_directories": [
+    "backend",
+    "frontend",
+    "scripts",
+    "docs",
+    "artifacts/proof/current"
+  ],
+  "excluded_directories": [
+    "external_reference",
+    "artifacts/old",
+    "artifacts/archive",
+    "generated_logs",
+    "tmp",
+    "cache",
+    "node_modules",
+    "__pycache__",
+    ".pytest_cache",
+    ".next",
+    "dist",
+    "coverage"
+  ],
+  "proof_hash": "4368937446ab45a47c8a3808f81fc41519505a9f5f0e7b752c5a172699c6769a",
+  "source": {
+    "release_gate": "artifacts/proof/current/release_gate.json",
+    "proof_manifest": "artifacts/proof/current/proof_manifest.json"
+  },
+  "alpha_limitations": [
+    "alpha release only; not production legal authority",
+    "evidence is authoritative; AI and memory outputs are derivative",
+    "publication requires review + linked evidence snapshot"
+  ]
+}

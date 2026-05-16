@@ -72,7 +72,15 @@ def test_no_external_reference_imports_in_backend():
     # Find all Python files
     python_files = get_python_files(
         str(backend_root),
-        exclude_dirs={"__pycache__", ".pytest_cache", "tests"}
+        exclude_dirs={
+            "__pycache__",
+            ".pytest_cache",
+            "tests",
+            ".venv",
+            "venv",
+            "site-packages",
+            "node_modules",
+        },
     )
     
     violations_by_file = {}
@@ -100,7 +108,7 @@ def test_external_reference_directory_isolated():
     This gate ensures external_reference directory is present and
     not accidentally imported by runtime code.
     """
-    repo_root = Path(__file__).parent.parent.parent.parent.parent  # repository root
+    repo_root = Path(__file__).resolve().parents[3]  # repository root
     external_ref_dir = repo_root / "external_reference"
     
     assert external_ref_dir.exists(), (

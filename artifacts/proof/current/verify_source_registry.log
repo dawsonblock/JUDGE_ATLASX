@@ -1,11 +1,12 @@
 {
-  "generated_at": "2026-05-15T07:24:10.023814+00:00",
+  "generated_at": "2026-05-16T22:01:31.810349+00:00",
   "source_registry_ok": true,
   "total_sources": 26,
   "status_counts": {
     "machine_ready_enabled": 1,
-    "adapter_missing": 18,
-    "machine_ready_disabled": 6,
+    "adapter_missing": 17,
+    "deprecated": 2,
+    "machine_ready_disabled": 5,
     "disabled_stub": 1
   },
   "violations": [],
@@ -35,7 +36,7 @@
     },
     {
       "source_key": "scc_judgments",
-      "automation_status": "machine_ready_disabled",
+      "automation_status": "deprecated",
       "lifecycle_state": "deprecated",
       "source_class": "machine_ingest",
       "parser": "scc_lexum_api",
@@ -46,7 +47,7 @@
     },
     {
       "source_key": "federal_court_canada_decisions",
-      "automation_status": "adapter_missing",
+      "automation_status": "deprecated",
       "lifecycle_state": "deprecated",
       "source_class": "portal_reference",
       "parser": "federal_court_html",

@@ -1,4 +1,4 @@
-.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup release-zip
+.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup release-zip build-clean-release validate-release-zip
 
 backend-install:
 	cd backend && python -m pip install -e ".[test]"
@@ -92,17 +92,27 @@ docker-smoke:
 	docker compose down -v
 
 proof:
-	@mkdir -p artifacts/proof
-	@TIMESTAMP=$$(date +%Y%m%d-%H%M%S); \
-	echo "=== Backend tests $(TIMESTAMP) ===" | tee artifacts/proof/backend-$${TIMESTAMP}.log; \
-	cd backend && python -m compileall -q app 2>&1 | tee -a ../artifacts/proof/backend-$${TIMESTAMP}.log; \
-	python scripts/proof_backend_import.py 2>&1 | tee -a ../artifacts/proof/backend-$${TIMESTAMP}.log; \
-	python -m pytest -q 2>&1 | tee -a ../artifacts/proof/backend-$${TIMESTAMP}.log; \
-	echo "=== Frontend checks $(TIMESTAMP) ===" | tee ../artifacts/proof/frontend-$${TIMESTAMP}.log; \
-	cd ../frontend && npm run lint 2>&1 | tee -a ../artifacts/proof/frontend-$${TIMESTAMP}.log; \
-	npm run typecheck 2>&1 | tee -a ../artifacts/proof/frontend-$${TIMESTAMP}.log; \
-	npm run build 2>&1 | tee -a ../artifacts/proof/frontend-$${TIMESTAMP}.log; \
-	echo "Proof logs saved to artifacts/proof/backend-$${TIMESTAMP}.log and artifacts/proof/frontend-$${TIMESTAMP}.log"
+	@python3 scripts/validate_runtime_boundaries.py
+	@python3 scripts/verify_source_registry.py
+	@cd backend && python -m pytest -q \
+		app/tests/test_ingestion_result_gate.py \
+		app/tests/test_machine_ingest_publication_block.py \
+		app/tests/test_source_registry_contracts.py \
+		app/tests/test_snapshot_integrity.py \
+		app/tests/test_jwt_mutation_enforcement.py \
+		app/tests/test_mutation_rbac_matrix.py \
+		app/tests/test_review_gates.py \
+		app/tests/test_evidence_required_for_publish.py \
+		app/tests/test_ai_review_requires_reviewer_or_source_admin.py
+	@python3 scripts/release_gate.py || true
+	@python3 scripts/generate_alpha_proof_artifacts.py
+	@echo "Proof complete: artifacts/current/PROOF_REPORT.md and artifacts/current/PROOF_MANIFEST.json"
+
+build-clean-release:
+	@python3 scripts/build_clean_release.py
+
+validate-release-zip:
+	@python3 scripts/validate_release_zip.py
 
 # release-zip: create a distributable archive excluding development artifacts
 release-zip:

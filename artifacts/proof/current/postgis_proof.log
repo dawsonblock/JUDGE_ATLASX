@@ -94,8 +94,8 @@ Client:
     Path:     /Users/dawsonblock/.docker/cli-plugins/docker-scout
 
 Server:
- Containers: 72
-  Running: 6
+ Containers: 76
+  Running: 10
   Paused: 0
   Stopped: 66
  Images: 58
@@ -163,14 +163,14 @@ Server:
 [proof_postgis] Stage: container start
 [proof_postgis] Starting PostGIS container...
 WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
-6514f02a6db6680947fd6fa06ee4ea5ef9e8b38451de830740d52d268487764d
+9cf37629e173e188f4e6e48289e14f03fd68bfb60c111364c4ada399f8c0615d
 [proof_postgis] PASS: container start requested
 [proof_postgis] Stage: pg_isready wait loop
 [proof_postgis] Waiting for Postgres to be ready...
-[proof_postgis] Postgres ready after 4s
+[proof_postgis] Postgres ready after 3s
 [proof_postgis] PASS: pg_isready
 [proof_postgis] Stage: host connectivity wait loop
-[proof_postgis] PASS: host connectivity ready after 9s
+[proof_postgis] PASS: host connectivity ready after 6s
 [proof_postgis] Stage: ensure proof database exists
 [proof_postgis] PASS: proof database exists
 [proof_postgis] Stage: PostGIS extension check
@@ -232,6 +232,13 @@ operator_next_step to source_registry.
 INFO  [alembic.runtime.migration] Running upgrade 20260512_0001 -> 20260514_0001, Add legal section key/hash/version and revision history table.
 INFO  [alembic.runtime.migration] Running upgrade 20260514_0001 -> 20260514_0002, Add validity and activity fields to legal_sections and legal_section_revisions.
 INFO  [alembic.runtime.migration] Running upgrade 20260514_0002 -> 20260515_0001, Add section_key column to source_registry table.
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0001 -> 20260515_0002, add ingestion identity hashes
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0002 -> 20260515_0003, unique ingestion identity hashes
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0003 -> 20260515_0004, add review_status to relationship_evidence and normalize legal_instrument default
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0004 -> 20260516_0001, Add Sprint C columns to source_registry
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0001 -> 20260516_0002, Migration: Phase 2 - Lock Canonical Data Model
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0002 -> 20260516_0003, Migration: Phase 3 - Ingestion Hardening (Adapter Contracts + Immutability Triggers)
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0003 -> 20260516_0004, Phase 4: Source Stability & Recovery - Add Retry Tracking
 [proof_postgis] PASS: alembic upgrade head
 [proof_postgis] Stage: source registry seed
 [proof_postgis] PASS: source registry seed (covered by app startup/seed path)
@@ -258,35 +265,17 @@ app/tests/test_map_bbox.py::test_bbox_validation_rejects_south_greater_than_nort
 app/tests/test_map_bbox.py::test_map_events_bbox_returns_only_events_in_bounds PASSED [ 90%]
 app/tests/test_map_bbox.py::test_bbox_query_does_not_crash_with_postgresql_dialect PASSED [100%]
 
-=============================== warnings summary ===============================
-.venv/lib/python3.11/site-packages/passlib/utils/__init__.py:854
-  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/passlib/utils/__init__.py:854: DeprecationWarning: 'crypt' is deprecated and slated for removal in Python 3.13
-    from crypt import crypt as _crypt
-
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-======================== 11 passed, 1 warning in 0.08s =========================
+============================== 11 passed in 0.08s ==============================
 [proof_postgis] PASS: spatial smoke tests
 [proof_postgis] Stage: public/private map visibility test
 [proof_postgis] Running public/private visibility proof...
 .......                                                                  [100%]
-=============================== warnings summary ===============================
-.venv/lib/python3.11/site-packages/passlib/utils/__init__.py:854
-  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/passlib/utils/__init__.py:854: DeprecationWarning: 'crypt' is deprecated and slated for removal in Python 3.13
-    from crypt import crypt as _crypt
-
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-7 passed, 1 warning in 0.06s
+7 passed in 0.05s
 [proof_postgis] PASS: public/private map visibility test
 [proof_postgis] Stage: evidence snapshot immutability test
 [proof_postgis] Running evidence snapshot immutability proof...
 .................                                                        [100%]
-=============================== warnings summary ===============================
-.venv/lib/python3.11/site-packages/passlib/utils/__init__.py:854
-  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/passlib/utils/__init__.py:854: DeprecationWarning: 'crypt' is deprecated and slated for removal in Python 3.13
-    from crypt import crypt as _crypt
-
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-17 passed, 1 warning in 0.03s
+17 passed in 0.04s
 [proof_postgis] PASS: evidence snapshot immutability test
 [proof_postgis] Stage: cleanup
 [proof_postgis] Cleanup: removing container 'judge_postgis_proof'

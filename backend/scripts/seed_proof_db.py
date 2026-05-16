@@ -21,7 +21,7 @@ import os
 import sys
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func
 from sqlalchemy.orm import Session
 
 from app.models.entities import AuditLog, SourceSnapshot
@@ -117,11 +117,14 @@ def seed_audit_chain(db_url: str) -> None:
             },
         ]
 
+        max_id = db.query(func.max(AuditLog.id)).scalar() or 0
+
         for i, p in enumerate(payloads, start=1):
             ph = _payload_hash(p["payload"])
             ts = now + timedelta(seconds=i)
+            row_id = int(max_id) + i
             row_dict = {
-                "id": None,
+                "id": row_id,
                 "action": p["action"],
                 "entity_type": p["entity_type"],
                 "entity_id": p["entity_id"],
@@ -134,8 +137,10 @@ def seed_audit_chain(db_url: str) -> None:
                 "created_at": ts,
                 "chain_version": 2,
             }
+            entry_hash = _row_digest(row_dict, prev_hash)
 
             entry = AuditLog(
+                id=row_id,
                 action=p["action"],
                 entity_type=p["entity_type"],
                 entity_id=p["entity_id"],
@@ -149,14 +154,11 @@ def seed_audit_chain(db_url: str) -> None:
                 before_hash=p["before_hash"],
                 after_hash=p["after_hash"],
                 previous_entry_hash=prev_hash,
+                entry_hash=entry_hash,
                 chain_version=2,
             )
             db.add(entry)
-            db.flush()
-            row_dict["id"] = entry.id
-            entry.entry_hash = _row_digest(row_dict, prev_hash)
-            db.flush()
-            prev_hash = entry.entry_hash
+            prev_hash = entry_hash
 
         db.commit()
         print(f"  Seeded {len(payloads)} audit chain entries (chain_version=2)")

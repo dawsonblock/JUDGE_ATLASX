@@ -1,0 +1,682 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  7%]
+........................................................................ [  9%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 17%]
+........................................................................ [ 19%]
+........................................................................ [ 22%]
+........................................................................ [ 24%]
+........................................................................ [ 27%]
+........................................................................ [ 29%]
+........................................................................ [ 32%]
+........................................................................ [ 34%]
+........................................................................ [ 36%]
+........................................................................ [ 39%]
+........................................................................ [ 41%]
+........................................................................ [ 44%]
+........................................................................ [ 46%]
+........................................................................ [ 49%]
+........................................................................ [ 51%]
+........................................................................ [ 54%]
+........................................................................ [ 56%]
+........................................................................ [ 59%]
+.........................F
+=================================== FAILURES ===================================
+________________ test_no_external_reference_imports_in_backend _________________
+backend/app/tests/test_no_external_reference_imports.py:86: in test_no_external_reference_imports_in_backend
+    assert not violations_by_file, (
+E   AssertionError: BOUNDARY VIOLATION: Runtime code imports from external_reference/:
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/websockets/legacy/framing.py:
+E       Line 7: from .. import extensions, frames
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/websockets/legacy/exceptions.py:
+E       Line 3: from .. import datastructures
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/websockets/extensions/permessage_deflate.py:
+E       Line 7: from .. import frames
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/connectors/aioodbc.py:
+E       Line 18: from .. import pool
+E       Line 19: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/connectors/pyodbc.py:
+E       Line 21: from .. import ExecutionContext
+E       Line 22: from .. import pool
+E       Line 23: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:
+E       Line 25: from .. import exc
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/util/topological.py:
+E       Line 22: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/util/deprecations.py:
+E       Line 33: from .. import exc
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:
+E       Line 51: from .. import exc
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/ext/instrumentation.py:
+E       Line 28: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/ext/compiler.py:
+E       Line 493: from .. import exc
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/ext/hybrid.py:
+E       Line 863: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/ext/__init__.py:
+E       Line 8: from .. import util as _sa_util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/ext/indexable.py:
+E       Line 237: from .. import inspect
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/ext/serializer.py:
+E       Line 75: from .. import Column
+E       Line 76: from .. import Table
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/ext/baked.py:
+E       Line 22: from .. import exc as sa_exc
+E       Line 23: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/ext/automap.py:
+E       Line 732: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/ext/horizontal_shard.py:
+E       Line 39: from .. import event
+E       Line 40: from .. import exc
+E       Line 41: from .. import inspect
+E       Line 42: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/ext/mutable.py:
+E       Line 397: from .. import event
+E       Line 398: from .. import inspect
+E       Line 399: from .. import types
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/ext/associationproxy.py:
+E       Line 46: from .. import ColumnElement
+E       Line 47: from .. import exc
+E       Line 48: from .. import inspect
+E       Line 49: from .. import orm
+E       Line 50: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/exclusions.py:
+E       Line 15: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/config.py:
+E       Line 28: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/engines.py:
+E       Line 25: from .. import event
+E       Line 26: from .. import pool
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/util.py:
+E       Line 28: from .. import inspect
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/warnings.py:
+E       Line 14: from .. import exc
+E       Line 15: from .. import exc as sa_exc
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/assertions.py:
+E       Line 26: from .. import exc as sa_exc
+E       Line 27: from .. import schema
+E       Line 28: from .. import sql
+E       Line 29: from .. import types as sqltypes
+E       Line 30: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/assertsql.py:
+E       Line 17: from .. import event
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/provision.py:
+E       Line 18: from .. import exc
+E       Line 19: from .. import inspect
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/requirements.py:
+E       Line 28: from .. import create_engine
+E       Line 29: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/entities.py:
+E       Line 13: from .. import exc as sa_exc
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/schema.py:
+E       Line 15: from .. import event
+E       Line 16: from .. import schema
+E       Line 17: from .. import types as sqltypes
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/fixtures/orm.py:
+E       Line 15: from .. import assertions
+E       Line 16: from .. import config
+E       Line 17: from .. import schema
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/fixtures/mypy.py:
+E       Line 20: from .. import config
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/fixtures/sql.py:
+E       Line 16: from .. import config
+E       Line 17: from .. import mock
+E       Line 18: from .. import provision
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/fixtures/base.py:
+E       Line 13: from .. import assertions
+E       Line 14: from .. import config
+E       Line 165: from .. import engines
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/suite/test_sequence.py:
+E       Line 9: from .. import config
+E       Line 10: from .. import fixtures
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/suite/test_results.py:
+E       Line 12: from .. import engines
+E       Line 13: from .. import fixtures
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/suite/test_insert.py:
+E       Line 13: from .. import fixtures
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/suite/test_select.py:
+E       Line 12: from .. import AssertsCompiledSQL
+E       Line 13: from .. import AssertsExecutionResults
+E       Line 14: from .. import config
+E       Line 15: from .. import fixtures
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/suite/test_deprecations.py:
+E       Line 9: from .. import fixtures
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/suite/test_ddl.py:
+E       Line 12: from .. import config
+E       Line 13: from .. import fixtures
+E       Line 14: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/suite/test_dialect.py:
+E       Line 13: from .. import assert_raises
+E       Line 14: from .. import config
+E       Line 15: from .. import engines
+E       Line 16: from .. import eq_
+E       Line 17: from .. import fixtures
+E       Line 18: from .. import is_not_none
+E       Line 19: from .. import is_true
+E       Line 20: from .. import mock
+E       Line 21: from .. import ne_
+E       Line 22: from .. import provide_metadata
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/suite/test_update_delete.py:
+E       Line 9: from .. import fixtures
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/suite/test_reflection.py:
+E       Line 14: from .. import config
+E       Line 15: from .. import engines
+E       Line 16: from .. import eq_
+E       Line 17: from .. import eq_regex
+E       Line 18: from .. import expect_raises
+E       Line 19: from .. import expect_raises_message
+E       Line 20: from .. import expect_warnings
+E       Line 21: from .. import fixtures
+E       Line 22: from .. import is_
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/suite/test_cte.py:
+E       Line 9: from .. import fixtures
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/testing/suite/test_types.py:
+E       Line 16: from .. import config
+E       Line 17: from .. import engines
+E       Line 18: from .. import fixtures
+E       Line 19: from .. import mock
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/__init__.py:
+E       Line 16: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/interfaces.py:
+E       Line 60: from .. import ColumnElement
+E       Line 61: from .. import exc as sa_exc
+E       Line 62: from .. import inspection
+E       Line 63: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/decl_base.py:
+E       Line 59: from .. import event
+E       Line 60: from .. import exc
+E       Line 61: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/instrumentation.py:
+E       Line 60: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/loading.py:
+E       Line 45: from .. import exc as sa_exc
+E       Line 46: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:
+E       Line 30: from .. import exc as sa_exc
+E       Line 31: from .. import future
+E       Line 32: from .. import sql
+E       Line 33: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/path_registry.py:
+E       Line 29: from .. import exc
+E       Line 30: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/query.py:
+E       Line 60: from .. import exc as sa_exc
+E       Line 61: from .. import inspect
+E       Line 62: from .. import inspection
+E       Line 63: from .. import log
+E       Line 64: from .. import sql
+E       Line 65: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py:
+E       Line 78: from .. import event
+E       Line 79: from .. import exc
+E       Line 80: from .. import inspection
+E       Line 81: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/strategies.py:
+E       Line 52: from .. import event
+E       Line 53: from .. import exc as sa_exc
+E       Line 54: from .. import inspect
+E       Line 55: from .. import log
+E       Line 56: from .. import sql
+E       Line 57: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/strategy_options.py:
+E       Line 44: from .. import exc as sa_exc
+E       Line 45: from .. import inspect
+E       Line 46: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/properties.py:
+E       Line 47: from .. import exc as sa_exc
+E       Line 48: from .. import ForeignKey
+E       Line 49: from .. import log
+E       Line 50: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/util.py:
+E       Line 68: from .. import event
+E       Line 69: from .. import exc as sa_exc
+E       Line 70: from .. import inspection
+E       Line 71: from .. import sql
+E       Line 72: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/events.py:
+E       Line 40: from .. import event
+E       Line 41: from .. import exc
+E       Line 42: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py:
+E       Line 67: from .. import event
+E       Line 68: from .. import exc as sa_exc
+E       Line 69: from .. import inspection
+E       Line 70: from .. import log
+E       Line 71: from .. import schema
+E       Line 72: from .. import sql
+E       Line 73: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/mapped_collection.py:
+E       Line 27: from .. import exc as sa_exc
+E       Line 28: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/scoping.py:
+E       Line 27: from .. import exc as sa_exc
+E       Line 28: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/clsregistry.py:
+E       Line 42: from .. import exc
+E       Line 43: from .. import inspection
+E       Line 44: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:
+E       Line 69: from .. import engine
+E       Line 70: from .. import exc as sa_exc
+E       Line 71: from .. import sql
+E       Line 72: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/__init__.py:
+E       Line 163: from .. import util as _sa_util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/writeonly.py:
+E       Line 46: from .. import exc
+E       Line 47: from .. import inspect
+E       Line 48: from .. import log
+E       Line 49: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/dynamic.py:
+E       Line 45: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py:
+E       Line 39: from .. import exc as sa_exc
+E       Line 40: from .. import future
+E       Line 41: from .. import inspect
+E       Line 42: from .. import sql
+E       Line 43: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/exc.py:
+E       Line 20: from .. import exc as sa_exc
+E       Line 21: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/collections.py:
+E       Line 131: from .. import exc as sa_exc
+E       Line 132: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/_orm_constructors.py:
+E       Line 40: from .. import sql
+E       Line 41: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/dependency.py:
+E       Line 22: from .. import exc as sa_exc
+E       Line 23: from .. import sql
+E       Line 24: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/descriptor_props.py:
+E       Line 48: from .. import event
+E       Line 49: from .. import exc as sa_exc
+E       Line 50: from .. import schema
+E       Line 51: from .. import sql
+E       Line 52: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/decl_api.py:
+E       Line 63: from .. import exc
+E       Line 64: from .. import inspection
+E       Line 65: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/bulk_persistence.py:
+E       Line 38: from .. import exc as sa_exc
+E       Line 39: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/identity.py:
+E       Line 25: from .. import exc as sa_exc
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:
+E       Line 24: from .. import exc as sa_exc
+E       Line 25: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/evaluator.py:
+E       Line 27: from .. import exc
+E       Line 28: from .. import inspect
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:
+E       Line 29: from .. import event
+E       Line 30: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/base.py:
+E       Line 30: from .. import exc as sa_exc
+E       Line 31: from .. import inspection
+E       Line 32: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/relationships.py:
+E       Line 69: from .. import exc as sa_exc
+E       Line 70: from .. import Exists
+E       Line 71: from .. import log
+E       Line 72: from .. import schema
+E       Line 73: from .. import sql
+E       Line 74: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state.py:
+E       Line 44: from .. import exc as sa_exc
+E       Line 45: from .. import inspection
+E       Line 46: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/interfaces.py:
+E       Line 33: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/create.py:
+E       Line 26: from .. import event
+E       Line 27: from .. import exc
+E       Line 28: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/util.py:
+E       Line 16: from .. import exc
+E       Line 17: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/events.py:
+E       Line 25: from .. import event
+E       Line 26: from .. import exc
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/reflection.py:
+E       Line 51: from .. import exc
+E       Line 52: from .. import inspection
+E       Line 53: from .. import sql
+E       Line 54: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/url.py:
+E       Line 40: from .. import exc
+E       Line 41: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/result.py:
+E       Line 38: from .. import exc
+E       Line 39: from .. import util
+E       Line 57: from .. import inspection
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:
+E       Line 53: from .. import event
+E       Line 54: from .. import exc
+E       Line 55: from .. import pool
+E       Line 56: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:
+E       Line 38: from .. import exc
+E       Line 39: from .. import inspection
+E       Line 40: from .. import log
+E       Line 41: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/cursor.py:
+E       Line 42: from .. import exc
+E       Line 43: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/mock.py:
+E       Line 20: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/_py_util.py:
+E       Line 15: from .. import exc
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/pool/events.py:
+E       Line 19: from .. import event
+E       Line 20: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/pool/impl.py:
+E       Line 33: from .. import exc
+E       Line 34: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:
+E       Line 31: from .. import event
+E       Line 32: from .. import exc
+E       Line 33: from .. import log
+E       Line 34: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/event/legacy.py:
+E       Line 25: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/event/registry.py:
+E       Line 35: from .. import exc
+E       Line 36: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/event/api.py:
+E       Line 18: from .. import exc
+E       Line 19: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/event/attr.py:
+E       Line 62: from .. import exc
+E       Line 63: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/event/base.py:
+E       Line 42: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/functions.py:
+E       Line 61: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/annotation.py:
+E       Line 40: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/ddl.py:
+E       Line 34: from .. import exc
+E       Line 35: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py:
+E       Line 81: from .. import exc
+E       Line 82: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/_typing.py:
+E       Line 28: from .. import exc
+E       Line 29: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/traversals.py:
+E       Line 34: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/cache_key.py:
+E       Line 31: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/roles.py:
+E       Line 15: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/naming.py:
+E       Line 26: from .. import event
+E       Line 27: from .. import exc
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/util.py:
+E       Line 67: from .. import exc
+E       Line 68: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/visitors.py:
+E       Line 34: from .. import exc
+E       Line 35: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/events.py:
+E       Line 14: from .. import event
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/default_comparator.py:
+E       Line 39: from .. import exc
+E       Line 40: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:
+E       Line 74: from .. import exc
+E       Line 75: from .. import inspection
+E       Line 76: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/__init__.py:
+E       Line 112: from .. import util as _sa_util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/sqltypes.py:
+E       Line 55: from .. import event
+E       Line 56: from .. import exc
+E       Line 57: from .. import inspection
+E       Line 58: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/operators.py:
+E       Line 51: from .. import exc
+E       Line 52: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/selectable.py:
+E       Line 99: from .. import exc
+E       Line 100: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/dml.py:
+E       Line 68: from .. import exc
+E       Line 69: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/coercions.py:
+E       Line 39: from .. import exc
+E       Line 40: from .. import inspection
+E       Line 41: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/base.py:
+E       Line 53: from .. import event
+E       Line 54: from .. import exc
+E       Line 55: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/type_api.py:
+E       Line 35: from .. import exc
+E       Line 36: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/crud.py:
+E       Line 44: from .. import exc
+E       Line 45: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/lambdas.py:
+E       Line 42: from .. import exc
+E       Line 43: from .. import inspection
+E       Line 44: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/schema.py:
+E       Line 81: from .. import event
+E       Line 82: from .. import exc
+E       Line 83: from .. import inspection
+E       Line 84: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/anyio/abc/_sockets.py:
+E       Line 273: from .. import create_task_group
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/anyio/_backends/_trio.py:
+E       Line 52: from .. import (
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/anyio/_backends/_asyncio.py:
+E       Line 62: from .. import (
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/anyio/_core/_fileio.py:
+E       Line 27: from .. import to_thread
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/anyio/_core/_tempfile.py:
+E       Line 17: from .. import to_thread
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/anyio/_core/_sockets.py:
+E       Line 16: from .. import ConnectionFailed, to_thread
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/anyio/streams/buffered.py:
+E       Line 14: from .. import ClosedResourceError, DelimiterNotFound, EndOfStream, IncompleteRead
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/anyio/streams/memory.py:
+E       Line 15: from .. import (
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/anyio/streams/stapled.py:
+E       Line 131: from .. import create_task_group
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/anyio/streams/tls.py:
+E       Line 20: from .. import (
+E       Line 351: from .. import fail_after
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/anyio/streams/file.py:
+E       Line 15: from .. import (
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/pip/_vendor/chardet/cli/chardetect.py:
+E       Line 20: from .. import __version__
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/pip/_vendor/urllib3/contrib/securetransport.py:
+E       Line 69: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/pip/_vendor/urllib3/contrib/pyopenssl.py:
+E       Line 78: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/pip/_vendor/urllib3/contrib/ntlmpool.py:
+E       Line 13: from .. import HTTPSConnectionPool
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/pq/pq_ctypes.py:
+E       Line 26: from .. import errors as e
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/types/bool.py:
+E       Line 9: from .. import _oids
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/types/range.py:
+E       Line 15: from .. import _oids
+E       Line 16: from .. import errors as e
+E       Line 17: from .. import postgres, sql
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/types/net.py:
+E       Line 12: from .. import _oids
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/types/__init__.py:
+E       Line 7: from .. import _typeinfo
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/types/numpy.py:
+E       Line 9: from .. import _oids
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/types/numeric.py:
+E       Line 17: from .. import _oids
+E       Line 18: from .. import errors as e
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/types/multirange.py:
+E       Line 15: from .. import _oids
+E       Line 16: from .. import errors as e
+E       Line 17: from .. import postgres, sql
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/types/composite.py:
+E       Line 18: from .. import abc, postgres, pq, sql
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/types/string.py:
+E       Line 11: from .. import _oids
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/types/enum.py:
+E       Line 12: from .. import errors as e
+E       Line 13: from .. import postgres, sql
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/types/shapely.py:
+E       Line 9: from .. import postgres
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/types/array.py:
+E       Line 16: from .. import errors as e
+E       Line 17: from .. import postgres, pq
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/types/datetime.py:
+E       Line 15: from .. import _oids
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/types/json.py:
+E       Line 16: from .. import _oids, abc
+E       Line 17: from .. import errors as e
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/types/uuid.py:
+E       Line 12: from .. import _oids
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/types/hstore.py:
+E       Line 14: from .. import errors as e
+E       Line 15: from .. import postgres
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/crdb/_types.py:
+E       Line 37: from .. import dbapi20
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/psycopg/crdb/connection.py:
+E       Line 12: from .. import errors as e
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/ddl/postgresql.py:
+E       Line 46: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/ddl/mssql.py:
+E       Line 34: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/ddl/_autogen.py:
+E       Line 25: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/ddl/sqlite.py:
+E       Line 25: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/ddl/impl.py:
+E       Line 36: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/ddl/mysql.py:
+E       Line 27: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/runtime/plugins.py:
+E       Line 11: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/runtime/environment.py:
+E       Line 25: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/runtime/migration.py:
+E       Line 31: from .. import ddl
+E       Line 32: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/operations/schemaobj.py:
+E       Line 22: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/operations/ops.py:
+E       Line 29: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/operations/base.py:
+E       Line 29: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/script/write_hooks.py:
+E       Line 15: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/script/revision.py:
+E       Line 27: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/script/base.py:
+E       Line 24: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/testing/env.py:
+E       Line 12: from .. import command
+E       Line 13: from .. import script
+E       Line 14: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/autogenerate/render.py:
+E       Line 26: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/autogenerate/rewriter.py:
+E       Line 12: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/autogenerate/api.py:
+E       Line 19: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/urllib3/contrib/pyopenssl.py:
+E       Line 60: from .. import util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/urllib3/http2/__init__.py:
+E       Line 26: from .. import connection as urllib3_connection
+E       Line 27: from .. import util as urllib3_util
+E       Line 44: from .. import connection as urllib3_connection
+E       Line 45: from .. import util as urllib3_util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/setuptools/_vendor/importlib_metadata/compat/py39.py:
+E       Line 9: from .. import Distribution, EntryPoint
+E       Line 21: from .. import Prepared  # -> delay to prevent circular imports.
+E       Line 33: from .. import EntryPoint  # -> delay to prevent circular imports.
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/setuptools/_vendor/wheel/cli/convert.py:
+E       Line 16: from .. import __version__
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/setuptools/_vendor/wheel/cli/__init__.py:
+E       Line 55: from .. import __version__
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/setuptools/config/setupcfg.py:
+E       Line 26: from .. import _static
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py:
+E       Line 23: from .. import _static
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/setuptools/config/expand.py:
+E       Line 37: from .. import _static
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/setuptools/command/editable_wheel.py:
+E       Line 30: from .. import Command, _normalization, _path, _shutil, errors, namespaces
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/setuptools/command/dist_info.py:
+E       Line 12: from .. import _normalization
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/setuptools/command/bdist_wheel.py:
+E       Line 25: from .. import Command, __version__, _shutil
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/setuptools/command/egg_info.py:
+E       Line 23: from .. import _entry_points, _normalization
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/setuptools/command/_requirestxt.py:
+E       Line 21: from .. import _reqs
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/setuptools/command/rotate.py:
+E       Line 6: from .. import Command, _shutil
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/setuptools/command/setopt.py:
+E       Line 4: from .. import Command
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/setuptools/_distutils/command/install_egg_info.py:
+E       Line 13: from .. import dir_util
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/pydantic/deprecated/copy_internals.py:
+E       Line 17: from .. import BaseModel
+E       Line 135: from .. import BaseModel
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/pypdf/_text_extraction/_layout_mode/_fixed_width_page.py:
+E       Line 11: from .. import LAYOUT_NEW_BT_GROUP_SPACE_WIDTHS
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/pypdf/_text_extraction/_layout_mode/_text_state_params.py:
+E       Line 8: from .. import mult, orient
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/pypdf/_text_extraction/_layout_mode/_text_state_manager.py:
+E       Line 11: from .. import mult
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/lxml/html/__init__.py:
+E       Line 49: from .. import etree
+E     /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/dateutil/parser/_parser.py:
+E       Line 49: from .. import relativedelta
+E       Line 50: from .. import tz
+E   assert not {'/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/autogenerate/api....E_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/ddl/_autogen.py': [(25, 'from .. import util')], ...}
+=============================== warnings summary ===============================
+app/tests/test_admin_security.py::TestAuditLogging::test_review_actions_need_audit_log
+app/tests/test_admin_security.py::TestAuditLogging::test_admin_api_calls_need_audit_log
+app/tests/test_ai_pipeline.py::test_approved_review_item_can_publish_safe_event
+app/tests/test_ai_pipeline.py::test_blocked_review_item_cannot_publish
+app/tests/test_ai_pipeline.py::test_ai_review_items_use_database_pagination
+app/tests/test_api.py::test_invalid_post_event_foreign_keys_return_422_with_admin_token
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/auth/admin.py:241: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token, authorization)
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_require_admin_token_returns_admin_actor
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_admin_security.py:246: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    else require_admin_token(x_jta_admin_token="test-secret-token")
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_actor_id_is_not_raw_token
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_admin_security.py:266: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token="super-secret-value-12345")
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_actor_id_is_stable_label
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_admin_security.py:350: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token="token-abc")
+
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/security/import_authority.py:51: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(
+
+app/tests/test_legacy_shared_token_requires_opt_in.py::TestLegacySharedTokenRequiresOptIn::test_shared_token_allowed_only_with_local_opt_in
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_legacy_shared_token_requires_opt_in.py:44: DeprecationWarning: Shared-token import authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_imports(x_jta_admin_token="test-token", authorization=None)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/app/tests/test_no_external_reference_imports.py::test_no_external_reference_imports_in_backend
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 1753 passed, 15 warnings in 23.88s

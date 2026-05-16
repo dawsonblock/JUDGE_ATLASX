@@ -91,6 +91,10 @@ jobs:
         working-directory: ./frontend
         run: npm run typecheck
 
+      - name: Frontend contract tests
+        working-directory: ./frontend
+        run: npm run test:contracts
+
       - name: Frontend build
         working-directory: ./frontend
         run: npm run build
@@ -159,6 +163,11 @@ jobs:
         run: |
           source ./backend/.venv/bin/activate
           python backend/scripts/check_repo_boundaries.py
+
+      - name: Guard — runtime boundary validator
+        run: |
+          source ./backend/.venv/bin/activate
+          python scripts/validate_runtime_boundaries.py
 
       - name: Quality Gate Summary
         if: always()

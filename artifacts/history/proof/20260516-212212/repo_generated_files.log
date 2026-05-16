@@ -1,0 +1,11 @@
+Checking for committed generated files in: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2
+
+❌  FAIL: 4 committed generated file(s) found:
+
+  [build] external_reference/archived_research/cua-main/libs/cua-driver/scripts/build/build-release-notarized.sh
+  [build] external_reference/archived_research/cua-main/libs/lume/scripts/build/build-debug.sh
+  [build] external_reference/archived_research/cua-main/libs/lume/scripts/build/build-release-notarized.sh
+  [build] external_reference/archived_research/cua-main/libs/lume/scripts/build/build-release.sh
+
+These files must be removed from git tracking and added to .gitignore.
+Run: git rm -r --cached <path>

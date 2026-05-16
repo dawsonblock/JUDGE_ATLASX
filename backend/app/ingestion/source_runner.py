@@ -78,6 +78,9 @@ def _validate_machine_ingest_contract(
     """
     reasons: list[str] = []
 
+    if source.is_active is False:
+        reasons.append("source_disabled")
+
     if not result.raw_snapshot_bytes:
         reasons.append("no_raw_content")
 
@@ -91,6 +94,29 @@ def _validate_machine_ingest_contract(
         reasons.append("no_parser_version")
     elif result.parser_version != source.parser_version:
         reasons.append("parser_version_mismatch")
+
+    # Adapters must never publish directly; they can only submit candidate
+    # records for review. Any public/published marker in adapter payload is a
+    # contract violation and run must be quarantined.
+    for record in result.created_records:
+        payload = getattr(record, "payload", {}) or {}
+        if payload.get("is_public") is True:
+            reasons.append("adapter_attempted_direct_publication")
+            break
+        visibility = payload.get("public_visibility")
+        if isinstance(visibility, str) and visibility.strip().lower() == "public":
+            reasons.append("adapter_attempted_direct_publication")
+            break
+        status = payload.get("review_status")
+        if isinstance(status, str) and status.strip().lower() in {
+            "approved",
+            "verified_court_record",
+            "official_police_open_data_report",
+            "official_statistics_aggregate",
+            "corrected",
+        }:
+            reasons.append("adapter_attempted_direct_publication")
+            break
 
     return reasons
 

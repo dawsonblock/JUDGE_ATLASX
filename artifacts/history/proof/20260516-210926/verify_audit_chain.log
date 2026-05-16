@@ -1,0 +1,6 @@
+AUDIT CHAIN VERIFICATION
+entries_checked=0
+chain_head=EMPTY
+violations=1
+- empty_audit_log
+RESULT: FAIL audit_chain_violation
