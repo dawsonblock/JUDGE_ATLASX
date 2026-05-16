@@ -1,7 +1,7 @@
 # CURRENT_PROOF
 
 - generated_at_utc: 2026-05-15T07:24:58.369721+00:00
-- commit_hash: 58f055d0bb56c4d69ebd6407ca6ad950b843b27f
+- commit_hash: 98a69d2cb710c4308399a8f6efe0e9cfec953cc9
 - alpha_gate_status: PASS
 - alpha_gate_passed: true
 - release_gate_check_count: 37
@@ -58,7 +58,7 @@
 
 ## Current Proof Facts
 
-- backend pytest: 2793 passed, 4 skipped
+- backend pytest: 2801 passed, 4 skipped
 - backend import proof: PASS (103 routes)
 - frontend contracts: 38 passed
 - public API boundary: 33 passed
