@@ -163,11 +163,11 @@ Server:
 [proof_postgis] Stage: container start
 [proof_postgis] Starting PostGIS container...
 WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
-9cd6fcb3e4bfe42ae390ad3c91dae777de3df79af76d711739666e5f508d88de
+9cf37629e173e188f4e6e48289e14f03fd68bfb60c111364c4ada399f8c0615d
 [proof_postgis] PASS: container start requested
 [proof_postgis] Stage: pg_isready wait loop
 [proof_postgis] Waiting for Postgres to be ready...
-[proof_postgis] Postgres ready after 4s
+[proof_postgis] Postgres ready after 3s
 [proof_postgis] PASS: pg_isready
 [proof_postgis] Stage: host connectivity wait loop
 [proof_postgis] PASS: host connectivity ready after 6s
@@ -265,7 +265,7 @@ app/tests/test_map_bbox.py::test_bbox_validation_rejects_south_greater_than_nort
 app/tests/test_map_bbox.py::test_map_events_bbox_returns_only_events_in_bounds PASSED [ 90%]
 app/tests/test_map_bbox.py::test_bbox_query_does_not_crash_with_postgresql_dialect PASSED [100%]
 
-============================== 11 passed in 0.10s ==============================
+============================== 11 passed in 0.08s ==============================
 [proof_postgis] PASS: spatial smoke tests
 [proof_postgis] Stage: public/private map visibility test
 [proof_postgis] Running public/private visibility proof...
