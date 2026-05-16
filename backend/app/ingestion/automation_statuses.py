@@ -27,6 +27,7 @@ PORTAL_ONLY = "portal_only"
 MANUAL_ONLY = "manual_only"
 DISABLED_STUB = "disabled_stub"
 QUARANTINED_SOURCE = "quarantined"
+DEPRECATED = "deprecated"
 
 # ---------------------------------------------------------------------------
 # Gate frozensets
@@ -56,6 +57,7 @@ ALL_AUTOMATION_STATUSES: frozenset[str] = frozenset(
         MANUAL_ONLY,
         DISABLED_STUB,
         QUARANTINED_SOURCE,
+        DEPRECATED,
     }
 )
 

@@ -1,5 +1,3 @@
-from fastapi import APIRouter
-
 from app.api.routes import (
     admin_ingest,
     admin_ingestion,
@@ -20,8 +18,11 @@ from app.api.routes import (
     map_record,
     public_events,
     snapshots,
+    sources,
+    status,
 )
 from app.serializers.public import is_mappable as _is_mappable
+from fastapi import APIRouter
 
 router = APIRouter()
 router.include_router(auth.router)
@@ -43,5 +44,7 @@ router.include_router(graph.router)
 router.include_router(evidence.router)
 router.include_router(snapshots.router)
 router.include_router(ai_correctness.router)
+router.include_router(sources.router)
+router.include_router(status.router)
 
 __all__ = ["router", "_is_mappable"]

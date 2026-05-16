@@ -14,12 +14,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import desc, event
-from sqlalchemy.orm import Session, attributes
-
 from app.evidence.hashing import compute_hash
 from app.models.entities import SourceSnapshot
 from app.services.snapshot_writer import read_snapshot_content
+from sqlalchemy import desc, event
+from sqlalchemy.orm import Session, attributes
 
 if TYPE_CHECKING:
     from app.services.evidence_store import EvidenceStore
@@ -54,9 +53,7 @@ class ImmutabilityViolation(Exception):
         id_part = (
             f" on SourceSnapshot id={snapshot_id}" if snapshot_id is not None else ""
         )
-        super().__init__(
-            f"Immutable field '{field_name}' cannot be modified{id_part}"
-        )
+        super().__init__(f"Immutable field '{field_name}' cannot be modified{id_part}")
 
 
 # ---------------------------------------------------------------------------
@@ -281,3 +278,86 @@ def _block_immutable_update(
 
 
 event.listen(SourceSnapshot, "before_update", _block_immutable_update)
+
+
+# ---------------------------------------------------------------------------
+# Orphan detection and evidence chain retrieval  (Sprint D — item 3.2)
+# ---------------------------------------------------------------------------
+
+
+def detect_orphaned_snapshots(db: Session) -> list[int]:
+    """Return IDs of :class:`SourceSnapshot` rows not linked to any
+    :class:`~app.models.entities.ReviewItem`.
+
+    A snapshot is considered *orphaned* when no ``ReviewItem.source_snapshot_id``
+    references it.  Orphaned snapshots represent evidence that was fetched but
+    never entered the review pipeline — they should be investigated before
+    any release gate.
+
+    Args:
+        db: Active SQLAlchemy session.
+
+    Returns:
+        Sorted list of orphaned snapshot primary-key IDs (may be empty).
+    """
+    from app.models.entities import ReviewItem  # noqa: PLC0415
+    from sqlalchemy import exists, not_, select  # noqa: PLC0415
+
+    stmt = (
+        select(SourceSnapshot.id)
+        .where(
+            not_(
+                exists(
+                    select(ReviewItem.id).where(
+                        ReviewItem.source_snapshot_id == SourceSnapshot.id
+                    )
+                )
+            )
+        )
+        .order_by(SourceSnapshot.id)
+    )
+    return list(db.scalars(stmt))
+
+
+def get_evidence_chain(
+    snapshot_id: int,
+    db: Session,
+) -> dict[str, object] | None:
+    """Return the full evidence chain for a snapshot.
+
+    Assembles a structured dict containing the snapshot metadata, its
+    chain-of-custody log, and any linked :class:`~app.models.entities.ReviewItem`
+    rows.  Returns ``None`` if the snapshot does not exist.
+
+    Args:
+        snapshot_id: Primary key of the :class:`SourceSnapshot` to retrieve.
+        db: Active SQLAlchemy session.
+
+    Returns:
+        A dict with keys ``snapshot``, ``custody_log``, and ``review_items``,
+        or ``None`` if the snapshot is not found.
+    """
+    from app.models.entities import ChainOfCustodyLog, ReviewItem  # noqa: PLC0415
+    from sqlalchemy import select  # noqa: PLC0415
+
+    snapshot = db.get(SourceSnapshot, snapshot_id)
+    if snapshot is None:
+        return None
+
+    custody_rows = db.scalars(
+        select(ChainOfCustodyLog)
+        .where(ChainOfCustodyLog.snapshot_id == snapshot_id)
+        .order_by(ChainOfCustodyLog.created_at)
+    ).all()
+
+    review_rows = db.scalars(
+        select(ReviewItem)
+        .where(ReviewItem.source_snapshot_id == snapshot_id)
+        .order_by(ReviewItem.id)
+    ).all()
+
+    return {
+        "snapshot": snapshot,
+        "custody_log": list(custody_rows),
+        "review_items": list(review_rows),
+    }

@@ -1,10 +1,3 @@
-# LEGACY: NOT_RUNTIME
-# ─────────────────────────────────────────────────────────────────────────────
-# This file is quarantined from unconditional runtime loading.
-# A reference copy lives in: legacy_disabled/us_ingestion_adapters/fbi_crime_data.py
-# Do NOT import from app.ingestion.runner without the JTA_FBI_CRIME_ENABLED gate.
-# ─────────────────────────────────────────────────────────────────────────────
-
 """FBI Crime Data API adapter.
 
 Fetches agency-level offense counts from the FBI Crime Data Explorer API.
@@ -18,13 +11,6 @@ https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/docApi
 """
 
 from __future__ import annotations
-
-# ruff: noqa: E402
-
-# Sentinel: this adapter is quarantined from unconditional runtime loading.
-# Standard ingestion scheduler must NOT import it without the env gate.
-# Consumed by check_no_direct_ingestion_network_clients.py.
-NOT_RUNTIME: bool = True
 
 import logging
 from dataclasses import dataclass, field

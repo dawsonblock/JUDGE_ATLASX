@@ -1,7 +1,10 @@
 from datetime import date, datetime
 from uuid import uuid4
 
+from app.db.session import Base
+from app.ingestion.statuses import PENDING, RUNNING
 from sqlalchemy import (
+    JSON,
     Boolean,
     CheckConstraint,
     Date,
@@ -9,16 +12,12 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
-    JSON,
     String,
     Text,
     UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from app.db.session import Base
-from app.ingestion.statuses import PENDING, RUNNING
 
 
 class TimestampMixin:
@@ -463,7 +462,11 @@ class LegalInstrument(Base, TimestampMixin):
         index=True,
     )
     public_visibility: Mapped[str] = mapped_column(
-        String(50), nullable=False, default="private", server_default="private", index=True
+        String(50),
+        nullable=False,
+        default="private",
+        server_default="private",
+        index=True,
     )
 
     source: Mapped["SourceRegistry"] = relationship()
@@ -549,15 +552,15 @@ class LegalSectionRevision(Base, TimestampMixin):
     )
     revision_number: Mapped[int] = mapped_column(Integer, nullable=False)
     previous_content_hash: Mapped[str | None] = mapped_column(String(64), index=True)
-    new_content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    new_content_hash: Mapped[str] = mapped_column(
+        String(64), nullable=False, index=True
+    )
     diff_summary: Mapped[str | None] = mapped_column(Text)
     raw_snapshot_id: Mapped[int | None] = mapped_column(
         ForeignKey("source_snapshots.id"), nullable=True, index=True
     )
     valid_from: Mapped[date | None] = mapped_column(Date, nullable=True)
-    change_type: Mapped[str | None] = mapped_column(
-        String(40), nullable=True
-    )
+    change_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
 
     legal_section: Mapped[LegalSection] = relationship()
     raw_snapshot: Mapped["SourceSnapshot"] = relationship()
@@ -1011,6 +1014,29 @@ class SourceRegistry(Base, TimestampMixin):
         String(80), nullable=True
     )  # logical grouping key for source (e.g. 'provincial_superior_courts')
 
+    # ── Sprint C: provenance / access contract fields (migration 0013) ──────
+    confidence_class: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # quality tier: primary_official | secondary_official | tertiary | …
+    retention_policy: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # e.g. 'indefinite', '7_years', 'session_only'
+    canonical_url: Mapped[str | None] = mapped_column(
+        String(2048), nullable=True
+    )  # authoritative URL for the source (may differ from base_url)
+    evidence_required: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )  # True = fetch must produce an archived SourceSnapshot before review
+    terms_verified: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # ISO date the terms were last verified, or 'false' if not yet done
+    authentication_required: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )  # True = adapter needs credentials / API key
+    rate_limit_policy: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # e.g. 'polite_1rps', 'bulk_10rps', 'no_limit'
+
 
 class SourceTierConflict(Base, TimestampMixin):
     """Records field-level conflicts detected when a lower-trust source tries
@@ -1132,7 +1158,11 @@ class RelationshipEvidence(Base):
     # Canonical review status used by publication_policy; derived from
     # verification_status / relationship_status at record-promotion time.
     review_status: Mapped[str] = mapped_column(
-        String(50), nullable=False, default="pending_review", server_default="pending_review", index=True
+        String(50),
+        nullable=False,
+        default="pending_review",
+        server_default="pending_review",
+        index=True,
     )
     auto_publish_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
 

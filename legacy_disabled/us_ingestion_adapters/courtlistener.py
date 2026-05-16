@@ -1,10 +1,3 @@
-# LEGACY: NOT_RUNTIME
-# ─────────────────────────────────────────────────────────────────────────────
-# This file is quarantined from unconditional runtime loading.
-# A reference copy lives in: legacy_disabled/us_ingestion_adapters/courtlistener.py
-# Do NOT import from app.ingestion.runner without the JTA_ENABLE_COURTLISTENER gate.
-# ─────────────────────────────────────────────────────────────────────────────
-
 """CourtListener API adapter.
 
 This adapter uses direct ``httpx`` with Bearer token auth, which is not yet
@@ -17,6 +10,8 @@ tracked as future work.
 """
 
 from __future__ import annotations
+
+# ruff: noqa: E402
 
 # Sentinel: this adapter is quarantined from unconditional runtime loading.
 # Standard ingestion scheduler must NOT import it without the env gate.

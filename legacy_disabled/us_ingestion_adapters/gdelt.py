@@ -1,10 +1,3 @@
-# LEGACY: NOT_RUNTIME
-# ─────────────────────────────────────────────────────────────────────────────
-# This file is quarantined from unconditional runtime loading.
-# A reference copy lives in: legacy_disabled/us_ingestion_adapters/gdelt.py
-# Do NOT import from app.ingestion.runner without the JTA_GDELT_ENABLED gate.
-# ─────────────────────────────────────────────────────────────────────────────
-
 """GDELT news-link ingester.
 
 Queries the GDELT 2.0 Document API for news articles matching court/judge

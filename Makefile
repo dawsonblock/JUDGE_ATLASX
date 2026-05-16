@@ -1,4 +1,4 @@
-.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup
+.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup release-zip
 
 backend-install:
 	cd backend && python -m pip install -e ".[test]"
@@ -103,3 +103,21 @@ proof:
 	npm run typecheck 2>&1 | tee -a ../artifacts/proof/frontend-$${TIMESTAMP}.log; \
 	npm run build 2>&1 | tee -a ../artifacts/proof/frontend-$${TIMESTAMP}.log; \
 	echo "Proof logs saved to artifacts/proof/backend-$${TIMESTAMP}.log and artifacts/proof/frontend-$${TIMESTAMP}.log"
+
+# release-zip: create a distributable archive excluding development artifacts
+release-zip:
+	@VERSION=$$(date +%Y%m%d-%H%M%S); \
+	OUTFILE="judge_atlas_$${VERSION}.zip"; \
+	zip -r "$${OUTFILE}" . \
+	  --exclude "*.pyc" \
+	  --exclude "*/__pycache__/*" \
+	  --exclude "*/.venv/*" \
+	  --exclude "*.egg-info/*" \
+	  --exclude ".git/*" \
+	  --exclude ".git" \
+	  --exclude "node_modules/*" \
+	  --exclude "frontend/.next/*" \
+	  --exclude "artifacts/proof/*" \
+	  --exclude "*.log" \
+	  --exclude "*.zip"; \
+	echo "Release archive: $${OUTFILE}"

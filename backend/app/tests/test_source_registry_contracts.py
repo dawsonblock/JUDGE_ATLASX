@@ -13,7 +13,6 @@ from __future__ import annotations
 import pathlib
 
 import yaml
-
 from app.seed.source_registry import (
     _REPAIR_FIELDS,
     validate_all_source_specs,
@@ -59,6 +58,14 @@ def test_valid_machine_ingest_spec_passes() -> None:
         "terms_url": "https://example.com/terms",
         "automation_status": "machine_ready_disabled",
         "allowed_domains": '["example.com"]',
+        # Sprint C: provenance and access fields
+        "confidence_class": "primary_official",
+        "retention_policy": "indefinite",
+        "canonical_url": "https://example.com/api",
+        "evidence_required": True,
+        "terms_verified": "2026-05-06",
+        "authentication_required": False,
+        "rate_limit_policy": "polite_1rps",
     }
     assert validate_machine_ingest_source_spec(spec) == []
 
@@ -162,9 +169,9 @@ def test_all_machine_ingest_sources_have_parser_version() -> None:
         if s.get("source_class") == "machine_ingest":
             if not s.get("parser_version"):
                 violations.append(s["source_key"])
-    assert not violations, (
-        f"machine_ingest sources missing parser_version: {violations}"
-    )
+    assert (
+        not violations
+    ), f"machine_ingest sources missing parser_version: {violations}"
 
 
 def test_specific_machine_ingest_sources_have_parser_version() -> None:
@@ -173,9 +180,9 @@ def test_specific_machine_ingest_sources_have_parser_version() -> None:
     for key in _MACHINE_INGEST_SOURCE_KEYS:
         source = sources.get(key)
         assert source is not None, f"Expected source '{key}' not found in YAML"
-        assert source.get("parser_version"), (
-            f"Source '{key}' is machine_ingest but has no parser_version"
-        )
+        assert source.get(
+            "parser_version"
+        ), f"Source '{key}' is machine_ingest but has no parser_version"
 
 
 def test_machine_ingest_sources_pass_spec_validator() -> None:
@@ -212,6 +219,6 @@ def test_current_yaml_has_no_machine_ingest_violations() -> None:
     dict means every source is clean.
     """
     violations = validate_all_source_specs()
-    assert violations == {}, (
-        f"machine_ingest spec violations found in YAML: {violations}"
-    )
+    assert (
+        violations == {}
+    ), f"machine_ingest spec violations found in YAML: {violations}"

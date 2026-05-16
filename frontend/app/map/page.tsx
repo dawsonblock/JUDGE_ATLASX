@@ -1,10 +1,11 @@
-import { redirect } from "next/navigation";
+import MapWorkspace from "./MapWorkspace";
 
-/**
- * Legacy Leaflet map route — redirects to the canonical MapLibre route.
- * This page is kept as a permanent redirect stub so existing bookmarks
- * and external links continue to resolve.
- */
+export const metadata = {
+  title: "Public Records Map | JUDGE",
+  description:
+    "Explore publicly available court event records and reported incidents on an interactive map. All data is sourced from public records only.",
+};
+
 export default function MapPage() {
-  redirect("/map-v2");
+  return <MapWorkspace />;
 }

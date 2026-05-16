@@ -129,6 +129,13 @@ class IngestionResult:
 
 
 class SourceAdapter(ABC):
+    """DEPRECATED: Legacy adapter ABC. Use CanadianSourceAdapter for all new adapters.
+
+    This class is retained only because CourtOpinionRSSAdapter and NewsAdapter inherit
+    from it. Neither of those classes has active callers. All 14 production adapters
+    use CanadianSourceAdapter instead.
+    """
+
     @abstractmethod
     def fetch(self, since: datetime) -> list[RawRecord]:
         raise NotImplementedError
@@ -147,7 +154,11 @@ class SourceAdapter(ABC):
 
 
 class CourtOpinionRSSAdapter(SourceAdapter):
-    """Placeholder for official opinion/order feeds."""
+    """DEPRECATED: Placeholder for official opinion/order feeds. Never instantiated in production.
+
+    This class has no concrete implementation; fetch() returns an empty list.
+    Official court opinion feeds are ingested via CanadianSourceAdapter subclasses instead.
+    """
 
     def fetch(self, since: datetime) -> list[RawRecord]:
         return []
@@ -157,7 +168,11 @@ class CourtOpinionRSSAdapter(SourceAdapter):
 
 
 class NewsAdapter(SourceAdapter):
-    """Placeholder only. News is secondary context and never a primary legal record."""
+    """DEPRECATED: Placeholder only. Never instantiated in production.
+
+    News is secondary context and never a primary legal record.
+    News ingestion uses crawlee-based adapters under CanadianSourceAdapter instead.
+    """
 
     def fetch(self, since: datetime) -> list[RawRecord]:
         return []
@@ -216,3 +231,36 @@ class CanadianSourceAdapter(ABC):
                 run and return an empty :class:`RunPersistSummary` without
                 writing any records.
         """
+
+    def healthcheck(self) -> dict[str, Any]:
+        """Return a health status dict for this adapter.
+
+        Default implementation returns ``{"status": "unknown"}``.
+        Subclasses should override to perform a lightweight connectivity
+        check (e.g. a HEAD request to :attr:`base_url`) and return::
+
+            {"status": "ok" | "degraded" | "unavailable", "detail": str}
+        """
+        return {"status": "unknown"}
+
+    def snapshot(self) -> dict[str, Any]:
+        """Return a point-in-time diagnostic snapshot of this adapter.
+
+        Default returns the adapter class name and module.  Subclasses may
+        override to include last-run timestamps, record counts, or parser
+        version.
+        """
+        return {
+            "adapter": type(self).__name__,
+            "module": type(self).__module__,
+        }
+
+    def normalize(self, raw: dict[str, Any]) -> dict[str, Any]:
+        """Normalise a single raw row dict into a canonical form.
+
+        Default implementation returns *raw* unchanged.  Subclasses should
+        override to strip extraneous keys, coerce types, and apply
+        source-specific field mappings before the record reaches
+        :meth:`parse`.
+        """
+        return raw

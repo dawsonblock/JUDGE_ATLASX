@@ -1,8 +1,5 @@
 from datetime import date, datetime, timedelta, timezone
 
-from sqlalchemy import select, text
-from sqlalchemy.orm import Session
-
 from app.models.entities import (
     Case,
     CaseParty,
@@ -19,6 +16,8 @@ from app.models.entities import (
 )
 from app.services.linker import url_hash
 from app.services.text import normalize_docket, normalize_name
+from sqlalchemy import select, text
+from sqlalchemy.orm import Session
 
 
 def seed_sample_data(db: Session) -> None:
@@ -460,6 +459,10 @@ def seed_sample_data(db: Session) -> None:
             raw_content="sample los angeles public incident evidence",
         ),
     ]
+
+    # Attach events to the session before any flush so relationship backrefs do not
+    # warn during autoflush when courts/cases/judges are already persistent.
+    db.add_all(events)
     db.add_all(incident_snapshots)
     db.flush()
 
@@ -580,7 +583,7 @@ def seed_sample_data(db: Session) -> None:
         incident.reviewed_by = "SAMPLE reviewer"
         incident.reviewed_at = datetime.now(timezone.utc)
 
-    db.add_all(events + crime_incidents)
+    db.add_all(crime_incidents)
     db.flush()
 
     # Create event-defendant links using object references
@@ -655,7 +658,8 @@ def verify_seed_correctness(db: Session) -> bool:
     can be inserted after seeding without duplicate-key failures.
     """
     import uuid
-    from app.models.entities import Location, Court, Case, Event, CrimeIncident
+
+    from app.models.entities import Case, Court, CrimeIncident, Event, Location
     from sqlalchemy import select
 
     unique = uuid.uuid4().hex[:12]

@@ -16,10 +16,9 @@ import json
 import pathlib
 
 import yaml
+from app.models.entities import SourceRegistry
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-
-from app.models.entities import SourceRegistry
 
 # All sources are now defined in canada_saskatchewan_sources.yaml.
 # Legacy hardcoded keys have been removed; YAML entries are authoritative.
@@ -36,6 +35,10 @@ _YAML_PATH = (
 )
 
 _LIST_FIELDS = ("allowed_domains", "creates")
+
+# Sprint C fields whose YAML value can be a boolean False — coerce to string
+# so SQLAlchemy's String column does not receive a Python bool.
+_COERCE_TO_STR_FIELDS = ("terms_verified",)
 
 
 def _load_yaml_sources() -> list[dict]:
@@ -55,6 +58,11 @@ def _load_yaml_sources() -> list[dict]:
             val = normalised.get(field)
             if isinstance(val, list):
                 normalised[field] = json.dumps(val)
+        # Coerce bool-typed YAML values that map to String model columns.
+        for field in _COERCE_TO_STR_FIELDS:
+            val = normalised.get(field)
+            if val is not None and not isinstance(val, str):
+                normalised[field] = str(val).lower()
         out.append(normalised)
     return out
 
@@ -79,11 +87,26 @@ _MACHINE_INGEST_REQUIRED: tuple[str, ...] = (
     "public_publish_default",
     "terms_url",
     "automation_status",
+    # Sprint C: source provenance and access fields
+    "confidence_class",
+    "retention_policy",
+    "canonical_url",
+    "evidence_required",
+    "terms_verified",
+    "authentication_required",
+    "rate_limit_policy",
 )
 
 # Fields whose type is boolean — checked with `is None` rather than truthiness
 # to avoid flagging a legitimate `False` value as missing.
-_BOOL_FIELDS: frozenset[str] = frozenset({"requires_manual_review", "public_publish_default"})
+_BOOL_FIELDS: frozenset[str] = frozenset(
+    {
+        "requires_manual_review",
+        "public_publish_default",
+        "evidence_required",
+        "authentication_required",
+    }
+)
 
 
 def validate_machine_ingest_source_spec(spec: dict) -> list[str]:
@@ -175,6 +198,14 @@ _REPAIR_FIELDS: tuple[str, ...] = (
     "canonical_replacement_key",
     "status_reason",
     "operator_next_step",
+    # Sprint C: source provenance and access contract fields
+    "confidence_class",
+    "retention_policy",
+    "canonical_url",
+    "evidence_required",
+    "terms_verified",
+    "authentication_required",
+    "rate_limit_policy",
 )
 
 
