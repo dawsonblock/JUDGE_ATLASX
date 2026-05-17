@@ -1,15 +1,15 @@
 # Archive Validation
 
-- validated_at_utc: 2026-05-17T06:02:14.928232+00:00
-- archive: /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.8HgGh5LRqC/judge_atlas_archive.zip
-- archive_sha256: 06048d6f82bf0eb7ed83f123eb751ff3a42f57fb9120d2119041b0c5e181aa6d
+- validated_at_utc: 2026-05-17T06:13:45.756240+00:00
+- archive: /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.ShlYQAEf1j/judge_atlas_archive.zip
+- archive_sha256: b074e76926f6a3bae5b5cb778b529da9abd1bef652e3c08219c44275f55a1e24
 - expected_root: JUDGE_ATLAS-main
 - actual_root: JUDGE_ATLAS-main
 - top_level_roots: JUDGE_ATLAS-main
 - root_match: yes
 - valid: PASS
-- compressed_size_bytes: 1789839
-- uncompressed_size_bytes: 6523866
+- compressed_size_bytes: 1792849
+- uncompressed_size_bytes: 6533092
 
 ## Errors
 
@@ -24,7 +24,7 @@
 | JUDGE_ATLAS-main/frontend/tsconfig.tsbuildinfo | 155050 | 47843 |
 | JUDGE_ATLAS-main/backend/app/models/entities.py | 75663 | 11985 |
 | JUDGE_ATLAS-main/scripts/release_gate.py | 73266 | 14090 |
-| JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 67623 | 10490 |
+| JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 67818 | 10478 |
 | JUDGE_ATLAS-main/backend/app/ingestion/sources/canada_saskatchewan_sources.yaml | 44787 | 6232 |
 | JUDGE_ATLAS-main/backend/app/tests/test_api.py | 43068 | 7429 |
 | JUDGE_ATLAS-main/backend/app/tests/test_ingestion_runtime.py | 38018 | 5725 |
@@ -34,7 +34,7 @@
 | JUDGE_ATLAS-main/backend/app/ingestion/courtlistener_bulk_normalizer.py | 29758 | 5588 |
 | JUDGE_ATLAS-main/backend/app/tests/test_admin_ingestion.py | 29153 | 4559 |
 | JUDGE_ATLAS-main/backend/app/tests/test_graph_layer.py | 28216 | 4765 |
-| JUDGE_ATLAS-main/artifacts/proof/current/source_registry_status.json | 27707 | 3207 |
+| JUDGE_ATLAS-main/artifacts/proof/current/source_registry_status.json | 27707 | 3209 |
 | JUDGE_ATLAS-main/backend/app/api/routes/admin_ingest.py | 26762 | 4643 |
 | JUDGE_ATLAS-main/backend/app/seed/sample_data.py | 25376 | 4657 |
 | JUDGE_ATLAS-main/backend/app/tests/test_memory_runtime.py | 24708 | 4490 |
@@ -44,11 +44,11 @@
 
 | path | uncompressed |
 |---|---:|
-| backend | 4441570 |
+| backend | 4446481 |
 | frontend | 854216 |
-| docs | 566048 |
+| docs | 570165 |
 | scripts | 440552 |
-| artifacts | 140517 |
+| artifacts | 140715 |
 | .github | 29006 |
 | demo | 26537 |
 | infra | 17264 |

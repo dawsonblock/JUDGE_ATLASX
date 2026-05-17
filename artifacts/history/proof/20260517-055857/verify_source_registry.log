@@ -1,0 +1,302 @@
+{
+  "generated_at": "2026-05-17T05:57:04.518888+00:00",
+  "source_registry_ok": true,
+  "total_sources": 26,
+  "status_counts": {
+    "machine_ready_enabled": 1,
+    "adapter_missing": 17,
+    "deprecated": 2,
+    "machine_ready_disabled": 5,
+    "disabled_stub": 1
+  },
+  "violations": [],
+  "stale_artifacts": [],
+  "registry_summary": [
+    {
+      "source_key": "justice_canada_laws_xml",
+      "automation_status": "machine_ready_enabled",
+      "lifecycle_state": "runnable",
+      "source_class": "machine_ingest",
+      "parser": "laws_justice_xml",
+      "parser_version": "justice_laws_xml_v1",
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "justice_canada_laws_pit_xml",
+      "automation_status": "adapter_missing",
+      "lifecycle_state": "disabled_stub",
+      "source_class": "disabled_stub",
+      "parser": null,
+      "parser_version": null,
+      "in_registry": false,
+      "is_stub": null,
+      "violations": []
+    },
+    {
+      "source_key": "scc_judgments",
+      "automation_status": "deprecated",
+      "lifecycle_state": "deprecated",
+      "source_class": "machine_ingest",
+      "parser": "scc_lexum_api",
+      "parser_version": "1.0",
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "federal_court_canada_decisions",
+      "automation_status": "deprecated",
+      "lifecycle_state": "deprecated",
+      "source_class": "portal_reference",
+      "parser": "federal_court_html",
+      "parser_version": null,
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "statscan_crime_tables",
+      "automation_status": "adapter_missing",
+      "lifecycle_state": "portal_reference",
+      "source_class": "portal_reference",
+      "parser": "statscan_table",
+      "parser_version": null,
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "saskatchewan_legislation",
+      "automation_status": "adapter_missing",
+      "lifecycle_state": "portal_reference",
+      "source_class": "portal_reference",
+      "parser": null,
+      "parser_version": null,
+      "in_registry": false,
+      "is_stub": null,
+      "violations": []
+    },
+    {
+      "source_key": "saskatoon_open_data_public_safety",
+      "automation_status": "adapter_missing",
+      "lifecycle_state": "portal_reference",
+      "source_class": "portal_reference",
+      "parser": "ckan_api",
+      "parser_version": null,
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "saskatoon_open_data_crime",
+      "automation_status": "adapter_missing",
+      "lifecycle_state": "portal_reference",
+      "source_class": "portal_reference",
+      "parser": "saskatoon_csv",
+      "parser_version": null,
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "saskatoon_police_open_data",
+      "automation_status": "adapter_missing",
+      "lifecycle_state": "portal_reference",
+      "source_class": "portal_reference",
+      "parser": "saskatoon_police_csv",
+      "parser_version": null,
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "web_monitor_saskatoon_police_news",
+      "automation_status": "adapter_missing",
+      "lifecycle_state": "disabled_stub",
+      "source_class": "disabled_stub",
+      "parser": "crawlee_police_release",
+      "parser_version": null,
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "sk_courts_qb_decisions",
+      "automation_status": "machine_ready_disabled",
+      "lifecycle_state": "runnable_disabled",
+      "source_class": "machine_ingest",
+      "parser": "canlii_api",
+      "parser_version": "1.0",
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "sk_courts_ca_decisions",
+      "automation_status": "machine_ready_disabled",
+      "lifecycle_state": "runnable_disabled",
+      "source_class": "machine_ingest",
+      "parser": "canlii_api",
+      "parser_version": "1.0",
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "statscan_ccjs_crime_sk",
+      "automation_status": "adapter_missing",
+      "lifecycle_state": "portal_reference",
+      "source_class": "portal_reference",
+      "parser": "statscan_table",
+      "parser_version": null,
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "statscan_ucr_national",
+      "automation_status": "adapter_missing",
+      "lifecycle_state": "portal_reference",
+      "source_class": "portal_reference",
+      "parser": "statscan_table",
+      "parser_version": null,
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "canlii_sk",
+      "automation_status": "adapter_missing",
+      "lifecycle_state": "portal_reference",
+      "source_class": "portal_reference",
+      "parser": "canlii_api",
+      "parser_version": null,
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "federal_court_canada",
+      "automation_status": "machine_ready_disabled",
+      "lifecycle_state": "runnable_disabled",
+      "source_class": "machine_ingest",
+      "parser": "federal_court_html",
+      "parser_version": "1.0",
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "scc_decisions",
+      "automation_status": "machine_ready_disabled",
+      "lifecycle_state": "runnable_disabled",
+      "source_class": "machine_ingest",
+      "parser": "scc_lexum_api",
+      "parser_version": "1.0",
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "sk_justice_ministry",
+      "automation_status": "adapter_missing",
+      "lifecycle_state": "disabled_stub",
+      "source_class": "disabled_stub",
+      "parser": "crawlee_gov_news",
+      "parser_version": null,
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "sk_legislature_hansard",
+      "automation_status": "machine_ready_disabled",
+      "lifecycle_state": "runnable_disabled",
+      "source_class": "machine_ingest",
+      "parser": "sk_legislature_html",
+      "parser_version": "1.0",
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "canada_open_data_crime",
+      "automation_status": "adapter_missing",
+      "lifecycle_state": "portal_reference",
+      "source_class": "portal_reference",
+      "parser": "ckan_api",
+      "parser_version": null,
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "rcmp_sk_news",
+      "automation_status": "adapter_missing",
+      "lifecycle_state": "disabled_stub",
+      "source_class": "disabled_stub",
+      "parser": "crawlee_police_release",
+      "parser_version": null,
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "canada_justice_laws",
+      "automation_status": "disabled_stub",
+      "lifecycle_state": "deprecated",
+      "source_class": "disabled_stub",
+      "parser": null,
+      "parser_version": null,
+      "in_registry": false,
+      "is_stub": null,
+      "violations": []
+    },
+    {
+      "source_key": "saskatoon_open_data_portal",
+      "automation_status": "adapter_missing",
+      "lifecycle_state": "portal_reference",
+      "source_class": "portal_reference",
+      "parser": "ckan_api",
+      "parser_version": null,
+      "in_registry": true,
+      "is_stub": false,
+      "violations": []
+    },
+    {
+      "source_key": "justice_canada_laws_xml_repo",
+      "automation_status": "adapter_missing",
+      "lifecycle_state": "manual_reference",
+      "source_class": "manual_reference",
+      "parser": null,
+      "parser_version": null,
+      "in_registry": false,
+      "is_stub": null,
+      "violations": []
+    },
+    {
+      "source_key": "justice_canada_lims_xml_dtd",
+      "automation_status": "adapter_missing",
+      "lifecycle_state": "manual_reference",
+      "source_class": "manual_reference",
+      "parser": null,
+      "parser_version": null,
+      "in_registry": false,
+      "is_stub": null,
+      "violations": []
+    },
+    {
+      "source_key": "justice_canada_otto_reference",
+      "automation_status": "adapter_missing",
+      "lifecycle_state": "manual_reference",
+      "source_class": "manual_reference",
+      "parser": null,
+      "parser_version": null,
+      "in_registry": false,
+      "is_stub": null,
+      "violations": []
+    }
+  ]
+}
