@@ -104,6 +104,7 @@ class TestGdeltIngestGate:
         os_patch = __import__("os")
         os_patch.environ["JTA_GDELT_ENABLED"] = "true"
         os_patch.environ["JTA_ENABLE_ADMIN_IMPORTS"] = "true"
+        os_patch.environ["JTA_ENABLE_LEGACY_US_INGEST_ROUTES"] = "true"
 
         with SessionLocal() as db:
             _get_or_create_registry(db, "gdelt", is_active=False)
@@ -120,6 +121,7 @@ class TestGdeltIngestGate:
         get_settings.cache_clear()  # force re-read so env var changes take effect
         os.environ["JTA_GDELT_ENABLED"] = "false"  # keep GDELT itself off after gate check
         os.environ["JTA_ENABLE_ADMIN_IMPORTS"] = "true"
+        os.environ["JTA_ENABLE_LEGACY_US_INGEST_ROUTES"] = "true"
         get_settings.cache_clear()  # clear again after env is set
 
         with SessionLocal() as db:

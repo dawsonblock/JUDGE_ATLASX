@@ -1,0 +1,29 @@
+# CURRENT_ALPHA_STATUS
+
+- generated_at_utc: 2026-05-17T05:28:23.713753+00:00
+- commit_hash: 71f864da654f020bd6c2917557c35e1fc88ab50e
+- operational_posture: alpha
+- production_ready: false
+- alpha_gate_passed: false
+- proof_freshness_result: PASS
+- release_gate_check_count: 37
+- postgis_proof_result: FAIL
+- egress_proxy_proof_result: FAIL
+- demo_proof_result: PASS
+
+## Status
+
+- This repository is in alpha proof-hardened posture.
+- This repository is not approved for production deployment.
+- Human review remains mandatory for public publication decisions.
+
+## Current Blockers
+
+- backend_pytest
+- postgis_proof
+- egress_proxy_proof
+- auth_mutation_route_coverage
+- mutation_fail_closed_coverage
+- check_api_contracts
+- map_route_check
+- public_api_boundary

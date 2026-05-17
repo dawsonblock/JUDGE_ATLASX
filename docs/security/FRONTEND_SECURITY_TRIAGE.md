@@ -5,6 +5,16 @@
 
 See `docs/deployment-guide/DEPENDENCY_REMEDIATION_PLAN.md` for owner/date remediation tasks and production-gate requirements.
 
+## Alpha Exception Window
+
+- exception_reviewed_on: 2026-05-16
+- exception_review_due: 2026-06-30
+- exception_expires_on: 2026-07-31
+- production_blocking: true (high vulnerabilities remain)
+
+All accepted-for-alpha entries below are temporary risk exceptions and must be
+re-reviewed by the due date or remediated before any production-readiness claim.
+
 ---
 
 ## Summary

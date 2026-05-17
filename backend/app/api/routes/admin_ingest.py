@@ -40,6 +40,22 @@ from app.security.import_authority import require_source_admin_actor
 router = APIRouter(prefix="/api/admin/ingest", tags=["admin"])
 
 
+def _require_legacy_ingest_enabled(route_name: str) -> None:
+    """Fail closed for legacy non-Canada-first ingestion entry points."""
+
+    settings = get_settings()
+    if getattr(settings, "enable_legacy_us_ingest_routes", False):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail=(
+            "Legacy ingestion route is disabled in Canada-first alpha "
+            f"(route={route_name}). Set "
+            "JTA_ENABLE_LEGACY_US_INGEST_ROUTES=true to enable explicitly."
+        ),
+    )
+
+
 def _check_csv_row_limit(content: bytes, max_rows: int, source: str) -> None:
     """Raise HTTP 422 if the CSV byte content exceeds the row-count cap.
 
@@ -96,6 +112,7 @@ def ingest_gdelt(
             status_code=403,
             detail="GDELT global circuit breaker off (set JTA_GDELT_ENABLED=true). Ensure source is also active in SourceRegistry.",
         )
+    _require_legacy_ingest_enabled("gdelt")
     source_key = resolve_source_key("gdelt")
     _check_source_active(source_key, "GDELT News Feed", db)
     articles = fetch_gdelt_articles()
@@ -137,6 +154,7 @@ async def ingest_chicago(
 ):
     """Import Chicago Data Portal crime CSV upload."""
     enforce_jwt_mutation_authority(actor)
+    _require_legacy_ingest_enabled("chicago")
 
     settings = get_settings()
     if not settings.local_feeds_enabled:
@@ -185,6 +203,7 @@ async def ingest_toronto(
 ):
     """Import Toronto Police CSV upload."""
     enforce_jwt_mutation_authority(actor)
+    _require_legacy_ingest_enabled("toronto")
 
     settings = get_settings()
     if not settings.local_feeds_enabled:
@@ -281,6 +300,7 @@ async def ingest_los_angeles(
 ):
     """Import LA Open Data crime CSV upload."""
     enforce_jwt_mutation_authority(actor)
+    _require_legacy_ingest_enabled("los-angeles")
 
     settings = get_settings()
     if not settings.local_feeds_enabled:
@@ -382,6 +402,7 @@ def ingest_fbi(
 ):
     """Import FBI Crime Data JSON payload."""
     enforce_jwt_mutation_authority(actor)
+    _require_legacy_ingest_enabled("fbi")
 
     settings = get_settings()
     if not settings.fbi_crime_enabled:
@@ -430,6 +451,7 @@ def cl_bulk_runs(
 ):
     """List all CourtListener bulk import run records."""
     enforce_jwt_mutation_authority(actor)
+    _require_legacy_ingest_enabled("courtlistener-bulk/runs")
     _check_source_active(COURTLISTENER_BULK, "CourtListener Bulk", db)
     from sqlalchemy import select as _select
     from app.models.entities import CourtListenerBulkRun
@@ -462,6 +484,7 @@ def cl_bulk_list(
 ):
     """List CSV files available in the configured bulk_data_dir."""
     enforce_jwt_mutation_authority(actor)
+    _require_legacy_ingest_enabled("courtlistener-bulk/list")
     _check_source_active(COURTLISTENER_BULK, "CourtListener Bulk", db)
     import os
 
@@ -511,6 +534,7 @@ def cl_bulk_import(
          "force": false, "include_opinions": false}
     """
     enforce_jwt_mutation_authority(actor)
+    _require_legacy_ingest_enabled("courtlistener-bulk/import")
     _check_source_active(COURTLISTENER_BULK, "CourtListener Bulk", db)
     import os
     from app.ingestion.courtlistener_bulk_normalizer import (
@@ -704,6 +728,7 @@ def cl_bulk_normalize(
 
     Delegates to /import with force=True but only for already-downloaded files.
     """
+    _require_legacy_ingest_enabled("courtlistener-bulk/normalize")
     _check_source_active(COURTLISTENER_BULK, "CourtListener Bulk", db)
     body = dict(payload or {})
     body["force"] = True
