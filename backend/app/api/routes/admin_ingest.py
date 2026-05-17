@@ -695,7 +695,13 @@ def cl_bulk_import(
                 raise HTTPException(
                     status_code=500, detail="Audit logging failed; mutation aborted"
                 )
-            results.append({"file": stem, "status": FAILED, "error": str(exc)})
+            results.append(
+                {
+                    "file": stem,
+                    "status": FAILED,
+                    "error": "Internal error during file normalization",
+                }
+            )
 
     try:
         log_mutation(
