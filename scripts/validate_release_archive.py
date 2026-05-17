@@ -25,8 +25,10 @@ REQUIRED_DIRECTORIES = (
 REQUIRED_PROOF_FILES = (
     "artifacts/proof/current/CURRENT_PROOF.md",
     "artifacts/proof/current/release_readiness.md",
-    "artifacts/proof/current/backend_import.log",
-    "artifacts/proof/current/backend_pytest.log",
+    "artifacts/proof/current/release_gate.json",
+    "artifacts/proof/current/backend_proof_summary.json",
+    "artifacts/proof/current/frontend_proof_summary.json",
+    "artifacts/proof/current/source_registry_status.json",
 )
 REQUIRED_ROOT_FILES = (
     "README.md",
@@ -200,22 +202,26 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
                     try:
                         release_gate_data = json.loads(release_gate_text)
                         # Extract key counts from release_gate.json
+                        # Map release_gate.json field names to CURRENT_PROOF.md field names
                         expected_counts = {
                             "proof_input_file_count": release_gate_data.get(
                                 "proof_input_file_count", 0
                             ),
-                            "check_count": release_gate_data.get("check_count", 0),
-                            "backend_pytest_passed": release_gate_data.get(
+                            "release_gate_check_count": release_gate_data.get("check_count", 0),
+                            "backend pytest": release_gate_data.get(
                                 "backend_pytest_passed", 0
                             ),
-                            "backend_import_route_count": release_gate_data.get(
+                            "backend import proof": release_gate_data.get(
                                 "backend_import_route_count", 0
                             ),
                         }
                         # Verify these counts appear in CURRENT_PROOF.md
+                        # CURRENT_PROOF.md uses format "- key: value"
                         for key, expected_value in expected_counts.items():
                             if expected_value is not None and expected_value > 0:
-                                if str(expected_value) not in current_proof_text:
+                                # Check for the pattern "- key: value"
+                                pattern = f"- {key}: {expected_value}"
+                                if pattern not in current_proof_text:
                                     report["errors"].append(
                                         f"proof_count_mismatch:{key}={expected_value} "
                                         f"not found in CURRENT_PROOF.md"

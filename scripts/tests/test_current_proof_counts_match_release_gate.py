@@ -8,11 +8,14 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from pathlib import Path
 
 import pytest
 
-from scripts.release_gate import _write_current_proof_md
+# Add parent directory to path to import release_gate module
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from release_gate import _write_current_proof_md
 
 
 def _extract_count_from_proof_line(line: str) -> int | None:
@@ -23,6 +26,7 @@ def _extract_count_from_proof_line(line: str) -> int | None:
         "- backend import proof: PASS (47 routes)" -> 47
         "- frontend contracts: 12 passed" -> 12
         "- proof_input_file_count: 843" -> 843
+        "- release_gate_check_count: 35" -> 35
     """
     # Match patterns like "X passed", "X routes", "X skipped", etc.
     patterns = [
@@ -31,6 +35,8 @@ def _extract_count_from_proof_line(line: str) -> int | None:
         r"(\d+)\s+skipped",
         r"file_count:\s*(\d+)",
         r"check_count:\s*(\d+)",
+        r"proof_input_file_count:\s*(\d+)",
+        r"release_gate_check_count:\s*(\d+)",
     ]
     for pattern in patterns:
         match = re.search(pattern, line)
@@ -91,9 +97,9 @@ def test_current_proof_md_counts_match_release_gate_json(repo_root: Path, tmp_pa
 
     # Check that expected counts are present in CURRENT_PROOF.md
     for key, expected_value in expected_counts.items():
-            if expected_value is not None and expected_value > 0:
-                # Find the line in CURRENT_PROOF.md that contains this count
-                found = False
+        if expected_value is not None and expected_value > 0:
+            # Find the line in CURRENT_PROOF.md that contains this count
+            found = False
             for line in current_proof_lines:
                 if key.lower() in line.lower() and str(expected_value) in line:
                     found = True

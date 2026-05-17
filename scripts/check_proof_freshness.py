@@ -70,6 +70,7 @@ IGNORE_GLOB_PATTERNS = {
     "**/build/**",
     "**/*.tsbuildinfo",
     "**/__pycache__/**",
+    "**/.pytest_cache/**",
     "**/*.pyc",
     "**/*.pyo",
     "**/*.log",

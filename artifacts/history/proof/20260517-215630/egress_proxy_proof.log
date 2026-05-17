@@ -1,0 +1,12 @@
+[proof_egress_proxy] STAGE: environment
+[proof_egress_proxy] Backend Python: /Users/dawsonblock/JUDGE_ATLASX/backend/.venv/bin/python
+[proof_egress_proxy] STAGE: production startup egress policy tests
+...                                                                      [100%]
+3 passed in 0.03s
+[proof_egress_proxy] STAGE: runtime proxy wiring tests
+..                                                                       [100%]
+2 passed in 0.28s
+[proof_egress_proxy] STAGE: ssrf context coverage tests
+....................................                                     [100%]
+36 passed in 1.78s
+[proof_egress_proxy] PASS: egress proxy proof checks completed

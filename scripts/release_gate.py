@@ -154,7 +154,8 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _archive_current_proof(repo_root: Path, out_dir: Path) -> str | None:
+def _archive_current_proof(repo_root: Path, out_dir: Path, keep_files: list[str] | None = None) -> str | None:
+    """Archive current proof files to history, optionally keeping certain files in current directory."""
     history_root = repo_root / "artifacts" / "history" / "proof"
     history_root.mkdir(parents=True, exist_ok=True)
     entries = [p for p in out_dir.iterdir() if p.exists()]
@@ -164,6 +165,9 @@ def _archive_current_proof(repo_root: Path, out_dir: Path) -> str | None:
     target = history_root / stamp
     target.mkdir(parents=True, exist_ok=True)
     for entry in entries:
+        # Keep specified files in current directory
+        if keep_files and entry.name in keep_files:
+            continue
         move(str(entry), str(target / entry.name))
     return str(target.relative_to(repo_root))
 
@@ -911,44 +915,24 @@ def _write_current_proof_md(
     status = "PASS" if payload["alpha_gate_passed"] else "BLOCKED"
     failed_checks = payload.get("failed_checks", [])
     blocked_checks = payload.get("blocked_checks", {})
+
     lines = [
         "# CURRENT_PROOF",
         "",
         f"- generated_at_utc: {payload.get('timestamp_utc', 'unknown')}",
         f"- commit_hash: {payload.get('commit_hash', 'unknown')}",
         f"- alpha_gate_status: {status}",
-        f"- alpha_gate_passed: {str(payload.get('alpha_gate_passed', False)).lower()}",
+        f"- alpha_gate_passed: {payload.get('alpha_gate_passed', False)}",
         f"- release_gate_check_count: {check_count}",
-        f"- docker_available: {str(payload.get('docker_available', False)).lower()}",
+        f"- docker_available: {payload.get('docker_available', False)}",
         f"- postgis_proof_result: {payload.get('postgis_proof_result', 'UNKNOWN')}",
-        (
-            "- egress_proxy_proof_result: "
-            f"{payload.get('egress_proxy_proof_result', 'UNKNOWN')}"
-        ),
-        (
-            "- demo_proof_result: "
-            f"{payload.get('demo_proof_result', 'UNKNOWN')}"
-        ),
-        (
-            "- proof_freshness_result: "
-            f"{payload.get('proof_freshness_result', 'UNKNOWN')}"
-        ),
-        (
-            "- proof_input_tree_hash: "
-            f"{payload.get('proof_input_tree_hash', 'unknown')}"
-        ),
-        (
-            "- proof_input_file_count: "
-            f"{payload.get('proof_input_file_count', 0)}"
-        ),
-        (
-            "- egress_proxy_proof_log: "
-            f"{payload.get('egress_proxy_proof_log', 'unknown')}"
-        ),
-        (
-            "- demo_proof_log: "
-            f"{payload.get('demo_proof_log', 'unknown')}"
-        ),
+        f"- egress_proxy_proof_result: {payload.get('egress_proxy_proof_result', 'UNKNOWN')}",
+        f"- demo_proof_result: {payload.get('demo_proof_result', 'UNKNOWN')}",
+        f"- proof_freshness_result: {payload.get('proof_freshness_result', 'UNKNOWN')}",
+        f"- proof_input_tree_hash: {payload.get('proof_input_tree_hash', 'unknown')}",
+        f"- proof_input_file_count: {payload.get('proof_input_file_count', 0)}",
+        f"- egress_proxy_proof_log: {payload.get('egress_proxy_proof_log', 'unknown')}",
+        f"- demo_proof_log: {payload.get('demo_proof_log', 'unknown')}",
         "",
         "## Runtime Metadata",
         "",
@@ -1146,7 +1130,11 @@ def _write_current_proof_md(
 
     current_proof_path = out_dir / "CURRENT_PROOF.md"
     current_proof_path.write_text("\n".join(lines), encoding="utf-8")
-    return str(current_proof_path.relative_to(repo_root))
+    # Return relative path if possible, otherwise absolute path
+    try:
+        return str(current_proof_path.relative_to(repo_root))
+    except ValueError:
+        return str(current_proof_path)
 
 
 def main() -> int:
@@ -1495,7 +1483,17 @@ def main() -> int:
         timeout_seconds=900,
     )
 
-    archived_current_proof = _archive_current_proof(repo_root, out_dir)
+    # Archive current proof to history before execution, but keep structured proof files
+    # for archive validation step
+    keep_files = [
+        "release_gate.json",
+        "backend_proof_summary.json",
+        "frontend_proof_summary.json",
+        "source_registry_status.json",
+        "CURRENT_PROOF.md",
+        "release_readiness.md",
+    ]
+    archived_current_proof = _archive_current_proof(repo_root, out_dir, keep_files=keep_files)
 
     # Clear stale gate artifacts before execution so each run is
     # self-contained.
@@ -1947,6 +1945,7 @@ def main() -> int:
     payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
     payload["logs"]["proof_policy"] = proof_policy_rel
     payload["logs"]["repair_report"] = repair_report_rel
+
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
     if ok:
