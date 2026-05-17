@@ -8,9 +8,9 @@ export const publicEntityDetailSchema = z.object({
     "official_statistics_aggregate",
     "corrected",
   ]),
-  public_visibility: z.boolean(),
+  public_visibility: z.literal(true),
   summary: z.string().nullable().optional(),
   source_key: z.string().nullable().optional(),
-});
+}).strict();
 
 export type PublicEntityDetail = z.infer<typeof publicEntityDetailSchema>;

@@ -98,6 +98,12 @@ def canonical_publication_state(entity: Any) -> PublicationState:
 _NON_PUBLIC_RELATIONSHIP_STATES: frozenset[str] = frozenset(
     {"rejected", "disputed", "removed", "removed_from_public"}
 )
+_PENDING_RELATIONSHIP_STATES: frozenset[str] = frozenset(
+    {"pending", "pending_review", "review_required", "unverified", "unknown"}
+)
+_ACTIVE_RELATIONSHIP_STATES: frozenset[str] = frozenset(
+    {"verified", "approved", "active"}
+)
 
 
 def relationship_public_status(entity: Any) -> str:
@@ -119,6 +125,37 @@ def relationship_public_status(entity: Any) -> str:
     if verification == "reviewed":
         return OFFICIAL_POLICE_OPEN_DATA_REPORT
     return PENDING_REVIEW
+
+
+def _relationship_policy_reasons(entity: Any) -> list[str]:
+    reasons: list[str] = []
+    verification = str(getattr(entity, "verification_status", "") or "").lower()
+    relationship = str(getattr(entity, "relationship_status", "") or "").lower()
+
+    if verification in _NON_PUBLIC_RELATIONSHIP_STATES:
+        reasons.append(f"relationship_verification_blocked:{verification}")
+    if relationship in _NON_PUBLIC_RELATIONSHIP_STATES:
+        reasons.append(f"relationship_status_blocked:{relationship}")
+
+    if verification in _PENDING_RELATIONSHIP_STATES:
+        reasons.append(f"relationship_verification_pending:{verification}")
+    if relationship in _PENDING_RELATIONSHIP_STATES:
+        reasons.append(f"relationship_status_pending:{relationship}")
+
+    if verification == "verified" and relationship not in _ACTIVE_RELATIONSHIP_STATES:
+        reasons.append(
+            f"relationship_status_incompatible_with_verified:{relationship or 'missing'}"
+        )
+
+    if verification == "reviewed" and relationship in _NON_PUBLIC_RELATIONSHIP_STATES:
+        reasons.append(f"relationship_reviewed_but_blocked:{relationship}")
+
+    if not verification:
+        reasons.append("relationship_verification_missing")
+    if not relationship:
+        reasons.append("relationship_status_missing")
+
+    return reasons
 
 
 def entity_public_visibility(entity: Any) -> bool:
@@ -259,6 +296,8 @@ def can_publish_entity(
     evidence_ok, evidence_reasons = evidence_anchor_status(db, entity_type, entity)
     if not evidence_ok:
         reasons.extend(evidence_reasons)
+    if entity_type == "relationship_evidence" or isinstance(entity, RelationshipEvidence):
+        reasons.extend(_relationship_policy_reasons(entity))
     reasons.extend(_has_safe_location(entity_type, entity))
     reasons.extend(_source_registry_reasons(entity))
 
@@ -296,6 +335,8 @@ def can_show_public_entity(
         evidence_ok, evidence_reasons = evidence_anchor_status(db, entity_type, entity)
         if not evidence_ok:
             reasons.extend(evidence_reasons)
+    if entity_type == "relationship_evidence" or isinstance(entity, RelationshipEvidence):
+        reasons.extend(_relationship_policy_reasons(entity))
     reasons.extend(_has_safe_location(entity_type, entity))
     if status == NEWS_ONLY_CONTEXT and entity_type in {
         "event",

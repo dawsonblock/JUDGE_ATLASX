@@ -59,7 +59,7 @@ def _status_from_decision(entity, payload: dict) -> str:
     raise HTTPException(status_code=422, detail="Unsupported review decision")
 
 
-def _serialize_review_item(entity_type: str, entity) -> dict:
+def _serialize_review_item(db: Session, entity_type: str, entity) -> dict:
     title = (
         getattr(entity, "title", None)
         or getattr(entity, "incident_type", None)
@@ -70,7 +70,23 @@ def _serialize_review_item(entity_type: str, entity) -> dict:
         or getattr(entity, "source_quality", None)
         or getattr(entity, "incident_category", None)
     )
+    created_at = getattr(entity, "created_at", None)
+    last_seen_at = (
+        getattr(entity, "last_seen_at", None)
+        or getattr(entity, "data_last_seen_at", None)
+        or getattr(entity, "updated_at", None)
+    )
+    source_key = getattr(entity, "source_key", None)
+    if source_key is None and getattr(entity, "source", None) is not None:
+        source_key = getattr(entity.source, "source_key", None)
+
+    policy_block_reasons: list[str] = []
+    decision = can_publish_entity(db, entity_type, entity)
+    if not decision.allowed:
+        policy_block_reasons = decision.reasons
+
     return {
+        "id": entity.id,
         "entity_type": entity_type,
         "entity_id": (
             getattr(entity, "event_id", None)
@@ -80,8 +96,15 @@ def _serialize_review_item(entity_type: str, entity) -> dict:
         "database_id": entity.id,
         "title": title,
         "source_type": source_type,
+        "source_id": getattr(entity, "source_id", None),
+        "source_key": source_key,
+        "jurisdiction": getattr(entity, "jurisdiction", None),
         "review_status": entity.review_status,
         "public_visibility": entity_public_visibility(entity),
+        "raw_snapshot_id": getattr(entity, "raw_snapshot_id", None),
+        "parser_version": getattr(entity, "parser_version", None),
+        "last_seen_at": last_seen_at.isoformat() if last_seen_at else None,
+        "created_at": created_at.isoformat() if created_at else None,
         "reviewed_by": getattr(entity, "reviewed_by", None),
         "reviewed_at": (
             getattr(entity, "reviewed_at").isoformat()
@@ -91,6 +114,7 @@ def _serialize_review_item(entity_type: str, entity) -> dict:
         "review_notes": getattr(entity, "review_notes", None),
         "correction_note": getattr(entity, "correction_note", None),
         "dispute_note": getattr(entity, "dispute_note", None),
+        "policy_block_reasons": policy_block_reasons,
     }
 
 
@@ -179,7 +203,7 @@ def admin_review_queue(
             .unique()
             .all()
         )
-        items.extend(_serialize_review_item(current_type, entity) for entity in rows)
+        items.extend(_serialize_review_item(db, current_type, entity) for entity in rows)
         remaining_limit -= len(rows)
         remaining_offset = 0
     return {"items": items, "total_count": total_count}
@@ -328,7 +352,7 @@ async def admin_review_decision(
                 )
             )
     db.commit()
-    return _serialize_review_item(entity_type, entity)
+    return _serialize_review_item(db, entity_type, entity)
 
 
 @router.post(
@@ -398,4 +422,4 @@ def retract_legal_source(
         )
     )
     db.commit()
-    return _serialize_review_item("source", source)
+    return _serialize_review_item(db, "source", source)

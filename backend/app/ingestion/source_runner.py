@@ -38,6 +38,21 @@ from ..models.entities import (
 Session = Any
 
 
+_CREATED_RECORD_TYPE_MAP: dict[str, str] = {
+    "crimeincident": "CrimeIncident",
+    "crime_incident": "CrimeIncident",
+    "event": "Event",
+    "legalinstrument": "LegalInstrument",
+    "legal_instrument": "LegalInstrument",
+    "legalsection": "LegalSection",
+    "legal_section": "LegalSection",
+    "reviewitem": "ReviewItem",
+    "review_item": "ReviewItem",
+    "sourcesnapshot": "SourceSnapshot",
+    "source_snapshot": "SourceSnapshot",
+}
+
+
 @dataclass
 class RunPersistSummary:
     persisted_incidents: int = 0
@@ -220,11 +235,20 @@ def _insert_crime_incident(
         source_snapshot_id=snapshot.id,
     )
     try:
-        db.add(incident)
-        db.flush()
-    except IntegrityError:
-        db.rollback()
-        return False
+        with db.begin_nested():
+            db.add(incident)
+            db.flush()
+    except IntegrityError as exc:
+        # Race-safe dedupe: if another worker inserted the same identity hash,
+        # reuse the existing row path and continue ingestion.
+        duplicate = (
+            db.query(CrimeIncident.id)
+            .filter(CrimeIncident.ingestion_identity_hash == identity_hash)
+            .first()
+        )
+        if duplicate is not None:
+            return False
+        raise exc
     return True
 
 
@@ -285,12 +309,41 @@ def _insert_review_item(
         ingestion_run_id=run_record.id,
     )
     try:
-        db.add(rv)
-        db.flush()
-    except IntegrityError:
-        db.rollback()
-        return False
+        with db.begin_nested():
+            db.add(rv)
+            db.flush()
+    except IntegrityError as exc:
+        duplicate = (
+            db.query(ReviewItem.id)
+            .filter(ReviewItem.ingestion_identity_hash == identity_hash)
+            .first()
+        )
+        if duplicate is not None:
+            return False
+        raise exc
     return True
+
+
+def _normalize_created_record_type(record_type: str | None) -> str:
+    if not record_type:
+        return ""
+    normalized = record_type.strip()
+    mapped = _CREATED_RECORD_TYPE_MAP.get(normalized.lower())
+    return mapped or normalized
+
+
+def _authority_types_for_result(result: IngestionResult) -> set[str]:
+    required_types: set[str] = {"SourceSnapshot"}
+    for record in result.created_records:
+        normalized = _normalize_created_record_type(getattr(record, "record_type", None))
+        if normalized:
+            required_types.add(normalized)
+    if result.legal_instruments:
+        required_types.add("LegalInstrument")
+        required_types.add("LegalSection")
+    if result.review_items:
+        required_types.add("ReviewItem")
+    return required_types
 
 
 def _parse_date(value: object) -> date | None:
@@ -444,6 +497,26 @@ def persist_ingestion_result(
             summary.quarantined_count += 1
             return summary
 
+    # Enforce source authority before any persistence side effects.
+    authority_types = _authority_types_for_result(result)
+    authority_violations: list[str] = []
+    for record_type in sorted(authority_types):
+        violation = check_record_type_allowed(
+            record_type,
+            source.public_record_authority,
+            source.creates,
+        )
+        if violation is not None:
+            authority_violations.append(
+                f"{record_type}:{violation.rule}:{violation.detail}"
+            )
+    if authority_violations:
+        reason = "authority_violation: " + " | ".join(authority_violations)
+        quarantine_run(db, run_record, reason)
+        summary.contract_violations = authority_violations
+        summary.quarantined_count += 1
+        return summary
+
     # Always create a snapshot when raw bytes exist, even if no records were
     # parsed.
     # A zero-result run is still evidence: we fetched URL X at time Y with
@@ -497,17 +570,12 @@ def persist_ingestion_result(
                 "source_key_mismatch_record_rejected",
             )
             continue
-        # Phase 6: enforce source authority before persisting
-        authority_violation = check_record_type_allowed(
-            "CrimeIncident",
-            source.public_record_authority,
-            source.creates,
-        )
-        if authority_violation is not None:
+        normalized_type = _normalize_created_record_type(record.record_type)
+        if normalized_type != "CrimeIncident":
             summary.failed_records += 1
             _summarize_warning_code(
                 summary,
-                f"authority_violation:{authority_violation.detail[:80]}",
+                f"unsupported_created_record_type:{normalized_type or 'unknown'}",
             )
             continue
         try:
@@ -534,19 +602,6 @@ def persist_ingestion_result(
                 "source_key_mismatch_legal_rejected",
             )
             continue
-        # Phase 6: enforce source authority before persisting
-        authority_violation = check_record_type_allowed(
-            "LegalInstrument",
-            source.public_record_authority,
-            source.creates,
-        )
-        if authority_violation is not None:
-            summary.failed_records += 1
-            _summarize_warning_code(
-                summary,
-                f"authority_violation:{authority_violation.detail[:80]}",
-            )
-            continue
         try:
             _insert_or_update_legal_instrument(
                 db,
@@ -567,19 +622,6 @@ def persist_ingestion_result(
             _summarize_warning_code(
                 summary,
                 "source_key_mismatch_review_item_rejected",
-            )
-            continue
-        # Phase 6: enforce source authority before persisting
-        authority_violation = check_record_type_allowed(
-            "ReviewItem",
-            source.public_record_authority,
-            source.creates,
-        )
-        if authority_violation is not None:
-            summary.review_items_skipped += 1
-            _summarize_warning_code(
-                summary,
-                f"authority_violation_review_item:{authority_violation.detail[:80]}",
             )
             continue
         try:

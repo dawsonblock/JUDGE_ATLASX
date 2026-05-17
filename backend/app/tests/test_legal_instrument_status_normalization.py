@@ -1,39 +1,114 @@
-"""Phase 1 regression — LegalInstrument.review_status ORM default.
-
-The default must be the canonical sentinel "pending_review", NOT the legacy
-ingestion-run sentinel "pending".  A wrong default would silently pass
-pending-status records through publication gates that expect "pending_review".
-"""
-
 from __future__ import annotations
 
-import pytest
+from datetime import datetime, timezone
 
-from app.models.entities import LegalInstrument
+from app.ingestion.adapters import (
+    CreatedLegalInstrument,
+    CreatedReviewItem,
+    IngestionResult,
+)
+from app.ingestion.source_runner import persist_ingestion_result
+from app.models.entities import IngestionRun, LegalInstrument, ReviewItem, SourceRegistry
 
 
-def test_legal_instrument_review_status_default_is_pending_review() -> None:
-    """ORM default for LegalInstrument.review_status must be 'pending_review'."""
-    col = LegalInstrument.__table__.c["review_status"]
-    assert col.default is not None, "review_status must have a column-level default"
-    assert col.default.arg == "pending_review", (
-        f"Expected default 'pending_review', got {col.default.arg!r}"
+def _source(db_session):
+    source = SourceRegistry(
+        source_key="justice_canada_laws_xml",
+        source_name="Justice Canada Laws XML",
+        source_type="official",
+        source_class="machine_ingest",
+        lifecycle_state="runnable",
+        automation_status="machine_ready_enabled",
+        is_active=True,
+        public_record_authority="official_legislation",
+        base_url="https://laws-lois.justice.gc.ca/eng/XML/Legis.xml",
+        allowed_domains='["laws-lois.justice.gc.ca"]',
+        parser="laws_justice_xml",
+        parser_version="justice_laws_xml_v1",
+        requires_manual_review=True,
+        public_publish_default=False,
+        creates='["SourceSnapshot", "LegalInstrument", "LegalSection", "ReviewItem"]',
+    )
+    db_session.add(source)
+    db_session.flush()
+    return source
+
+
+def _run(db_session, source_id: str) -> IngestionRun:
+    run = IngestionRun(
+        source_name=source_id,
+        started_at=datetime.now(timezone.utc),
+        status="running",
+    )
+    db_session.add(run)
+    db_session.flush()
+    return run
+
+
+def test_persist_sets_legal_instrument_pending_review_and_review_item_pending(db_session):
+    source = _source(db_session)
+    run = _run(db_session, source.source_key)
+
+    result = IngestionResult(
+        source_key=source.source_key,
+        parser_version=source.parser_version,
+        raw_snapshot_bytes=b"<Legis>fixture</Legis>",
+        fetch_http_status=200,
+        fetch_content_type="application/xml",
+        fetch_url=source.base_url,
+        legal_instruments=[
+            CreatedLegalInstrument(
+                source_key=source.source_key,
+                instrument_type="act",
+                unique_id="C-46",
+                language="eng",
+                title="Criminal Code",
+                payload={
+                    "jurisdiction": "CA-FED",
+                    "instrument_type": "act",
+                    "parser_version": "justice_laws_xml_v1",
+                },
+                sections=[
+                    {
+                        "section_label": "1",
+                        "text": "This is a test section",
+                    }
+                ],
+                source_url="https://laws-lois.justice.gc.ca/eng/acts/C-46/",
+            )
+        ],
+        review_items=[
+            CreatedReviewItem(
+                source_key=source.source_key,
+                headline="Criminal Code",
+                url="https://laws-lois.justice.gc.ca/eng/acts/C-46/",
+                extracted_text="Test extract",
+                confidence_score=0.9,
+                payload={
+                    "record_type": "LegalInstrument",
+                    "source_key": source.source_key,
+                    "unique_id": "C-46",
+                    "language": "eng",
+                    "instrument_type": "act",
+                },
+            )
+        ],
     )
 
+    summary = persist_ingestion_result(db_session, source, run, result)
+    assert summary.persisted_legal_instruments == 1
+    assert summary.persisted_review_items == 1
 
-def test_legal_instrument_review_status_server_default_is_pending_review() -> None:
-    """Server default for LegalInstrument.review_status must be 'pending_review'."""
-    col = LegalInstrument.__table__.c["review_status"]
-    assert col.server_default is not None, "review_status must have a server_default"
-    assert col.server_default.arg == "pending_review", (
-        f"Expected server_default 'pending_review', got {col.server_default.arg!r}"
+    instrument = db_session.query(LegalInstrument).one()
+    review_item = db_session.query(ReviewItem).one()
+
+    assert instrument.review_status == "pending_review"
+    assert instrument.public_visibility == "private"
+    assert review_item.status == "pending"
+
+    pending_legacy = (
+        db_session.query(LegalInstrument)
+        .filter(LegalInstrument.review_status == "pending")
+        .count()
     )
-
-
-def test_legal_instrument_review_status_default_is_not_legacy_pending() -> None:
-    """ORM default must not be the legacy sentinel 'pending'."""
-    col = LegalInstrument.__table__.c["review_status"]
-    if col.default is not None:
-        assert col.default.arg != "pending", (
-            "review_status default must not be the legacy 'pending' sentinel"
-        )
+    assert pending_legacy == 0

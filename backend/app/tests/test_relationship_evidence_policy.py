@@ -1,75 +1,128 @@
-"""Phase 3 regression — RelationshipEvidence review_status column + promotion helper.
-
-Verifies:
-1. RelationshipEvidence ORM has a review_status column with the correct default.
-2. relationship_public_status() returns correct canonical statuses based on
-   verification_status / relationship_status field combinations.
-"""
-
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from datetime import datetime, timezone
 
-import pytest
-
-from app.models.entities import RelationshipEvidence
+from app.models.entities import RelationshipEvidence, SourceSnapshot
 from app.policies.publication_policy import (
-    OFFICIAL_POLICE_OPEN_DATA_REPORT,
-    PENDING_REVIEW,
-    REJECTED,
-    VERIFIED_COURT_RECORD,
-    relationship_public_status,
+    can_publish_entity,
+    can_show_public_entity,
 )
 
 
-class TestRelationshipEvidenceColumn:
-    def test_review_status_column_exists(self) -> None:
-        assert "review_status" in RelationshipEvidence.__table__.c
-
-    def test_review_status_default_is_pending_review(self) -> None:
-        col = RelationshipEvidence.__table__.c["review_status"]
-        assert col.default is not None
-        assert col.default.arg == "pending_review"
-
-    def test_review_status_server_default_is_pending_review(self) -> None:
-        col = RelationshipEvidence.__table__.c["review_status"]
-        assert col.server_default is not None
-        assert col.server_default.arg == "pending_review"
+def _snapshot(db_session, *, content_hash: str | None = "a" * 64) -> SourceSnapshot:
+    row = SourceSnapshot(
+        source_key="test_source",
+        source_url="https://example.test/snap",
+        fetched_at=datetime.now(timezone.utc),
+        content_hash=content_hash,
+        raw_content="fixture",
+    )
+    db_session.add(row)
+    db_session.flush()
+    return row
 
 
-class TestRelationshipPublicStatus:
-    def _entity(
-        self, *, verification_status: str | None, relationship_status: str | None
-    ) -> MagicMock:
-        e = MagicMock()
-        e.verification_status = verification_status
-        e.relationship_status = relationship_status
-        return e
+def _evidence(
+    db_session,
+    *,
+    review_status: str = "verified_court_record",
+    public_visibility: bool = True,
+    verification_status: str = "verified",
+    relationship_status: str = "active",
+    snapshot_id: int | None = None,
+) -> RelationshipEvidence:
+    row = RelationshipEvidence(
+        from_entity_type="crime_incident",
+        from_entity_id=1,
+        to_entity_type="event",
+        to_entity_id=1,
+        relationship_type="linked",
+        evidence_type="report",
+        evidence_source="fixture",
+        extracted_by="test",
+        confidence=0.9,
+        public_visibility=public_visibility,
+        review_status=review_status,
+        verification_status=verification_status,
+        relationship_status=relationship_status,
+        evidence_snapshot_id=snapshot_id,
+    )
+    db_session.add(row)
+    db_session.flush()
+    return row
 
-    def test_verified_and_approved_returns_verified_court_record(self) -> None:
-        e = self._entity(verification_status="verified", relationship_status="approved")
-        assert relationship_public_status(e) == VERIFIED_COURT_RECORD
 
-    def test_verified_and_verified_relationship_returns_verified_court_record(self) -> None:
-        e = self._entity(verification_status="verified", relationship_status="verified")
-        assert relationship_public_status(e) == VERIFIED_COURT_RECORD
+def test_public_review_status_blocked_when_verification_rejected(db_session):
+    snap = _snapshot(db_session)
+    evidence = _evidence(
+        db_session,
+        verification_status="rejected",
+        relationship_status="active",
+        snapshot_id=snap.id,
+    )
 
-    def test_rejected_verification_returns_rejected(self) -> None:
-        e = self._entity(verification_status="rejected", relationship_status="approved")
-        assert relationship_public_status(e) == REJECTED
+    decision = can_show_public_entity(db_session, "relationship_evidence", evidence)
+    assert decision.allowed is False
+    assert any("verification_blocked:rejected" in r for r in decision.reasons)
 
-    def test_rejected_relationship_returns_rejected(self) -> None:
-        e = self._entity(verification_status="reviewed", relationship_status="rejected")
-        assert relationship_public_status(e) == REJECTED
 
-    def test_reviewed_verification_returns_official_police_open_data(self) -> None:
-        e = self._entity(verification_status="reviewed", relationship_status="pending")
-        assert relationship_public_status(e) == OFFICIAL_POLICE_OPEN_DATA_REPORT
+def test_public_review_status_blocked_when_relationship_disputed(db_session):
+    snap = _snapshot(db_session)
+    evidence = _evidence(
+        db_session,
+        verification_status="verified",
+        relationship_status="disputed",
+        snapshot_id=snap.id,
+    )
 
-    def test_pending_verification_returns_pending_review(self) -> None:
-        e = self._entity(verification_status="pending", relationship_status="pending")
-        assert relationship_public_status(e) == PENDING_REVIEW
+    decision = can_show_public_entity(db_session, "relationship_evidence", evidence)
+    assert decision.allowed is False
+    assert any("status_blocked:disputed" in r for r in decision.reasons)
 
-    def test_none_fields_return_pending_review(self) -> None:
-        e = self._entity(verification_status=None, relationship_status=None)
-        assert relationship_public_status(e) == PENDING_REVIEW
+
+def test_public_review_status_blocked_when_relationship_removed(db_session):
+    snap = _snapshot(db_session)
+    evidence = _evidence(
+        db_session,
+        verification_status="verified",
+        relationship_status="removed",
+        snapshot_id=snap.id,
+    )
+
+    decision = can_show_public_entity(db_session, "relationship_evidence", evidence)
+    assert decision.allowed is False
+    assert any("status_blocked:removed" in r for r in decision.reasons)
+
+
+def test_verified_active_valid_snapshot_and_public_fields_allowed(db_session):
+    snap = _snapshot(db_session)
+    evidence = _evidence(
+        db_session,
+        review_status="verified_court_record",
+        public_visibility=True,
+        verification_status="verified",
+        relationship_status="active",
+        snapshot_id=snap.id,
+    )
+
+    publish = can_publish_entity(db_session, "relationship_evidence", evidence)
+    show = can_show_public_entity(db_session, "relationship_evidence", evidence)
+    assert publish.allowed is True
+    assert show.allowed is True
+
+
+def test_pending_private_relationship_evidence_is_blocked(db_session):
+    snap = _snapshot(db_session)
+    evidence = _evidence(
+        db_session,
+        review_status="pending_review",
+        public_visibility=False,
+        verification_status="pending",
+        relationship_status="pending",
+        snapshot_id=snap.id,
+    )
+
+    publish = can_publish_entity(db_session, "relationship_evidence", evidence)
+    show = can_show_public_entity(db_session, "relationship_evidence", evidence)
+    assert publish.allowed is False
+    assert show.allowed is False

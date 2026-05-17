@@ -28,15 +28,18 @@ export type PublicMapReviewStatus = (typeof PUBLIC_MAP_REVIEW_STATUSES)[number];
 
 export const publicMapMarkerSchema = z.object({
   entity_id: z.string(),
+  entity_type: z.string(),
   lat: z.number(),
   lon: z.number(),
-  label: z.string().optional(),
+  label: z.string(),
   review_status: z.enum(PUBLIC_MAP_REVIEW_STATUSES),
   public_visibility: z.literal(true),
-  source_quality: z.string().optional(),
-  is_context_only: z.boolean().optional(),
+  source_quality: z.string(),
   evidence_type: z.string().optional(),
-});
+  evidence_status: z.string().optional(),
+  precision_level: z.enum(["general_area", "city_centroid", "district"]).optional(),
+  area_label: z.string().optional(),
+}).strict();
 
 export const publicMapMarkersResponseSchema = z.object({
   items: z.array(publicMapMarkerSchema),

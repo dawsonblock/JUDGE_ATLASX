@@ -123,14 +123,23 @@ def test_crime_incident_integrity_error_returns_false(db_session) -> None:
     snap = _make_snapshot(db_session)
     record = _crime_record(external_id="EXT-RACE")
 
+    # Simulate race by inserting matching hash first via normal call.
+    assert _insert_crime_incident(db_session, record, snap) is True
+    result = _insert_crime_incident(db_session, record, snap)
+    assert result is False
+
+
+def test_crime_incident_non_dedupe_integrity_error_surfaces(db_session) -> None:
+    snap = _make_snapshot(db_session)
+    record = _crime_record(external_id="EXT-RACE-NONDEDUP")
+
     with patch.object(
         db_session,
         "flush",
-        side_effect=IntegrityError("unique constraint", {}, None),
+        side_effect=IntegrityError("other constraint", {}, None),
     ):
-        result = _insert_crime_incident(db_session, record, snap)
-
-    assert result is False
+        with pytest.raises(IntegrityError):
+            _insert_crime_incident(db_session, record, snap)
 
 
 # ---------------------------------------------------------------------------
@@ -174,11 +183,20 @@ def test_review_item_integrity_error_returns_false(db_session) -> None:
     run = _make_run(db_session)
     item = _review_item(unique_id="UID-RACE")
 
+    assert _insert_review_item(db_session, item, snap, run) is True
+    result = _insert_review_item(db_session, item, snap, run)
+    assert result is False
+
+
+def test_review_item_non_dedupe_integrity_error_surfaces(db_session) -> None:
+    snap = _make_snapshot(db_session)
+    run = _make_run(db_session)
+    item = _review_item(unique_id="UID-RACE-NONDEDUP")
+
     with patch.object(
         db_session,
         "flush",
-        side_effect=IntegrityError("unique constraint", {}, None),
+        side_effect=IntegrityError("other constraint", {}, None),
     ):
-        result = _insert_review_item(db_session, item, snap, run)
-
-    assert result is False
+        with pytest.raises(IntegrityError):
+            _insert_review_item(db_session, item, snap, run)

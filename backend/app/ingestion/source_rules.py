@@ -25,14 +25,14 @@ from typing import Sequence
 
 # Maps public_record_authority → allowed created record types
 _AUTHORITY_ALLOWED_CREATES: dict[str, frozenset[str]] = {
-    "official_open_data": frozenset({"CrimeIncident", "ReviewItem"}),
-    "official_statistics": frozenset({"CrimeIncident", "ReviewItem"}),
+    "official_open_data": frozenset({"SourceSnapshot", "CrimeIncident", "ReviewItem"}),
+    "official_statistics": frozenset({"SourceSnapshot", "CrimeIncident", "ReviewItem"}),
     "official_legislation": frozenset({"SourceSnapshot", "LegalInstrument", "LegalSection", "ReviewItem"}),
-    "official_court_record": frozenset({"ReviewItem"}),
-    "official_government": frozenset({"CrimeIncident", "ReviewItem"}),
-    "news_context": frozenset({"ReviewItem"}),
+    "official_court_record": frozenset({"SourceSnapshot", "ReviewItem"}),
+    "official_government": frozenset({"SourceSnapshot", "CrimeIncident", "ReviewItem"}),
+    "news_context": frozenset({"SourceSnapshot", "ReviewItem"}),
     # Fallback for any unknown value
-    "unknown": frozenset({"ReviewItem"}),
+    "unknown": frozenset({"SourceSnapshot", "ReviewItem"}),
 }
 
 # Authorities that can ever trigger auto-publish (subject to source-level flag)

@@ -22,10 +22,14 @@ from app.models.entities import (
     Event,
     LegalInstrument,
     LegalSection,
+    LegalSource,
     RelationshipEvidence,
     SourceSnapshot,
 )
-from app.policies.publication_policy import PUBLIC_REVIEW_STATUSES
+from app.policies.publication_policy import (
+    PUBLIC_REVIEW_STATUSES,
+    can_show_public_entity,
+)
 from app.services.text import normalize_text
 
 _MAX_QUESTION_LEN: int = 500
@@ -108,6 +112,8 @@ def _legal_context_citations(
     )
     scored: list[tuple[float, LegalSection, LegalInstrument]] = []
     for section, instrument in rows:
+        if not can_show_public_entity(db, "legal_instrument", instrument).allowed:
+            continue
         text = " ".join(
             part
             for part in (
@@ -203,12 +209,11 @@ def chat_about_evidence(
     if incident_id is not None:
         # Guard: only expose evidence for records the public can already see.
         incident = db.scalar(
-            select(CrimeIncident).where(
-                CrimeIncident.id == incident_id,
-                CrimeIncident.is_public.is_(True),
-            )
+            select(CrimeIncident).where(CrimeIncident.id == incident_id)
         )
-        if incident is None:
+        if incident is None or not can_show_public_entity(
+            db, "crime_incident", incident
+        ).allowed:
             # Incident does not exist or is not public — return nothing rather
             # than falling through to case_id queries and leaking related data.
             return ChatResponse(
@@ -230,8 +235,8 @@ def chat_about_evidence(
 
     if case_id is not None:
         # Guard: only surface evidence when a public crime incident is linked to this case.
-        linked_public_incident = db.scalar(
-            select(CrimeIncident.id)
+        linked_incidents = db.scalars(
+            select(CrimeIncident)
             .join(
                 CrimeIncidentEventLink,
                 CrimeIncidentEventLink.crime_incident_id == CrimeIncident.id,
@@ -239,11 +244,13 @@ def chat_about_evidence(
             .join(Event, Event.id == CrimeIncidentEventLink.event_id)
             .where(
                 Event.case_id == case_id,
-                CrimeIncident.is_public.is_(True),
             )
-            .limit(1)
-        )
-        if linked_public_incident is None:
+            .limit(50)
+        ).all()
+        if not any(
+            can_show_public_entity(db, "crime_incident", linked).allowed
+            for linked in linked_incidents
+        ):
             return ChatResponse(
                 question=question,
                 answer="No public evidence records found for the specified entity.",
@@ -281,13 +288,42 @@ def chat_about_evidence(
 
     stmt = select(RelationshipEvidence).where(
         or_(*conditions),
-        RelationshipEvidence.public_visibility.is_(True),
-        RelationshipEvidence.review_status.in_(PUBLIC_REVIEW_STATUSES),
         RelationshipEvidence.confidence >= 0.25,
-        RelationshipEvidence.relationship_status.in_(["approved", "verified"]),
-        RelationshipEvidence.verification_status.in_(["verified", "reviewed"]),
     )
-    evidence_rows = list(db.scalars(stmt).all())
+    candidate_rows = list(db.scalars(stmt).all())
+    evidence_rows: list[RelationshipEvidence] = []
+    for evidence in candidate_rows:
+        if not can_show_public_entity(db, "relationship_evidence", evidence).allowed:
+            continue
+
+        related_ok = True
+        for side in ("from", "to"):
+            entity_type = getattr(evidence, f"{side}_entity_type", None)
+            entity_id = getattr(evidence, f"{side}_entity_id", None)
+            if entity_type == "crime_incident" and entity_id is not None:
+                incident = db.get(CrimeIncident, entity_id)
+                if incident is None or not can_show_public_entity(
+                    db, "crime_incident", incident
+                ).allowed:
+                    related_ok = False
+                    break
+            elif entity_type == "event" and entity_id is not None:
+                event = db.get(Event, entity_id)
+                if event is None or not can_show_public_entity(
+                    db, "event", event
+                ).allowed:
+                    related_ok = False
+                    break
+            elif entity_type in {"source", "legal_source"} and entity_id is not None:
+                source = db.get(LegalSource, entity_id)
+                if source is None or not can_show_public_entity(
+                    db, "legal_source", source
+                ).allowed:
+                    related_ok = False
+                    break
+
+        if related_ok:
+            evidence_rows.append(evidence)
 
     if not evidence_rows:
         if legal_context:
