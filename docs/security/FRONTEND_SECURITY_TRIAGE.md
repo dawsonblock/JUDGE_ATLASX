@@ -3,7 +3,7 @@
 **Generated for JUDGE_ATLAS alpha gate — manual review required per release.**
 **All entries below are triaged for alpha scope. Production release requires remediation or updated upstream fixes.**
 
-See `docs/DEPENDENCY_REMEDIATION_PLAN.md` for owner/date remediation tasks and production-gate requirements.
+See `docs/deployment-guide/DEPENDENCY_REMEDIATION_PLAN.md` for owner/date remediation tasks and production-gate requirements.
 
 ---
 

@@ -1,7 +1,7 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-17T02:57:47.424592+00:00
-- commit_hash: d6a10e1657c723bf114c1e5984ea942ac893d51c
+- generated_at_utc: 2026-05-17T04:16:35.520190+00:00
+- commit_hash: 485e5638f7743b0ba952bdbb88120f729c30e40f
 - alpha_gate_status: PASS
 - alpha_gate_passed: true
 - release_gate_check_count: 37
@@ -10,15 +10,15 @@
 - egress_proxy_proof_result: PASS
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
-- proof_input_tree_hash: c56ff2291b97098a2d6a91bcbb54c338022effe270d62aec799a3b9f7d30456b
-- proof_input_file_count: 825
+- proof_input_tree_hash: df34160775db7ed95521f3722d95971a7c9674c0208bab1e86c8266c4b21fa62
+- proof_input_file_count: 829
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
 ## Runtime Metadata
 
-- gate_runner_python_version: 3.11.7
-- gate_runner_python_executable: /Users/dawsonblock/.pyenv/versions/3.11.7/bin/python
+- gate_runner_python_version: 3.11.14
+- gate_runner_python_executable: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/bin/python
 - backend_test_python_version: 3.11.14
 - backend_test_python_executable: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/bin/python
 - backend_required_python: >=3.11
@@ -53,14 +53,14 @@
 
 ## Governance Status
 
-- legacy_shared_token_status: deprecated, removal plan missing
-- dependency_security_status: npm audit issues triaged for alpha; remediation plan missing
+- legacy_shared_token_status: deprecated, removal plan documented
+- dependency_security_status: npm audit issues triaged for alpha; remediation plan documented
 
 ## Current Proof Facts
 
-- backend pytest: 2905 passed, 9 skipped
+- backend pytest: 2906 passed, 9 skipped
 - backend import proof: PASS (105 routes)
-- frontend contracts: 43 passed
+- frontend contracts: 44 passed
 - public API boundary: 33 passed
 - Docker runtime preflight: PASS
 - PostGIS proof: PASS

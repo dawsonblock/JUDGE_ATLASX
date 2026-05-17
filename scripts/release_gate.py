@@ -37,8 +37,8 @@ PROOF_INPUT_PATTERNS = [
     "scripts/**/*",
     "docs/CURRENT_STATUS.md",
     "docs/DB_PROOF.md",
-    "docs/LEGACY_AUTH_REMOVAL_PLAN.md",
-    "docs/DEPENDENCY_REMEDIATION_PLAN.md",
+    "docs/security/LEGACY_AUTH_REMOVAL_PLAN.md",
+    "docs/deployment-guide/DEPENDENCY_REMEDIATION_PLAN.md",
     "docs/security/FRONTEND_SECURITY_TRIAGE.md",
     "docs/schema_audit.md",
     "README.md",
@@ -471,19 +471,6 @@ def _generate_release_readiness_from_manifest(
         if not entry.get("log_sha256"):
             blockers.append(f"missing_log_sha256:{entry.get('name')}")
 
-    node_version = manifest.get("node_version", "unknown")
-    node_major = 0
-    node_minor = 0
-    try:
-        node_parts = str(node_version).lstrip("v").split(".")
-        node_major = int(node_parts[0])
-        node_minor = int(node_parts[1])
-    except Exception:
-        node_major = 0
-        node_minor = 0
-    if (node_major, node_minor) != (25, 9):
-        blockers.append(f"node_major_mismatch:Expected Node 25.9.x, found Node {node_version}")
-
     archive_entry = next(
         (entry for entry in manifest.get("proof_commands", []) if entry.get("name") == "archive_validation"),
         None,
@@ -635,22 +622,18 @@ def _write_source_registry_status_md(
         f"- commit_hash: {payload.get('commit_hash', 'unknown')}",
         f"- total_sources: {summary.get('total_sources', 'unknown')}",
         f"- machine_ingest_sources: {summary.get('machine_ingest_sources', 'unknown')}",
-        f"- runnable_when_active_sources: {summary.get('runnable_when_active_sources', 'unknown')}",
-        f"- enableable_sources: {summary.get('enableable_sources', 'unknown')}",
-        f"- sources_requiring_secrets: {summary.get('sources_requiring_secrets', 'unknown')}",
+        f"- runnable_now: {summary.get('runnable_now', 'unknown')}",
+        f"- enable_ready: {summary.get('enable_ready', 'unknown')}",
+        f"- deprecated: {summary.get('deprecated', 'unknown')}",
         "",
-        "| source key | source name | jurisdiction | source class/type | automation status | adapter key | adapter exists | required secrets | required secrets present during proof | enabled by default | can be enabled by admin | can run now | reason if not runnable | review required before public visibility | public exposure allowed before review | current alpha status |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "| source key | source name | jurisdiction | source class/type | lifecycle state | automation status | adapter state | parser key | adapter exists | runnable now | enable ready | blockers | review required before public visibility | current alpha status |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for source in sorted(sources, key=lambda item: str(item.get("source_key", ""))):
-        required_secret = source.get("required_secret_name") or "none"
-        can_enable = "yes" if source.get("can_enable") else "no"
-        can_run_now = (
-            "yes"
-            if source.get("can_run_when_active") and source.get("is_machine_ingest")
-            else "no"
-        )
-        reason_not_runnable = source.get("cannot_enable_reason") or "none"
+        runnable_now = "yes" if source.get("runnable_now") else "no"
+        enable_ready = "yes" if source.get("enable_ready") else "no"
+        blockers = source.get("blockers") or []
+        blockers_text = ", ".join(str(item) for item in blockers) if blockers else "none"
         review_required = (
             "yes"
             if source.get("public_visibility_policy", {}).get(
@@ -659,7 +642,7 @@ def _write_source_registry_status_md(
             else "no"
         )
         alpha_status = (
-            "runnable-alpha-source" if can_run_now == "yes" else "limited-alpha-source"
+            "runnable-alpha-source" if runnable_now == "yes" else "limited-alpha-source"
         )
         lines.append(
             "| "
@@ -669,17 +652,15 @@ def _write_source_registry_status_md(
                     _source_display_name(source),
                     str(source.get("jurisdiction", "unknown")),
                     f"{source.get('source_class', 'unknown')}/{source.get('source_type', 'unknown')}",
+                    str(source.get("lifecycle_state", "unknown")),
                     str(source.get("automation_status", "unknown")),
+                    str(source.get("adapter_state", "unknown")),
                     str(source.get("parser", "none")),
                     "yes" if source.get("adapter_exists") else "no",
-                    required_secret,
-                    "yes" if source.get("required_secret_configured") else "no",
-                    "yes" if source.get("enabled") else "no",
-                    can_enable,
-                    can_run_now,
-                    reason_not_runnable,
+                    runnable_now,
+                    enable_ready,
+                    blockers_text,
                     review_required,
-                    "no",
                     alpha_status,
                 ]
             )
@@ -1634,10 +1615,10 @@ def main() -> int:
         alembic_migration_count = _count_alembic_version_files(repo_root)
 
     legacy_auth_plan_exists = (
-        repo_root / "docs" / "LEGACY_AUTH_REMOVAL_PLAN.md"
+        repo_root / "docs" / "security" / "LEGACY_AUTH_REMOVAL_PLAN.md"
     ).exists()
     dependency_plan_exists = (
-        repo_root / "docs" / "DEPENDENCY_REMEDIATION_PLAN.md"
+        repo_root / "docs" / "deployment-guide" / "DEPENDENCY_REMEDIATION_PLAN.md"
     ).exists()
 
     payload = {

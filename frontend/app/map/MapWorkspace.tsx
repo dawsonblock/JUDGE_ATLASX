@@ -31,6 +31,35 @@ import { getDisclaimer } from "@/lib/disclaimerService";
 
 type LoadState = "idle" | "loading" | "error";
 
+type IncidentFilterInputs = {
+  bbox: string | null;
+  incidentType: "individual" | "aggregate" | "all";
+  jurisdiction: string;
+  sourceName: string;
+  dateFrom: string;
+  dateTo: string;
+  category: string;
+};
+
+export function buildIncidentParams(inputs: IncidentFilterInputs): Record<string, string> {
+  const params: Record<string, string> = {
+    is_public: "true",
+    reviewed_only: "true",
+  };
+
+  if (inputs.incidentType === "individual") params.exclude_aggregate = "true";
+  else if (inputs.incidentType === "aggregate") params.aggregate_only = "true";
+
+  if (inputs.bbox) params.bbox = inputs.bbox;
+  if (inputs.jurisdiction) params.jurisdiction = inputs.jurisdiction;
+  if (inputs.sourceName) params.source_name = inputs.sourceName;
+  if (inputs.dateFrom) params.start_date = inputs.dateFrom;
+  if (inputs.dateTo) params.end_date = inputs.dateTo;
+  if (inputs.category) params.incident_category = inputs.category;
+
+  return params;
+}
+
 /**
  * Attaches moveend/zoomend listeners to the MapLibre instance (via context)
  * and calls onBoundsChange with a debounced "west,south,east,north" bbox string.
@@ -140,20 +169,15 @@ export default function MapWorkspace() {
 
   useEffect(() => {
     setLoadState("loading");
-    const incidentParams: Record<string, string> = {
-      is_public: "true",
-      reviewed_only: "true",
-    };
-    if (incidentType === "individual")
-      incidentParams.exclude_aggregate = "true";
-    else if (incidentType === "aggregate")
-      incidentParams.aggregate_only = "true";
-    if (bbox) incidentParams.bbox = bbox;
-    if (jurisdiction) incidentParams.jurisdiction = jurisdiction;
-    if (sourceName) incidentParams.source_name = sourceName;
-    if (dateFrom) incidentParams.start_date = dateFrom;
-    if (dateTo) incidentParams.end_date = dateTo;
-    if (category) incidentParams.category = category;
+    const incidentParams = buildIncidentParams({
+      bbox,
+      incidentType,
+      jurisdiction,
+      sourceName,
+      dateFrom,
+      dateTo,
+      category,
+    });
 
     const eventParams = new URLSearchParams();
     if (bbox) eventParams.set("bbox", bbox);

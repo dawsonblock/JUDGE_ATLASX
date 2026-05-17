@@ -1,15 +1,15 @@
 # Archive Validation
 
-- validated_at_utc: 2026-05-17T02:57:51.295390+00:00
-- archive: /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.RUCBjW0Ba6/judge_atlas_archive.zip
-- archive_sha256: da5c595ba6ac8badb0a5b0bf1bc0958b6caa112a317837cbeb162cb435a51e67
+- validated_at_utc: 2026-05-17T04:16:39.202376+00:00
+- archive: /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.pprPszxDyV/judge_atlas_archive.zip
+- archive_sha256: f1021cf587ff3d2b573b1fe540964d74f9037e55c79e0922f52abf0efc42fe7a
 - expected_root: JUDGE_ATLAS-main
 - actual_root: JUDGE_ATLAS-main
 - top_level_roots: JUDGE_ATLAS-main
 - root_match: yes
 - valid: PASS
-- compressed_size_bytes: 1778294
-- uncompressed_size_bytes: 6477111
+- compressed_size_bytes: 1779049
+- uncompressed_size_bytes: 6483162
 
 ## Errors
 
@@ -21,10 +21,10 @@
 |---|---:|---:|
 | JUDGE_ATLAS-main/backend/uv.lock | 769811 | 238625 |
 | JUDGE_ATLAS-main/frontend/package-lock.json | 357374 | 75742 |
-| JUDGE_ATLAS-main/frontend/tsconfig.tsbuildinfo | 153828 | 47465 |
+| JUDGE_ATLAS-main/frontend/tsconfig.tsbuildinfo | 154094 | 47527 |
 | JUDGE_ATLAS-main/backend/app/models/entities.py | 75663 | 11985 |
-| JUDGE_ATLAS-main/scripts/release_gate.py | 72841 | 14056 |
-| JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 66749 | 10323 |
+| JUDGE_ATLAS-main/scripts/release_gate.py | 72081 | 13873 |
+| JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 67036 | 10335 |
 | JUDGE_ATLAS-main/backend/app/ingestion/sources/canada_saskatchewan_sources.yaml | 44787 | 6232 |
 | JUDGE_ATLAS-main/backend/app/tests/test_api.py | 43068 | 7429 |
 | JUDGE_ATLAS-main/backend/app/tests/test_ingestion_runtime.py | 38018 | 5725 |
@@ -34,7 +34,7 @@
 | JUDGE_ATLAS-main/backend/app/ingestion/courtlistener_bulk_normalizer.py | 29758 | 5588 |
 | JUDGE_ATLAS-main/backend/app/tests/test_admin_ingestion.py | 29153 | 4559 |
 | JUDGE_ATLAS-main/backend/app/tests/test_graph_layer.py | 28216 | 4765 |
-| JUDGE_ATLAS-main/artifacts/proof/current/source_registry_status.json | 27707 | 3209 |
+| JUDGE_ATLAS-main/artifacts/proof/current/source_registry_status.json | 27707 | 3210 |
 | JUDGE_ATLAS-main/backend/app/api/routes/admin_ingest.py | 25593 | 4367 |
 | JUDGE_ATLAS-main/backend/app/seed/sample_data.py | 25376 | 4657 |
 | JUDGE_ATLAS-main/backend/app/tests/test_memory_runtime.py | 24708 | 4490 |
@@ -44,11 +44,11 @@
 
 | path | uncompressed |
 |---|---:|
-| backend | 4430120 |
-| frontend | 847797 |
-| docs | 552614 |
-| scripts | 428368 |
-| artifacts | 137249 |
+| backend | 4430750 |
+| frontend | 849139 |
+| docs | 554899 |
+| scripts | 427634 |
+| artifacts | 139777 |
 | .github | 29006 |
 | demo | 26537 |
 | infra | 17264 |

@@ -21,6 +21,8 @@ def _seed_minimal_repo(root: Path) -> None:
     (root / "frontend").mkdir(parents=True, exist_ok=True)
     (root / "scripts").mkdir(parents=True, exist_ok=True)
     (root / "docs").mkdir(parents=True, exist_ok=True)
+    (root / "docs" / "security").mkdir(parents=True, exist_ok=True)
+    (root / "docs" / "deployment-guide").mkdir(parents=True, exist_ok=True)
     (root / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
     (root / "demo").mkdir(parents=True, exist_ok=True)
     (root / "artifacts" / "proof" / "current").mkdir(parents=True, exist_ok=True)
@@ -49,14 +51,14 @@ def _seed_minimal_repo(root: Path) -> None:
     (root / "demo" / "seed.json").write_text('{"demo": true}\n', encoding="utf-8")
     (root / "docs" / "CURRENT_STATUS.md").write_text("status\n", encoding="utf-8")
     (root / "docs" / "DB_PROOF.md").write_text("db\n", encoding="utf-8")
-    (root / "docs" / "FRONTEND_SECURITY_TRIAGE.md").write_text(
+    (root / "docs" / "security" / "FRONTEND_SECURITY_TRIAGE.md").write_text(
         "triage\n", encoding="utf-8"
     )
     (root / "docs" / "schema_audit.md").write_text("audit\n", encoding="utf-8")
-    (root / "docs" / "LEGACY_AUTH_REMOVAL_PLAN.md").write_text(
+    (root / "docs" / "security" / "LEGACY_AUTH_REMOVAL_PLAN.md").write_text(
         "legacy\n", encoding="utf-8"
     )
-    (root / "docs" / "DEPENDENCY_REMEDIATION_PLAN.md").write_text(
+    (root / "docs" / "deployment-guide" / "DEPENDENCY_REMEDIATION_PLAN.md").write_text(
         "deps\n", encoding="utf-8"
     )
     (root / "artifacts" / "proof" / "CURRENT_PROOF.md").write_text(
@@ -183,7 +185,7 @@ def test_proof_freshness_detects_legacy_auth_plan_changes(tmp_path: Path) -> Non
     module = _proof_module()
     proof_hash, files = module.compute_proof_input_tree_hash(repo_root)
     _write_release_gate(repo_root, proof_hash, files)
-    (repo_root / "docs" / "LEGACY_AUTH_REMOVAL_PLAN.md").write_text(
+    (repo_root / "docs" / "security" / "LEGACY_AUTH_REMOVAL_PLAN.md").write_text(
         "legacy changed\n", encoding="utf-8"
     )
     result = module.validate_stored_manifest(repo_root)
@@ -196,7 +198,7 @@ def test_proof_freshness_detects_dependency_remediation_plan_changes(tmp_path: P
     module = _proof_module()
     proof_hash, files = module.compute_proof_input_tree_hash(repo_root)
     _write_release_gate(repo_root, proof_hash, files)
-    (repo_root / "docs" / "DEPENDENCY_REMEDIATION_PLAN.md").write_text(
+    (repo_root / "docs" / "deployment-guide" / "DEPENDENCY_REMEDIATION_PLAN.md").write_text(
         "deps changed\n", encoding="utf-8"
     )
     result = module.validate_stored_manifest(repo_root)

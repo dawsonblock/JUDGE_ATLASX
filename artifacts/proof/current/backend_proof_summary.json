@@ -64,7 +64,7 @@
     }
   ],
   "route_count": 105,
-  "pytest_passed": 2905,
+  "pytest_passed": 2906,
   "pytest_skipped": 9,
   "proof_db_counts": {
     "audit_logs": 3,
