@@ -31,6 +31,7 @@ def _egress_safe_prod_settings(**overrides):
         redis_url="redis://localhost:6379/0",
         evidence_store_required=True,
         cors_origins="https://example.com",
+        ingestion_queue_backend="inprocess",
     )
     defaults.update(overrides)
     return types.SimpleNamespace(**defaults)

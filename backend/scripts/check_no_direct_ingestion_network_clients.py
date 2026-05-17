@@ -76,6 +76,8 @@ _EXPERIMENTAL_CALLERS: frozenset[Path] = frozenset(
     {
         # Manual CSV/JSON upload endpoint gated by JTA_ENABLE_ADMIN_IMPORTS.
         _REPO_ROOT / "app" / "api" / "routes" / "admin_ingest.py",
+        # Legacy U.S. ingestion routes gated by JTA_ENABLE_LEGACY_US_INGEST_ROUTES.
+        _REPO_ROOT / "app" / "api" / "routes" / "admin_legacy_ingest.py",
         # Manual crime-incident CSV import and CourtListener trigger endpoint,
         # both gated by require_admin_imports (same JTA_ENABLE_ADMIN_IMPORTS flag).
         _REPO_ROOT / "app" / "api" / "routes" / "ingestion.py",

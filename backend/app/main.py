@@ -198,6 +198,23 @@ def _validate_production_safety(settings) -> None:
         )
         sys.exit(1)
 
+    # Block placeholder queue backends in production
+    # The "postgres" backend is a placeholder and not production ready
+    queue_backend = settings.ingestion_queue_backend
+    if queue_backend == "postgres":
+        print(
+            "ERROR: JTA_INGESTION_QUEUE_BACKEND=postgres is not production ready. "
+            "The PostgreSQL queue backend is a placeholder implementation. "
+            "Use JTA_INGESTION_QUEUE_BACKEND=inprocess for production deployments."
+        )
+        sys.exit(1)
+    if queue_backend not in ("inprocess", "postgres"):
+        print(
+            f"ERROR: Unknown JTA_INGESTION_QUEUE_BACKEND value: {queue_backend}. "
+            "Valid values are 'inprocess' or 'postgres'."
+        )
+        sys.exit(1)
+
     print("[STARTUP] Production safety checks passed")
 
 

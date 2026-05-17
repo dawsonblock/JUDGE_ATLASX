@@ -103,7 +103,8 @@ class TestAnonymousDenied:
         ("POST", "/api/admin/review-queue/judge/1/decision", {"decision": "approve"}),
         ("POST", "/api/admin/review/items/1/approve", {}),
         ("POST", "/api/admin/review/items/1/reject", {}),
-        ("POST", "/api/admin/ingest/gdelt", {}),
+        # Note: GDELT and other legacy U.S. routes moved to admin_legacy_ingest.py
+        # and are gated by JTA_ENABLE_LEGACY_US_INGEST_ROUTES (disabled by default)
     ]
 
     @pytest.mark.parametrize("method,path,body", MUTATION_ENDPOINTS)

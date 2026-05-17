@@ -57,7 +57,10 @@ _EXPERIMENTAL_PREFIXES = frozenset(
 _EXPERIMENTAL_CALLERS_ALLOWLIST: frozenset[Path] = frozenset(
     {
         _APP_DIR / "api" / "routes" / "admin_ingest.py",
-        _APP_DIR / "api" / "routes" / "ingestion.py",  # admin CSV + courtlistener routes — gated by require_admin_imports
+        # legacy U.S. routes — gated by JTA_ENABLE_LEGACY_US_INGEST_ROUTES
+        _APP_DIR / "api" / "routes" / "admin_legacy_ingest.py",
+        # admin CSV + courtlistener routes — gated by require_admin_imports
+        _APP_DIR / "api" / "routes" / "ingestion.py",
     }
 )
 

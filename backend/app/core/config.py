@@ -87,6 +87,16 @@ class Settings(BaseSettings):
     # Never enable in production.  Startup emits a warning when True.
     enable_legacy_admin_token: bool = False
 
+    # Legacy U.S. ingestion routes (GDELT, Chicago, LA, FBI, CourtListener bulk,
+    # Toronto, StatsCan). Disabled by default as part of Canada-first strategy.
+    # Set JTA_ENABLE_LEGACY_US_INGEST_ROUTES=true to mount admin_legacy_ingest router.
+    enable_legacy_us_ingest_routes: bool = False
+
+    # Ingestion queue backend selection: "inprocess" or "postgres".
+    # Default: "inprocess" (production ready single-process queue).
+    # "postgres" is a placeholder and will be blocked in production startup.
+    ingestion_queue_backend: str = "inprocess"
+
     # Enforce JWT-only authority for mutation routes (review decisions, source
     # configuration updates, enable/disable, and manual source runs).
     # When True, shared-token actors are rejected for mutation operations.
