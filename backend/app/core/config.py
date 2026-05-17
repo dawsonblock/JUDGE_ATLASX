@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -94,6 +95,9 @@ class Settings(BaseSettings):
 
     # Background scheduler (APScheduler); disabled by default for safe deploys
     enable_scheduler: bool = False
+
+    # Ingestion queue backend. Keep in-process for alpha only.
+    ingestion_queue_backend: Literal["inprocess", "postgres"] = "inprocess"
 
     # Relationship arc publication policy
     # Disabled by default — arcs require manual review and policy sign-off
