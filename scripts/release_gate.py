@@ -1892,13 +1892,37 @@ def main() -> int:
         else []
     )
 
-    # Phase 3: write CURRENT_PROOF.md and other proof artifacts (release_gate.json will be written after archive validation)
+    # Phase 3: run archive validation before writing final proof artifacts
     with gate_log_path.open("a", encoding="utf-8") as gate_log:
         gate_log.write(
             f"{pf_step.name}: {pf_step.status} rc={pf_step.exit_code} "
             f"dur={pf_step.duration_seconds}s log={pf_step.log_path}\n"
         )
 
+    # Run archive validation before writing CURRENT_PROOF.md so check_count is final
+    archive_step = _run(
+        repo_root,
+        out_dir,
+        _archive_validation_spec.name,
+        _archive_validation_spec.log_name,
+        list(_archive_validation_spec.command),
+        timeout_seconds=_archive_validation_spec.timeout_seconds,
+        required=_archive_validation_spec.required,
+    )
+    results.append(archive_step)
+
+    # Update payload with archive validation result and final check_count
+    payload["archive_validation_result"] = (
+        "PASS" if archive_step.exit_code == 0 else "FAIL"
+    )
+    payload["logs"]["archive_validation"] = archive_step.log_path
+
+    # Recalculate ok and check_count after archive validation
+    ok = all(r.exit_code == 0 for r in results) and not _missing_logs(repo_root, results)
+    payload["alpha_gate_passed"] = ok
+    payload["check_count"] = len(results)
+
+    # Write CURRENT_PROOF.md and other proof artifacts with final check_count
     current_proof_rel = _write_current_proof_md(
         repo_root,
         out_dir,
@@ -1922,29 +1946,6 @@ def main() -> int:
     )
     payload["logs"]["current_proof"] = current_proof_rel
     payload["logs"] |= grouped_artifacts
-
-    # Run archive validation after all proof files are written
-    archive_step = _run(
-        repo_root,
-        out_dir,
-        _archive_validation_spec.name,
-        _archive_validation_spec.log_name,
-        list(_archive_validation_spec.command),
-        timeout_seconds=_archive_validation_spec.timeout_seconds,
-        required=_archive_validation_spec.required,
-    )
-    results.append(archive_step)
-
-    # Update payload with archive validation result
-    payload["archive_validation_result"] = (
-        "PASS" if archive_step.exit_code == 0 else "FAIL"
-    )
-    payload["logs"]["archive_validation"] = archive_step.log_path
-
-    # Recalculate ok and check_count after archive validation
-    ok = all(r.exit_code == 0 for r in results) and not _missing_logs(repo_root, results)
-    payload["alpha_gate_passed"] = ok
-    payload["check_count"] = len(results)
 
     payload["logs"]["current_alpha_status"] = current_alpha_status_rel
     payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
