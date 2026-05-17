@@ -25,6 +25,8 @@ REQUIRED_DIRECTORIES = (
 REQUIRED_PROOF_FILES = (
     "artifacts/proof/current/CURRENT_PROOF.md",
     "artifacts/proof/current/release_readiness.md",
+    "artifacts/proof/current/backend_import.log",
+    "artifacts/proof/current/backend_pytest.log",
 )
 REQUIRED_ROOT_FILES = (
     "README.md",
@@ -187,6 +189,44 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
                 stale_text = _read_text_member(zf, stale_proof_name)
                 if stale_text is None or ARCHIVED_HEADER not in stale_text:
                     report["errors"].append("stale_release_readiness_not_archived")
+
+            # Verify CURRENT_PROOF.md counts match release_gate.json
+            current_proof_name = f"{root}/artifacts/proof/current/CURRENT_PROOF.md"
+            release_gate_name = f"{root}/artifacts/proof/current/release_gate.json"
+            if current_proof_name in name_set and release_gate_name in name_set:
+                current_proof_text = _read_text_member(zf, current_proof_name)
+                release_gate_text = _read_text_member(zf, release_gate_name)
+                if current_proof_text and release_gate_text:
+                    try:
+                        release_gate_data = json.loads(release_gate_text)
+                        # Extract key counts from release_gate.json
+                        expected_counts = {
+                            "proof_input_file_count": release_gate_data.get(
+                                "proof_input_file_count", 0
+                            ),
+                            "check_count": release_gate_data.get("check_count", 0),
+                            "backend_pytest_passed": release_gate_data.get(
+                                "backend_pytest_passed", 0
+                            ),
+                            "backend_import_route_count": release_gate_data.get(
+                                "backend_import_route_count", 0
+                            ),
+                        }
+                        # Verify these counts appear in CURRENT_PROOF.md
+                        for key, expected_value in expected_counts.items():
+                            if expected_value is not None and expected_value > 0:
+                                if str(expected_value) not in current_proof_text:
+                                    report["errors"].append(
+                                        f"proof_count_mismatch:{key}={expected_value} "
+                                        f"not found in CURRENT_PROOF.md"
+                                    )
+                    except json.JSONDecodeError:
+                        report["errors"].append("release_gate_json_invalid")
+            elif current_proof_name in name_set or release_gate_name in name_set:
+                # If one exists but not the other, that's an error
+                report["errors"].append(
+                    "proof_artifacts_incomplete:missing_current_proof_or_release_gate"
+                )
 
             for info in infos:
                 suffix = Path(info.filename).suffix.lower()
