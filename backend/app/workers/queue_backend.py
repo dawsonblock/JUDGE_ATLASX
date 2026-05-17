@@ -4,7 +4,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Protocol
+from typing import Any, Protocol, Literal
 
 
 class JobState(str, Enum):
@@ -12,6 +12,15 @@ class JobState(str, Enum):
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
+
+
+@dataclass
+class QueueBackendCapabilities:
+    """Describes the capabilities and production readiness of a queue backend."""
+
+    name: str
+    supports_production: bool
+    implementation_status: Literal["alpha", "placeholder", "production_ready"]
 
 
 @dataclass

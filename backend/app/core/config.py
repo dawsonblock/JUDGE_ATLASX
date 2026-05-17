@@ -29,7 +29,6 @@ class Settings(BaseSettings):
     gdelt_enabled: bool = False
     # Legacy U.S.-centric ingestion surfaces (GDELT/Chicago/Toronto/LA/FBI/
     # CourtListener bulk). Keep disabled by default for Canada-first alpha.
-    enable_legacy_us_ingest_routes: bool = False
     courtlistener_bulk_data_dir: str = "data/courtlistener-bulk"
     courtlistener_bulk_snapshot_date: str | None = None
     courtlistener_bulk_enabled_files: str = (
@@ -92,11 +91,6 @@ class Settings(BaseSettings):
     # Set JTA_ENABLE_LEGACY_US_INGEST_ROUTES=true to mount admin_legacy_ingest router.
     enable_legacy_us_ingest_routes: bool = False
 
-    # Ingestion queue backend selection: "inprocess" or "postgres".
-    # Default: "inprocess" (production ready single-process queue).
-    # "postgres" is a placeholder and will be blocked in production startup.
-    ingestion_queue_backend: str = "inprocess"
-
     # Enforce JWT-only authority for mutation routes (review decisions, source
     # configuration updates, enable/disable, and manual source runs).
     # When True, shared-token actors are rejected for mutation operations.
@@ -106,7 +100,9 @@ class Settings(BaseSettings):
     # Background scheduler (APScheduler); disabled by default for safe deploys
     enable_scheduler: bool = False
 
-    # Ingestion queue backend. Keep in-process for alpha only.
+    # Ingestion queue backend selection: "inprocess" or "postgres".
+    # inprocess is alpha-only and not production-capable.
+    # postgres is placeholder until implemented.
     ingestion_queue_backend: Literal["inprocess", "postgres"] = "inprocess"
 
     # Relationship arc publication policy

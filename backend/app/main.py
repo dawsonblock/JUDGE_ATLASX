@@ -133,12 +133,17 @@ def _validate_production_safety(settings) -> None:
         )
         sys.exit(1)
 
-    ingestion_queue_backend = getattr(settings, "ingestion_queue_backend", "postgres")
-    if ingestion_queue_backend == "inprocess":
+    ingestion_queue_backend = getattr(settings, "ingestion_queue_backend", "inprocess")
+    # Allow inprocess queue for testing with explicit opt-in
+    allow_inprocess_queue = os.environ.get(
+        "JTA_ALLOW_INPROCESS_QUEUE_PRODUCTION", ""
+    ).lower() in ("1", "true", "yes")
+    if ingestion_queue_backend == "inprocess" and not allow_inprocess_queue:
         print(
             "ERROR: JTA_INGESTION_QUEUE_BACKEND=inprocess is not allowed in "
-            "production. Use a durable backend (postgres) before production "
-            "deployment."
+            "production. The in-process queue is alpha-only and not "
+            "production-capable. A production-capable queue backend must be "
+            "implemented before production deployment."
         )
         sys.exit(1)
 
@@ -199,13 +204,14 @@ def _validate_production_safety(settings) -> None:
         sys.exit(1)
 
     # Block placeholder queue backends in production
-    # The "postgres" backend is a placeholder and not production ready
+    # Both "inprocess" and "postgres" are not production-capable
     queue_backend = settings.ingestion_queue_backend
     if queue_backend == "postgres":
         print(
             "ERROR: JTA_INGESTION_QUEUE_BACKEND=postgres is not production ready. "
-            "The PostgreSQL queue backend is a placeholder implementation. "
-            "Use JTA_INGESTION_QUEUE_BACKEND=inprocess for production deployments."
+            "The PostgreSQL queue backend is a placeholder implementation and not "
+            "production-capable. A production-capable queue backend must be "
+            "implemented before production deployment."
         )
         sys.exit(1)
     if queue_backend not in ("inprocess", "postgres"):

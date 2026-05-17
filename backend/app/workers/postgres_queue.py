@@ -5,14 +5,26 @@ before enabling this backend in production.
 """
 from __future__ import annotations
 
-from app.workers.queue_backend import IngestionJobRecord, JobState
+from app.workers.queue_backend import (
+    IngestionJobRecord,
+    JobState,
+    QueueBackendCapabilities,
+)
 
 
 class PostgresIngestionQueue:
-    """Queue backend interface stub for a future Postgres worker queue."""
+    """Queue backend interface stub for a future Postgres worker queue.
+
+    Placeholder implementation; not production-capable.
+    """
 
     def __init__(self, dsn: str | None = None) -> None:
         self._dsn = dsn
+        self._capabilities = QueueBackendCapabilities(
+            name="postgres",
+            supports_production=False,
+            implementation_status="placeholder",
+        )
 
     def _not_implemented(self) -> None:
         raise NotImplementedError(
