@@ -1835,13 +1835,8 @@ def main() -> int:
         source_registry_summary,
     )
     _write_proof_policy_md(repo_root, out_dir, payload)
-    _write_current_proof_md(
-        repo_root,
-        out_dir,
-        payload,
-        check_count=len(results),
-    )
 
+    # Run archive validation before writing CURRENT_PROOF.md to ensure check_count consistency
     archive_step = _run(
         repo_root,
         out_dir,
@@ -1852,6 +1847,15 @@ def main() -> int:
         required=_archive_validation_spec.required,
     )
     results.append(archive_step)
+
+    # Ensure consistent check_count across all proof files
+    payload["check_count"] = len(results)
+    _write_current_proof_md(
+        repo_root,
+        out_dir,
+        payload,
+        check_count=payload["check_count"],
+    )
 
     manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

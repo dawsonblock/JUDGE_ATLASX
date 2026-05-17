@@ -216,12 +216,13 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
                             ),
                         }
                         # Verify these counts appear in CURRENT_PROOF.md
-                        # CURRENT_PROOF.md uses format "- key: value"
+                        # CURRENT_PROOF.md uses format "- key: value" or "- key: PASS (value routes)"
                         for key, expected_value in expected_counts.items():
                             if expected_value is not None and expected_value > 0:
-                                # Check for the pattern "- key: value"
-                                pattern = f"- {key}: {expected_value}"
-                                if pattern not in current_proof_text:
+                                # Check for the pattern "- key: value" or "- key: PASS (value routes)"
+                                pattern1 = f"- {key}: {expected_value}"
+                                pattern2 = f"- {key}:[^\n]*{expected_value}"
+                                if pattern1 not in current_proof_text and not re.search(pattern2, current_proof_text):
                                     report["errors"].append(
                                         f"proof_count_mismatch:{key}={expected_value} "
                                         f"not found in CURRENT_PROOF.md"
