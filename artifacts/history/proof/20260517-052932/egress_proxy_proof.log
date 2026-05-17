@@ -1,0 +1,4 @@
+[proof_egress_proxy] STAGE: environment
+[proof_egress_proxy] Backend Python: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/bin/python
+[proof_egress_proxy] STAGE: production startup egress policy tests
+/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/bin/python: No module named pytest

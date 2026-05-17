@@ -38,6 +38,23 @@ from app.ingestion.statuses import FAILED, PENDING
 from app.security.import_authority import require_source_admin_actor
 
 router = APIRouter(prefix="/api/admin/ingest", tags=["admin"])
+legacy_router = APIRouter(prefix="/api/admin/ingest", tags=["admin-legacy"])
+
+
+def _require_legacy_ingest_enabled(route_name: str) -> None:
+    """Fail closed for legacy non-Canada-first ingestion entry points."""
+
+    settings = get_settings()
+    if getattr(settings, "enable_legacy_us_ingest_routes", False):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail=(
+            "Legacy ingestion route is disabled in Canada-first alpha "
+            f"(route={route_name}). Set "
+            "JTA_ENABLE_LEGACY_US_INGEST_ROUTES=true to enable explicitly."
+        ),
+    )
 
 
 def _check_csv_row_limit(content: bytes, max_rows: int, source: str) -> None:
@@ -81,7 +98,7 @@ def _check_source_active(source_key: str, source_name: str, db: Session) -> None
         )
 
 
-@router.post("/gdelt", dependencies=[Depends(rate_limit_ingestion)])
+@legacy_router.post("/gdelt", dependencies=[Depends(rate_limit_ingestion)])
 def ingest_gdelt(
     request: Request,
     db: Session = Depends(get_db),
@@ -96,6 +113,7 @@ def ingest_gdelt(
             status_code=403,
             detail="GDELT global circuit breaker off (set JTA_GDELT_ENABLED=true). Ensure source is also active in SourceRegistry.",
         )
+    _require_legacy_ingest_enabled("gdelt")
     source_key = resolve_source_key("gdelt")
     _check_source_active(source_key, "GDELT News Feed", db)
     articles = fetch_gdelt_articles()
@@ -128,7 +146,7 @@ def ingest_gdelt(
     return result.__dict__
 
 
-@router.post("/chicago")
+@legacy_router.post("/chicago")
 async def ingest_chicago(
     file: UploadFile = File(...),
     request: Request = None,
@@ -137,6 +155,7 @@ async def ingest_chicago(
 ):
     """Import Chicago Data Portal crime CSV upload."""
     enforce_jwt_mutation_authority(actor)
+    _require_legacy_ingest_enabled("chicago")
 
     settings = get_settings()
     if not settings.local_feeds_enabled:
@@ -176,7 +195,7 @@ async def ingest_chicago(
     return result.__dict__
 
 
-@router.post("/toronto")
+@legacy_router.post("/toronto")
 async def ingest_toronto(
     file: UploadFile = File(...),
     request: Request = None,
@@ -185,6 +204,7 @@ async def ingest_toronto(
 ):
     """Import Toronto Police CSV upload."""
     enforce_jwt_mutation_authority(actor)
+    _require_legacy_ingest_enabled("toronto")
 
     settings = get_settings()
     if not settings.local_feeds_enabled:
@@ -272,7 +292,7 @@ async def ingest_saskatoon(
     return result.__dict__
 
 
-@router.post("/los-angeles")
+@legacy_router.post("/los-angeles")
 async def ingest_los_angeles(
     file: UploadFile = File(...),
     request: Request = None,
@@ -281,6 +301,7 @@ async def ingest_los_angeles(
 ):
     """Import LA Open Data crime CSV upload."""
     enforce_jwt_mutation_authority(actor)
+    _require_legacy_ingest_enabled("los-angeles")
 
     settings = get_settings()
     if not settings.local_feeds_enabled:
@@ -373,7 +394,7 @@ async def ingest_statscan(
     return result.__dict__
 
 
-@router.post("/fbi")
+@legacy_router.post("/fbi")
 def ingest_fbi(
     payload: list[dict],
     request: Request,
@@ -382,6 +403,7 @@ def ingest_fbi(
 ):
     """Import FBI Crime Data JSON payload."""
     enforce_jwt_mutation_authority(actor)
+    _require_legacy_ingest_enabled("fbi")
 
     settings = get_settings()
     if not settings.fbi_crime_enabled:
@@ -423,13 +445,14 @@ def ingest_fbi(
 # ---------------------------------------------------------------------------
 
 
-@router.get("/courtlistener-bulk/runs")
+@legacy_router.get("/courtlistener-bulk/runs")
 def cl_bulk_runs(
     db: Session = Depends(get_db),
     actor: AdminActor = Depends(require_source_admin_actor),
 ):
     """List all CourtListener bulk import run records."""
     enforce_jwt_mutation_authority(actor)
+    _require_legacy_ingest_enabled("courtlistener-bulk/runs")
     _check_source_active(COURTLISTENER_BULK, "CourtListener Bulk", db)
     from sqlalchemy import select as _select
     from app.models.entities import CourtListenerBulkRun
@@ -454,7 +477,10 @@ def cl_bulk_runs(
     ]
 
 
-@router.post("/courtlistener-bulk/list", dependencies=[Depends(rate_limit_ingestion)])
+@legacy_router.post(
+    "/courtlistener-bulk/list",
+    dependencies=[Depends(rate_limit_ingestion)],
+)
 def cl_bulk_list(
     request: Request = None,
     db: Session = Depends(get_db),
@@ -462,6 +488,7 @@ def cl_bulk_list(
 ):
     """List CSV files available in the configured bulk_data_dir."""
     enforce_jwt_mutation_authority(actor)
+    _require_legacy_ingest_enabled("courtlistener-bulk/list")
     _check_source_active(COURTLISTENER_BULK, "CourtListener Bulk", db)
     import os
 
@@ -497,7 +524,10 @@ def cl_bulk_list(
     }
 
 
-@router.post("/courtlistener-bulk/import", dependencies=[Depends(rate_limit_ingestion)])
+@legacy_router.post(
+    "/courtlistener-bulk/import",
+    dependencies=[Depends(rate_limit_ingestion)],
+)
 def cl_bulk_import(
     payload: dict | None = None,
     request: Request = None,
@@ -511,6 +541,7 @@ def cl_bulk_import(
          "force": false, "include_opinions": false}
     """
     enforce_jwt_mutation_authority(actor)
+    _require_legacy_ingest_enabled("courtlistener-bulk/import")
     _check_source_active(COURTLISTENER_BULK, "CourtListener Bulk", db)
     import os
     from app.ingestion.courtlistener_bulk_normalizer import (
@@ -664,7 +695,13 @@ def cl_bulk_import(
                 raise HTTPException(
                     status_code=500, detail="Audit logging failed; mutation aborted"
                 )
-            results.append({"file": stem, "status": FAILED, "error": str(exc)})
+            results.append(
+                {
+                    "file": stem,
+                    "status": FAILED,
+                    "error": "Internal error during file normalization",
+                }
+            )
 
     try:
         log_mutation(
@@ -693,7 +730,7 @@ def cl_bulk_import(
     return {"snapshot_date": snapshot_date, "results": results}
 
 
-@router.post("/courtlistener-bulk/normalize")
+@legacy_router.post("/courtlistener-bulk/normalize")
 def cl_bulk_normalize(
     payload: dict | None = None,
     request: Request = None,
@@ -704,6 +741,7 @@ def cl_bulk_normalize(
 
     Delegates to /import with force=True but only for already-downloaded files.
     """
+    _require_legacy_ingest_enabled("courtlistener-bulk/normalize")
     _check_source_active(COURTLISTENER_BULK, "CourtListener Bulk", db)
     body = dict(payload or {})
     body["force"] = True

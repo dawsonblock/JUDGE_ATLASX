@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -26,6 +27,9 @@ class Settings(BaseSettings):
     fbi_crime_enabled: bool = False
     local_feeds_enabled: bool = False
     gdelt_enabled: bool = False
+    # Legacy U.S.-centric ingestion surfaces (GDELT/Chicago/Toronto/LA/FBI/
+    # CourtListener bulk). Keep disabled by default for Canada-first alpha.
+    enable_legacy_us_ingest_routes: bool = False
     courtlistener_bulk_data_dir: str = "data/courtlistener-bulk"
     courtlistener_bulk_snapshot_date: str | None = None
     courtlistener_bulk_enabled_files: str = (
@@ -91,6 +95,9 @@ class Settings(BaseSettings):
 
     # Background scheduler (APScheduler); disabled by default for safe deploys
     enable_scheduler: bool = False
+
+    # Ingestion queue backend. Keep in-process for alpha only.
+    ingestion_queue_backend: Literal["inprocess", "postgres"] = "inprocess"
 
     # Relationship arc publication policy
     # Disabled by default — arcs require manual review and policy sign-off

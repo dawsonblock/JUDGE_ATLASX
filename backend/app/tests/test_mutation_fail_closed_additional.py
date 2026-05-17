@@ -335,6 +335,7 @@ def test_admin_ingestion_retry_adapter_failure_does_not_commit_without_audit() -
 
 def _bulk_settings(data_dir: str) -> SimpleNamespace:
     return SimpleNamespace(
+        enable_legacy_us_ingest_routes=True,
         courtlistener_bulk_snapshot_date="2026-05-10",
         courtlistener_bulk_include_opinions=False,
         courtlistener_bulk_enabled_files="courts",

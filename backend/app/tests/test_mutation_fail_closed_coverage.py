@@ -69,6 +69,19 @@ def _has_auditlog_call(route: APIRoute) -> bool:
     return False
 
 
+def _has_append_audit_entry_call(route: APIRoute) -> bool:
+    source = textwrap.dedent(inspect.getsource(route.endpoint))
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if isinstance(node.func, ast.Name) and node.func.id == "append_audit_entry":
+            return True
+        if isinstance(node.func, ast.Attribute) and node.func.attr == "append_audit_entry":
+            return True
+    return False
+
+
 def _has_keyword(call: ast.Call, name: str) -> bool:
     return any(kw.arg == name for kw in call.keywords if kw.arg is not None)
 
@@ -98,9 +111,11 @@ def test_all_route_log_mutation_calls_are_fail_closed() -> None:
 
         calls = _log_mutation_calls(route)
         has_auditlog = _has_auditlog_call(route)
-        if not calls and not has_auditlog:
+        has_append_audit = _has_append_audit_entry_call(route)
+        if not calls and not has_auditlog and not has_append_audit:
             findings.append(
-                f"{method} {path}: missing audit write (log_mutation or AuditLog)"
+                f"{method} {path}: missing audit write "
+                "(log_mutation, append_audit_entry, or AuditLog)"
             )
             continue
 
@@ -131,10 +146,13 @@ def test_mutation_routes_without_log_mutation_are_audited_or_allowlisted() -> No
             continue
         if _has_auditlog_call(route):
             continue
+        if _has_append_audit_entry_call(route):
+            continue
         if find_allowlist_entry(path, method) is not None:
             continue
         findings.append(
-            f"{method} {path}: missing audit write (requires log_mutation, AuditLog, or allowlist entry)"
+            f"{method} {path}: missing audit write "
+            "(requires log_mutation, append_audit_entry, AuditLog, or allowlist entry)"
         )
 
     assert not findings, "\n".join(findings)

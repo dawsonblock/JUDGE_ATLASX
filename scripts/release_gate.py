@@ -255,6 +255,16 @@ def _extract_backend_import_route_count(log_path: Path) -> int | None:
     return int(match.group(1))
 
 
+def _extract_frontend_node_gate_version(log_path: Path) -> str | None:
+    if not log_path.exists():
+        return None
+    text = log_path.read_text(encoding="utf-8", errors="ignore")
+    match = re.search(r"Node gate PASS:\s*(v?\d+\.\d+\.\d+)", text)
+    if not match:
+        return None
+    return match.group(1)
+
+
 def _check_status_map(payload: dict) -> dict[str, dict]:
     return {check["name"]: check for check in payload.get("checks", [])}
 
@@ -361,7 +371,6 @@ def _write_grouped_proof_artifacts(repo_root: Path, out_dir: Path, payload: dict
         if check["exit_code"] != 0:
             frontend_group["status"] = "FAIL"
 
-    source_registry_summary = _read_source_registry_summary(out_dir)
     artifacts = {
         "backend_proof_summary": _write_json(
             repo_root,
@@ -434,6 +443,15 @@ def _build_proof_manifest(
         "archive_hash": payload.get("commit_hash", "unknown"),
         "platform": payload.get("platform", "unknown"),
         "python_version": payload.get("python_version", "unknown"),
+        "gate_runner_node_version": payload.get(
+            "gate_runner_node_version",
+            "unknown",
+        ),
+        "frontend_node_gate_version": payload.get(
+            "frontend_node_gate_version",
+            "unknown",
+        ),
+        # Backward-compat shim for older consumers.
         "node_version": payload.get("node_version", "unknown"),
         "npm_version": payload.get("npm_version", "unknown"),
         "proof_root": str(out_dir.relative_to(repo_root)),
@@ -501,6 +519,9 @@ def _generate_release_readiness_from_manifest(
         f"- archive_hash: {manifest.get('archive_hash', 'unknown')}",
         f"- platform: {manifest.get('platform', 'unknown')}",
         f"- python_version: {manifest.get('python_version', 'unknown')}",
+        f"- gate_runner_node_version: {manifest.get('gate_runner_node_version', 'unknown')}",
+        f"- frontend_node_gate_version: {manifest.get('frontend_node_gate_version', 'unknown')}",
+        # Backward-compat field retained for historical tooling.
         f"- node_version: {manifest.get('node_version', 'unknown')}",
         f"- npm_version: {manifest.get('npm_version', 'unknown')}",
         "",
@@ -1610,6 +1631,9 @@ def main() -> int:
     backend_import_route_count = _extract_backend_import_route_count(
         out_dir / "backend_import.log"
     )
+    frontend_node_gate_version = _extract_frontend_node_gate_version(
+        out_dir / "frontend_node_gate.log"
+    )
     alembic_migration_count = _extract_migration_count(out_dir / "check_migrations.log")
     if alembic_migration_count is None:
         alembic_migration_count = _count_alembic_version_files(repo_root)
@@ -1620,6 +1644,12 @@ def main() -> int:
     dependency_plan_exists = (
         repo_root / "docs" / "deployment-guide" / "DEPENDENCY_REMEDIATION_PLAN.md"
     ).exists()
+
+    gate_runner_node_version = (
+        subprocess.run(["node", "--version"], capture_output=True, text=True)
+        .stdout.strip()
+        or "unknown"
+    )
 
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -1645,10 +1675,10 @@ def main() -> int:
         "backend_test_python_version": backend_python_version,
         "backend_test_python_executable": python_exe,
         "backend_required_python": ">=3.11",
-        "node_version": subprocess.run(
-            ["node", "--version"], capture_output=True, text=True
-        ).stdout.strip()
-        or "unknown",
+        "gate_runner_node_version": gate_runner_node_version,
+        "frontend_node_gate_version": frontend_node_gate_version or "unknown",
+        # Backward-compat shim for historical tooling.
+        "node_version": gate_runner_node_version,
         "npm_version": subprocess.run(
             ["npm", "--version"], capture_output=True, text=True
         ).stdout.strip()

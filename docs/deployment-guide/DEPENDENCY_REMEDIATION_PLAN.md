@@ -7,8 +7,17 @@ This plan converts alpha triage outcomes into explicit remediation tasks for fro
 ## Current State
 
 - `npm audit` currently reports 10 vulnerabilities.
-- Vulnerabilities are triaged for alpha scope in `docs/FRONTEND_SECURITY_TRIAGE.md`.
+- latest_audit_snapshot: 2026-05-17 (`frontend/`, JSON mode)
+- Vulnerabilities are triaged for alpha scope in `docs/security/FRONTEND_SECURITY_TRIAGE.md`.
 - Triage is not production remediation.
+
+## Formal Alpha Exception Metadata
+
+- reviewed_on: 2026-05-17
+- review_due: 2026-06-30
+- exception_expires_on: 2026-07-31
+- exception_scope: alpha-only
+- production_blocking: true while unresolved high vulnerabilities remain
 
 ## Production Gate Rule
 
@@ -16,18 +25,18 @@ No production-readiness claim is allowed while high vulnerabilities remain unres
 
 ## Remediation Task Matrix
 
-| Package/Class | Severity | Dependency Path | Alpha Acceptance Reason | Affected Surface | Remediation Option | Owner | Target Date/Release | Production Gate Status |
-|---|---|---|---|---|---|---|---|---|
-| glob | High | eslint-config-next -> @next/eslint-plugin-next -> glob | build-time toolchain only, no runtime CLI `--cmd` usage | lint/build tooling | upgrade via upstream Next.js ecosystem updates | owner-tbd | before beta gate | blocked until remediated/exception |
-| @next/eslint-plugin-next | High | transitive via eslint-config-next | build-time only | lint tooling | upgrade to patched upstream | owner-tbd | before beta gate | blocked until remediated/exception |
-| eslint-config-next | High | direct dev dependency | build-time only | lint tooling | upgrade to patched version | owner-tbd | before beta gate | blocked until remediated/exception |
-| next (image optimization DoS advisory) | High | direct dependency | alpha deployment posture, non-public image optimization path | frontend server runtime | upgrade to patched Next.js release and re-verify exposure | owner-tbd | before beta gate | blocked until remediated/exception |
-| postcss | Moderate | transitive build dependency | build-time css processing only | build pipeline | upgrade transitives via lockfile refresh | owner-tbd | next dependency refresh window | tracked |
-| vitest | Moderate | dev test dependency | CI/local contracts only | test tooling | upgrade vitest and peer deps | owner-tbd | next dependency refresh window | tracked |
-| vite | Moderate | transitive via test/build tooling | tooling only | test/build tooling | upgrade vite ecosystem | owner-tbd | next dependency refresh window | tracked |
-| vite-node | Moderate | transitive via vitest | tooling only | test tooling | upgrade via vitest/vite updates | owner-tbd | next dependency refresh window | tracked |
-| esbuild | Moderate | transitive build dependency | tooling only | build tooling | pin/upgrade to patched range | owner-tbd | next dependency refresh window | tracked |
-| @vitest/mocker | Moderate | transitive via vitest | tooling only | test tooling | upgrade vitest stack | owner-tbd | next dependency refresh window | tracked |
+| Package/Class | Severity | Dependency Path | Alpha Acceptance Reason | Affected Surface | Remediation Option | Owner | Review Due | Exception Expiry | Target Date/Release | Production Gate Status |
+|---|---|---|---|---|---|---|---|---|---|---|
+| glob | High | eslint-config-next -> @next/eslint-plugin-next -> glob | build-time toolchain only, no runtime CLI `--cmd` usage | lint/build tooling | upgrade via upstream Next.js ecosystem updates (`eslint-config-next@16.2.6`) | security-review-alpha | 2026-06-30 | 2026-07-31 | before beta gate | blocked until remediated/exception |
+| @next/eslint-plugin-next | High | eslint-config-next -> @next/eslint-plugin-next -> glob | build-time only | lint tooling | upgrade through patched eslint-config-next release | security-review-alpha | 2026-06-30 | 2026-07-31 | before beta gate | blocked until remediated/exception |
+| eslint-config-next | High | direct dev dependency | build-time only | lint tooling | upgrade to `16.2.6` and re-run lint/test/build | security-review-alpha | 2026-06-30 | 2026-07-31 | before beta gate | blocked until remediated/exception |
+| next (runtime advisories set) | High | direct dependency (also drives postcss advisory chain) | alpha deployment posture, restricted exposure controls | frontend server runtime | upgrade to `next@16.2.6` and re-verify image optimization exposure | security-review-alpha | 2026-06-30 | 2026-07-31 | before beta gate | blocked until remediated/exception |
+| postcss | Moderate | next -> postcss | build-time css processing only | build pipeline | upgrade transitives via Next.js upgrade | security-review-alpha | 2026-06-30 | 2026-07-31 | next dependency refresh window | tracked |
+| vitest | Moderate | direct dev dependency (`@vitest/mocker`, `vite`, `vite-node`) | CI/local contracts only | test tooling | upgrade to `vitest@4.1.6` plus peer stack | security-review-alpha | 2026-06-30 | 2026-07-31 | next dependency refresh window | tracked |
+| vite | Moderate | vitest -> vite | tooling only | test/build tooling | upgrade via vitest ecosystem to patched vite | security-review-alpha | 2026-06-30 | 2026-07-31 | next dependency refresh window | tracked |
+| vite-node | Moderate | vitest -> vite-node | tooling only | test tooling | upgrade via vitest/vite updates | security-review-alpha | 2026-06-30 | 2026-07-31 | next dependency refresh window | tracked |
+| esbuild | Moderate | vitest -> vite -> esbuild | tooling only | build tooling | consume patched esbuild via vite/vitest upgrade | security-review-alpha | 2026-06-30 | 2026-07-31 | next dependency refresh window | tracked |
+| @vitest/mocker | Moderate | vitest -> @vitest/mocker | tooling only | test tooling | upgrade vitest stack | security-review-alpha | 2026-06-30 | 2026-07-31 | next dependency refresh window | tracked |
 
 ## Required Update Cadence
 

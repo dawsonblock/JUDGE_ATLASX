@@ -1,0 +1,32 @@
+.F                                                                       [100%]
+=================================== FAILURES ===================================
+________________ test_mutation_routes_use_explicit_role_floors _________________
+
+    def test_mutation_routes_use_explicit_role_floors() -> None:
+        findings: list[str] = []
+        for module_name, route, method in _iter_target_mutation_routes():
+            dep_names = _dependency_names(route)
+            route_id = f"{method} {route.path} ({module_name}.{route.endpoint.__name__})"
+    
+            for forbidden in FORBIDDEN_DEPENDENCIES:
+                if forbidden in dep_names and not _is_allowlisted(route.path, method):
+                    findings.append(f"{route_id}: forbidden dependency {forbidden}")
+    
+            if (
+                not any(required in dep_names for required in REQUIRED_DEPENDENCIES)
+                and not _is_allowlisted(route.path, method)
+            ):
+                findings.append(f"{route_id}: missing explicit role-floor helper")
+    
+            if not _has_audit_signal(route) and not _is_allowlisted(route.path, method):
+                findings.append(f"{route_id}: missing audit signal (log_mutation or AuditLog)")
+    
+>       assert not findings, "\n".join(findings)
+E       AssertionError: POST /api/admin/review-queue/{entity_type}/{entity_id}/decision (/api/admin/review-queue/{entity_type}/{entity_id}/decision.admin_review_decision): missing audit signal (log_mutation or AuditLog)
+E         POST /api/admin/legal-sources/{source_id}/retract (/api/admin/legal-sources/{source_id}/retract.retract_legal_source): missing audit signal (log_mutation or AuditLog)
+E       assert not ['POST /api/admin/review-queue/{entity_type}/{entity_id}/decision (/api/admin/review-queue/{entity_type}/{entity_id}/d... (/api/admin/legal-sources/{source_id}/retract.retract_legal_source): missing audit signal (log_mutation or AuditLog)']
+
+backend/app/tests/test_mutation_route_authority_coverage.py:141: AssertionError
+=========================== short test summary info ============================
+FAILED backend/app/tests/test_mutation_route_authority_coverage.py::test_mutation_routes_use_explicit_role_floors
+1 failed, 1 passed in 0.07s

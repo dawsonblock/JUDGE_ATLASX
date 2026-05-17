@@ -5,6 +5,18 @@
 
 See `docs/deployment-guide/DEPENDENCY_REMEDIATION_PLAN.md` for owner/date remediation tasks and production-gate requirements.
 
+## Alpha Exception Window
+
+- exception_reviewed_on: 2026-05-17
+- exception_review_due: 2026-06-30
+- exception_expires_on: 2026-07-31
+- production_blocking: true (high vulnerabilities remain)
+
+Audit snapshot: `npm audit --json` executed in `frontend/` on 2026-05-17.
+
+All accepted-for-alpha entries below are temporary risk exceptions and must be
+re-reviewed by the due date or remediated before any production-readiness claim.
+
 ---
 
 ## Summary
@@ -40,6 +52,7 @@ See `docs/deployment-guide/DEPENDENCY_REMEDIATION_PLAN.md` for owner/date remedi
 
 - **Severity**: High (transitive)
 - **Affected packages**: `@next/eslint-plugin-next`
+- **Dependency path**: `eslint-config-next -> @next/eslint-plugin-next -> glob`
 - **Dependency scope**: transitive (not direct)
 - **Triage decision**: **ACCEPTED — alpha scope** — same root cause as `glob` entry above; build-time only.
 - **Owner**: security-review-alpha
@@ -52,6 +65,7 @@ See `docs/deployment-guide/DEPENDENCY_REMEDIATION_PLAN.md` for owner/date remedi
 - **Severity**: High (transitive)
 - **Affected packages**: `eslint-config-next`
 - **Dependency scope**: direct dev dependency
+- **Fix target from audit**: `eslint-config-next@16.2.6` (semver-major)
 - **Triage decision**: **ACCEPTED — alpha scope** — same root cause as `glob` entry above; build-time only.
 - **Owner**: security-review-alpha
 - **Status**: accepted-for-alpha / remediation-blocked-upstream
@@ -64,6 +78,7 @@ See `docs/deployment-guide/DEPENDENCY_REMEDIATION_PLAN.md` for owner/date remedi
 - **Severity**: High
 - **Title**: Next.js self-hosted applications vulnerable to DoS via Image Optimization
 - **Affected packages**: `next`
+- **Fix target from audit**: `next@16.2.6` (semver-major)
 - **Triage decision**: **ACCEPTED — alpha scope / NOT self-hosted image optimization in production**
   - JUDGE_ATLAS alpha does not expose the Next.js Image Optimization endpoint to the public internet.
   - Alpha deployments run behind an authenticated API gateway; the image route is not publicly reachable
@@ -80,6 +95,7 @@ See `docs/deployment-guide/DEPENDENCY_REMEDIATION_PLAN.md` for owner/date remedi
 - **Severity**: Moderate
 - **Title**: PostCSS — XSS via unescaped `</style>` in CSS Stringify output
 - **Affected packages**: `postcss`
+- **Dependency path**: `next -> postcss`
 - **Triage decision**: **ACCEPTED — alpha scope**
   - PostCSS is used at build time to process CSS files only.
   - User input does not flow into PostCSS at runtime in JUDGE_ATLAS.
@@ -92,6 +108,7 @@ See `docs/deployment-guide/DEPENDENCY_REMEDIATION_PLAN.md` for owner/date remedi
 
 - **Severity**: Moderate (transitive)
 - **Affected packages**: `vitest`
+- **Fix target from audit**: `vitest@4.1.6` (semver-major)
 - **Triage decision**: **ACCEPTED — alpha scope**
   - Used only for local/CI contract tests (`npm run test:contracts`).
   - Not part of production runtime bundle.
@@ -105,6 +122,7 @@ See `docs/deployment-guide/DEPENDENCY_REMEDIATION_PLAN.md` for owner/date remedi
 
 - **Severity**: Moderate (transitive)
 - **Affected packages**: `vite`
+- **Dependency path**: `vitest -> vite`
 - **Triage decision**: **ACCEPTED — alpha scope**
   - Build/test infrastructure dependency only.
   - No direct user input path in production runtime.
@@ -117,6 +135,7 @@ See `docs/deployment-guide/DEPENDENCY_REMEDIATION_PLAN.md` for owner/date remedi
 
 - **Severity**: Moderate (transitive)
 - **Affected packages**: `vite-node`
+- **Dependency path**: `vitest -> vite-node`
 - **Triage decision**: **ACCEPTED — alpha scope**
   - Executed only in local/CI test runs.
   - Not exposed as a network-facing runtime service.
@@ -129,6 +148,7 @@ See `docs/deployment-guide/DEPENDENCY_REMEDIATION_PLAN.md` for owner/date remedi
 
 - **Severity**: Moderate (transitive)
 - **Affected packages**: `esbuild`
+- **Dependency path**: `vitest -> vite -> esbuild`
 - **Triage decision**: **ACCEPTED — alpha scope**
   - Used by frontend build/test toolchain only.
   - No production endpoint executes esbuild directly.
@@ -141,6 +161,7 @@ See `docs/deployment-guide/DEPENDENCY_REMEDIATION_PLAN.md` for owner/date remedi
 
 - **Severity**: Moderate (transitive)
 - **Affected packages**: `@vitest/mocker`
+- **Dependency path**: `vitest -> @vitest/mocker`
 - **Triage decision**: **ACCEPTED — alpha scope**
   - Testing-only helper package.
   - Not loaded in deployed application runtime.

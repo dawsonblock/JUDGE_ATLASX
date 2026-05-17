@@ -133,6 +133,15 @@ def _validate_production_safety(settings) -> None:
         )
         sys.exit(1)
 
+    ingestion_queue_backend = getattr(settings, "ingestion_queue_backend", "postgres")
+    if ingestion_queue_backend == "inprocess":
+        print(
+            "ERROR: JTA_INGESTION_QUEUE_BACKEND=inprocess is not allowed in "
+            "production. Use a durable backend (postgres) before production "
+            "deployment."
+        )
+        sys.exit(1)
+
     # Reject in-memory rate limiting in production (not safe across multiple workers/replicas)
     # unless the operator explicitly opts in with JTA_ALLOW_IN_MEMORY_RATE_LIMIT_PRODUCTION=true.
     if settings.rate_limit_backend != "redis":
