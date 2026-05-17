@@ -26,10 +26,10 @@ def _settings(*, legacy_enabled: bool):
 
 def test_legacy_us_ingest_route_denied_by_default(client, monkeypatch):
     import app.auth.admin as auth_admin
-    import app.api.routes.admin_ingest as admin_ingest
+    import app.api.routes as routes
 
     monkeypatch.setattr(auth_admin, "get_settings", lambda: _settings(legacy_enabled=False))
-    monkeypatch.setattr(admin_ingest, "get_settings", lambda: _settings(legacy_enabled=False))
+    monkeypatch.setattr(routes, "get_settings", lambda: _settings(legacy_enabled=False))
 
     response = client.post("/api/admin/ingest/fbi", json=[], headers=_jwt_headers("source_admin"))
 
@@ -40,10 +40,10 @@ def test_legacy_us_ingest_route_denied_by_default(client, monkeypatch):
 
 def test_legacy_courtlistener_route_denied_by_default(client, monkeypatch):
     import app.auth.admin as auth_admin
-    import app.api.routes.admin_ingest as admin_ingest
+    import app.api.routes as routes
 
     monkeypatch.setattr(auth_admin, "get_settings", lambda: _settings(legacy_enabled=False))
-    monkeypatch.setattr(admin_ingest, "get_settings", lambda: _settings(legacy_enabled=False))
+    monkeypatch.setattr(routes, "get_settings", lambda: _settings(legacy_enabled=False))
 
     response = client.post(
         "/api/admin/ingest/courtlistener-bulk/list",

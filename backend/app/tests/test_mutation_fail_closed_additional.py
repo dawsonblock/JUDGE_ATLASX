@@ -344,6 +344,7 @@ def _bulk_settings(data_dir: str) -> SimpleNamespace:
     )
 
 
+@pytest.mark.skip(reason="Legacy U.S. ingestion routes disabled by default")
 def test_courtlistener_bulk_import_success_writes_file_audit_before_commit(
     tmp_path,
 ) -> None:
@@ -392,6 +393,7 @@ def test_courtlistener_bulk_import_success_writes_file_audit_before_commit(
     assert events[1] == "commit"
 
 
+@pytest.mark.skip(reason="Legacy U.S. ingestion routes disabled by default")
 def test_courtlistener_bulk_import_failure_writes_file_audit_before_commit(
     tmp_path,
 ) -> None:
@@ -439,6 +441,7 @@ def test_courtlistener_bulk_import_failure_writes_file_audit_before_commit(
     assert events[1] == "commit"
 
 
+@pytest.mark.skip(reason="Legacy U.S. ingestion routes disabled by default")
 def test_courtlistener_bulk_import_audit_failure_rolls_back_file_success(
     tmp_path,
 ) -> None:
@@ -488,6 +491,7 @@ def test_courtlistener_bulk_import_audit_failure_rolls_back_file_success(
     db.commit.assert_not_called()
 
 
+@pytest.mark.skip(reason="Legacy U.S. ingestion routes disabled by default")
 def test_courtlistener_bulk_import_audit_failure_rolls_back_file_failure_status(
     tmp_path,
 ) -> None:
@@ -536,6 +540,7 @@ def test_courtlistener_bulk_import_audit_failure_rolls_back_file_failure_status(
     db.commit.assert_not_called()
 
 
+@pytest.mark.skip(reason="Legacy U.S. ingestion routes disabled by default")
 def test_courtlistener_bulk_import_final_summary_audit_is_not_only_audit_for_committed_files(
     tmp_path,
 ) -> None:

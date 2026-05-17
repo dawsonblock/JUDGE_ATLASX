@@ -24,7 +24,6 @@ from app.api.routes import (
 )
 from app.core.config import get_settings
 from app.serializers.public import is_mappable as _is_mappable
-from app.core.config import get_settings
 from fastapi import APIRouter
 
 router = APIRouter()
@@ -37,8 +36,6 @@ router.include_router(ingestion.router)
 router.include_router(ai_review.router)
 router.include_router(admin_review.router)
 router.include_router(admin_ingest.router)
-if get_settings().enable_legacy_us_ingest_routes:
-    router.include_router(admin_legacy_ingest.router)
 router.include_router(admin_ingestion.router)
 router.include_router(admin_quarantine.router)
 router.include_router(admin_sources.router)
