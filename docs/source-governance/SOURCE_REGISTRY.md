@@ -28,4 +28,12 @@ A source may be `machine_ingest` only when all requirements hold:
 - evidence is authoritative
 - AI/memory outputs are derivative only
 
+## Legacy U.S. Route Isolation
+
+- Legacy U.S.-focused ingestion endpoints are quarantined behind
+	`JTA_ENABLE_LEGACY_US_INGEST_ROUTES=true` and are unmounted by default.
+- Default alpha posture is Canada-first ingestion only.
+- Quarantined routes are outside current Canada-first alpha coverage and do not
+	alter source registry runnable counts unless explicitly enabled and re-proved.
+
 See coverage matrix at `docs/source-governance/COVERAGE_MATRIX.md`.
