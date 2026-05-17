@@ -1836,26 +1836,8 @@ def main() -> int:
     )
     _write_proof_policy_md(repo_root, out_dir, payload)
 
-    # Run archive validation before writing CURRENT_PROOF.md to ensure check_count consistency
-    archive_step = _run(
-        repo_root,
-        out_dir,
-        _archive_validation_spec.name,
-        _archive_validation_spec.log_name,
-        list(_archive_validation_spec.command),
-        timeout_seconds=_archive_validation_spec.timeout_seconds,
-        required=_archive_validation_spec.required,
-    )
-    results.append(archive_step)
-
-    # Ensure consistent check_count across all proof files
-    payload["check_count"] = len(results)
-    _write_current_proof_md(
-        repo_root,
-        out_dir,
-        payload,
-        check_count=payload["check_count"],
-    )
+    # Archive validation will run after all proof files are written (moved from earlier position)
+    # This ensures validation runs against the complete current proof state
 
     manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
@@ -1892,9 +1874,7 @@ def main() -> int:
     payload["alpha_gate_passed"] = ok
     payload["check_count"] = len(results)
     payload["proof_freshness_result"] = pf_step.status
-    payload["archive_validation_result"] = (
-        "PASS" if archive_step.exit_code == 0 else "FAIL"
-    )
+    # archive_validation_result will be set after archive validation runs
     payload["checks"] = [asdict(r) for r in results]
     payload["logs"] = {r.name: r.log_path for r in results}
     payload["failed_checks"] = [r.name for r in results if r.exit_code != 0] + (
@@ -1912,15 +1892,12 @@ def main() -> int:
         else []
     )
 
-    # Phase 3: write final release_gate.json and CURRENT_PROOF.md.
+    # Phase 3: write CURRENT_PROOF.md and other proof artifacts (release_gate.json will be written after archive validation)
     with gate_log_path.open("a", encoding="utf-8") as gate_log:
         gate_log.write(
             f"{pf_step.name}: {pf_step.status} rc={pf_step.exit_code} "
             f"dur={pf_step.duration_seconds}s log={pf_step.log_path}\n"
         )
-        gate_log.write(f"alpha_gate_passed={str(ok).lower()}\n")
-
-    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
     current_proof_rel = _write_current_proof_md(
         repo_root,
@@ -1945,12 +1922,60 @@ def main() -> int:
     )
     payload["logs"]["current_proof"] = current_proof_rel
     payload["logs"] |= grouped_artifacts
+
+    # Run archive validation after all proof files are written
+    archive_step = _run(
+        repo_root,
+        out_dir,
+        _archive_validation_spec.name,
+        _archive_validation_spec.log_name,
+        list(_archive_validation_spec.command),
+        timeout_seconds=_archive_validation_spec.timeout_seconds,
+        required=_archive_validation_spec.required,
+    )
+    results.append(archive_step)
+
+    # Update payload with archive validation result
+    payload["archive_validation_result"] = (
+        "PASS" if archive_step.exit_code == 0 else "FAIL"
+    )
+    payload["logs"]["archive_validation"] = archive_step.log_path
+
+    # Recalculate ok and check_count after archive validation
+    ok = all(r.exit_code == 0 for r in results) and not _missing_logs(repo_root, results)
+    payload["alpha_gate_passed"] = ok
+    payload["check_count"] = len(results)
+
     payload["logs"]["current_alpha_status"] = current_alpha_status_rel
     payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
     payload["logs"]["proof_policy"] = proof_policy_rel
     payload["logs"]["repair_report"] = repair_report_rel
 
+    # Write final release_gate.json with complete results including archive validation
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    # Verify all required proof files exist in current directory
+    required_files = [
+        "release_gate.json",
+        "proof_manifest.json",
+        "CURRENT_PROOF.md",
+        "CURRENT_ALPHA_STATUS.md",
+        "SOURCE_REGISTRY_STATUS.md",
+        "PROOF_POLICY.md",
+        "REPAIR_REPORT.md",
+        "backend_proof_summary.json",
+        "frontend_proof_summary.json",
+        "source_registry_status.json",
+        "release_readiness.md",
+    ]
+    missing_required = []
+    for filename in required_files:
+        if not (out_dir / filename).exists():
+            missing_required.append(filename)
+    if missing_required:
+        print(f"WARNING: Missing required proof files in {out_dir.relative_to(repo_root)}:")
+        for filename in missing_required:
+            print(f"  - {filename}")
 
     if ok:
         print(f"PASS: wrote {out_path.relative_to(repo_root)}")
