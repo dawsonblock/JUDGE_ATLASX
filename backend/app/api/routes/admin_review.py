@@ -8,12 +8,12 @@ from app.auth.admin import (
     enforce_jwt_mutation_authority,
     require_admin_review,
 )
+from app.audit.append_log import append_audit_entry
 from app.auth.actor import AdminActor
 from app.core.rate_limit import rate_limit_admin
 from app.db.session import get_db
 from app.security.import_authority import require_admin_actor, require_ai_review_actor
 from app.models.entities import (
-    AuditLog,
     CrimeIncident,
     Event,
     EvidenceReview,
@@ -313,24 +313,23 @@ async def admin_review_decision(
             public_visibility=public_visibility,
         )
     )
-    db.add(
-        AuditLog(
-            action="review.decision",
-            entity_type=entity_type,
-            entity_id=str(entity.id),
-            actor_id=actor.actor_id,
-            actor_type=actor.actor_type,
-            actor_role=actor.role,
-            actor_ip=(request.client.host if request.client else None),
-            user_agent=request.headers.get("user-agent"),
-            request_id=request.headers.get("x-request-id"),
-            payload={
-                "previous_status": previous_status,
-                "new_status": new_status,
-                "decision": payload.get("decision") or payload.get("action"),
-                "notes": payload.get("notes"),
-            },
-        )
+    append_audit_entry(
+        db,
+        action="review.decision",
+        entity_type=entity_type,
+        entity_id=str(entity.id),
+        actor_id=actor.actor_id,
+        actor_type=actor.actor_type,
+        actor_role=actor.role,
+        actor_ip=(request.client.host if request.client else None),
+        user_agent=request.headers.get("user-agent"),
+        request_id=request.headers.get("x-request-id"),
+        payload={
+            "previous_status": previous_status,
+            "new_status": new_status,
+            "decision": payload.get("decision") or payload.get("action"),
+            "notes": payload.get("notes"),
+        },
     )
     # Write ReviewActionLog if there is a ReviewItem linked via source_snapshot_id.
     _snap_id = getattr(entity, "source_snapshot_id", None)
@@ -403,23 +402,22 @@ def retract_legal_source(
             public_visibility=False,
         )
     )
-    db.add(
-        AuditLog(
-            action="review.retraction",
-            entity_type="source",
-            entity_id=str(source.id),
-            actor_id=actor.actor_id,
-            actor_type="admin",
-            actor_role=actor.role,
-            actor_ip=(request.client.host if request and request.client else None),
-            user_agent=(request.headers.get("user-agent") if request else None),
-            request_id=(request.headers.get("x-request-id") if request else None),
-            payload={
-                "previous_status": previous_status,
-                "new_status": _RETRACTION_STATUS,
-                "reason": reason,
-            },
-        )
+    append_audit_entry(
+        db,
+        action="review.retraction",
+        entity_type="source",
+        entity_id=str(source.id),
+        actor_id=actor.actor_id,
+        actor_type="admin",
+        actor_role=actor.role,
+        actor_ip=(request.client.host if request and request.client else None),
+        user_agent=(request.headers.get("user-agent") if request else None),
+        request_id=(request.headers.get("x-request-id") if request else None),
+        payload={
+            "previous_status": previous_status,
+            "new_status": _RETRACTION_STATUS,
+            "reason": reason,
+        },
     )
     db.commit()
     return _serialize_review_item(db, "source", source)

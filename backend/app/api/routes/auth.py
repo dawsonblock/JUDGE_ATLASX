@@ -27,9 +27,10 @@ from app.auth.jwt_handler import (
     hash_password,
     verify_password,
 )
+from app.audit.append_log import append_audit_entry
 from app.core.config import get_settings
 from app.db.session import get_db
-from app.models.entities import AuditLog, User, UserSession
+from app.models.entities import User, UserSession
 
 logger = logging.getLogger(__name__)
 
@@ -216,17 +217,16 @@ def register(
     db.add(user)
     db.flush()
 
-    db.add(
-        AuditLog(
-            action="user.register",
-            entity_type="user",
-            entity_id=str(user.id),
-            actor_id=body.email,
-            actor_type="user",
-            actor_role=assigned_role,
-            actor_ip=_client_ip(request),
-            user_agent=request.headers.get("User-Agent"),
-        )
+    append_audit_entry(
+        db,
+        action="user.register",
+        entity_type="user",
+        entity_id=str(user.id),
+        actor_id=body.email,
+        actor_type="user",
+        actor_role=assigned_role,
+        actor_ip=_client_ip(request),
+        user_agent=request.headers.get("User-Agent"),
     )
     db.commit()
 
@@ -262,17 +262,16 @@ def login(
     _create_session(
         db, user, refresh_token, request, settings.jwt_refresh_token_expire_days
     )
-    db.add(
-        AuditLog(
-            action="user.login",
-            entity_type="user",
-            entity_id=str(user.id),
-            actor_id=user.email,
-            actor_type="user",
-            actor_role=user.role,
-            actor_ip=_client_ip(request),
-            user_agent=request.headers.get("User-Agent"),
-        )
+    append_audit_entry(
+        db,
+        action="user.login",
+        entity_type="user",
+        entity_id=str(user.id),
+        actor_id=user.email,
+        actor_type="user",
+        actor_role=user.role,
+        actor_ip=_client_ip(request),
+        user_agent=request.headers.get("User-Agent"),
     )
     db.commit()
 
@@ -319,17 +318,16 @@ def refresh_tokens(
     _create_session(
         db, user, new_refresh_token, request, settings.jwt_refresh_token_expire_days
     )
-    db.add(
-        AuditLog(
-            action="user.token_refresh",
-            entity_type="user",
-            entity_id=str(user.id),
-            actor_id=user.email,
-            actor_type="user",
-            actor_role=user.role,
-            actor_ip=_client_ip(request),
-            user_agent=request.headers.get("User-Agent"),
-        )
+    append_audit_entry(
+        db,
+        action="user.token_refresh",
+        entity_type="user",
+        entity_id=str(user.id),
+        actor_id=user.email,
+        actor_type="user",
+        actor_role=user.role,
+        actor_ip=_client_ip(request),
+        user_agent=request.headers.get("User-Agent"),
     )
     db.commit()
 
@@ -357,17 +355,16 @@ def logout(
         # Audit: best-effort — resolve user for audit log
         user = db.query(User).filter(User.id == session.user_id).first()
         if user:
-            db.add(
-                AuditLog(
-                    action="user.logout",
-                    entity_type="user",
-                    entity_id=str(user.id),
-                    actor_id=user.email,
-                    actor_type="user",
-                    actor_role=user.role,
-                    actor_ip=_client_ip(request),
-                    user_agent=request.headers.get("User-Agent"),
-                )
+            append_audit_entry(
+                db,
+                action="user.logout",
+                entity_type="user",
+                entity_id=str(user.id),
+                actor_id=user.email,
+                actor_type="user",
+                actor_role=user.role,
+                actor_ip=_client_ip(request),
+                user_agent=request.headers.get("User-Agent"),
             )
         db.commit()
 
@@ -408,16 +405,15 @@ def logout_all(
         sess.revoked_at = now
         revoked_count += 1
 
-    db.add(
-        AuditLog(
-            action="user.logout_all",
-            entity_type="user",
-            entity_id=str(user.id),
-            actor_id=user.email,
-            actor_type="user",
-            actor_role=user.role,
-            payload={"revoked_sessions": revoked_count},
-        )
+    append_audit_entry(
+        db,
+        action="user.logout_all",
+        entity_type="user",
+        entity_id=str(user.id),
+        actor_id=user.email,
+        actor_type="user",
+        actor_role=user.role,
+        payload={"revoked_sessions": revoked_count},
     )
     db.commit()
 

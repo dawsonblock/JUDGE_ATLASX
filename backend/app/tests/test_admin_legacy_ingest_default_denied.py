@@ -33,8 +33,9 @@ def test_legacy_us_ingest_route_denied_by_default(client, monkeypatch):
 
     response = client.post("/api/admin/ingest/fbi", json=[], headers=_jwt_headers("source_admin"))
 
-    assert response.status_code == 403
-    assert "Legacy ingestion route is disabled" in response.json()["detail"]
+    # Legacy router is conditionally registered at app startup.
+    # Default-off posture should return 404 when route is not mounted.
+    assert response.status_code == 404
 
 
 def test_legacy_courtlistener_route_denied_by_default(client, monkeypatch):
@@ -49,5 +50,4 @@ def test_legacy_courtlistener_route_denied_by_default(client, monkeypatch):
         headers=_jwt_headers("source_admin"),
     )
 
-    assert response.status_code == 403
-    assert "Legacy ingestion route is disabled" in response.json()["detail"]
+    assert response.status_code == 404

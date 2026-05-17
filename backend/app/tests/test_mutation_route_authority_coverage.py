@@ -76,7 +76,11 @@ def _iter_target_mutation_routes() -> Iterable[tuple[str, APIRoute, str]]:
 
 def _has_audit_signal(route: APIRoute) -> bool:
     source = inspect.getsource(route.endpoint)
-    return "log_mutation(" in source or "AuditLog(" in source
+    return (
+        "log_mutation(" in source
+        or "AuditLog(" in source
+        or "append_audit_entry(" in source
+    )
 
 
 def _is_allowlisted(path: str, method: str) -> bool:
@@ -136,6 +140,9 @@ def test_mutation_routes_use_explicit_role_floors() -> None:
             findings.append(f"{route_id}: missing explicit role-floor helper")
 
         if not _has_audit_signal(route) and not _is_allowlisted(route.path, method):
-            findings.append(f"{route_id}: missing audit signal (log_mutation or AuditLog)")
+            findings.append(
+                f"{route_id}: missing audit signal "
+                "(log_mutation, append_audit_entry, or AuditLog)"
+            )
 
     assert not findings, "\n".join(findings)

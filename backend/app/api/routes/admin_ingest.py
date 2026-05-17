@@ -38,6 +38,7 @@ from app.ingestion.statuses import FAILED, PENDING
 from app.security.import_authority import require_source_admin_actor
 
 router = APIRouter(prefix="/api/admin/ingest", tags=["admin"])
+legacy_router = APIRouter(prefix="/api/admin/ingest", tags=["admin-legacy"])
 
 
 def _require_legacy_ingest_enabled(route_name: str) -> None:
@@ -97,7 +98,7 @@ def _check_source_active(source_key: str, source_name: str, db: Session) -> None
         )
 
 
-@router.post("/gdelt", dependencies=[Depends(rate_limit_ingestion)])
+@legacy_router.post("/gdelt", dependencies=[Depends(rate_limit_ingestion)])
 def ingest_gdelt(
     request: Request,
     db: Session = Depends(get_db),
@@ -145,7 +146,7 @@ def ingest_gdelt(
     return result.__dict__
 
 
-@router.post("/chicago")
+@legacy_router.post("/chicago")
 async def ingest_chicago(
     file: UploadFile = File(...),
     request: Request = None,
@@ -194,7 +195,7 @@ async def ingest_chicago(
     return result.__dict__
 
 
-@router.post("/toronto")
+@legacy_router.post("/toronto")
 async def ingest_toronto(
     file: UploadFile = File(...),
     request: Request = None,
@@ -291,7 +292,7 @@ async def ingest_saskatoon(
     return result.__dict__
 
 
-@router.post("/los-angeles")
+@legacy_router.post("/los-angeles")
 async def ingest_los_angeles(
     file: UploadFile = File(...),
     request: Request = None,
@@ -393,7 +394,7 @@ async def ingest_statscan(
     return result.__dict__
 
 
-@router.post("/fbi")
+@legacy_router.post("/fbi")
 def ingest_fbi(
     payload: list[dict],
     request: Request,
@@ -444,7 +445,7 @@ def ingest_fbi(
 # ---------------------------------------------------------------------------
 
 
-@router.get("/courtlistener-bulk/runs")
+@legacy_router.get("/courtlistener-bulk/runs")
 def cl_bulk_runs(
     db: Session = Depends(get_db),
     actor: AdminActor = Depends(require_source_admin_actor),
@@ -476,7 +477,10 @@ def cl_bulk_runs(
     ]
 
 
-@router.post("/courtlistener-bulk/list", dependencies=[Depends(rate_limit_ingestion)])
+@legacy_router.post(
+    "/courtlistener-bulk/list",
+    dependencies=[Depends(rate_limit_ingestion)],
+)
 def cl_bulk_list(
     request: Request = None,
     db: Session = Depends(get_db),
@@ -520,7 +524,10 @@ def cl_bulk_list(
     }
 
 
-@router.post("/courtlistener-bulk/import", dependencies=[Depends(rate_limit_ingestion)])
+@legacy_router.post(
+    "/courtlistener-bulk/import",
+    dependencies=[Depends(rate_limit_ingestion)],
+)
 def cl_bulk_import(
     payload: dict | None = None,
     request: Request = None,
@@ -717,7 +724,7 @@ def cl_bulk_import(
     return {"snapshot_date": snapshot_date, "results": results}
 
 
-@router.post("/courtlistener-bulk/normalize")
+@legacy_router.post("/courtlistener-bulk/normalize")
 def cl_bulk_normalize(
     payload: dict | None = None,
     request: Request = None,
