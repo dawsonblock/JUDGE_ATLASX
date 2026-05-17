@@ -31,6 +31,14 @@ All five sources below are intentionally disabled in alpha and require explicit 
 - [ ] Dry run evidence snapshot captured and indexed.
 - [ ] Governance approval documented for alpha scope expansion.
 
+**Implementation Details:**
+- Adapter: `backend/app/ingestion/source_adapters/scc_lexum_api.py`
+- Test files:
+  - `backend/app/tests/test_adapter_evidence_contract.py` (TestSCCLexumApiAdapterContract)
+  - `backend/app/tests/test_ingestion_safe_fetch_boundary.py` (test_scc_lexum_adapter_uses_injected_fetcher)
+- Fixture: `backend/app/tests/fixtures/sources/scc_feed.xml`
+- Config flags: None (uses source registry enablement)
+
 ### `federal_court_canada`
 
 - [ ] Endpoint reachable and stable over repeated fetch windows.
@@ -38,6 +46,13 @@ All five sources below are intentionally disabled in alpha and require explicit 
 - [ ] Adapter contract + replay tests green.
 - [ ] Dry run evidence snapshot captured and indexed.
 - [ ] Governance approval documented for alpha scope expansion.
+
+**Implementation Details:**
+- Adapter: `backend/app/ingestion/source_adapters/federal_court_html.py`
+- Test files:
+  - `backend/app/tests/test_federal_court_html_adapter.py`
+- Fixture: `backend/app/tests/fixtures/sources/federal_court_index.html`
+- Config flags: None (uses source registry enablement)
 
 ### `sk_courts_qb_decisions`
 
@@ -47,6 +62,14 @@ All five sources below are intentionally disabled in alpha and require explicit 
 - [ ] Dry run evidence snapshot captured and indexed.
 - [ ] Governance approval documented for alpha scope expansion.
 
+**Implementation Details:**
+- Adapter: `backend/app/ingestion/source_adapters/sk_courts_html.py`
+- Test files:
+  - `backend/app/tests/test_canlii_sk_ingest.py`
+  - `backend/app/tests/test_ingestion_safe_fetch_boundary.py` (test_sk_courts_adapter_uses_injected_fetcher)
+- Fixture: `backend/app/tests/fixtures/sources/sk_courts_index.html`
+- Config flags: None (uses source registry enablement)
+
 ### `sk_courts_ca_decisions`
 
 - [ ] Endpoint reachable and stable over repeated fetch windows.
@@ -55,6 +78,14 @@ All five sources below are intentionally disabled in alpha and require explicit 
 - [ ] Dry run evidence snapshot captured and indexed.
 - [ ] Governance approval documented for alpha scope expansion.
 
+**Implementation Details:**
+- Adapter: `backend/app/ingestion/source_adapters/sk_courts_html.py`
+- Test files:
+  - `backend/app/tests/test_canlii_sk_ingest.py`
+  - `backend/app/tests/test_ingestion_safe_fetch_boundary.py` (test_sk_courts_adapter_uses_injected_fetcher)
+- Fixture: `backend/app/tests/fixtures/sources/sk_courts_index.html`
+- Config flags: None (uses source registry enablement)
+
 ### `sk_legislature_hansard`
 
 - [ ] Endpoint reachable and stable over repeated fetch windows.
@@ -62,6 +93,13 @@ All five sources below are intentionally disabled in alpha and require explicit 
 - [ ] Adapter contract + replay tests green.
 - [ ] Dry run evidence snapshot captured and indexed.
 - [ ] Governance approval documented for alpha scope expansion.
+
+**Implementation Details:**
+- Adapter: `backend/app/ingestion/source_adapters/sk_legislature_html.py`
+- Test files:
+  - `backend/app/tests/test_canadian_laws.py`
+- Fixture: `backend/app/tests/fixtures/sources/sk_legislature_hansard.html`
+- Config flags: None (uses source registry enablement)
 
 ## Non-Goals (Alpha Integrity)
 
