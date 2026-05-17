@@ -1,15 +1,15 @@
 # Alpha Proof Report
 
-- Generated: 2026-05-17T02:28:42.094120+00:00
+- Generated: 2026-05-17T02:57:59.433272+00:00
 - Release mode: alpha
 - Git commit: unknown
 - Environment: {}
 - Covered directories: backend, frontend, scripts, docs, artifacts/proof/current
 - Excluded directories: external_reference, artifacts/old, artifacts/archive, generated_logs, tmp, cache, node_modules, __pycache__, .pytest_cache, .next, dist, coverage
 - Number of checks run: 37
-- Failures: 1
+- Failures: 0
 - Warnings: 0
-- Proof hash: f8be1d9c25443b8c1521a6da98217b5bb6cf6fcba5a56ef14eb59f4c960e17fd
+- Proof hash: 8dc5dd328609c796ead81c20fba1e1490f4245e9715fbce8d82079c9387a35e5
 
 ## Alpha Limitations
 

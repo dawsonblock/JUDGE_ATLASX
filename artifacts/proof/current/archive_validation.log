@@ -1,25 +1,25 @@
-Built clean release archive: /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.LOM6Oy5J6J/judge_atlas_archive.zip
-archive_sha256=43fc58fc5585daab9e75eed720a0f08e6d42230118857a54b6cc2e527008aef6
+Built clean release archive: /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.RUCBjW0Ba6/judge_atlas_archive.zip
+archive_sha256=da5c595ba6ac8badb0a5b0bf1bc0958b6caa112a317837cbeb162cb435a51e67
 file_count=994
 Archive validation written to /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/artifacts/proof/current/archive_validation.md
 PASS
 PASS
-[archive_validation] INFO: archive=/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.LOM6Oy5J6J/judge_atlas_archive.zip
+[archive_validation] INFO: archive=/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.RUCBjW0Ba6/judge_atlas_archive.zip
 [archive_validation] INFO: archive_filename=judge_atlas_archive.zip
-[archive_validation] INFO: archive_sha256=43fc58fc5585daab9e75eed720a0f08e6d42230118857a54b6cc2e527008aef6
+[archive_validation] INFO: archive_sha256=da5c595ba6ac8badb0a5b0bf1bc0958b6caa112a317837cbeb162cb435a51e67
 [archive_validation] INFO: archive_top_level_dirs=./JUDGE_ATLAS-main
-[archive_validation] INFO: extract_dir=/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.LOM6Oy5J6J/extract
-[archive_validation] PASS: located repository root at /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.LOM6Oy5J6J/extract/JUDGE_ATLAS-main
-[archive_validation] INFO: release_gate.json proof_input_tree_hash=9c649c0e5e1c09b3a18f87800a2daa5cc0ed54ce3a1af1a841cec16cc852352f
-OK: no unsupported platform claim phrases detected in /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.LOM6Oy5J6J/extract/JUDGE_ATLAS-main
+[archive_validation] INFO: extract_dir=/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.RUCBjW0Ba6/extract
+[archive_validation] PASS: located repository root at /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.RUCBjW0Ba6/extract/JUDGE_ATLAS-main
+[archive_validation] INFO: release_gate.json proof_input_tree_hash=c56ff2291b97098a2d6a91bcbb54c338022effe270d62aec799a3b9f7d30456b
+OK: no unsupported platform claim phrases detected in /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.RUCBjW0Ba6/extract/JUDGE_ATLAS-main
 [archive_validation] PASS: check_false_claims
-OK: no unsupported platform claim phrases detected in /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.LOM6Oy5J6J/extract/JUDGE_ATLAS-main
+OK: no unsupported platform claim phrases detected in /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.RUCBjW0Ba6/extract/JUDGE_ATLAS-main
 [archive_validation] PASS: check_truth_claims
 PASS: proof artifacts are fresh
-proof_input_tree_hash=9c649c0e5e1c09b3a18f87800a2daa5cc0ed54ce3a1af1a841cec16cc852352f
+proof_input_tree_hash=c56ff2291b97098a2d6a91bcbb54c338022effe270d62aec799a3b9f7d30456b
 [archive_validation] PASS: check_proof_freshness
 PASS: proof artifacts are fresh
-proof_input_tree_hash=9c649c0e5e1c09b3a18f87800a2daa5cc0ed54ce3a1af1a841cec16cc852352f
+proof_input_tree_hash=c56ff2291b97098a2d6a91bcbb54c338022effe270d62aec799a3b9f7d30456b
 [archive_validation] PASS: check_proof_freshness_strict
 OK: No committed bytecode files
 [archive_validation] PASS: check_no_pyc
@@ -50,6 +50,6 @@ PASS  26 source(s) across 1 file(s) validated OK
 [archive_validation] PASS: forbid_frontend_node_modules
 [archive_validation] PASS: forbid_repo_node_modules
 [archive_validation] PASS: forbid_git_dir
-[archive_validation] INFO: proof_freshness actual_hash=9c649c0e5e1c09b3a18f87800a2daa5cc0ed54ce3a1af1a841cec16cc852352f
+[archive_validation] INFO: proof_freshness actual_hash=c56ff2291b97098a2d6a91bcbb54c338022effe270d62aec799a3b9f7d30456b
 [archive_validation] PASS: extracted archive checks completed
 Archive validation log written: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/artifacts/proof/current/archive_validation.log

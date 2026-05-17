@@ -20,6 +20,19 @@ def _source(db_session) -> SourceRegistry:
         .first()
     )
     if existing is not None:
+        existing.source_class = "machine_ingest"
+        existing.lifecycle_state = "runnable"
+        existing.automation_status = "machine_ready_enabled"
+        existing.is_active = True
+        existing.public_record_authority = "official_legislation"
+        existing.base_url = "https://laws-lois.justice.gc.ca/eng/XML/Legis.xml"
+        existing.allowed_domains = '["laws-lois.justice.gc.ca"]'
+        existing.parser = "laws_justice_xml"
+        existing.parser_version = "justice_laws_xml_v1"
+        existing.requires_manual_review = True
+        existing.public_publish_default = False
+        existing.creates = '["SourceSnapshot", "LegalInstrument", "LegalSection", "ReviewItem"]'
+        db_session.flush()
         return existing
 
     source = SourceRegistry(

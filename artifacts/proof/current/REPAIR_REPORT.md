@@ -1,12 +1,12 @@
 # REPAIR_REPORT
 
-- generated_at_utc: 2026-05-17T02:27:16.141141+00:00
-- commit_hash: 6a9da67a35a516a11afff742536b8d8445f2e28c
-- alpha_gate_passed: false
+- generated_at_utc: 2026-05-17T02:57:47.424592+00:00
+- commit_hash: d6a10e1657c723bf114c1e5984ea942ac893d51c
+- alpha_gate_passed: true
 
 ## Phase Results
 
-- 1. Alpha Gate Truthfulness: FAIL (artifacts/proof/current/release_gate.json)
+- 1. Alpha Gate Truthfulness: PASS (artifacts/proof/current/release_gate.json)
 - 2. Canonical Proof Artifacts: PASS (artifacts/proof/current/CURRENT_PROOF.md)
 - 3. Generated Alpha Status: PASS (artifacts/proof/current/CURRENT_ALPHA_STATUS.md)
 - 4. Source Registry Governance: PASS (artifacts/proof/current/source_registry_status.json)
@@ -14,7 +14,7 @@
 - 6. Proof Policy Generated: PASS (artifacts/proof/current/PROOF_POLICY.md)
 - 7. Evidence Store Integrity: PASS (artifacts/proof/current/verify_evidence_store.log)
 - 8. Audit Chain Integrity: PASS (artifacts/proof/current/verify_audit_chain.log)
-- 9. Justice XML Proof Coverage: FAIL (artifacts/proof/current/backend_pytest.log)
+- 9. Justice XML Proof Coverage: PASS (artifacts/proof/current/backend_pytest.log)
 - 10. Public Review Gate Coverage: PASS (artifacts/proof/current/public_api_boundary.log)
 - 11. Derivative Memory Boundary Coverage: PASS (artifacts/proof/current/public_api_boundary.log)
 - 12. Frontend Node 25.9 Gate: PASS (artifacts/proof/current/frontend_node_gate.log)
@@ -23,4 +23,4 @@
 
 ## Remaining Blockers
 
-- backend_pytest
+- none

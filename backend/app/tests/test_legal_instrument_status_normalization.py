@@ -12,6 +12,27 @@ from app.models.entities import IngestionRun, LegalInstrument, ReviewItem, Sourc
 
 
 def _source(db_session):
+    existing = (
+        db_session.query(SourceRegistry)
+        .filter(SourceRegistry.source_key == "justice_canada_laws_xml")
+        .first()
+    )
+    if existing is not None:
+        existing.source_class = "machine_ingest"
+        existing.lifecycle_state = "runnable"
+        existing.automation_status = "machine_ready_enabled"
+        existing.is_active = True
+        existing.public_record_authority = "official_legislation"
+        existing.base_url = "https://laws-lois.justice.gc.ca/eng/XML/Legis.xml"
+        existing.allowed_domains = '["laws-lois.justice.gc.ca"]'
+        existing.parser = "laws_justice_xml"
+        existing.parser_version = "justice_laws_xml_v1"
+        existing.requires_manual_review = True
+        existing.public_publish_default = False
+        existing.creates = '["SourceSnapshot", "LegalInstrument", "LegalSection", "ReviewItem"]'
+        db_session.flush()
+        return existing
+
     source = SourceRegistry(
         source_key="justice_canada_laws_xml",
         source_name="Justice Canada Laws XML",
@@ -99,8 +120,28 @@ def test_persist_sets_legal_instrument_pending_review_and_review_item_pending(db
     assert summary.persisted_legal_instruments == 1
     assert summary.persisted_review_items == 1
 
-    instrument = db_session.query(LegalInstrument).one()
-    review_item = db_session.query(ReviewItem).one()
+    instrument = (
+        db_session.query(LegalInstrument)
+        .filter(
+            LegalInstrument.source_id == source.id,
+            LegalInstrument.unique_id == "C-46",
+            LegalInstrument.language == "eng",
+        )
+        .one()
+    )
+    review_item = next(
+        (
+            row
+            for row in db_session.query(ReviewItem)
+            .filter(ReviewItem.record_type == "LegalInstrument")
+            .all()
+            if row.suggested_payload_json.get("source_key") == source.source_key
+            and row.suggested_payload_json.get("unique_id") == "C-46"
+            and row.suggested_payload_json.get("language") == "eng"
+        ),
+        None,
+    )
+    assert review_item is not None
 
     assert instrument.review_status == "pending_review"
     assert instrument.public_visibility == "private"

@@ -1,22 +1,29 @@
 # Real Automation Status — Source Ingestion
 
 **Document type**: Operational truth  
-**Last updated**: 2025 (auto-derivable from `artifacts/proof/current/source_registry_status.json`)  
+**Last updated**: 2026 (auto-derivable from `artifacts/proof/current/source_registry_status.json`)  
 **Status**: Alpha — single source enabled
 
 ---
 
 ## Summary
 
-JUDGE ATLAS currently has **1 source with live automated ingestion** and **24 sources that are not yet automated**. This document records the ground truth.
+JUDGE ATLAS currently has **26 total registered sources**, with **1 source runnable now** and **25 sources not currently runnable**. This document records the ground truth.
 
 | Status | Count | Description |
 |---|---|---|
 | `machine_ready_enabled` | 1 | Adapter exists, automation enabled, runs in production |
 | `machine_ready_disabled` | 5 | Adapter exists and validated but intentionally disabled (alpha scope) |
 | `adapter_missing` | 17 | Source defined in registry; no adapter implemented yet |
-| `deprecated` | 2 | Source removed from active scope |
+| `deprecated` | 3 | Source removed from active scope |
 | `disabled_stub` | 1 | Placeholder only; not intended for near-term automation |
+
+Additional generated summary fields from `source_registry_status.json`:
+
+- `total_sources`: 26
+- `machine_ingest_sources`: 7
+- `runnable_now`: 1
+- `enable_ready`: 5
 
 ---
 

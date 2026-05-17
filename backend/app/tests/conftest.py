@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 
 import pytest
+from sqlalchemy import event
+from sqlalchemy.orm import Session
 
 TEST_DB = Path(__file__).with_name("test.db")
 if TEST_DB.exists():
@@ -27,7 +29,7 @@ os.environ["JTA_ENFORCE_JWT_MUTATIONS"] = "true"
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from app.db.session import Base, SessionLocal, engine  # noqa: E402
+from app.db.session import Base, SessionLocal, engine, get_db  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models.entities import *  # noqa: E402, F403 - Import all models to register with Base metadata
 from app.seed.sample_data import seed_sample_data  # noqa: E402
@@ -58,7 +60,27 @@ def jwt_admin_headers() -> dict:
 
 @pytest.fixture
 def db_session():
-    with SessionLocal() as session:
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = Session(bind=connection, future=True)
+    nested = connection.begin_nested()
+
+    @event.listens_for(session, "after_transaction_end")
+    def _restart_savepoint(sess, trans):
+        nonlocal nested
+        if trans.nested and not getattr(trans._parent, "nested", False):
+            nested = connection.begin_nested()
+
+    def _get_test_db():
         yield session
-        session.rollback()
-        session.expunge_all()
+
+    app.dependency_overrides[get_db] = _get_test_db
+
+    try:
+        yield session
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+        event.remove(session, "after_transaction_end", _restart_savepoint)
+        session.close()
+        transaction.rollback()
+        connection.close()
