@@ -1,0 +1,2 @@
+ERROR: hardcoded ingestion status strings detected:
+  backend/app/policies/publication_policy.py:102: hardcoded status literal 'pending' (import from app.ingestion.statuses)

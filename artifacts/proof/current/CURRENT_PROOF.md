@@ -1,24 +1,24 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-16T23:42:05.298309+00:00
-- commit_hash: d78d869add227effddd2515ff0da9656da6689bf
-- alpha_gate_status: PASS
-- alpha_gate_passed: true
+- generated_at_utc: 2026-05-17T02:27:16.141141+00:00
+- commit_hash: 6a9da67a35a516a11afff742536b8d8445f2e28c
+- alpha_gate_status: BLOCKED
+- alpha_gate_passed: false
 - release_gate_check_count: 37
 - docker_available: true
 - postgis_proof_result: PASS
 - egress_proxy_proof_result: PASS
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
-- proof_input_tree_hash: 6317298584d79b9405c8d2e0c74adeba58aa342b35ef3afd98f5e75b57fc3708
-- proof_input_file_count: 824
+- proof_input_tree_hash: 9c649c0e5e1c09b3a18f87800a2daa5cc0ed54ce3a1af1a841cec16cc852352f
+- proof_input_file_count: 825
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
 ## Runtime Metadata
 
 - gate_runner_python_version: 3.11.14
-- gate_runner_python_executable: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/bin/python3
+- gate_runner_python_executable: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/bin/python
 - backend_test_python_version: 3.11.14
 - backend_test_python_executable: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/bin/python
 - backend_required_python: >=3.11
@@ -58,9 +58,9 @@
 
 ## Current Proof Facts
 
-- backend pytest: 2915 passed, 9 skipped
+- backend pytest: 1309 passed, 0 skipped
 - backend import proof: PASS (105 routes)
-- frontend contracts: 38 passed
+- frontend contracts: 43 passed
 - public API boundary: 33 passed
 - Docker runtime preflight: PASS
 - PostGIS proof: PASS
@@ -68,6 +68,10 @@
 - demo proof: PASS
 - mutation fail-closed coverage: PASS
 - Alembic migrations: 56
+
+## Failed Checks
+
+- backend_pytest
 
 ## Egress Proxy Coverage
 

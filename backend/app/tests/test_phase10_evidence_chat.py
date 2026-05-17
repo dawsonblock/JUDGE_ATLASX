@@ -10,6 +10,8 @@ Tests cover:
 from __future__ import annotations
 
 import itertools
+import hashlib
+from datetime import datetime, timezone
 
 import pytest
 from sqlalchemy import select
@@ -19,7 +21,9 @@ from app.models.entities import (
     CrimeIncidentEventLink,
     Event,
     RelationshipEvidence,
+    SourceSnapshot,
 )
+from app.policies.publication_policy import CORRECTED
 from app.services.evidence_chat import (
     _MAX_CITATIONS,
     _MAX_QUESTION_LEN,
@@ -38,6 +42,23 @@ _id_counter = itertools.count(1)
 
 def _make_incident(db, *, is_public: bool = True) -> CrimeIncident:
     uid = next(_id_counter)
+    
+    # Create a source snapshot if incident is public (required for evidence_anchor_status)
+    source_snapshot_id = None
+    if is_public:
+        content = f"test snapshot {uid}".encode("utf-8")
+        snapshot = SourceSnapshot(
+            source_key="test_source",
+            source_url="https://example.test",
+            fetched_at=datetime.now(timezone.utc),
+            content_hash=hashlib.sha256(content).hexdigest(),
+            raw_content=content.decode("utf-8"),
+            storage_backend="db",
+        )
+        db.add(snapshot)
+        db.flush()
+        source_snapshot_id = snapshot.id
+    
     inc = CrimeIncident(
         source_id=None,
         external_id=f"CHAT-TEST-{uid}",
@@ -48,6 +69,11 @@ def _make_incident(db, *, is_public: bool = True) -> CrimeIncident:
         source_name="test_source",
         is_public=is_public,
         verification_status="unverified",
+        review_status=CORRECTED if is_public else "pending_review",
+        source_snapshot_id=source_snapshot_id,
+        latitude_public=51.5 if is_public else None,  # London, UK
+        longitude_public=-0.1 if is_public else None,
+        precision_level="city_centroid",
     )
     db.add(inc)
     db.flush()
@@ -66,6 +92,19 @@ def _make_evidence(
     confidence: float = 0.8,
     relationship_status: str | None = "approved",
 ) -> RelationshipEvidence:
+    # Create a source snapshot for the evidence
+    content = f"evidence snapshot {next(_id_counter)}".encode("utf-8")
+    snapshot = SourceSnapshot(
+        source_key=evidence_source,
+        source_url="https://example.test/evidence",
+        fetched_at=datetime.now(timezone.utc),
+        content_hash=hashlib.sha256(content).hexdigest(),
+        raw_content=content.decode("utf-8"),
+        storage_backend="db",
+    )
+    db.add(snapshot)
+    db.flush()
+    
     ev = RelationshipEvidence(
         from_entity_type=entity_type,
         from_entity_id=entity_id,
@@ -81,6 +120,7 @@ def _make_evidence(
         relationship_status=relationship_status,
         verification_status="verified",
         review_status="verified_court_record",
+        evidence_snapshot_id=snapshot.id,
     )
     db.add(ev)
     db.flush()
@@ -194,6 +234,19 @@ def test_case_id_evidence_returned(db_session):
     db_session.add(link)
     db_session.flush()
 
+    # Create a source snapshot for the evidence
+    content = b"court case evidence snapshot"
+    snapshot = SourceSnapshot(
+        source_key="pacer",
+        source_url="https://example.test/pacer",
+        fetched_at=datetime.now(timezone.utc),
+        content_hash=hashlib.sha256(content).hexdigest(),
+        raw_content=content.decode("utf-8"),
+        storage_backend="db",
+    )
+    db_session.add(snapshot)
+    db_session.flush()
+
     ev = RelationshipEvidence(
         from_entity_type="court_case",
         from_entity_id=case_id,
@@ -209,6 +262,7 @@ def test_case_id_evidence_returned(db_session):
         relationship_status="approved",
         verification_status="verified",
         review_status="verified_court_record",
+        evidence_snapshot_id=snapshot.id,
     )
     db_session.add(ev)
     db_session.flush()

@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-05-16T23:42:14.500768+00:00",
+  "generated_at": "2026-05-17T02:28:42.094120+00:00",
   "release_mode": "alpha",
   "environment": {},
   "git_commit": "unknown",
   "checks_total": 37,
-  "checks_failed": 0,
+  "checks_failed": 1,
   "checks_warnings": 0,
   "covered_directories": [
     "backend",
@@ -27,7 +27,7 @@
     "dist",
     "coverage"
   ],
-  "proof_hash": "a842cca583be02d99505d30bc26d8ebdf0984cc43dab12e349e660f338f0d9de",
+  "proof_hash": "f8be1d9c25443b8c1521a6da98217b5bb6cf6fcba5a56ef14eb59f4c960e17fd",
   "source": {
     "release_gate": "artifacts/proof/current/release_gate.json",
     "proof_manifest": "artifacts/proof/current/proof_manifest.json"

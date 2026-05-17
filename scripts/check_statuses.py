@@ -48,6 +48,7 @@ _SKIP_FILE_NAMES = {
     "source_config_validator.py",
     "custody.py",  # CustodyStage domain enum; quarantined is a custody lifecycle stage, not ingestion status
     "ingestion_state.py",  # IngestionState enum: editorial-pipeline states, not IngestionRun job statuses
+    "publication_policy.py",  # Relationship state domain enums (pending, active, etc.) — not ingestion statuses
 }
 
 

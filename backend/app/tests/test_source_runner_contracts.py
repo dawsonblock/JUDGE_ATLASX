@@ -206,6 +206,8 @@ def test_non_machine_ingest_source_bypasses_contract_gate() -> None:
     source.source_class = "portal_reference"
     source.parser_version = None  # no version — would fail machine_ingest gate
     source.base_url = "https://example.gc.ca/"
+    source.creates = '["SourceSnapshot"]'
+    source.public_record_authority = "portal_reference"
 
     result = IngestionResult(
         source_key="portal_src",

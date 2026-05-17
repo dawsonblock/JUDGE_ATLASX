@@ -9,6 +9,7 @@ Portal-reference and other non-machine_ingest sources bypass this gate.
 """
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 from unittest.mock import MagicMock, call, patch
 
@@ -40,6 +41,8 @@ def _make_source(
     src.base_url = base_url
     src.parser_version = parser_version
     src.source_key = source_key
+    src.creates = json.dumps(["SourceSnapshot", "CrimeIncident"])
+    src.public_record_authority = "public_access"
     return src
 
 

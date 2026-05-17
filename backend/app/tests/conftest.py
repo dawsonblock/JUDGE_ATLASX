@@ -61,3 +61,4 @@ def db_session():
     with SessionLocal() as session:
         yield session
         session.rollback()
+        session.expunge_all()

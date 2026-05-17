@@ -103,7 +103,7 @@ def _make_source() -> MagicMock:
     source.parser_version = "1.0"
     source.source_key = "test_source"
     source.public_record_authority = "official_open_data"
-    source.creates = '["CrimeIncident", "ReviewItem"]'
+    source.creates = '["SourceSnapshot", "CrimeIncident", "ReviewItem"]'
     return source
 
 
@@ -136,7 +136,7 @@ def test_crime_incident_insert_failure_adds_warning_and_count() -> None:
     source = _make_source()
     run = _make_run()
     result = _make_result()
-    result.created_records = [SimpleNamespace(source_key="test_source", external_id="A1", payload={}, source_url="https://example.gc.ca/a")]
+    result.created_records = [SimpleNamespace(source_key="test_source", external_id="A1", payload={}, source_url="https://example.gc.ca/a", record_type="CrimeIncident")]
 
     with patch.object(source_runner, "_create_snapshot", return_value=SimpleNamespace(id=7)):
         with patch.object(source_runner, "_insert_crime_incident", side_effect=RuntimeError("boom")):
@@ -170,7 +170,7 @@ def test_duplicate_record_skipped_warns_once() -> None:
     source = _make_source()
     run = _make_run()
     result = _make_result()
-    result.created_records = [SimpleNamespace(source_key="test_source", external_id="A1", payload={}, source_url="https://example.gc.ca/a") for _ in range(2)]
+    result.created_records = [SimpleNamespace(source_key="test_source", external_id="A1", payload={}, source_url="https://example.gc.ca/a", record_type="CrimeIncident") for _ in range(2)]
 
     with patch.object(source_runner, "_create_snapshot", return_value=SimpleNamespace(id=9)):
         with patch.object(source_runner, "_insert_crime_incident", return_value=False):

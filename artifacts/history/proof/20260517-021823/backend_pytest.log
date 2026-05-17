@@ -1,0 +1,52 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  7%]
+........................................................................ [  9%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 17%]
+......F
+=================================== FAILURES ===================================
+____________________ test_subprocess_audit_guards_all_pass _____________________
+backend/app/tests/test_cli_subprocess.py:180: in test_subprocess_audit_guards_all_pass
+    assert proc.returncode == 0, (
+E   AssertionError: audit guards exited non-zero.
+E     stdout: {"ok": false, "command": "audit.guards", "data": {"checks": [{"name": "validate_workflows", "ok": true}, {"name": "check_no_pyc", "ok": true}, {"name": "check_source_keys", "ok": true}, {"name": "check_statuses", "ok": false}, {"name": "compileall", "ok": true}, {"name": "cli_availability", "ok": true}], "all_passed": false, "errors": ["ERROR: hardcoded ingestion status strings detected:\n  backend/app/policies/publication_policy.py:102: hardcoded status literal 'pending' (import from app.ingest
+E     stderr: 
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/bin/judgectl', '--json', 'audit'...dcoded status literal \'pending\' (import from app.ingestion.statuses)"]}, "warnings": [], "errors": []}\n', stderr='').returncode
+=============================== warnings summary ===============================
+app/tests/test_admin_security.py::TestAuditLogging::test_review_actions_need_audit_log
+app/tests/test_admin_security.py::TestAuditLogging::test_admin_api_calls_need_audit_log
+app/tests/test_ai_pipeline.py::test_approved_review_item_can_publish_safe_event
+app/tests/test_ai_pipeline.py::test_blocked_review_item_cannot_publish
+app/tests/test_ai_pipeline.py::test_ai_review_items_use_database_pagination
+app/tests/test_api.py::test_invalid_post_event_foreign_keys_return_422_with_admin_token
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/auth/admin.py:241: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token, authorization)
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_require_admin_token_returns_admin_actor
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_admin_security.py:246: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    else require_admin_token(x_jta_admin_token="test-secret-token")
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_actor_id_is_not_raw_token
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_admin_security.py:266: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token="super-secret-value-12345")
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_actor_id_is_stable_label
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_admin_security.py:350: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token="token-abc")
+
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/security/import_authority.py:51: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/app/tests/test_cli_subprocess.py::test_subprocess_audit_guards_all_pass
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 510 passed, 14 warnings in 18.13s
