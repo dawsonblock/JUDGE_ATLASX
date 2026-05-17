@@ -60,13 +60,5 @@ INFO  [alembic.runtime.migration] Running upgrade 20260516_0001 -> 20260516_0002
 INFO  [alembic.runtime.migration] Running upgrade 20260516_0002 -> 20260516_0003, Migration: Phase 3 - Ingestion Hardening (Adapter Contracts + Immutability Triggers)
 INFO  [alembic.runtime.migration] Running upgrade 20260516_0003 -> 20260516_0004, Phase 4: Source Stability & Recovery - Add Retry Tracking
 [proof_demo] PASS: synthetic data seeded
-Demo verification passed.
-API base: http://127.0.0.1:18010
-Map feature count: 1
-Verified: reviewed/public visible, pending/private hidden, source registry and audit rows present.
-[proof_demo] PASS: reviewed/public event visible
-[proof_demo] PASS: pending/private event hidden
-[proof_demo] PASS: source registry/audit rows present
-[proof_demo] PASS: cleanup completed
-[proof_demo] PASS: demo proof completed
-Demo proof PASS at http://127.0.0.1:18010
+scripts/proof_demo.sh: line 26: 89220 Hangup: 1               ( cd "${ROOT_DIR}/backend"; exec "${PYTHON_BIN}" -m uvicorn app.main:app --host 127.0.0.1 --port "${DEMO_BACKEND_PORT}" ) > "${RUNTIME_LOG}" 2>&1
+scripts/proof_demo.sh: line 26: 89315 Hangup: 1               sleep 0.5
