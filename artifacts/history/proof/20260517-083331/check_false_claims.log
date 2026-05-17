@@ -1,0 +1,13 @@
+ERROR: unsupported platform claim phrases detected:
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/main.py:193: unsupported claim phrase 'production-ready'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/main.py:197: unsupported claim phrase 'production-ready'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/core/config.py:92: unsupported claim phrase 'production-ready'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_ingestion_queue_backend.py:19: unsupported claim phrase 'production-ready'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_ingestion_queue_backend.py:27: unsupported claim phrase 'production-ready'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_ingestion_queue_backend.py:86: unsupported claim phrase 'production-ready'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/workers/queue_backend.py:61: unsupported claim phrase 'production-ready'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/workers/queue_backend.py:91: unsupported claim phrase 'production-ready'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/workers/postgres_queue.py:4: unsupported claim phrase 'production-ready'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/workers/postgres_queue.py:27: unsupported claim phrase 'production-ready'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/workers/postgres_queue.py:32: unsupported claim phrase 'production-ready'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/workers/ingestion_queue.py:51: unsupported claim phrase 'production-ready'

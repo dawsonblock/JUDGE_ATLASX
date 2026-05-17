@@ -1,0 +1,13 @@
+API CONTRACTS: FAIL
+  backend_contracts:FAIL
+ImportError while loading conftest '/Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/conftest.py'.
+backend/app/tests/conftest.py:33: in <module>
+    from app.main import app  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/app/main.py:11: in <module>
+    from app.api.routes import router
+backend/app/api/routes/__init__.py:1: in <module>
+    from app.api.routes import (
+backend/app/api/routes/admin_legacy_ingest.py:7: in <module>
+    from app.api.routes.admin_ingest import legacy_router as router
+E   ImportError: cannot import name 'legacy_router' from 'app.api.routes.admin_ingest' (/Users/dawsonblock/JUDGE_ATLASX/backend/app/api/routes/admin_ingest.py)

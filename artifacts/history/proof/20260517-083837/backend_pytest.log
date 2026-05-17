@@ -1,0 +1,60 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  7%]
+........................................................................ [  9%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 17%]
+........................................................................ [ 19%]
+........................................................................ [ 22%]
+........................................................................ [ 24%]
+........................................................................ [ 27%]
+........................................................................ [ 29%]
+........................................................................ [ 31%]
+........................................................................ [ 34%]
+........................................................................ [ 36%]
+................................................F
+=================================== FAILURES ===================================
+___________________ test_production_allows_inprocess_backend ___________________
+backend/app/tests/test_ingestion_queue_backend.py:101: in test_production_allows_inprocess_backend
+    _validate_production_safety(settings)
+backend/app/main.py:134: in _validate_production_safety
+    sys.exit(1)
+E   SystemExit: 1
+----------------------------- Captured stdout call -----------------------------
+ERROR: Legacy shared-token admin authentication is not allowed in production. Ensure JTA_ENABLE_LEGACY_ADMIN_TOKEN=false and unset JTA_ADMIN_TOKEN / JTA_ADMIN_REVIEW_TOKEN. Use JWT Bearer authentication for admin operations.
+=============================== warnings summary ===============================
+app/tests/test_admin_security.py::TestAuditLogging::test_review_actions_need_audit_log
+app/tests/test_admin_security.py::TestAuditLogging::test_admin_api_calls_need_audit_log
+app/tests/test_ai_pipeline.py::test_approved_review_item_can_publish_safe_event
+app/tests/test_ai_pipeline.py::test_blocked_review_item_cannot_publish
+app/tests/test_ai_pipeline.py::test_ai_review_items_use_database_pagination
+app/tests/test_api.py::test_invalid_post_event_foreign_keys_return_422_with_admin_token
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/auth/admin.py:241: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token, authorization)
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_require_admin_token_returns_admin_actor
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_admin_security.py:246: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    else require_admin_token(x_jta_admin_token="test-secret-token")
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_actor_id_is_not_raw_token
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_admin_security.py:266: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token="super-secret-value-12345")
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_actor_id_is_stable_label
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_admin_security.py:350: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token="token-abc")
+
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/security/import_authority.py:51: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/app/tests/test_ingestion_queue_backend.py::test_production_allows_inprocess_backend
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 1128 passed, 14 warnings in 26.74s

@@ -1,0 +1,3 @@
+RESULT: FAIL
+  map reviewed-only proof tests failed
+  pytest_stderr=E   ImportError: cannot import name 'legacy_router' from 'app.api.routes.admin_ingest' (/Users/dawsonblock/JUDGE_ATLASX/backend/app/api/routes/admin_ingest.py)

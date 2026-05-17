@@ -1,0 +1,4 @@
+ERROR: unsupported platform claim phrases detected:
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/main.py:141: unsupported claim phrase 'production-ready'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/main.py:209: unsupported claim phrase 'production-ready'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/api/routes/admin_legacy_ingest.py:16: unsupported claim phrase 'production-ready'

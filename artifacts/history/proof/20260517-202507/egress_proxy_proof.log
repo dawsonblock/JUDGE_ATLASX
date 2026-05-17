@@ -1,0 +1,186 @@
+[proof_egress_proxy] STAGE: environment
+[proof_egress_proxy] Backend Python: /Users/dawsonblock/JUDGE_ATLASX/backend/.venv/bin/python
+[proof_egress_proxy] STAGE: production startup egress policy tests
+F.F                                                                      [100%]
+=================================== FAILURES ===================================
+________________________ test_egress_proxy_set_no_exit _________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a1cb350>
+
+    def test_egress_proxy_set_no_exit(monkeypatch):
+        """When JTA_FETCH_EGRESS_PROXY is set, production start-up must succeed."""
+        monkeypatch.setenv("JTA_ALLOW_IN_MEMORY_RATE_LIMIT_PRODUCTION", "1")
+        monkeypatch.setenv("JTA_FETCH_EGRESS_PROXY", "http://squid-proxy:3128")
+        monkeypatch.delenv("JTA_ALLOW_DIRECT_PROD_FETCH_WITH_NETWORK_POLICY", raising=False)
+    
+        settings = _egress_safe_prod_settings()
+        # Should complete without calling sys.exit
+>       _validate_production_safety(settings)
+
+app/tests/test_production_fetch_egress_policy.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+settings = namespace(app_env='production', jwt_secret_key='8bd6db1a6c11b7f5f5ba221f637e37186d2ef0ea1821b6a05c2ca90c6a183bc1', jwt...calhost:6379/0', evidence_store_required=True, cors_origins='https://example.com', ingestion_queue_backend='inprocess')
+
+    def _validate_production_safety(settings) -> None:
+        """Validate production safety settings. Fail fast if unsafe."""
+        if settings.app_env != "production":
+            return  # Skip checks outside production
+    
+        # Check JWT secret key is not a weak or placeholder value
+        if _is_placeholder_secret(settings.jwt_secret_key, "JTA_JWT_SECRET_KEY"):
+            print(
+                "ERROR: JTA_JWT_SECRET_KEY is a placeholder or too short. "
+                "Generate a cryptographically random secret: "
+                "python -c 'import secrets; print(secrets.token_urlsafe(48))' "
+                "and set JTA_JWT_SECRET_KEY before running in production."
+            )
+            sys.exit(1)
+    
+        # Check first admin bootstrap secret is not a placeholder
+        first_admin = getattr(settings, "first_admin_secret", None) or ""
+        if first_admin and _is_placeholder_secret(first_admin, "JTA_FIRST_ADMIN_SECRET"):
+            print(
+                "ERROR: JTA_FIRST_ADMIN_SECRET is a placeholder or too short. "
+                "Generate a secure value: "
+                "python -c 'import secrets; print(secrets.token_urlsafe(32))' "
+                "and set JTA_FIRST_ADMIN_SECRET before running in production."
+            )
+            sys.exit(1)
+    
+        # Require JWT auth to be explicitly enabled in production
+        if not settings.jwt_auth_enabled:
+            print(
+                "ERROR: JTA_JWT_AUTH_ENABLED must be true in production. "
+                "Set JTA_JWT_AUTH_ENABLED=true once admin users have been created."
+            )
+            sys.exit(1)
+    
+        # Legacy shared-token admin auth must stay off in production.
+        # Fail fast both when the feature flag is enabled and when legacy shared-token
+        # secrets are configured at all, because some auth paths may still consult the
+        # shared tokens directly.
+        legacy_admin_token_configured = bool(getattr(settings, "admin_token", None))
+        legacy_review_token_configured = bool(
+            getattr(settings, "admin_review_token", None)
+        )
+        if (
+            settings.enable_legacy_admin_token
+            or legacy_admin_token_configured
+            or legacy_review_token_configured
+        ):
+            print(
+                "ERROR: Legacy shared-token admin authentication is not allowed in "
+                "production. Ensure JTA_ENABLE_LEGACY_ADMIN_TOKEN=false and unset "
+                "JTA_ADMIN_TOKEN / JTA_ADMIN_REVIEW_TOKEN. Use JWT Bearer "
+                "authentication for admin operations."
+            )
+            sys.exit(1)
+    
+        ingestion_queue_backend = getattr(settings, "ingestion_queue_backend", "inprocess")
+        if ingestion_queue_backend == "inprocess":
+            print(
+                "ERROR: JTA_INGESTION_QUEUE_BACKEND=inprocess is not allowed in "
+                "production. The in-process queue is alpha-only and not "
+                "production-capable. A production-capable queue backend must be "
+                "implemented before production deployment."
+            )
+>           sys.exit(1)
+E           SystemExit: 1
+
+app/main.py:144: SystemExit
+----------------------------- Captured stdout call -----------------------------
+ERROR: JTA_INGESTION_QUEUE_BACKEND=inprocess is not allowed in production. The in-process queue is alpha-only and not production-capable. A production-capable queue backend must be implemented before production deployment.
+_______________ test_network_policy_escape_hatch_suppresses_exit _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a1af390>
+
+    def test_network_policy_escape_hatch_suppresses_exit(monkeypatch):
+        """JTA_ALLOW_DIRECT_PROD_FETCH_WITH_NETWORK_POLICY=1 must suppress the exit
+        even when JTA_FETCH_EGRESS_PROXY is absent."""
+        monkeypatch.setenv("JTA_ALLOW_IN_MEMORY_RATE_LIMIT_PRODUCTION", "1")
+        monkeypatch.delenv("JTA_FETCH_EGRESS_PROXY", raising=False)
+        monkeypatch.setenv("JTA_ALLOW_DIRECT_PROD_FETCH_WITH_NETWORK_POLICY", "1")
+    
+        settings = _egress_safe_prod_settings()
+        # Should complete without calling sys.exit
+>       _validate_production_safety(settings)
+
+app/tests/test_production_fetch_egress_policy.py:77: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+settings = namespace(app_env='production', jwt_secret_key='1745f0417f3ec0c48d65c1f471c0e89e4e328614ce320d1127d0b3c7336af2ac', jwt...calhost:6379/0', evidence_store_required=True, cors_origins='https://example.com', ingestion_queue_backend='inprocess')
+
+    def _validate_production_safety(settings) -> None:
+        """Validate production safety settings. Fail fast if unsafe."""
+        if settings.app_env != "production":
+            return  # Skip checks outside production
+    
+        # Check JWT secret key is not a weak or placeholder value
+        if _is_placeholder_secret(settings.jwt_secret_key, "JTA_JWT_SECRET_KEY"):
+            print(
+                "ERROR: JTA_JWT_SECRET_KEY is a placeholder or too short. "
+                "Generate a cryptographically random secret: "
+                "python -c 'import secrets; print(secrets.token_urlsafe(48))' "
+                "and set JTA_JWT_SECRET_KEY before running in production."
+            )
+            sys.exit(1)
+    
+        # Check first admin bootstrap secret is not a placeholder
+        first_admin = getattr(settings, "first_admin_secret", None) or ""
+        if first_admin and _is_placeholder_secret(first_admin, "JTA_FIRST_ADMIN_SECRET"):
+            print(
+                "ERROR: JTA_FIRST_ADMIN_SECRET is a placeholder or too short. "
+                "Generate a secure value: "
+                "python -c 'import secrets; print(secrets.token_urlsafe(32))' "
+                "and set JTA_FIRST_ADMIN_SECRET before running in production."
+            )
+            sys.exit(1)
+    
+        # Require JWT auth to be explicitly enabled in production
+        if not settings.jwt_auth_enabled:
+            print(
+                "ERROR: JTA_JWT_AUTH_ENABLED must be true in production. "
+                "Set JTA_JWT_AUTH_ENABLED=true once admin users have been created."
+            )
+            sys.exit(1)
+    
+        # Legacy shared-token admin auth must stay off in production.
+        # Fail fast both when the feature flag is enabled and when legacy shared-token
+        # secrets are configured at all, because some auth paths may still consult the
+        # shared tokens directly.
+        legacy_admin_token_configured = bool(getattr(settings, "admin_token", None))
+        legacy_review_token_configured = bool(
+            getattr(settings, "admin_review_token", None)
+        )
+        if (
+            settings.enable_legacy_admin_token
+            or legacy_admin_token_configured
+            or legacy_review_token_configured
+        ):
+            print(
+                "ERROR: Legacy shared-token admin authentication is not allowed in "
+                "production. Ensure JTA_ENABLE_LEGACY_ADMIN_TOKEN=false and unset "
+                "JTA_ADMIN_TOKEN / JTA_ADMIN_REVIEW_TOKEN. Use JWT Bearer "
+                "authentication for admin operations."
+            )
+            sys.exit(1)
+    
+        ingestion_queue_backend = getattr(settings, "ingestion_queue_backend", "inprocess")
+        if ingestion_queue_backend == "inprocess":
+            print(
+                "ERROR: JTA_INGESTION_QUEUE_BACKEND=inprocess is not allowed in "
+                "production. The in-process queue is alpha-only and not "
+                "production-capable. A production-capable queue backend must be "
+                "implemented before production deployment."
+            )
+>           sys.exit(1)
+E           SystemExit: 1
+
+app/main.py:144: SystemExit
+----------------------------- Captured stdout call -----------------------------
+ERROR: JTA_INGESTION_QUEUE_BACKEND=inprocess is not allowed in production. The in-process queue is alpha-only and not production-capable. A production-capable queue backend must be implemented before production deployment.
+=========================== short test summary info ============================
+FAILED app/tests/test_production_fetch_egress_policy.py::test_egress_proxy_set_no_exit
+FAILED app/tests/test_production_fetch_egress_policy.py::test_network_policy_escape_hatch_suppresses_exit
+2 failed, 1 passed in 0.06s

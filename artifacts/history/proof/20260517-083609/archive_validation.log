@@ -1,0 +1,65 @@
+Built clean release archive: /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.2XMLmDl0Vq/judge_atlas_archive.zip
+archive_sha256=2fd6415d9fb1cd25ccac3a0655fc505b90269d78edd00dcd51c057a1d32b7e78
+file_count=1003
+Archive validation written to /Users/dawsonblock/JUDGE_ATLASX/artifacts/proof/current/archive_validation.md
+PASS
+PASS
+[archive_validation] INFO: archive=/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.2XMLmDl0Vq/judge_atlas_archive.zip
+[archive_validation] INFO: archive_filename=judge_atlas_archive.zip
+[archive_validation] INFO: archive_sha256=2fd6415d9fb1cd25ccac3a0655fc505b90269d78edd00dcd51c057a1d32b7e78
+[archive_validation] INFO: archive_top_level_dirs=./JUDGE_ATLAS-main
+[archive_validation] INFO: extract_dir=/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.2XMLmDl0Vq/extract
+[archive_validation] PASS: located repository root at /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.2XMLmDl0Vq/extract/JUDGE_ATLAS-main
+[archive_validation] INFO: release_gate.json proof_input_tree_hash=3b52480a92be7b7c51dc28867190f26b211524100731a618130fc046cb42f373
+ERROR: unsupported platform claim phrases detected:
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.2XMLmDl0Vq/extract/JUDGE_ATLAS-main/backend/app/workers/queue_backend.py:61: unsupported claim phrase 'production-ready'
+[archive_validation] FAIL: check_false_claims rc=1
+ERROR: unsupported platform claim phrases detected:
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.2XMLmDl0Vq/extract/JUDGE_ATLAS-main/backend/app/workers/queue_backend.py:61: unsupported claim phrase 'production-ready'
+[archive_validation] FAIL: check_truth_claims rc=1
+PASS: proof artifacts are fresh
+proof_input_tree_hash=3b52480a92be7b7c51dc28867190f26b211524100731a618130fc046cb42f373
+[archive_validation] PASS: check_proof_freshness
+PASS: proof artifacts are fresh
+proof_input_tree_hash=3b52480a92be7b7c51dc28867190f26b211524100731a618130fc046cb42f373
+[archive_validation] PASS: check_proof_freshness_strict
+OK: No committed bytecode files
+[archive_validation] PASS: check_no_pyc
+OK: 2 experimental package(s) have NOT_RUNTIME sentinel.
+OK: No unauthorised runtime imports from experimental packages.
+OK: No imports from external sub-repo packages found.
+[archive_validation] PASS: check_external_boundaries
+OK: 2 experimental package(s) have NOT_RUNTIME sentinel.
+OK: No unauthorised runtime imports from experimental packages.
+OK: No imports from external sub-repo packages found.
+[archive_validation] PASS: check_repo_boundaries
+OK: 14 adapter file(s) checked — no direct network client imports found.
+
+ERROR: Runtime code imports from experimental packages (app.ingestion.crime_sources / app.ingestion.laws):
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.2XMLmDl0Vq/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:33: runtime import from experimental package 'app.ingestion.crime_sources.chicago_socrata'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.2XMLmDl0Vq/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:34: runtime import from experimental package 'app.ingestion.crime_sources.toronto'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.2XMLmDl0Vq/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:35: runtime import from experimental package 'app.ingestion.crime_sources.los_angeles'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.2XMLmDl0Vq/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:36: runtime import from experimental package 'app.ingestion.crime_sources.statscan'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.2XMLmDl0Vq/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:40: runtime import from experimental package 'app.ingestion.crime_sources.fbi_crime_data'
+
+Add an explicit entry to _EXPERIMENTAL_CALLERS in this script if the import is intentional and gated behind a feature flag.
+OK: Ingestion tree checked — no unauthorised direct network client imports found outside allowlisted modules.
+[archive_validation] FAIL: check_no_direct_ingestion_network_clients rc=1
+PASS  26 source(s) across 1 file(s) validated OK
+[archive_validation] PASS: validate_workflows
+[archive_validation] PASS: required_proof_manifest
+[archive_validation] PASS: required_release_gate
+[archive_validation] PASS: required_release_readiness
+[archive_validation] PASS: required_current_alpha_status
+[archive_validation] PASS: required_source_registry_status
+[archive_validation] PASS: required_proof_policy
+[archive_validation] PASS: forbid_python_bytecode
+[archive_validation] PASS: forbid_pycache_dirs
+[archive_validation] PASS: forbid_backend_venv
+[archive_validation] PASS: forbid_repo_venv
+[archive_validation] PASS: forbid_frontend_node_modules
+[archive_validation] PASS: forbid_repo_node_modules
+[archive_validation] PASS: forbid_git_dir
+[archive_validation] INFO: proof_freshness actual_hash=3b52480a92be7b7c51dc28867190f26b211524100731a618130fc046cb42f373
+[archive_validation] FAIL: extracted archive checks completed
+Archive validation log written: /Users/dawsonblock/JUDGE_ATLASX/artifacts/proof/current/archive_validation.log

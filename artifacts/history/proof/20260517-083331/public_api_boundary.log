@@ -1,0 +1,16 @@
+
+==================================== ERRORS ====================================
+______ ERROR collecting app/tests/test_mutation_fail_closed_additional.py ______
+ImportError while importing test module '/Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_mutation_fail_closed_additional.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../.pyenv/versions/3.11.7/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/app/tests/test_mutation_fail_closed_additional.py:10: in <module>
+    from app.api.routes.admin_ingest import cl_bulk_import
+E   ImportError: cannot import name 'cl_bulk_import' from 'app.api.routes.admin_ingest' (/Users/dawsonblock/JUDGE_ATLASX/backend/app/api/routes/admin_ingest.py)
+=========================== short test summary info ============================
+ERROR backend/app/tests/test_mutation_fail_closed_additional.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+2882 deselected, 1 error in 2.95s
