@@ -1892,14 +1892,40 @@ def main() -> int:
         else []
     )
 
-    # Phase 3: run archive validation before writing final proof artifacts
+    # Phase 3: write CURRENT_PROOF.md before archive validation (with expected check_count)
+    # Archive validation requires CURRENT_PROOF.md to exist in the archive
     with gate_log_path.open("a", encoding="utf-8") as gate_log:
         gate_log.write(
             f"{pf_step.name}: {pf_step.status} rc={pf_step.exit_code} "
             f"dur={pf_step.duration_seconds}s log={pf_step.log_path}\n"
         )
 
-    # Run archive validation before writing CURRENT_PROOF.md so check_count is final
+    # Write CURRENT_PROOF.md with check_count that will include archive step (current count + 1)
+    current_proof_rel = _write_current_proof_md(
+        repo_root,
+        out_dir,
+        payload,
+        check_count=len(results) + 1,
+    )
+    grouped_artifacts = _write_grouped_proof_artifacts(repo_root, out_dir, payload)
+    current_alpha_status_rel = _write_current_alpha_status_md(repo_root, out_dir, payload)
+    source_registry_status_md_rel = _write_source_registry_status_md(
+        repo_root,
+        out_dir,
+        payload,
+        source_registry_summary,
+    )
+    proof_policy_rel = _write_proof_policy_md(repo_root, out_dir, payload)
+    repair_report_rel = _write_repair_report_md(
+        repo_root,
+        out_dir,
+        payload,
+        source_registry_summary,
+    )
+    payload["logs"]["current_proof"] = current_proof_rel
+    payload["logs"] |= grouped_artifacts
+
+    # Run archive validation after CURRENT_PROOF.md is written
     archive_step = _run(
         repo_root,
         out_dir,
@@ -1922,30 +1948,14 @@ def main() -> int:
     payload["alpha_gate_passed"] = ok
     payload["check_count"] = len(results)
 
-    # Write CURRENT_PROOF.md and other proof artifacts with final check_count
+    # Rewrite CURRENT_PROOF.md with final check_count after archive validation
     current_proof_rel = _write_current_proof_md(
         repo_root,
         out_dir,
         payload,
         check_count=len(results),
     )
-    grouped_artifacts = _write_grouped_proof_artifacts(repo_root, out_dir, payload)
-    current_alpha_status_rel = _write_current_alpha_status_md(repo_root, out_dir, payload)
-    source_registry_status_md_rel = _write_source_registry_status_md(
-        repo_root,
-        out_dir,
-        payload,
-        source_registry_summary,
-    )
-    proof_policy_rel = _write_proof_policy_md(repo_root, out_dir, payload)
-    repair_report_rel = _write_repair_report_md(
-        repo_root,
-        out_dir,
-        payload,
-        source_registry_summary,
-    )
     payload["logs"]["current_proof"] = current_proof_rel
-    payload["logs"] |= grouped_artifacts
 
     payload["logs"]["current_alpha_status"] = current_alpha_status_rel
     payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
