@@ -14,9 +14,36 @@ from app.models.entities import (
     MemoryClaim,
     CanonicalEntity,
     MemoryContradiction,
+    LegalSource,
 )
 
 logger = logging.getLogger(__name__)
+
+# Source authority hierarchy (higher = more authoritative)
+SOURCE_AUTHORITY_WEIGHTS = {
+    "official_court_record": 1.0,
+    "official_government": 0.8,
+    "press_release": 0.6,
+    "social_media": 0.4,
+    "news_article": 0.5,
+    "blog": 0.3,
+    "other": 0.2,
+}
+
+
+def _get_source_authority_weight(source: Optional[LegalSource]) -> float:
+    """Get authority weight for a source based on its type.
+    
+    Args:
+        source: LegalSource object
+        
+    Returns:
+        Authority weight (0.0-1.0)
+    """
+    if not source or not source.source_type:
+        return 0.2  # Default weight for unknown sources
+    
+    return SOURCE_AUTHORITY_WEIGHTS.get(source.source_type.lower(), 0.2)
 
 
 def detect_contradictions(
@@ -61,7 +88,7 @@ def detect_contradictions(
         # Check for value contradictions
         for i, claim1 in enumerate(predicate_claims):
             for claim2 in predicate_claims[i + 1 :]:
-                contradiction = _check_value_contradiction(claim1, claim2)
+                contradiction = _check_value_contradiction(claim1, claim2, db)
                 if contradiction:
                     contradictions.append(contradiction)
                     if persist:
@@ -70,7 +97,7 @@ def detect_contradictions(
         # Check for temporal contradictions
         for i, claim1 in enumerate(predicate_claims):
             for claim2 in predicate_claims[i + 1 :]:
-                contradiction = _check_temporal_contradiction(claim1, claim2)
+                contradiction = _check_temporal_contradiction(claim1, claim2, db)
                 if contradiction:
                     contradictions.append(contradiction)
                     if persist:
@@ -116,6 +143,22 @@ def _persist_contradiction(
     if existing:
         return existing
 
+    # Calculate source authority weight for the contradiction
+    claim1 = db.query(MemoryClaim).filter(MemoryClaim.id == claim1_id).first()
+    claim2 = db.query(MemoryClaim).filter(MemoryClaim.id == claim2_id).first()
+
+    source1 = None
+    source2 = None
+    if claim1 and claim1.source_id:
+        source1 = db.query(LegalSource).filter(LegalSource.id == claim1.source_id).first()
+    if claim2 and claim2.source_id:
+        source2 = db.query(LegalSource).filter(LegalSource.id == claim2.source_id).first()
+
+    weight1 = _get_source_authority_weight(source1)
+    weight2 = _get_source_authority_weight(source2)
+    # Use the higher authority weight for the contradiction
+    authority_weight = max(weight1, weight2)
+
     # Create new contradiction record
     new_contradiction = MemoryContradiction(
         claim_a_id=claim1_id,
@@ -125,18 +168,12 @@ def _persist_contradiction(
         status="open",
         detected_by="system",
         detected_at=datetime.now(timezone.utc),
+        source_authority_weight=authority_weight,
     )
     db.add(new_contradiction)
 
     try:
         # Increment contradiction counts on both claims
-        claim1 = db.query(MemoryClaim).filter(
-            MemoryClaim.id == claim1_id
-        ).first()
-        claim2 = db.query(MemoryClaim).filter(
-            MemoryClaim.id == claim2_id
-        ).first()
-
         if claim1:
             claim1.contradiction_count += 1
         else:
@@ -154,10 +191,11 @@ def _persist_contradiction(
 
         db.commit()
         logger.info(
-            "Persisted contradiction between claims %d and %d (type: %s)",
+            "Persisted contradiction between claims %d and %d (type: %s, authority_weight: %.2f)",
             claim1_id,
             claim2_id,
             conflict_type,
+            authority_weight,
         )
 
         return new_contradiction
@@ -188,11 +226,93 @@ def _persist_contradiction(
                 conflict_type,
             )
             return existing
+        logger.error(
+            "Failed to find contradiction after IntegrityError rollback for claims %d and %d (type: %s)",
+            claim1_id,
+            claim2_id,
+            conflict_type,
+        )
         return None
 
 
+def _calculate_severity(
+    contradiction_type: str,
+    claim1: MemoryClaim,
+    claim2: MemoryClaim,
+    db: Session,
+) -> str:
+    """Calculate contradiction severity based on multiple factors.
+
+    Severity calculation considers:
+    - Contradiction type (value vs temporal)
+    - Source authority weight (higher authority = higher severity)
+    - Confidence scores (higher confidence = higher severity)
+    - Claim count (contradictions affecting more claims = higher severity)
+
+    Args:
+        contradiction_type: Type of contradiction (value_contradiction, temporal_contradiction)
+        claim1: First claim
+        claim2: Second claim
+        db: Database session
+
+    Returns:
+        Severity level (low, medium, high, critical)
+    """
+    # Get source authority weights
+    source1 = None
+    source2 = None
+    if claim1.source_snapshot_id:
+        from app.models.entities import SourceSnapshot
+        snapshot1 = db.query(SourceSnapshot).filter(
+            SourceSnapshot.id == claim1.source_snapshot_id
+        ).first()
+        if snapshot1:
+            source1 = db.query(LegalSource).filter(
+                LegalSource.id == snapshot1.source_id
+            ).first()
+    if claim2.source_snapshot_id:
+        from app.models.entities import SourceSnapshot
+        snapshot2 = db.query(SourceSnapshot).filter(
+            SourceSnapshot.id == claim2.source_snapshot_id
+        ).first()
+        if snapshot2:
+            source2 = db.query(LegalSource).filter(
+                LegalSource.id == snapshot2.source_id
+            ).first()
+
+    weight1 = _get_source_authority_weight(source1)
+    weight2 = _get_source_authority_weight(source2)
+    max_authority = max(weight1, weight2)
+
+    # Base severity from contradiction type
+    base_severity = {
+        "value_contradiction": 0.5,
+        "temporal_contradiction": 0.3,
+    }.get(contradiction_type, 0.4)
+
+    # Adjust by source authority (higher authority = higher severity)
+    authority_factor = max_authority  # 0.0-1.0
+
+    # Adjust by confidence (higher confidence = higher severity)
+    avg_confidence = (claim1.confidence + claim2.confidence) / 2
+    confidence_factor = avg_confidence  # 0.0-1.0
+
+    # Calculate combined severity score
+    severity_score = base_severity + (authority_factor * 0.3) + (confidence_factor * 0.2)
+
+    # Map to severity levels
+    if severity_score >= 0.9:
+        return "critical"
+    elif severity_score >= 0.7:
+        return "high"
+    elif severity_score >= 0.5:
+        return "medium"
+    else:
+        return "low"
+
+
 def _check_value_contradiction(
-    claim1: MemoryClaim, claim2: MemoryClaim
+    claim1: MemoryClaim, claim2: MemoryClaim, db: Session
 ) -> Optional[Dict[str, any]]:
     """Check if two claims have contradictory values.
 
@@ -216,6 +336,7 @@ def _check_value_contradiction(
         val1 = claim1.normalized_value.lower()
         val2 = claim2.normalized_value.lower()
         if (val1 == "true" and val2 == "false") or (val1 == "false" and val2 == "true"):
+            severity = _calculate_severity("value_contradiction", claim1, claim2, db)
             return {
                 "type": "value_contradiction",
                 "claim1_id": claim1.id,
@@ -223,7 +344,7 @@ def _check_value_contradiction(
                 "predicate": claim1.predicate,
                 "value1": claim1.normalized_value,
                 "value2": claim2.normalized_value,
-                "severity": "high",
+                "severity": severity,
             }
 
     # Check for numeric contradictions (significant difference)
@@ -233,6 +354,7 @@ def _check_value_contradiction(
             num2 = float(claim2.normalized_value)
             # If values differ by more than 10%, consider it a contradiction
             if num1 > 0 and abs(num1 - num2) / num1 > 0.1:
+                severity = _calculate_severity("value_contradiction", claim1, claim2, db)
                 return {
                     "type": "value_contradiction",
                     "claim1_id": claim1.id,
@@ -240,7 +362,7 @@ def _check_value_contradiction(
                     "predicate": claim1.predicate,
                     "value1": claim1.normalized_value,
                     "value2": claim2.normalized_value,
-                    "severity": "medium",
+                    "severity": severity,
                 }
         except (ValueError, TypeError):
             pass
@@ -249,7 +371,7 @@ def _check_value_contradiction(
 
 
 def _check_temporal_contradiction(
-    claim1: MemoryClaim, claim2: MemoryClaim
+    claim1: MemoryClaim, claim2: MemoryClaim, db: Session
 ) -> Optional[Dict[str, any]]:
     """Check if two claims have contradictory temporal validity.
 
@@ -272,6 +394,7 @@ def _check_temporal_contradiction(
     # Check if claims have conflicting validity for the same time period
     if claim1.valid_from == claim2.valid_from:
         if claim1.normalized_value != claim2.normalized_value:
+            severity = _calculate_severity("temporal_contradiction", claim1, claim2, db)
             return {
                 "type": "temporal_contradiction",
                 "claim1_id": claim1.id,
@@ -280,7 +403,7 @@ def _check_temporal_contradiction(
                 "valid_from": str(claim1.valid_from),
                 "value1": claim1.normalized_value,
                 "value2": claim2.normalized_value,
-                "severity": "medium",
+                "severity": severity,
             }
 
     return None
@@ -367,6 +490,107 @@ def resolve_contradiction(
 
     # Update contradiction counts for the entity
     update_contradiction_counts(db)
+
+    return True
+
+
+def auto_supersede_by_authority(contradiction_id: int, db: Session) -> bool:
+    """Automatically supersede lower-authority claim in a contradiction.
+
+    If one claim has significantly higher source authority than the other,
+    automatically supersede the lower-authority claim.
+
+    Args:
+        contradiction_id: ID of the contradiction record
+        db: Database session
+
+    Returns:
+        True if supersession succeeded, False otherwise
+    """
+    contradiction = (
+        db.query(MemoryContradiction)
+        .filter(MemoryContradiction.id == contradiction_id)
+        .first()
+    )
+
+    if not contradiction:
+        logger.warning("Contradiction %d not found for auto-supersession", contradiction_id)
+        return False
+
+    # Get both claims
+    claim_a = db.query(MemoryClaim).filter(
+        MemoryClaim.id == contradiction.claim_a_id
+    ).first()
+    claim_b = db.query(MemoryClaim).filter(
+        MemoryClaim.id == contradiction.claim_b_id
+    ).first()
+
+    if not claim_a or not claim_b:
+        logger.warning("Claims not found for contradiction %d", contradiction_id)
+        return False
+
+    # Get source authority weights
+    source_a = None
+    source_b = None
+    if claim_a.source_snapshot_id:
+        from app.models.entities import SourceSnapshot
+        snapshot_a = db.query(SourceSnapshot).filter(
+            SourceSnapshot.id == claim_a.source_snapshot_id
+        ).first()
+        if snapshot_a:
+            source_a = db.query(LegalSource).filter(
+                LegalSource.id == snapshot_a.source_id
+            ).first()
+    if claim_b.source_snapshot_id:
+        from app.models.entities import SourceSnapshot
+        snapshot_b = db.query(SourceSnapshot).filter(
+            SourceSnapshot.id == claim_b.source_snapshot_id
+        ).first()
+        if snapshot_b:
+            source_b = db.query(LegalSource).filter(
+                LegalSource.id == snapshot_b.source_id
+            ).first()
+
+    weight_a = _get_source_authority_weight(source_a)
+    weight_b = _get_source_authority_weight(source_b)
+
+    # Only auto-supersede if authority difference is significant (>0.3)
+    authority_threshold = 0.3
+    if abs(weight_a - weight_b) < authority_threshold:
+        logger.info(
+            "Authority difference too small for auto-supersesion: %.2f vs %.2f",
+            weight_a, weight_b
+        )
+        return False
+
+    # Determine which claim to supersede (lower authority)
+    if weight_a > weight_b:
+        claim_to_supersede = claim_b
+        retained_claim = claim_a
+    else:
+        claim_to_supersede = claim_a
+        retained_claim = claim_b
+
+    # Supersede the lower-authority claim
+    claim_to_supersede.status = "superseded"
+    claim_to_supersede.is_active = False
+    claim_to_supersede.invalidation_reason = f"Auto-superseded by higher-authority claim {retained_claim.id} (authority: {max(weight_a, weight_b):.2f} vs {min(weight_a, weight_b):.2f})"
+    claim_to_supersede.invalidated_at = datetime.now(timezone.utc)
+    claim_to_supersede.superseded_by_claim_id = retained_claim.id
+
+    # Mark contradiction as resolved
+    contradiction.status = "resolved"
+    contradiction.resolved_at = datetime.now(timezone.utc)
+    contradiction.resolution_note = f"Auto-resolved by authority-based supersession"
+
+    db.commit()
+    logger.info(
+        "Auto-superseded claim %d by claim %d (authority: %.2f vs %.2f)",
+        claim_to_supersede.id,
+        retained_claim.id,
+        weight_a,
+        weight_b,
+    )
 
     return True
 

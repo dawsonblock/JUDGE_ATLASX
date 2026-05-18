@@ -21,12 +21,15 @@ from app.models.entities import (
     MemoryClaim,
     MemoryEvidenceLink,
     CanonicalEntity,
+    MemoryContradiction,
+    EntityGraphEdge,
 )
 from app.ingestion.automation_statuses import JobState
 from app.review.publication_gate import (
     assert_memory_claim_publication_ready,
     PublicationBlockedError,
 )
+from app.memory.contradiction_engine import detect_contradictions
 from app.db.session import SessionLocal
 
 
@@ -244,6 +247,143 @@ class TestEvidencePipelineE2E:
         with pytest.raises(PublicationBlockedError) as exc:
             assert_memory_claim_publication_ready(claim, db_session)
         assert "deprecated" in str(exc.value)
+
+    def test_full_pipeline_with_contradiction_scan_and_graph_edge(
+        self, db_session
+    ):
+        """Test the complete pipeline including contradiction scan and graph edge."""
+        # Step 1: Create legal source with official_court_record type
+        source = LegalSource(
+            source_id="test_e2e_source_full",
+            source_name="E2E Full Pipeline Source",
+            source_type="official_court_record",
+            lifecycle_state="active",
+        )
+        db_session.add(source)
+        db_session.commit()
+
+        # Step 2: Create ingestion run
+        run = IngestionRun(
+            source_id=source.id,
+            status=JobState.COMPLETED.value,
+            started_at=datetime.now(timezone.utc),
+            finished_at=datetime.now(timezone.utc),
+        )
+        db_session.add(run)
+        db_session.commit()
+
+        # Step 3: Create evidence snapshot
+        snapshot = SourceSnapshot(
+            run_id=run.id,
+            snapshot_id="e2e_snapshot_full",
+            source_id=source.id,
+            snapshot_timestamp=datetime.now(timezone.utc),
+            raw_content=b'{"test": "data"}',
+            content_hash="abc123",
+            preserved=True,
+        )
+        db_session.add(snapshot)
+        db_session.commit()
+
+        # Step 4: Create two canonical entities for relationship
+        entity1 = CanonicalEntity(
+            entity_type="person",
+            canonical_name="E2E Test Judge Full",
+        )
+        entity2 = CanonicalEntity(
+            entity_type="court",
+            canonical_name="E2E Test Court Full",
+        )
+        db_session.add(entity1)
+        db_session.add(entity2)
+        db_session.commit()
+
+        # Step 5: Create memory claims for both entities
+        claim1 = MemoryClaim(
+            claim_key="e2e_claim_full_1",
+            claim_type="role",
+            entity_id=entity1.id,
+            source_id=source.id,
+            claim_value="Judge",
+            normalized_value="Judge",
+            object_value_type="text",
+            predicate="role",
+            confidence=0.85,
+            contradiction_count=0,
+            review_status="approved",
+            status="active",
+            is_active=True,
+            extraction_run_id=run.id,
+        )
+        claim2 = MemoryClaim(
+            claim_key="e2e_claim_full_2",
+            claim_type="location",
+            entity_id=entity1.id,
+            source_id=source.id,
+            claim_value="E2E Test Court Full",
+            normalized_value="E2E Test Court Full",
+            object_value_type="text",
+            predicate="location",
+            confidence=0.85,
+            contradiction_count=0,
+            review_status="approved",
+            status="active",
+            is_active=True,
+            extraction_run_id=run.id,
+        )
+        db_session.add(claim1)
+        db_session.add(claim2)
+        db_session.commit()
+
+        # Step 6: Link claims to evidence
+        evidence_link1 = MemoryEvidenceLink(
+            claim_id=claim1.id,
+            snapshot_id=snapshot.id,
+            support_type="supports",
+            confidence=0.85,
+            evidence_checksum="abc123",
+        )
+        evidence_link2 = MemoryEvidenceLink(
+            claim_id=claim2.id,
+            snapshot_id=snapshot.id,
+            support_type="supports",
+            confidence=0.85,
+            evidence_checksum="abc123",
+        )
+        db_session.add(evidence_link1)
+        db_session.add(evidence_link2)
+        db_session.commit()
+
+        # Step 7: Run contradiction scan
+        contradictions = detect_contradictions(entity1.id, db_session, persist=True)
+        # Should have no contradictions since claims are about different predicates
+        assert len(contradictions) == 0
+
+        # Step 8: Verify publication gate passes for both claims
+        assert_memory_claim_publication_ready(claim1, db_session)
+        assert_memory_claim_publication_ready(claim2, db_session)
+
+        # Step 9: Create graph edge between entities
+        graph_edge = EntityGraphEdge(
+            source_entity_id=entity1.id,
+            target_entity_id=entity2.id,
+            edge_type="appointed_at",
+            confidence=0.85,
+            support_claim_id=claim2.id,
+        )
+        db_session.add(graph_edge)
+        db_session.commit()
+
+        # Step 10: Verify the complete chain
+        assert snapshot.source_id == source.id
+        assert snapshot.run_id == run.id
+        assert claim1.source_id == source.id
+        assert claim2.source_id == source.id
+        assert evidence_link1.claim_id == claim1.id
+        assert evidence_link2.claim_id == claim2.id
+        assert graph_edge.source_entity_id == entity1.id
+        assert graph_edge.target_entity_id == entity2.id
+        assert graph_edge.support_claim_id == claim2.id
 
 
 @pytest.fixture

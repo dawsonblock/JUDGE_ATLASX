@@ -11,6 +11,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -641,6 +642,10 @@ class IngestionQueueJob(Base, TimestampMixin):
     """Queue job for ingestion runs (Phase 14)."""
 
     __tablename__ = "ingestion_queue_jobs"
+    __table_args__ = (
+        # Unique constraint on (source_key, idempotency_key) for idempotency
+        Index('ix_ingestion_queue_jobs_source_key_idempotency_key', 'source_key', 'idempotency_key', unique=True),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     job_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
@@ -658,6 +663,28 @@ class IngestionQueueJob(Base, TimestampMixin):
     result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     retry_count: Mapped[int | None] = mapped_column(Integer, nullable=True, default=0)
     retry_after: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Production-grade concurrency fields
+    locked_by: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    dead_lettered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class DeadLetterQueueJob(Base, TimestampMixin):
+    """Dead-letter queue for failed ingestion jobs (Phase 14)."""
+
+    __tablename__ = "dead_letter_queue_jobs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    original_job_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    source_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    job_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    payload_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    final_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0)
+    dead_lettered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class AuditLog(Base):
@@ -1583,6 +1610,18 @@ class MemoryClaim(Base, TimestampMixin):
     # Dense vector embedding for semantic retrieval (stored as JSON float array).
     # Populated by the embeddings service when JTA_EMBEDDINGS_ENABLED=true.
     claim_embedding: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # Claim sensitivity classification for publication policy
+    claim_sensitivity: Mapped[str | None] = mapped_column(
+        String(80),
+        nullable=True,
+        index=True,
+    )  # enum: public_record, legal_proceeding, criminal_allegation_named_person, criminal_allegation_private_person, misconduct_allegation, statistical_aggregate, legislation, court_metadata
+    # Elevated approval fields for sensitive claims
+    elevated_review_status: Mapped[str | None] = mapped_column(
+        String(20), nullable=True, index=True
+    )  # enum: pending_review, approved, rejected
+    elevated_reviewer_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    elevated_reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class MemoryEvidenceLink(Base):
@@ -1702,6 +1741,9 @@ class MemoryContradiction(Base):
     detected_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    source_authority_weight: Mapped[float] = mapped_column(
+        Float, nullable=True
+    )  # Authority weight for resolution (higher = more authoritative source)
     resolved_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

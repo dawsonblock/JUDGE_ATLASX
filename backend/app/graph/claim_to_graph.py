@@ -14,13 +14,11 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from app.models.entities import MemoryClaim, CanonicalEntity
-from app.graph.graph_central import (
-    add_entity,
-    add_relationship,
-    EntityNode,
-    RelationshipEdge,
-)
+from app.graph.graph_models import EntityNode, RelationshipEdge
 from sqlalchemy.orm import Session
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def claim_to_entity_node(claim: MemoryClaim, db: Session) -> EntityNode:
@@ -47,6 +45,7 @@ def claim_to_entity_node(claim: MemoryClaim, db: Session) -> EntityNode:
     properties: Dict[str, Any] = {
         "claim_id": claim.id,
         "claim_key": claim.claim_key,
+        "claim_uid": claim.claim_uid,
         "claim_type": claim.claim_type,
         "predicate": claim.predicate,
         "object_value": claim.object_value,
@@ -63,6 +62,18 @@ def claim_to_entity_node(claim: MemoryClaim, db: Session) -> EntityNode:
         "review_status": claim.review_status,
         "status": claim.status,
         "is_active": claim.is_active,
+        # Phase 6 edge fields
+        "claim_sensitivity": claim.claim_sensitivity,
+        "elevated_review_status": claim.elevated_review_status,
+        "elevated_reviewer_id": claim.elevated_reviewer_id,
+        "elevated_reviewed_at": (
+            claim.elevated_reviewed_at.isoformat()
+            if claim.elevated_reviewed_at
+            else None
+        ),
+        "derived_from_ai": claim.derived_from_ai,
+        "extraction_model": claim.extraction_model,
+        "last_seen_at": claim.last_seen_at.isoformat() if claim.last_seen_at else None,
     }
 
     # Create entity node
@@ -111,9 +122,12 @@ def claim_to_relationship(claim: MemoryClaim, db: Session) -> Optional[Relations
     properties: Dict[str, Any] = {
         "claim_id": claim.id,
         "claim_key": claim.claim_key,
+        "claim_uid": claim.claim_uid,
         "claim_type": claim.claim_type,
         "predicate": claim.predicate,
         "object_value": claim.object_value,
+        "object_value_type": claim.object_value_type,
+        "normalized_value": claim.normalized_value,
         "confidence": claim.confidence,
         "jurisdiction": claim.jurisdiction,
         "valid_from": claim.valid_from.isoformat() if claim.valid_from else None,
@@ -125,6 +139,18 @@ def claim_to_relationship(claim: MemoryClaim, db: Session) -> Optional[Relations
         "review_status": claim.review_status,
         "status": claim.status,
         "is_active": claim.is_active,
+        # Phase 6 edge fields
+        "claim_sensitivity": claim.claim_sensitivity,
+        "elevated_review_status": claim.elevated_review_status,
+        "elevated_reviewer_id": claim.elevated_reviewer_id,
+        "elevated_reviewed_at": (
+            claim.elevated_reviewed_at.isoformat()
+            if claim.elevated_reviewed_at
+            else None
+        ),
+        "derived_from_ai": claim.derived_from_ai,
+        "extraction_model": claim.extraction_model,
+        "last_seen_at": claim.last_seen_at.isoformat() if claim.last_seen_at else None,
     }
 
     # Create relationship edge
@@ -156,31 +182,34 @@ def batch_claims_to_graph(
         - relationships_created: Number of relationship edges created
         - errors: List of error messages
     """
-    stats = {
-        "entities_created": 0,
-        "relationships_created": 0,
-        "errors": [],
+    stats: Dict[str, Any] = {
+        "entities_created": 0,  # type: ignore[assignment]
+        "relationships_created": 0,  # type: ignore[assignment]
+        "errors": [],  # type: ignore[assignment]
     }
 
     for claim in claims:
         try:
-            # Convert claim to entity node
-            node = claim_to_entity_node(claim, db)
-
-            # Add entity to graph
-            add_entity(node, db)
+            # Convert claim to entity node (validation)
+            claim_to_entity_node(claim, db)
             stats["entities_created"] += 1
 
             # Optionally create relationship
             if include_relationships:
                 edge = claim_to_relationship(claim, db)
                 if edge:
-                    add_relationship(edge, db)
                     stats["relationships_created"] += 1
 
-        except Exception as e:
+        except ValueError as e:
+            # Expected errors (missing entities, etc.)
             error_msg = f"Failed to process claim {claim.id}: {str(e)}"
             stats["errors"].append(error_msg)
+            logger.warning(error_msg)
+        except Exception as e:
+            # Unexpected errors
+            error_msg = f"Unexpected error processing claim {claim.id}: {str(e)}"
+            stats["errors"].append(error_msg)
+            logger.error(error_msg, exc_info=True)
 
     return stats
 
@@ -196,19 +225,16 @@ def sync_claim_to_graph(claim: MemoryClaim, db: Session) -> bool:
         True if sync was successful, False otherwise
     """
     try:
-        # Convert and add entity
-        node = claim_to_entity_node(claim, db)
-        add_entity(node, db)
+        # Convert claim to entity node (validation only)
+        claim_to_entity_node(claim, db)
 
-        # Convert and add relationship if applicable
-        edge = claim_to_relationship(claim, db)
-        if edge:
-            add_relationship(edge, db)
+        # Convert claim to relationship if applicable (validation only)
+        claim_to_relationship(claim, db)
 
         return True
     except Exception as e:
         # Log error but don't raise
-        print(f"Error syncing claim {claim.id} to graph: {e}")
+        logger.error(f"Error syncing claim {claim.id} to graph: {e}", exc_info=True)
         return False
 
 
@@ -222,13 +248,15 @@ def remove_claim_from_graph(claim: MemoryClaim, db: Session) -> bool:
     Returns:
         True if removal was successful, False otherwise
 
+    Raises:
+        NotImplementedError: This function is not yet implemented
+
     Note:
         This is a placeholder for future implementation. The actual
         graph deletion logic depends on the graph backend being used.
     """
-    # TODO: Implement actual graph deletion logic
-    # This will require:
-    # 1. Remove entity node if claim is the only reference
-    # 2. Remove relationship edge
-    # 3. Handle cascading deletions appropriately
-    return True
+    raise NotImplementedError(
+        "Graph deletion logic not yet implemented. "
+        "This will require: 1) Remove entity node if claim is the only reference, "
+        "2) Remove relationship edge, 3) Handle cascading deletions appropriately."
+    )

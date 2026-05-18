@@ -1,5 +1,9 @@
 # Architecture
 
+## Truth Statement
+
+JUDGE_ATLASX is an evidence-governed Canadian legal intelligence alpha. Evidence is authoritative. AI and memory outputs are derivative only. All public-facing data requires human review approval and must be linked to an evidence snapshot. This is an alpha release, not a production legal authority.
+
 JUDGE_ATLASX alpha is an evidence-governed legal intelligence runtime with strict review and audit boundaries.
 
 ## Runtime Components

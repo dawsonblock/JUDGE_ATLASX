@@ -92,6 +92,8 @@ docker-smoke:
 	docker compose down -v
 
 proof:
+	@echo "=== Running authoritative proof bundle generation ==="
+	@mkdir -p proof/latest
 	@python3 scripts/validate_runtime_boundaries.py
 	@python3 scripts/verify_source_registry.py
 	@cd backend && python -m pytest -q \
@@ -103,10 +105,18 @@ proof:
 		app/tests/test_mutation_rbac_matrix.py \
 		app/tests/test_review_gates.py \
 		app/tests/test_evidence_required_for_publish.py \
-		app/tests/test_ai_review_requires_reviewer_or_source_admin.py
+		app/tests/test_ai_review_requires_reviewer_or_source_admin.py \
+		app/tests/test_contradiction_intelligence.py \
+		app/tests/test_claim_to_graph.py \
+		app/tests/test_e2e_source_to_public_api.py \
+		app/tests/test_public_api_safety.py
 	@python3 scripts/release_gate.py || true
 	@python3 scripts/generate_alpha_proof_artifacts.py
-	@echo "Proof complete: artifacts/current/PROOF_REPORT.md and artifacts/current/PROOF_MANIFEST.json"
+	@cp artifacts/current/PROOF_REPORT.md proof/latest/
+	@cp artifacts/current/PROOF_MANIFEST.json proof/latest/
+	@cp artifacts/current/RELEASE_MANIFEST.json proof/latest/
+	@echo "=== Proof complete: proof/latest/ ==="
+	@echo "Files: PROOF_REPORT.md, PROOF_MANIFEST.json, RELEASE_MANIFEST.json"
 
 build-clean-release:
 	@python3 scripts/build_clean_release.py

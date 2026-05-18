@@ -177,3 +177,33 @@ class TestCanLIISKCLI:
         result = adapter.run()
         assert len(result.errors) > 0
         assert any("CANLII_API_KEY" in e or "api_key" in e.lower() or "canlii" in e.lower() for e in result.errors)
+
+    def test_sk_courts_qb_decisions_limited_ingestion(self, db_session):
+        """Test limited ingestion of sk_courts_qb_decisions with --limit 5."""
+        _fake_result = MagicMock()
+        _fake_result.records_fetched = 5
+        _fake_result.review_items = [MagicMock(id=i) for i in range(5)]
+        _fake_result.errors = []
+        _fake_result.raw_snapshot_bytes = b'{"cases": [{"caseId": 1}, {"caseId": 2}]}'
+
+        with patch("app.cli.commands.ingest.get_settings") as mock_settings, \
+             patch("app.ingestion.source_adapters.canlii_api.CanLIIApiAdapter") as MockAdapter:
+            s = MagicMock()
+            s.canlii_api_key = "fake-api-key"
+            mock_settings.return_value = s
+
+            adapter_instance = MagicMock()
+            adapter_instance.run.return_value = _fake_result
+            MockAdapter.return_value = adapter_instance
+
+            result = self.runner.invoke(
+                main, ["--json", "ingest", "canlii-sk",
+                       "--source-key", "sk_courts_qb_decisions",
+                       "--limit", "5", "--dry-run"]
+            )
+
+        assert result.exit_code == 0
+        # Verify the adapter was called with correct source_key
+        MockAdapter.assert_called_once()
+        call_kwargs = MockAdapter.call_args[1]
+        assert call_kwargs["source_key"] == "sk_courts_qb_decisions"

@@ -1,5 +1,9 @@
 # SOURCE_REGISTRY_STATUS
 
+## Truth Statement
+
+JUDGE_ATLASX is an evidence-governed Canadian legal intelligence alpha. Evidence is authoritative. AI and memory outputs are derivative only. All public-facing data requires human review approval and must be linked to an evidence snapshot. This is an alpha release, not a production legal authority.
+
 - generated_at_utc: 2026-05-18T01:32:39.475872+00:00
 - commit_hash: 287a0964215f7bd8d27d23a4a6d09c96580ef546
 - total_sources: 26
@@ -29,7 +33,7 @@
 | scc_decisions | Supreme Court of Canada – Decisions | Canada | machine_ingest/court_record | runnable_disabled | machine_ready_disabled | found | scc_lexum_api | yes | no | yes | lifecycle_state=runnable_disabled, automation_status=machine_ready_disabled | yes | limited-alpha-source |
 | scc_judgments | Supreme Court of Canada – Judgments | Canada | machine_ingest/court_record | deprecated | deprecated | found | scc_lexum_api | yes | no | no | lifecycle_state=deprecated, automation_status=deprecated, deprecated_source_noncanonical | yes | limited-alpha-source |
 | sk_courts_ca_decisions | Saskatchewan Court of Appeal – Decisions | Saskatchewan, Canada | machine_ingest/court_record | runnable_disabled | machine_ready_disabled | found | canlii_api | yes | no | yes | lifecycle_state=runnable_disabled, automation_status=machine_ready_disabled | yes | limited-alpha-source |
-| sk_courts_qb_decisions | Saskatchewan Court of King's Bench – Decisions | Saskatchewan, Canada | machine_ingest/court_record | runnable_disabled | machine_ready_disabled | found | canlii_api | yes | no | yes | lifecycle_state=runnable_disabled, automation_status=machine_ready_disabled | yes | limited-alpha-source |
+| sk_courts_qb_decisions | Saskatchewan Court of King's Bench – Decisions | Saskatchewan, Canada | machine_ingest/court_record | active | machine_ready | found | canlii_api | yes | no | yes | lifecycle_state=active, automation_status=machine_ready | yes | limited-alpha-source |
 | sk_justice_ministry | Saskatchewan Ministry of Justice – News Releases | Saskatchewan, Canada | disabled_stub/news_monitor | disabled_stub | adapter_missing | found | crawlee_gov_news | yes | no | no | non_machine_ingest_source, lifecycle_state=disabled_stub, automation_status=adapter_missing | yes | limited-alpha-source |
 | sk_legislature_hansard | Saskatchewan Legislative Assembly – Hansard | Saskatchewan, Canada | machine_ingest/aggregate_stats | runnable_disabled | machine_ready_disabled | found | sk_legislature_html | yes | no | yes | lifecycle_state=runnable_disabled, automation_status=machine_ready_disabled | yes | limited-alpha-source |
 | statscan_ccjs_crime_sk | Statistics Canada – Canadian Centre for Justice Statistics (SK) | Saskatchewan, Canada | portal_reference/aggregate_stats | portal_reference | adapter_missing | found | statscan_table | yes | no | no | non_machine_ingest_source, lifecycle_state=portal_reference, automation_status=adapter_missing | yes | limited-alpha-source |

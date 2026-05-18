@@ -130,22 +130,29 @@ def assert_memory_claim_publication_ready(claim: MemoryClaim, db: Session) -> No
             f"MemoryClaim {claim.id} has {len(high_critical_contradictions)} open high/critical contradictions"
         )
 
-    # Check private-person allegations have review
-    if claim.claim_type == "criminal_allegation":
-        # Check if the claim involves a named private person
-        if claim.object_entity_id:
-            from app.models.entities import CanonicalEntity
+    # Check named-person criminal allegations have elevated approval
+    if claim.claim_sensitivity == "criminal_allegation_named_person":
+        # Require elevated review approval for named-person criminal allegations
+        if claim.elevated_review_status != "approved":
+            raise PublicationBlockedError(
+                f"MemoryClaim {claim.id} requires elevated approval for named-person criminal allegation"
+            )
 
-            entity = db.query(CanonicalEntity).filter(
-                CanonicalEntity.id == claim.object_entity_id
+        # Require evidence source is official/public record
+        if claim.source_snapshot_id:
+            from app.models.entities import SourceSnapshot, LegalSource
+
+            snapshot = db.query(SourceSnapshot).filter(
+                SourceSnapshot.id == claim.source_snapshot_id
             ).first()
-            if entity and entity.entity_type == "person":
-                # Private person allegation requires explicit review approval
-                # Note: review_status is already checked at line 86, so this block
-                # only executes if review_status == "approved" from the outer check
-                raise PublicationBlockedError(
-                    f"MemoryClaim {claim.id} is a criminal allegation involving a named person - requires manual review approval"
-                )
+            if snapshot:
+                source = db.query(LegalSource).filter(
+                    LegalSource.id == snapshot.source_id
+                ).first()
+                if source and source.lifecycle_state not in ["active", "official"]:
+                    raise PublicationBlockedError(
+                        f"MemoryClaim {claim.id} evidence source '{source.source_id}' is not official/public record — requires elevated approval source"
+                    )
 
     # Check source status if available
     if claim.extraction_run_id:

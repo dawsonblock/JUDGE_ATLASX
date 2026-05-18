@@ -488,22 +488,22 @@ sources:
     parser: canlii_api
     creates:
       - ReviewItem
-    enabled_default: false
+    enabled_default: true
     auto_publish_enabled: false
     requires_manual_review: true
     public_publish_default: false
     precision_level: city_centroid
     priority: 2
     source_class: machine_ingest
-    automation_status: machine_ready_disabled
+    automation_status: machine_ready
     parser_version: "1.0"
     config_json: '{"databases": ["skkb"]}'
     admin_notes:
       "Validated 2026-05-06: Uses CanLII API (api.canlii.org/v1). Requires CANLII_API_KEY env
       var. Database: skkb (Saskatchewan Court of King's Bench). Register at https://www.canlii.org/en/info/api.html"
-    lifecycle_state: runnable_disabled
-    status_reason: Saskatchewan Court of King's Bench decisions adapter is ready; source not yet enabled.
-    operator_next_step: Confirm terms of use, then /enable via admin panel.
+    lifecycle_state: active
+    status_reason: Saskatchewan Court of King's Bench decisions adapter is ready; source enabled for limited ingestion.
+    operator_next_step: Monitor limited ingestion results; expand to full ingestion if successful.
     confidence_class: primary_official
     retention_policy: indefinite
     canonical_url: https://api.canlii.org/v1

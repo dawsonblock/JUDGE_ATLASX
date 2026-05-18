@@ -1,5 +1,6 @@
 AUDIT CHAIN VERIFICATION
-entries_checked=3
-chain_head=03488f46c67cca40fb22c0e9dd3467056d59439c998afd627954fa96e216665f
-violations=0
-RESULT: PASS
+entries_checked=0
+chain_head=EMPTY
+violations=1
+- empty_audit_log
+RESULT: FAIL audit_chain_violation
