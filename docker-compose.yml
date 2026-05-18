@@ -20,6 +20,18 @@ services:
     ports:
       - "6379:6379"
 
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
   backend:
     build:
       context: ./backend
@@ -40,12 +52,20 @@ services:
         must be set in .env}"
       JTA_RATE_LIMIT_BACKEND: redis
       JTA_REDIS_URL: redis://redis:6379/0
+      JTA_STORAGE_BACKEND: minio
+      JTA_STORAGE_MINIO_ENDPOINT: minio:9000
+      JTA_STORAGE_MINIO_ACCESS_KEY: minioadmin
+      JTA_STORAGE_MINIO_SECRET_KEY: minioadmin
+      JTA_STORAGE_MINIO_BUCKET: judge-atlasx
+      JTA_STORAGE_MINIO_SECURE: "false"
     ports:
       - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
       redis:
+        condition: service_started
+      minio:
         condition: service_started
 
   frontend:
@@ -62,3 +82,4 @@ services:
 
 volumes:
   postgres-data:
+  minio-data:

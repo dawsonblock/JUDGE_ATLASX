@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     courtlistener_bulk_data_dir: str = "data/courtlistener-bulk"
     courtlistener_bulk_snapshot_date: str | None = None
     courtlistener_bulk_enabled_files: str = (
-        "courts,people-db-people,people-db-positions," "dockets,opinion-clusters"
+        "courts,people-db-people,people-db-positions,dockets,opinion-clusters"
     )
     courtlistener_bulk_import_batch_size: int = 500
     courtlistener_bulk_normalize_batch_size: int = 200
@@ -55,15 +55,20 @@ class Settings(BaseSettings):
     rate_limit_map: int = 60  # Map endpoints
     rate_limit_ingestion: int = 10  # Ingestion endpoints
     rate_limit_enabled: bool = True
-    rate_limit_backend: str = "memory"  # "memory" or "redis"
+    # "memory" or "redis" - default to redis for production
+    rate_limit_backend: str = "redis"
     redis_url: str | None = None
-    # Comma-separated list of trusted proxy IPs whose X-Forwarded-For is trusted
+    # Comma-separated list of trusted proxy IPs
     trusted_proxy_ips: str = ""
 
     # Evidence store configuration
     evidence_store_root: str | None = None
     evidence_store_required: bool = False
     evidence_store_probe_write: bool = True
+
+    # Object storage configuration
+    storage_backend: str = "local"  # "local", "minio", "azure_blob"
+    storage_local_path: str = "./storage"  # For local backend
 
     # Request size limits (bytes)
     max_request_size: int = 10 * 1024 * 1024  # 10MB for regular API
@@ -76,25 +81,31 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 30
     jwt_refresh_token_expire_days: int = 7
-    # Set to True once at least one admin user has been created via POST /api/auth/register
+    # Set to True once at least one admin user has been created
+    # via POST /api/auth/register
     jwt_auth_enabled: bool = False
     # Secret required for first-admin bootstrap in non-development environments
     first_admin_secret: str | None = None  # JTA_FIRST_ADMIN_SECRET
 
     # Legacy shared-token admin compatibility.
-    # DEPRECATED — disabled by default.  Set to True only for local development.
-    # Never enable in production.  Startup emits a warning when True.
+    # DEPRECATED — disabled by default.
+    # Set to True only for local development.
+    # Never enable in production. Startup emits a warning when True.
     enable_legacy_admin_token: bool = False
 
-    # Legacy U.S. ingestion routes (GDELT, Chicago, LA, FBI, CourtListener bulk,
-    # Toronto, StatsCan). Disabled by default as part of Canada-first strategy.
-    # Set JTA_ENABLE_LEGACY_US_INGEST_ROUTES=true to mount admin_legacy_ingest router.
+    # Legacy U.S. ingestion routes (GDELT, Chicago, LA, FBI,
+    # CourtListener bulk, Toronto, StatsCan).
+    # Disabled by default as part of Canada-first strategy.
+    # Set JTA_ENABLE_LEGACY_US_INGEST_ROUTES=true
+    # to mount admin_legacy_ingest router.
     enable_legacy_us_ingest_routes: bool = False
 
-    # Enforce JWT-only authority for mutation routes (review decisions, source
-    # configuration updates, enable/disable, and manual source runs).
+    # Enforce JWT-only authority for mutation routes
+    # (review decisions, source configuration updates,
+    # enable/disable, and manual source runs).
     # When True, shared-token actors are rejected for mutation operations.
-    # Default: True (JWT-only by default; set False only for legacy compatibility)
+    # Default: True (JWT-only by default;
+    # set False only for legacy compatibility)
     enforce_jwt_mutations: bool = True
 
     # Background scheduler (APScheduler); disabled by default for safe deploys
@@ -106,8 +117,9 @@ class Settings(BaseSettings):
     ingestion_queue_backend: Literal["inprocess", "postgres"] = "inprocess"
 
     # Relationship arc publication policy
-    # Disabled by default — arcs require manual review and policy sign-off
-    # before being published.  See backend/app/policies/relationship_arc_policy.py.
+    # Disabled by default — arcs require manual review
+    # and policy sign-off before being published.
+    # See backend/app/policies/relationship_arc_policy.py.
     enable_public_relationship_arcs: bool = False
     # Minimum number of evidence references an edge must carry to be published.
     public_relationship_arc_min_evidence: int = 2
