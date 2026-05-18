@@ -43,6 +43,7 @@ class Location(Base, TimestampMixin):
     region: Mapped[str | None] = mapped_column(String(80))
     latitude: Mapped[float] = mapped_column(Float, nullable=False)
     longitude: Mapped[float] = mapped_column(Float, nullable=False)
+    geocode_cache_id: Mapped[int | None] = mapped_column(ForeignKey("geocode_cache.id"), nullable=True)
     # NOTE: geom column exists only on PostgreSQL (PostGIS), managed by Alembic.
     # The ORM does not map it because bbox filtering uses lat/lon only.
     # Future: Add geom mapping when triggers/generated columns maintain it.

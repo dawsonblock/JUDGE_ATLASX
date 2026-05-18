@@ -1,8 +1,24 @@
-"""Gate that must pass before any record can be set is_public=True."""
+"""Gate that must pass before any record can be set is_public=True.
 
+Public map publishing requires:
+- valid evidence source
+- source not blocked
+- confidence above threshold
+- location not ambiguous
+- privacy/redaction pass complete
+- review_status approved
+- no unresolved high-risk contradiction
+
+Default policy:
+- official structured sources may auto-publish low-risk metadata
+- news/police narrative sources require review
+- person-specific accusations require strict review or block
+- ambiguous locations stay admin-only
+"""
 from __future__ import annotations
 
-from app.models.entities import CrimeIncident, LegalInstrument, ReviewItem, MemoryClaim
+from app.models.entities import CrimeIncident, LegalInstrument, Location, ReviewItem, MemoryClaim
+from app.models.geocode_cache import GeocodeCache
 from app.policies.publication_policy import can_publish_entity, entity_public_visibility
 from app.policies.state_model import (
     ReviewQueueDecision,
@@ -20,12 +36,30 @@ def assert_publication_ready(incident: CrimeIncident, db: Session) -> None:
 
     Domain entity publication means review_status + public visibility +
     evidence gate.  ReviewItem ``approved`` is not accepted here.
+    
+    Also checks that geocoding result is not ambiguous for map publishing.
     """
     decision = can_publish_entity(db, "crime_incident", incident)
     if not decision.allowed:
         raise PublicationBlockedError(
             f"Incident {incident.id} blocked: {'; '.join(decision.reasons)}"
         )
+    
+    # Check geocoding status if location is set
+    if incident.primary_location_id:
+        location = db.query(Location).filter(
+            Location.id == incident.primary_location_id
+        ).first()
+        if location and location.geocode_cache_id:
+            geocode = db.query(GeocodeCache).filter(
+                GeocodeCache.id == location.geocode_cache_id
+            ).first()
+            if geocode and geocode.status not in ("exact", "approximate"):
+                raise PublicationBlockedError(
+                    f"Incident {incident.id} has ambiguous or failed "
+                    f"geocoding status '{geocode.status}' — "
+                    f"cannot publish to public map"
+                )
 
 
 def assert_review_item_publication_ready(item: ReviewItem) -> None:
