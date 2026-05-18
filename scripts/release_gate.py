@@ -1892,15 +1892,21 @@ def main() -> int:
         else []
     )
 
-    # Phase 3: write CURRENT_PROOF.md before archive validation (with expected check_count)
-    # Archive validation requires CURRENT_PROOF.md to exist in the archive
+    # Phase 3: write release_gate.json and CURRENT_PROOF.md before archive validation
+    # Archive validation requires these files to exist in the archive with correct check_count
     with gate_log_path.open("a", encoding="utf-8") as gate_log:
         gate_log.write(
             f"{pf_step.name}: {pf_step.status} rc={pf_step.exit_code} "
             f"dur={pf_step.duration_seconds}s log={pf_step.log_path}\n"
         )
 
-    # Write CURRENT_PROOF.md with check_count that will include archive step (current count + 1)
+    # Set check_count to include the upcoming archive step
+    payload["check_count"] = len(results) + 1
+
+    # Write release_gate.json with check_count that includes archive step
+    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    # Write CURRENT_PROOF.md with same check_count
     current_proof_rel = _write_current_proof_md(
         repo_root,
         out_dir,
@@ -1937,33 +1943,20 @@ def main() -> int:
     )
     results.append(archive_step)
 
-    # Update payload with archive validation result and final check_count
+    # Update payload with archive validation result
     payload["archive_validation_result"] = (
         "PASS" if archive_step.exit_code == 0 else "FAIL"
     )
     payload["logs"]["archive_validation"] = archive_step.log_path
 
-    # Recalculate ok and check_count after archive validation
+    # Recalculate ok after archive validation (check_count stays the same)
     ok = all(r.exit_code == 0 for r in results) and not _missing_logs(repo_root, results)
     payload["alpha_gate_passed"] = ok
-    payload["check_count"] = len(results)
-
-    # Rewrite CURRENT_PROOF.md with final check_count after archive validation
-    current_proof_rel = _write_current_proof_md(
-        repo_root,
-        out_dir,
-        payload,
-        check_count=len(results),
-    )
-    payload["logs"]["current_proof"] = current_proof_rel
 
     payload["logs"]["current_alpha_status"] = current_alpha_status_rel
     payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
     payload["logs"]["proof_policy"] = proof_policy_rel
     payload["logs"]["repair_report"] = repair_report_rel
-
-    # Write final release_gate.json with complete results including archive validation
-    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
     # Verify all required proof files exist in current directory
     required_files = [
