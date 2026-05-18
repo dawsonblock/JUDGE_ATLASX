@@ -1,25 +1,33 @@
 """Contradiction engine for detecting conflicting claims.
 
 Implements logic to detect contradictions between claims about the same entity.
+Persist contradictions to database for durable tracking and review.
 """
 
 import logging
 from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from datetime import datetime, timezone
 
-from app.models.entities import MemoryClaim, CanonicalEntity
+from app.models.entities import (
+    MemoryClaim,
+    CanonicalEntity,
+    MemoryContradiction,
+)
 
 logger = logging.getLogger(__name__)
 
 
 def detect_contradictions(
-    entity_id: int, db: Session
+    entity_id: int, db: Session, persist: bool = True
 ) -> List[Dict[str, any]]:
     """Detect contradictions between claims for a given entity.
 
     Args:
         entity_id: ID of the entity to check
         db: Database session
+        persist: Whether to persist contradictions to database
 
     Returns:
         List of contradiction dictionaries with details
@@ -56,6 +64,8 @@ def detect_contradictions(
                 contradiction = _check_value_contradiction(claim1, claim2)
                 if contradiction:
                     contradictions.append(contradiction)
+                    if persist:
+                        _persist_contradiction(contradiction, db)
 
         # Check for temporal contradictions
         for i, claim1 in enumerate(predicate_claims):
@@ -63,8 +73,122 @@ def detect_contradictions(
                 contradiction = _check_temporal_contradiction(claim1, claim2)
                 if contradiction:
                     contradictions.append(contradiction)
+                    if persist:
+                        _persist_contradiction(contradiction, db)
 
     return contradictions
+
+
+def _persist_contradiction(
+    contradiction: Dict[str, any], db: Session
+) -> Optional[MemoryContradiction]:
+    """Persist a contradiction to the database.
+
+    Args:
+        contradiction: Contradiction dictionary
+        db: Database session
+
+    Returns:
+        Created or existing MemoryContradiction, None if failed
+    """
+    # Check if contradiction already exists (prevent duplicates)
+    # Check both orderings to account for claim_a_id/claim_b_id vs claim_b_id/claim_a_id
+    claim1_id = contradiction["claim1_id"]
+    claim2_id = contradiction["claim2_id"]
+    conflict_type = contradiction["type"]
+
+    existing = (
+        db.query(MemoryContradiction)
+        .filter(
+            (
+                (MemoryContradiction.claim_a_id == claim1_id)
+                & (MemoryContradiction.claim_b_id == claim2_id)
+            )
+            | (
+                (MemoryContradiction.claim_a_id == claim2_id)
+                & (MemoryContradiction.claim_b_id == claim1_id)
+            ),
+            MemoryContradiction.conflict_type == conflict_type,
+        )
+        .first()
+    )
+
+    if existing:
+        return existing
+
+    # Create new contradiction record
+    new_contradiction = MemoryContradiction(
+        claim_a_id=claim1_id,
+        claim_b_id=claim2_id,
+        conflict_type=conflict_type,
+        severity=contradiction.get("severity", "medium"),
+        status="open",
+        detected_by="system",
+        detected_at=datetime.now(timezone.utc),
+    )
+    db.add(new_contradiction)
+
+    try:
+        # Increment contradiction counts on both claims
+        claim1 = db.query(MemoryClaim).filter(
+            MemoryClaim.id == claim1_id
+        ).first()
+        claim2 = db.query(MemoryClaim).filter(
+            MemoryClaim.id == claim2_id
+        ).first()
+
+        if claim1:
+            claim1.contradiction_count += 1
+        else:
+            logger.warning(
+                "Claim %d not found when persisting contradiction",
+                claim1_id
+            )
+        if claim2:
+            claim2.contradiction_count += 1
+        else:
+            logger.warning(
+                "Claim %d not found when persisting contradiction",
+                claim2_id
+            )
+
+        db.commit()
+        logger.info(
+            "Persisted contradiction between claims %d and %d (type: %s)",
+            claim1_id,
+            claim2_id,
+            conflict_type,
+        )
+
+        return new_contradiction
+    except IntegrityError:
+        # Handle race condition where another process inserted the same contradiction
+        db.rollback()
+        # Query again to get the existing record
+        existing = (
+            db.query(MemoryContradiction)
+            .filter(
+                (
+                    (MemoryContradiction.claim_a_id == claim1_id)
+                    & (MemoryContradiction.claim_b_id == claim2_id)
+                )
+                | (
+                    (MemoryContradiction.claim_a_id == claim2_id)
+                    & (MemoryContradiction.claim_b_id == claim1_id)
+                ),
+                MemoryContradiction.conflict_type == conflict_type,
+            )
+            .first()
+        )
+        if existing:
+            logger.info(
+                "Contradiction already exists between claims %d and %d (type: %s)",
+                claim1_id,
+                claim2_id,
+                conflict_type,
+            )
+            return existing
+        return None
 
 
 def _check_value_contradiction(
@@ -243,5 +367,126 @@ def resolve_contradiction(
 
     # Update contradiction counts for the entity
     update_contradiction_counts(db)
+
+    return True
+
+
+def get_open_contradictions_by_claim(
+    claim_id: int, db: Session
+) -> List[MemoryContradiction]:
+    """Get open contradictions for a specific claim.
+
+    Args:
+        claim_id: ID of the claim
+        db: Database session
+
+    Returns:
+        List of open MemoryContradiction records
+    """
+    contradictions = (
+        db.query(MemoryContradiction)
+        .filter(
+            (MemoryContradiction.claim_a_id == claim_id)
+            | (MemoryContradiction.claim_b_id == claim_id),
+            MemoryContradiction.status == "open",
+        )
+        .all()
+    )
+    return contradictions
+
+
+def get_open_contradictions_by_entity(
+    entity_id: int, db: Session
+) -> List[MemoryContradiction]:
+    """Get open contradictions for all claims on an entity.
+
+    Args:
+        entity_id: ID of the entity
+        db: Database session
+
+    Returns:
+        List of open MemoryContradiction records
+    """
+    # Get all claims for the entity
+    claim_ids = (
+        db.query(MemoryClaim.id)
+        .filter(MemoryClaim.entity_id == entity_id)
+        .all()
+    )
+    claim_ids = [c[0] for c in claim_ids]
+
+    if not claim_ids:
+        return []
+
+    # Get contradictions involving these claims
+    contradictions = (
+        db.query(MemoryContradiction)
+        .filter(
+            (MemoryContradiction.claim_a_id.in_(claim_ids))
+            | (MemoryContradiction.claim_b_id.in_(claim_ids)),
+            MemoryContradiction.status == "open",
+        )
+        .all()
+    )
+    return contradictions
+
+
+def resolve_contradiction_record(
+    contradiction_id: int,
+    status: str,
+    reviewer_id: int,
+    resolution_note: str,
+    db: Session,
+) -> bool:
+    """Resolve a contradiction record with reviewer action.
+
+    Args:
+        contradiction_id: ID of the contradiction record
+        status: New status (resolved, false_positive, ignored)
+        reviewer_id: ID of the reviewer
+        resolution_note: Optional note about the resolution
+        db: Database session
+
+    Returns:
+        True if resolution succeeded, False otherwise
+    """
+    contradiction = (
+        db.query(MemoryContradiction)
+        .filter(MemoryContradiction.id == contradiction_id)
+        .first()
+    )
+
+    if not contradiction:
+        logger.warning("Contradiction %d not found for resolution", contradiction_id)
+        return False
+
+    contradiction.status = status
+    # Only set resolved_at for actual resolutions, not ignored
+    if status != "ignored":
+        contradiction.resolved_at = datetime.now(timezone.utc)
+    contradiction.reviewer_id = reviewer_id
+    contradiction.resolution_note = resolution_note
+    contradiction.updated_at = datetime.now(timezone.utc)
+
+    # Decrement contradiction counts on both claims
+    claim_a = db.query(MemoryClaim).filter(
+        MemoryClaim.id == contradiction.claim_a_id
+    ).first()
+    claim_b = db.query(MemoryClaim).filter(
+        MemoryClaim.id == contradiction.claim_b_id
+    ).first()
+
+    if claim_a and claim_a.contradiction_count > 0:
+        claim_a.contradiction_count -= 1
+    if claim_b and claim_b.contradiction_count > 0:
+        claim_b.contradiction_count -= 1
+
+    db.commit()
+    logger.info(
+        "Resolved contradiction record %d with status: %s by reviewer %d",
+        contradiction_id,
+        status,
+        reviewer_id,
+    )
 
     return True

@@ -77,12 +77,21 @@ def assert_memory_claim_publication_ready(claim: MemoryClaim, db: Session) -> No
     - review_status = approved
     - At least one supporting evidence link
     - Confidence above threshold (0.7)
-    - No unresolved contradictions
+    - No open high/critical contradictions
+    - Claim status is not disputed/rejected/superseded
+    - Private-person allegations have review
+    - Source is not deprecated/quarantined
     """
     # Check review status
     if claim.review_status != "approved":
         raise PublicationBlockedError(
             f"MemoryClaim {claim.id} review_status='{claim.review_status}' — must be 'approved'"
+        )
+
+    # Check claim status
+    if claim.status in ["disputed", "rejected", "superseded", "invalid"]:
+        raise PublicationBlockedError(
+            f"MemoryClaim {claim.id} status='{claim.status}' — cannot publish disputed/rejected/superseded claims"
         )
 
     # Check evidence
@@ -107,8 +116,49 @@ def assert_memory_claim_publication_ready(claim: MemoryClaim, db: Session) -> No
             f"MemoryClaim {claim.id} confidence={claim.confidence} — must be >= 0.7"
         )
 
-    # Check contradictions
-    if claim.contradiction_count > 0:
+    # Check for open high/critical contradictions using durable system
+    from app.memory.contradiction_engine import get_open_contradictions_by_claim
+
+    open_contradictions = get_open_contradictions_by_claim(claim.id, db)
+    high_critical_contradictions = [
+        c for c in open_contradictions
+        if c.severity in ["high", "critical"]
+    ]
+
+    if high_critical_contradictions:
         raise PublicationBlockedError(
-            f"MemoryClaim {claim.id} has {claim.contradiction_count} unresolved contradictions"
+            f"MemoryClaim {claim.id} has {len(high_critical_contradictions)} open high/critical contradictions"
         )
+
+    # Check private-person allegations have review
+    if claim.claim_type == "criminal_allegation":
+        # Check if the claim involves a named private person
+        if claim.object_entity_id:
+            from app.models.entities import CanonicalEntity
+
+            entity = db.query(CanonicalEntity).filter(
+                CanonicalEntity.id == claim.object_entity_id
+            ).first()
+            if entity and entity.entity_type == "person":
+                # Private person allegation requires explicit review approval
+                # Note: review_status is already checked at line 86, so this block
+                # only executes if review_status == "approved" from the outer check
+                raise PublicationBlockedError(
+                    f"MemoryClaim {claim.id} is a criminal allegation involving a named person - requires manual review approval"
+                )
+
+    # Check source status if available
+    if claim.extraction_run_id:
+        from app.models.entities import IngestionRun, LegalSource
+
+        ingestion_run = db.query(IngestionRun).filter(
+            IngestionRun.id == claim.extraction_run_id
+        ).first()
+        if ingestion_run:
+            source = db.query(LegalSource).filter(
+                LegalSource.id == ingestion_run.source_id
+            ).first()
+            if source and source.lifecycle_state in ["deprecated", "quarantined"]:
+                raise PublicationBlockedError(
+                    f"MemoryClaim {claim.id} source '{source.source_id}' is {source.lifecycle_state} — cannot publish"
+                )

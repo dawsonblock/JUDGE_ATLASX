@@ -14,11 +14,14 @@ from app.core.rate_limit import rate_limit_admin
 from app.db.session import get_db
 from app.security.import_authority import require_admin_actor, require_ai_review_actor
 from app.models.entities import (
+    CanonicalEntity,
     CrimeIncident,
     Event,
     EvidenceReview,
     LegalInstrument,
     LegalSource,
+    MemoryClaim,
+    MemoryContradiction,
     ReviewActionLog,
     ReviewItem,
 )
@@ -421,3 +424,232 @@ def retract_legal_source(
     )
     db.commit()
     return _serialize_review_item(db, "source", source)
+
+
+@router.get(
+    "/api/admin/contradictions",
+    dependencies=[Depends(require_admin_review), Depends(rate_limit_admin)],
+)
+def list_open_contradictions(
+    severity: str | None = Query(None, description="Filter by severity"),
+    conflict_type: str | None = Query(None, description="Filter by conflict type"),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+):
+    """List open contradictions for reviewer dashboard."""
+    stmt = select(MemoryContradiction).where(
+        MemoryContradiction.status == "open"
+    ).order_by(MemoryContradiction.detected_at.desc())
+
+    if severity:
+        stmt = stmt.where(MemoryContradiction.severity == severity)
+    if conflict_type:
+        stmt = stmt.where(MemoryContradiction.conflict_type == conflict_type)
+
+    total_count = (
+        db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    )
+    rows = db.scalars(stmt.offset(offset).limit(limit)).all()
+
+    items = [
+        {
+            "id": row.id,
+            "claim_a_id": row.claim_a_id,
+            "claim_b_id": row.claim_b_id,
+            "conflict_type": row.conflict_type,
+            "severity": row.severity,
+            "status": row.status,
+            "detected_by": row.detected_by,
+            "detected_at": row.detected_at.isoformat() if row.detected_at else None,
+            "reviewer_id": row.reviewer_id,
+            "resolution_note": row.resolution_note,
+            "resolved_at": row.resolved_at.isoformat() if row.resolved_at else None,
+        }
+        for row in rows
+    ]
+    return {"items": items, "total_count": total_count}
+
+
+@router.get(
+    "/api/admin/contradictions/by-claim/{claim_id}",
+    dependencies=[Depends(require_admin_review), Depends(rate_limit_admin)],
+)
+def get_contradictions_by_claim(
+    claim_id: int,
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+):
+    """Get contradictions for a specific claim with pagination."""
+    query = (
+        db.query(MemoryContradiction)
+        .filter(
+            (MemoryContradiction.claim_a_id == claim_id)
+            | (MemoryContradiction.claim_b_id == claim_id)
+        )
+        .order_by(MemoryContradiction.detected_at.desc())
+    )
+
+    total_count = query.count()
+    contradictions = query.offset(offset).limit(limit).all()
+
+    items = [
+        {
+            "id": c.id,
+            "claim_a_id": c.claim_a_id,
+            "claim_b_id": c.claim_b_id,
+            "conflict_type": c.conflict_type,
+            "severity": c.severity,
+            "status": c.status,
+            "detected_by": c.detected_by,
+            "detected_at": c.detected_at.isoformat() if c.detected_at else None,
+            "reviewer_id": c.reviewer_id,
+            "resolution_note": c.resolution_note,
+            "resolved_at": c.resolved_at.isoformat() if c.resolved_at else None,
+        }
+        for c in contradictions
+    ]
+    return {"items": items, "total_count": total_count}
+
+
+@router.get(
+    "/api/admin/contradictions/by-entity/{entity_id}",
+    dependencies=[Depends(require_admin_review), Depends(rate_limit_admin)],
+)
+def get_contradictions_by_entity(
+    entity_id: int,
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+):
+    """Get contradictions for claims related to an entity with pagination."""
+    # Get all claims for the entity
+    claim_ids = (
+        db.query(MemoryClaim.id)
+        .filter(MemoryClaim.entity_id == entity_id)
+        .all()
+    )
+    claim_ids = [c[0] for c in claim_ids]
+
+    if not claim_ids:
+        return {"items": [], "total_count": 0}
+
+    # Get contradictions for those claims
+    query = (
+        db.query(MemoryContradiction)
+        .filter(
+            (MemoryContradiction.claim_a_id.in_(claim_ids))
+            | (MemoryContradiction.claim_b_id.in_(claim_ids))
+        )
+        .order_by(MemoryContradiction.detected_at.desc())
+    )
+
+    total_count = query.count()
+    contradictions = query.offset(offset).limit(limit).all()
+
+    items = [
+        {
+            "id": c.id,
+            "claim_a_id": c.claim_a_id,
+            "claim_b_id": c.claim_b_id,
+            "conflict_type": c.conflict_type,
+            "severity": c.severity,
+            "status": c.status,
+            "detected_by": c.detected_by,
+            "detected_at": c.detected_at.isoformat() if c.detected_at else None,
+            "reviewer_id": c.reviewer_id,
+            "resolution_note": c.resolution_note,
+            "resolved_at": c.resolved_at.isoformat() if c.resolved_at else None,
+        }
+        for c in contradictions
+    ]
+    return {"items": items, "total_count": total_count}
+
+
+@router.post(
+    "/api/admin/contradictions/{contradiction_id}/resolve",
+    dependencies=[Depends(rate_limit_admin)],
+)
+def resolve_contradiction(
+    contradiction_id: int,
+    payload: dict,
+    request: Request,
+    db: Session = Depends(get_db),
+    actor: AdminActor = Depends(require_admin_actor),
+):
+    """Resolve a contradiction with reviewer action."""
+    enforce_jwt_mutation_authority(actor)
+
+    contradiction = db.query(MemoryContradiction).filter(
+        MemoryContradiction.id == contradiction_id
+    ).first()
+
+    if not contradiction:
+        raise HTTPException(
+            status_code=404, detail=f"Contradiction {contradiction_id} not found"
+        )
+
+    new_status = payload.get("status", "resolved")
+    if new_status not in ["resolved", "false_positive", "ignored"]:
+        raise HTTPException(
+            status_code=422, detail="Invalid status. Must be resolved, false_positive, or ignored"
+        )
+
+    previous_status = contradiction.status
+    now = datetime.now(timezone.utc)
+
+    contradiction.status = new_status
+    contradiction.reviewer_id = actor.actor_id
+    contradiction.resolution_note = payload.get("resolution_note")
+    # Only set resolved_at for actual resolutions, not ignored
+    if new_status != "ignored":
+        contradiction.resolved_at = now
+
+    # Decrement contradiction counts on both claims
+    claim_a = db.query(MemoryClaim).filter(
+        MemoryClaim.id == contradiction.claim_a_id
+    ).first()
+    claim_b = db.query(MemoryClaim).filter(
+        MemoryClaim.id == contradiction.claim_b_id
+    ).first()
+
+    if claim_a and claim_a.contradiction_count > 0:
+        claim_a.contradiction_count -= 1
+    if claim_b and claim_b.contradiction_count > 0:
+        claim_b.contradiction_count -= 1
+
+    append_audit_entry(
+        db,
+        action="contradiction.resolution",
+        entity_type="memory_contradiction",
+        entity_id=str(contradiction.id),
+        actor_id=actor.actor_id,
+        actor_type=actor.actor_type,
+        actor_role=actor.role,
+        actor_ip=(request.client.host if request.client else None),
+        user_agent=request.headers.get("user-agent"),
+        request_id=request.headers.get("x-request-id"),
+        payload={
+            "previous_status": previous_status,
+            "new_status": new_status,
+            "resolution_note": payload.get("resolution_note"),
+        },
+    )
+
+    db.commit()
+
+    return {
+        "id": contradiction.id,
+        "claim_a_id": contradiction.claim_a_id,
+        "claim_b_id": contradiction.claim_b_id,
+        "conflict_type": contradiction.conflict_type,
+        "severity": contradiction.severity,
+        "status": contradiction.status,
+        "detected_by": contradiction.detected_by,
+        "detected_at": contradiction.detected_at.isoformat() if contradiction.detected_at else None,
+        "reviewer_id": contradiction.reviewer_id,
+        "resolution_note": contradiction.resolution_note,
+        "resolved_at": contradiction.resolved_at.isoformat() if contradiction.resolved_at else None,
+    }
+

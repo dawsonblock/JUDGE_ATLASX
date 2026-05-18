@@ -12,7 +12,7 @@ from app.models.entities import (
     CanonicalEntity,
     MemoryClaim,
     MemoryEntityState,
-    GraphEdge,
+    EntityGraphEdge,
 )
 from app.memory import hash_utils
 
@@ -30,18 +30,6 @@ def resolve_entity_from_claim(claim: MemoryClaim, db: Session) -> CanonicalEntit
         CanonicalEntity resolved from claim
     """
     # If claim already has entity_id, return that entity
-    if claim.entity_id:
-        entity = (
-            db.query(CanonicalEntity)
-            .filter(CanonicalEntity.id == claim.entity_id)
-            .first()
-        )
-        if entity:
-            return entity
-
-    # Otherwise, resolve entity using graph layer logic
-    # This would use name matching, external IDs, etc.
-    # For now, return the existing entity_id
     if claim.entity_id:
         entity = (
             db.query(CanonicalEntity)
@@ -164,7 +152,7 @@ def _build_state_summary(
     from datetime import datetime, timezone
 
     summary = {
-        "display_name": entity.name,
+        "display_name": entity.canonical_name,
         "aliases": [],
         "roles": [],
         "jurisdictions": [],
@@ -234,15 +222,15 @@ def get_entity_graph(entity_id: int, db: Session) -> Dict[str, any]:
 
     # Get outgoing edges
     outgoing_edges = (
-        db.query(GraphEdge)
-        .filter(GraphEdge.from_entity_id == entity_id)
+        db.query(EntityGraphEdge)
+        .filter(EntityGraphEdge.subject_id == entity_id)
         .all()
     )
 
     # Get incoming edges
     incoming_edges = (
-        db.query(GraphEdge)
-        .filter(GraphEdge.to_entity_id == entity_id)
+        db.query(EntityGraphEdge)
+        .filter(EntityGraphEdge.object_id == entity_id)
         .all()
     )
 
@@ -250,25 +238,28 @@ def get_entity_graph(entity_id: int, db: Session) -> Dict[str, any]:
     graph = {
         "entity": {
             "id": entity.id,
-            "name": entity.name,
+            "canonical_name": entity.canonical_name,
             "entity_type": entity.entity_type,
-            "jurisdiction": entity.jurisdiction,
         },
         "outgoing_edges": [
             {
                 "id": edge.id,
-                "edge_type": edge.edge_type,
-                "to_entity_id": edge.to_entity_id,
-                "confidence": edge.confidence,
+                "predicate": edge.predicate,
+                "object_type": edge.object_type,
+                "object_id": edge.object_id,
+                "evidence_refs": edge.evidence_refs,
+                "valid_from": edge.valid_from,
             }
             for edge in outgoing_edges
         ],
         "incoming_edges": [
             {
                 "id": edge.id,
-                "edge_type": edge.edge_type,
-                "from_entity_id": edge.from_entity_id,
-                "confidence": edge.confidence,
+                "predicate": edge.predicate,
+                "subject_type": edge.subject_type,
+                "subject_id": edge.subject_id,
+                "evidence_refs": edge.evidence_refs,
+                "valid_from": edge.valid_from,
             }
             for edge in incoming_edges
         ],

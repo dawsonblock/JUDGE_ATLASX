@@ -22,8 +22,7 @@ class TestEntityResolution:
         """Test resolving entity when claim has entity_id."""
         entity = CanonicalEntity(
             entity_type="person",
-            name="John Doe",
-            jurisdiction="CA",
+            canonical_name="John Doe",
         )
         db_session.add(entity)
         db_session.commit()
@@ -39,7 +38,7 @@ class TestEntityResolution:
 
         resolved = resolve_entity_from_claim(claim, db_session)
         assert resolved.id == entity.id
-        assert resolved.name == "John Doe"
+        assert resolved.canonical_name == "John Doe"
 
     def test_resolve_entity_fails_for_missing_entity(self, db_session):
         """Test that resolution fails for missing entity."""
@@ -63,8 +62,7 @@ class TestEntityStateRebuild:
         """Test rebuilding entity state from claims."""
         entity = CanonicalEntity(
             entity_type="person",
-            name="John Doe",
-            jurisdiction="CA",
+            canonical_name="John Doe",
         )
         db_session.add(entity)
         db_session.commit()
@@ -108,13 +106,11 @@ class TestEntityStateRebuild:
         """Test batch rebuild of entity states."""
         entity1 = CanonicalEntity(
             entity_type="person",
-            name="John Doe",
-            jurisdiction="CA",
+            canonical_name="John Doe",
         )
         entity2 = CanonicalEntity(
             entity_type="person",
-            name="Jane Smith",
-            jurisdiction="NY",
+            canonical_name="Jane Smith",
         )
         db_session.add_all([entity1, entity2])
         db_session.commit()
@@ -143,8 +139,7 @@ class TestEntityGraph:
         """Test getting graph representation of entity."""
         entity = CanonicalEntity(
             entity_type="person",
-            name="John Doe",
-            jurisdiction="CA",
+            canonical_name="John Doe",
         )
         db_session.add(entity)
         db_session.commit()
@@ -153,7 +148,7 @@ class TestEntityGraph:
 
         assert "entity" in graph
         assert graph["entity"]["id"] == entity.id
-        assert graph["entity"]["name"] == "John Doe"
+        assert graph["entity"]["canonical_name"] == "John Doe"
         assert "outgoing_edges" in graph
         assert "incoming_edges" in graph
 

@@ -12,12 +12,12 @@ from app.models.entities import MemoryClaim, CanonicalEntity
 
 logger = logging.getLogger(__name__)
 
-# Risk tier thresholds
+# Risk tier thresholds (higher score = higher risk)
 RISK_TIERS = {
-    "critical": 0.0,  # High risk, requires immediate review
-    "high": 0.3,  # High risk, requires review
-    "medium": 0.6,  # Medium risk, requires review
-    "low": 0.8,  # Low risk, may be auto-approved
+    "critical": 0.85,  # High risk, requires immediate review
+    "high": 0.65,  # High risk, requires review
+    "medium": 0.35,  # Medium risk, requires review
+    "low": 0.0,  # Low risk, may be auto-approved
 }
 
 # Review requirements per tier
@@ -61,15 +61,15 @@ def calculate_claim_risk_tier(claim_id: int, db: Session) -> str:
     total_risk = confidence_risk + contradiction_risk + evidence_risk
     total_risk = min(1.0, total_risk)  # Cap at 1.0
 
-    # Determine tier
-    if total_risk <= RISK_TIERS["low"]:
-        tier = "low"
-    elif total_risk <= RISK_TIERS["medium"]:
-        tier = "medium"
-    elif total_risk <= RISK_TIERS["high"]:
-        tier = "high"
-    else:
+    # Determine tier (higher risk score = higher tier)
+    if total_risk >= RISK_TIERS["critical"]:
         tier = "critical"
+    elif total_risk >= RISK_TIERS["high"]:
+        tier = "high"
+    elif total_risk >= RISK_TIERS["medium"]:
+        tier = "medium"
+    else:
+        tier = "low"
 
     logger.debug(
         "Risk tier for claim %d: %s (confidence=%.2f, contradictions=%d, corroboration=%d)",
@@ -136,22 +136,28 @@ def calculate_entity_risk_tier(entity_id: int, db: Session) -> str:
     risk_scores = []
     for claim in claims:
         risk_tier = calculate_claim_risk_tier(claim.id, db)
-        # Convert tier to numeric score
-        tier_scores = {"critical": 1.0, "high": 0.75, "medium": 0.5, "low": 0.25}
+        # Convert tier to numeric score aligned with threshold boundaries
+        # Use threshold values directly for consistency
+        tier_scores = {
+            "critical": 1.0,  # Above 0.85
+            "high": 0.75,    # Between 0.65 and 0.85
+            "medium": 0.5,   # Between 0.35 and 0.65
+            "low": 0.175,    # Between 0.0 and 0.35
+        }
         risk_scores.append(tier_scores.get(risk_tier, 0.75))
 
     # Entity risk is the maximum of its claims' risks
     max_risk = max(risk_scores) if risk_scores else 0.75
 
-    # Convert back to tier
-    if max_risk <= RISK_TIERS["low"]:
-        return "low"
-    elif max_risk <= RISK_TIERS["medium"]:
-        return "medium"
-    elif max_risk <= RISK_TIERS["high"]:
-        return "high"
-    else:
+    # Convert back to tier (higher risk = higher tier)
+    if max_risk >= RISK_TIERS["critical"]:
         return "critical"
+    elif max_risk >= RISK_TIERS["high"]:
+        return "high"
+    elif max_risk >= RISK_TIERS["medium"]:
+        return "medium"
+    else:
+        return "low"
 
 
 def batch_calculate_risk_tiers(entity_id: int, db: Session) -> Dict[int, str]:

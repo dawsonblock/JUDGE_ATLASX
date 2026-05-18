@@ -1672,6 +1672,58 @@ class MemoryInvalidation(Base):
     )
 
 
+class MemoryContradiction(Base):
+    """Persistent contradiction records between claims.
+
+    Stores detected contradictions for review and resolution tracking.
+    """
+
+    __tablename__ = "memory_contradictions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    claim_a_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("memory_claims.id"), nullable=False, index=True
+    )
+    claim_b_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("memory_claims.id"), nullable=False, index=True
+    )
+    conflict_type: Mapped[str] = mapped_column(
+        String(50), nullable=False, index=True
+    )  # value_conflict, temporal_overlap, identity_conflict, jurisdiction_conflict, source_conflict, legal_status_conflict
+    severity: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default="medium", index=True
+    )  # low, medium, high, critical
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default="open", index=True
+    )  # open, reviewing, resolved, false_positive, ignored
+    detected_by: Mapped[str] = mapped_column(
+        String(50), nullable=False, server_default="system"
+    )  # system or user
+    detected_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    reviewer_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=True
+    )
+    resolution_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "claim_a_id", "claim_b_id", "conflict_type",
+            name="uq_memory_contradictions_claims"
+        ),
+    )
+
+
 class MemoryRelationshipState(Base, TimestampMixin):
     """Computed pairwise relationship state between two canonical entities."""
 
