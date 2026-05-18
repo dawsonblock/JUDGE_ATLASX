@@ -924,6 +924,7 @@ def _write_current_proof_md(
         f"- alpha_gate_status: {status}",
         f"- alpha_gate_passed: {payload.get('alpha_gate_passed', False)}",
         f"- release_gate_check_count: {check_count}",
+        f"- archive_validation_result: {payload.get('archive_validation_result', 'UNKNOWN')}",
         f"- docker_available: {payload.get('docker_available', False)}",
         f"- postgis_proof_result: {payload.get('postgis_proof_result', 'UNKNOWN')}",
         f"- egress_proxy_proof_result: {payload.get('egress_proxy_proof_result', 'UNKNOWN')}",
@@ -1957,6 +1958,40 @@ def main() -> int:
     payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
     payload["logs"]["proof_policy"] = proof_policy_rel
     payload["logs"]["repair_report"] = repair_report_rel
+
+    # Rewrite release_gate.json with final archive validation result
+    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    # Rewrite CURRENT_PROOF.md with final archive validation result
+    current_proof_rel = _write_current_proof_md(
+        repo_root,
+        out_dir,
+        payload,
+        check_count=len(results),
+    )
+
+    # Sync artifacts/current with final proof state
+    artifacts_current_dir = repo_root / "artifacts" / "current"
+    artifacts_current_dir.mkdir(parents=True, exist_ok=True)
+
+    # Write PROOF_MANIFEST.json (copy of release_gate.json)
+    proof_manifest_path = artifacts_current_dir / "PROOF_MANIFEST.json"
+    proof_manifest_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    # Write PROOF_REPORT.md (copy of CURRENT_PROOF.md)
+    proof_report_path = artifacts_current_dir / "PROOF_REPORT.md"
+    proof_report_path.write_text((out_dir / "CURRENT_PROOF.md").read_text(encoding="utf-8"))
+
+    # Write RELEASE_MANIFEST.json with current metadata
+    release_manifest = {
+        "generated_at": payload.get("timestamp_utc"),
+        "git_commit": payload.get("commit_hash"),
+        "alpha_gate_passed": payload.get("alpha_gate_passed"),
+        "archive_validation_result": payload.get("archive_validation_result"),
+        "proof_input_tree_hash": payload.get("proof_input_tree_hash"),
+    }
+    release_manifest_path = artifacts_current_dir / "RELEASE_MANIFEST.json"
+    release_manifest_path.write_text(json.dumps(release_manifest, indent=2) + "\n", encoding="utf-8")
 
     # Verify all required proof files exist in current directory
     required_files = [
