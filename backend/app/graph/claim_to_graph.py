@@ -95,7 +95,7 @@ def claim_to_relationship(claim: MemoryClaim, db: Session) -> Optional[Relations
         db: Database session
 
     Returns:
-        RelationshipEdge representation of the claim, or None if not a relationship claim
+        RelationshipEdge representation of the claim, or None if not a relationship claim or edge should be hidden
 
     Raises:
         ValueError: If claim entity or object entity is not found
@@ -103,6 +103,36 @@ def claim_to_relationship(claim: MemoryClaim, db: Session) -> Optional[Relations
     # Only convert claims with object_entity_id to relationships
     if not claim.object_entity_id:
         return None
+
+    # Phase 6: Status-based edge visibility rules
+    # Hide edges for disputed, rejected, or superseded claims
+    if claim.status in ["disputed", "rejected", "superseded"]:
+        logger.info(
+            "Skipping edge for claim %s with status %s (status-based hiding)",
+            claim.id, claim.status
+        )
+        return None
+
+    # Phase 6: Contradiction-based edge hiding
+    # Hide edges for claims with open critical contradictions
+    if claim.contradiction_count and claim.contradiction_count > 0:
+        from app.models.entities import MemoryContradiction
+
+        open_critical = (
+            db.query(MemoryContradiction)
+            .filter(
+                (MemoryContradiction.claim_a_id == claim.id) | (MemoryContradiction.claim_b_id == claim.id),
+                MemoryContradiction.status == "open",
+                MemoryContradiction.severity == "critical"
+            )
+            .first()
+        )
+        if open_critical:
+            logger.info(
+                "Skipping edge for claim %s with open critical contradiction (contradiction-based hiding)",
+                claim.id
+            )
+            return None
 
     source_entity = db.query(CanonicalEntity).filter(
         CanonicalEntity.id == claim.entity_id

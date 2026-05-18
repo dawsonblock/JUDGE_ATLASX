@@ -39,6 +39,14 @@ class PostgresIngestionQueue:
         self._retry_delay_seconds = 60
         self._stale_lock_threshold_seconds = 300  # 5 minutes
         self._worker_id = f"worker-{uuid.uuid4()}"
+        # Source-level rate limits (max jobs per source per hour)
+        self._source_rate_limits = {
+            "default": 100,
+            "sk_courts_qb_decisions": 50,
+            "sk_courts_ca_decisions": 50,
+            "federal_court_canada": 30,
+            "scc_decisions": 20,
+        }
 
     def enqueue_job(self, source_key: str, idempotency_key: Optional[str] = None) -> str:
         """Enqueue a source for ingestion with optional idempotency key."""
@@ -46,6 +54,24 @@ class PostgresIngestionQueue:
 
         try:
             from app.models.entities import IngestionQueueJob
+
+            # Check source-level rate limit
+            rate_limit = self._source_rate_limits.get(source_key, self._source_rate_limits["default"])
+            one_hour_ago = datetime.now(timezone.utc).timestamp() - 3600
+            recent_jobs = (
+                db.query(IngestionQueueJob)
+                .filter(
+                    IngestionQueueJob.source_key == source_key,
+                    IngestionQueueJob.enqueued_at >= datetime.fromtimestamp(one_hour_ago, tz=timezone.utc)
+                )
+                .count()
+            )
+            if recent_jobs >= rate_limit:
+                logger.warning(
+                    "Source %s has exceeded rate limit (%d jobs in last hour)",
+                    source_key, rate_limit
+                )
+                raise ValueError(f"Source {source_key} rate limit exceeded")
 
             # Check for existing job with same idempotency key
             if idempotency_key:

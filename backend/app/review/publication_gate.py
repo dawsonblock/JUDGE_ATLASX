@@ -154,6 +154,31 @@ def assert_memory_claim_publication_ready(claim: MemoryClaim, db: Session) -> No
                         f"MemoryClaim {claim.id} evidence source '{source.source_id}' is not official/public record — requires elevated approval source"
                     )
 
+        # Block media-only named-person criminal allegations
+        if claim.source_snapshot_id:
+            from app.models.entities import SourceSnapshot, LegalSource
+
+            snapshot = db.query(SourceSnapshot).filter(
+                SourceSnapshot.id == claim.source_snapshot_id
+            ).first()
+            if snapshot:
+                source = db.query(LegalSource).filter(
+                    LegalSource.id == snapshot.source_id
+                ).first()
+                if source and source.lifecycle_state == "media":
+                    raise PublicationBlockedError(
+                        f"MemoryClaim {claim.id} is a named-person criminal allegation from media source — media-only allegations are blocked"
+                    )
+
+    # Check redaction pass for sensitive claims
+    if claim.claim_sensitivity in ["criminal_allegation_named_person", "criminal_allegation_private_person", "misconduct_allegation"]:
+        # Require redaction pass for sensitive claims
+        # This is checked during AI extraction; if redaction failed, the claim should not publish
+        if claim.confidence < 0.8:  # Higher threshold for sensitive claims
+            raise PublicationBlockedError(
+                f"MemoryClaim {claim.id} has sensitivity '{claim.claim_sensitivity}' and confidence {claim.confidence} — sensitive claims require higher confidence and redaction pass"
+            )
+
     # Check source status if available
     if claim.extraction_run_id:
         from app.models.entities import IngestionRun, LegalSource

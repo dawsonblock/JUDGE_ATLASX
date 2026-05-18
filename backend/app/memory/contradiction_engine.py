@@ -16,34 +16,13 @@ from app.models.entities import (
     MemoryContradiction,
     LegalSource,
 )
+from app.memory.source_authority import (
+    get_source_authority_weight,
+    calculate_authority_gap,
+    should_supersede,
+)
 
 logger = logging.getLogger(__name__)
-
-# Source authority hierarchy (higher = more authoritative)
-SOURCE_AUTHORITY_WEIGHTS = {
-    "official_court_record": 1.0,
-    "official_government": 0.8,
-    "press_release": 0.6,
-    "social_media": 0.4,
-    "news_article": 0.5,
-    "blog": 0.3,
-    "other": 0.2,
-}
-
-
-def _get_source_authority_weight(source: Optional[LegalSource]) -> float:
-    """Get authority weight for a source based on its type.
-    
-    Args:
-        source: LegalSource object
-        
-    Returns:
-        Authority weight (0.0-1.0)
-    """
-    if not source or not source.source_type:
-        return 0.2  # Default weight for unknown sources
-    
-    return SOURCE_AUTHORITY_WEIGHTS.get(source.source_type.lower(), 0.2)
 
 
 def detect_contradictions(
@@ -154,8 +133,8 @@ def _persist_contradiction(
     if claim2 and claim2.source_id:
         source2 = db.query(LegalSource).filter(LegalSource.id == claim2.source_id).first()
 
-    weight1 = _get_source_authority_weight(source1)
-    weight2 = _get_source_authority_weight(source2)
+    weight1 = get_source_authority_weight(source1.source_type if source1 else None)
+    weight2 = get_source_authority_weight(source2.source_type if source2 else None)
     # Use the higher authority weight for the contradiction
     authority_weight = max(weight1, weight2)
 
@@ -280,8 +259,8 @@ def _calculate_severity(
                 LegalSource.id == snapshot2.source_id
             ).first()
 
-    weight1 = _get_source_authority_weight(source1)
-    weight2 = _get_source_authority_weight(source2)
+    weight1 = get_source_authority_weight(source1.source_type if source1 else None)
+    weight2 = get_source_authority_weight(source2.source_type if source2 else None)
     max_authority = max(weight1, weight2)
 
     # Base severity from contradiction type
@@ -293,19 +272,26 @@ def _calculate_severity(
     # Adjust by source authority (higher authority = higher severity)
     authority_factor = max_authority  # 0.0-1.0
 
-    # Adjust by confidence (higher confidence = higher severity)
-    avg_confidence = (claim1.confidence + claim2.confidence) / 2
-    confidence_factor = avg_confidence  # 0.0-1.0
+    # Adjust by claim confidence (higher confidence = higher severity)
+    confidence_factor = max(claim1.confidence or 0.5, claim2.confidence or 0.5)
 
-    # Calculate combined severity score
-    severity_score = base_severity + (authority_factor * 0.3) + (confidence_factor * 0.2)
+    # Adjust by entity importance (critical entities = higher severity)
+    entity_importance_factor = 1.0
+    if claim1.entity_id:
+        entity = db.query(CanonicalEntity).filter(CanonicalEntity.id == claim1.entity_id).first()
+        if entity and entity.entity_type in ["person", "organization"]:
+            entity_importance_factor = 1.2
+
+    # Calculate final severity (0.0-1.0)
+    final_severity = base_severity * authority_factor * confidence_factor * entity_importance_factor
+    final_severity = min(final_severity, 1.0)  # Cap at 1.0
 
     # Map to severity levels
-    if severity_score >= 0.9:
+    if final_severity >= 0.8:
         return "critical"
-    elif severity_score >= 0.7:
+    elif final_severity >= 0.5:
         return "high"
-    elif severity_score >= 0.5:
+    elif final_severity >= 0.3:
         return "medium"
     else:
         return "low"
@@ -551,8 +537,8 @@ def auto_supersede_by_authority(contradiction_id: int, db: Session) -> bool:
                 LegalSource.id == snapshot_b.source_id
             ).first()
 
-    weight_a = _get_source_authority_weight(source_a)
-    weight_b = _get_source_authority_weight(source_b)
+    weight_a = get_source_authority_weight(source_a.source_type if source_a else None)
+    weight_b = get_source_authority_weight(source_b.source_type if source_b else None)
 
     # Only auto-supersede if authority difference is significant (>0.3)
     authority_threshold = 0.3

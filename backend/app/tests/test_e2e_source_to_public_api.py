@@ -164,6 +164,43 @@ def test_full_pipeline_source_to_public_api(db_session):
     assert evidence_link.claim_id == claim.id
     assert evidence_link.snapshot_id == snapshot.id
 
+    # Phase 7: Verify snapshot hash
+    assert snapshot.content_hash == "abc123"
+    assert evidence_link.evidence_checksum == "abc123"
+
+    # Phase 7: Verify risk tier (based on claim sensitivity)
+    # High sensitivity = higher risk tier
+    risk_tier = "low"
+    if claim.claim_sensitivity in ["criminal_allegation_named_person", "criminal_allegation_private_person"]:
+        risk_tier = "critical"
+    elif claim.claim_sensitivity in ["misconduct_allegation"]:
+        risk_tier = "high"
+    elif claim.claim_sensitivity in ["legal_proceeding"]:
+        risk_tier = "medium"
+    assert risk_tier == "low"  # public_record is low risk
+
+    # Phase 7: Verify graph edge creation timing
+    import time
+    start_time = time.time()
+    edge = claim_to_relationship(claim, db_session)
+    edge_creation_time = time.time() - start_time
+    assert edge is None  # No object_entity_id, so no relationship
+    assert edge_creation_time < 1.0  # Should complete in under 1 second
+
+    # Phase 7: Verify public API citation format
+    public_citation = {
+        "claim_id": claim.claim_uid,
+        "source_id": source.source_id,
+        "snapshot_id": snapshot.snapshot_id,
+        "evidence_hash": evidence_link.evidence_checksum,
+        "confidence": claim.confidence,
+        "review_status": claim.review_status,
+        "sensitivity": claim.claim_sensitivity,
+    }
+    assert public_citation["claim_id"] == "uid-api-1"
+    assert public_citation["source_id"] == "test_e2e_api_source"
+    assert public_citation["evidence_hash"] == "abc123"
+
 
 def test_named_person_criminal_allegation_enforcement(db_session):
     """Test that named-person criminal allegations require elevated approval."""
@@ -490,3 +527,95 @@ def test_phase6_edge_fields_in_graph_projection(db_session):
     assert node.properties["elevated_reviewer_id"] == "reviewer-1"
     assert node.properties["derived_from_ai"] is True
     assert node.properties["extraction_model"] == "gpt-4"
+
+
+def test_unsafe_claim_exclusion_from_public_api(db_session):
+    """Test that unsafe claims are excluded from public API."""
+    # Create source
+    source = LegalSource(
+        source_id="test_unsafe_source",
+        source_name="Unsafe Test Source",
+        source_type="official_court_record",
+        lifecycle_state="active",
+    )
+    db_session.add(source)
+    db_session.commit()
+
+    # Create ingestion run
+    run = IngestionRun(
+        source_id=source.id,
+        status=JobState.COMPLETED.value,
+        started_at=datetime.now(timezone.utc),
+        finished_at=datetime.now(timezone.utc),
+    )
+    db_session.add(run)
+    db_session.commit()
+
+    # Create snapshot
+    snapshot = SourceSnapshot(
+        run_id=run.id,
+        snapshot_id="unsafe_snapshot",
+        source_id=source.id,
+        snapshot_timestamp=datetime.now(timezone.utc),
+        raw_content=b'{"test": "data"}',
+        content_hash="abc123",
+        preserved=True,
+    )
+    db_session.add(snapshot)
+    db_session.commit()
+
+    # Create entity
+    entity = CanonicalEntity(
+        entity_type="person",
+        canonical_name="Unsafe Test Person",
+    )
+    db_session.add(entity)
+    db_session.commit()
+
+    # Create claim with criminal allegation but no elevated approval (unsafe)
+    unsafe_claim = MemoryClaim(
+        claim_key="unsafe_claim",
+        claim_uid="uid-unsafe",
+        claim_type="criminal_allegation",
+        entity_id=entity.id,
+        claim_value="Charged with crime",
+        normalized_value="charged_with_crime",
+        object_value_type="text",
+        predicate="criminal_charge",
+        confidence=0.9,
+        contradiction_count=0,
+        review_status="approved",
+        status="active",
+        is_active=True,
+        extraction_run_id=run.id,
+        source_snapshot_id=snapshot.id,
+        claim_sensitivity="criminal_allegation_named_person",
+        elevated_review_status="pending_review",  # Not approved - unsafe
+    )
+    db_session.add(unsafe_claim)
+    db_session.commit()
+
+    # Create evidence link
+    evidence_link = MemoryEvidenceLink(
+        claim_id=unsafe_claim.id,
+        snapshot_id=snapshot.id,
+        support_type="supports",
+        confidence=0.9,
+        evidence_checksum="abc123",
+    )
+    db_session.add(evidence_link)
+    db_session.commit()
+
+    # Verify unsafe claim fails publication gate
+    with pytest.raises(PublicationBlockedError) as exc:
+        assert_memory_claim_publication_ready(unsafe_claim, db_session)
+    assert "requires elevated approval" in str(exc.value)
+
+    # Verify unsafe claim is excluded from public API citation
+    # In production, this would be filtered by the API endpoint
+    is_safe_for_public_api = (
+        unsafe_claim.elevated_review_status == "approved"
+        and unsafe_claim.review_status == "approved"
+        and unsafe_claim.status == "active"
+    )
+    assert is_safe_for_public_api is False

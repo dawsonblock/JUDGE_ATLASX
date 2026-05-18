@@ -2,7 +2,7 @@
 import pytest
 from datetime import datetime, timezone
 
-from app.models.entities import MemoryClaim, CanonicalEntity
+from app.models.entities import MemoryClaim, CanonicalEntity, MemoryContradiction
 from app.graph.claim_to_graph import (
     claim_to_entity_node,
     claim_to_relationship,
@@ -285,6 +285,172 @@ def test_claim_to_relationship_raises_error_for_missing_entity():
             claim_to_relationship(claim, db)
 
         assert "Target entity 99999 not found" in str(exc_info.value)
+
+    finally:
+        db.close()
+
+
+def test_claim_to_relationship_hides_disputed_status_edges():
+    """Test that claim_to_relationship hides edges for disputed claims."""
+    db = SessionLocal()
+
+    try:
+        # Create entities
+        entity1 = CanonicalEntity(name="Person A", entity_type="person")
+        entity2 = CanonicalEntity(name="Company B", entity_type="organization")
+        db.add(entity1)
+        db.add(entity2)
+        db.commit()
+
+        # Create claim with disputed status
+        claim = MemoryClaim(
+            claim_key="test-claim-1",
+            claim_uid="uid-1",
+            claim_type="employment",
+            entity_id=entity1.id,
+            object_entity_id=entity2.id,
+            claim_value="Employed at",
+            normalized_value="employed_at",
+            confidence=0.9,
+            object_value_type="entity",
+            predicate="employed_at",
+            status="disputed",  # Disputed status
+        )
+        db.add(claim)
+        db.commit()
+
+        # Convert to relationship edge
+        edge = claim_to_relationship(claim, db)
+
+        # Should return None for disputed claims
+        assert edge is None
+
+    finally:
+        db.close()
+
+
+def test_claim_to_relationship_hides_rejected_status_edges():
+    """Test that claim_to_relationship hides edges for rejected claims."""
+    db = SessionLocal()
+
+    try:
+        # Create entities
+        entity1 = CanonicalEntity(name="Person A", entity_type="person")
+        entity2 = CanonicalEntity(name="Company B", entity_type="organization")
+        db.add(entity1)
+        db.add(entity2)
+        db.commit()
+
+        # Create claim with rejected status
+        claim = MemoryClaim(
+            claim_key="test-claim-1",
+            claim_uid="uid-1",
+            claim_type="employment",
+            entity_id=entity1.id,
+            object_entity_id=entity2.id,
+            claim_value="Employed at",
+            normalized_value="employed_at",
+            confidence=0.9,
+            object_value_type="entity",
+            predicate="employed_at",
+            status="rejected",  # Rejected status
+        )
+        db.add(claim)
+        db.commit()
+
+        # Convert to relationship edge
+        edge = claim_to_relationship(claim, db)
+
+        # Should return None for rejected claims
+        assert edge is None
+
+    finally:
+        db.close()
+
+
+def test_claim_to_relationship_hides_superseded_status_edges():
+    """Test that claim_to_relationship hides edges for superseded claims."""
+    db = SessionLocal()
+
+    try:
+        # Create entities
+        entity1 = CanonicalEntity(name="Person A", entity_type="person")
+        entity2 = CanonicalEntity(name="Company B", entity_type="organization")
+        db.add(entity1)
+        db.add(entity2)
+        db.commit()
+
+        # Create claim with superseded status
+        claim = MemoryClaim(
+            claim_key="test-claim-1",
+            claim_uid="uid-1",
+            claim_type="employment",
+            entity_id=entity1.id,
+            object_entity_id=entity2.id,
+            claim_value="Employed at",
+            normalized_value="employed_at",
+            confidence=0.9,
+            object_value_type="entity",
+            predicate="employed_at",
+            status="superseded",  # Superseded status
+        )
+        db.add(claim)
+        db.commit()
+
+        # Convert to relationship edge
+        edge = claim_to_relationship(claim, db)
+
+        # Should return None for superseded claims
+        assert edge is None
+
+    finally:
+        db.close()
+
+
+def test_claim_to_relationship_hides_critical_contradiction_edges():
+    """Test that claim_to_relationship hides edges with open critical contradictions."""
+    db = SessionLocal()
+
+    try:
+        # Create entities and claim
+        entity1 = CanonicalEntity(name="Person A", entity_type="person")
+        entity2 = CanonicalEntity(name="Company B", entity_type="organization")
+        db.add(entity1)
+        db.add(entity2)
+        db.commit()
+
+        claim = MemoryClaim(
+            claim_key="test-claim-1",
+            claim_uid="uid-1",
+            claim_type="employment",
+            entity_id=entity1.id,
+            object_entity_id=entity2.id,
+            claim_value="Employed at",
+            normalized_value="employed_at",
+            confidence=0.9,
+            object_value_type="entity",
+            predicate="employed_at",
+            contradiction_count=1,  # Has contradictions
+        )
+        db.add(claim)
+        db.commit()
+
+        # Create an open critical contradiction
+        contradiction = MemoryContradiction(
+            claim_a_id=claim.id,
+            claim_b_id=claim.id,  # Self-contradiction for test
+            conflict_type="value_contradiction",
+            severity="critical",
+            status="open",  # Open status
+        )
+        db.add(contradiction)
+        db.commit()
+
+        # Convert to relationship edge
+        edge = claim_to_relationship(claim, db)
+
+        # Should return None for claims with open critical contradictions
+        assert edge is None
 
     finally:
         db.close()

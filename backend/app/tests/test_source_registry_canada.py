@@ -139,3 +139,64 @@ def test_parser_keys_are_known() -> None:
             assert (
                 parser in ADAPTER_REGISTRY
             ), f"Source '{s['source_key']}' references unknown parser '{parser}'"
+
+
+def test_saskatchewan_court_sources_enablement_readiness() -> None:
+    """Phase 8: Verify Saskatchewan court sources are ready for enablement."""
+    from app.seed.source_registry import validate_machine_ingest_source_spec
+
+    sources = _load_yaml()
+    sk_court_sources = {
+        s["source_key"]: s
+        for s in sources
+        if s["source_key"] in ["sk_courts_qb_decisions", "sk_courts_ca_decisions"]
+    }
+
+    # Verify both Saskatchewan court sources exist
+    assert "sk_courts_qb_decisions" in sk_court_sources
+    assert "sk_courts_ca_decisions" in sk_court_sources
+
+    # Verify both sources pass machine_ingest validation
+    for source_key, spec in sk_court_sources.items():
+        violations = validate_machine_ingest_source_spec(spec)
+        assert not violations, f"{source_key} has violations: {violations}"
+
+    # Verify sk_courts_qb_decisions is enabled and active
+    qb_source = sk_court_sources["sk_courts_qb_decisions"]
+    assert qb_source["enabled_default"] is True
+    assert qb_source["lifecycle_state"] == "active"
+    assert qb_source["automation_status"] == "machine_ready"
+
+    # Verify sk_courts_ca_decisions is disabled but runnable
+    ca_source = sk_court_sources["sk_courts_ca_decisions"]
+    assert ca_source["enabled_default"] is False
+    assert ca_source["lifecycle_state"] == "runnable_disabled"
+    assert ca_source["automation_status"] == "machine_ready_disabled"
+
+    # Verify both sources use CanLII API
+    assert qb_source["parser"] == "canlii_api"
+    assert ca_source["parser"] == "canlii_api"
+
+    # Verify both sources require authentication
+    assert qb_source["authentication_required"] is True
+    assert ca_source["authentication_required"] is True
+
+    # Verify both sources have evidence required
+    assert qb_source["evidence_required"] is True
+    assert ca_source["evidence_required"] is True
+
+    # Verify both sources have terms verified
+    assert qb_source["terms_verified"] == "2026-05-06"
+    assert ca_source["terms_verified"] == "2026-05-06"
+
+    # Verify both sources have proper rate limit policy
+    assert qb_source["rate_limit_policy"] == "api_key_required"
+    assert ca_source["rate_limit_policy"] == "api_key_required"
+
+    # Verify both sources have proper confidence class
+    assert qb_source["confidence_class"] == "primary_official"
+    assert ca_source["confidence_class"] == "primary_official"
+
+    # Verify both sources have proper retention policy
+    assert qb_source["retention_policy"] == "indefinite"
+    assert ca_source["retention_policy"] == "indefinite"

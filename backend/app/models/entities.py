@@ -1616,6 +1616,11 @@ class MemoryClaim(Base, TimestampMixin):
         nullable=True,
         index=True,
     )  # enum: public_record, legal_proceeding, criminal_allegation_named_person, criminal_allegation_private_person, misconduct_allegation, statistical_aggregate, legislation, court_metadata
+    publication_sensitivity: Mapped[str | None] = mapped_column(
+        String(80),
+        nullable=True,
+        index=True,
+    )  # enum: public_record, legal_proceeding, criminal_allegation_named_person, criminal_allegation_private_person, misconduct_allegation, statistical_aggregate, legislation, court_metadata
     # Elevated approval fields for sensitive claims
     elevated_review_status: Mapped[str | None] = mapped_column(
         String(20), nullable=True, index=True

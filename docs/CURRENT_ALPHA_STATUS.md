@@ -88,4 +88,14 @@ All 13 phases of the repair plan have been completed:
 
 ## Current Blockers
 
-- none
+**Alpha Repair Blockers**: cleared
+
+**Production Blockers** (active):
+- queue needs worker-safe locking and dead-letter recovery
+- proof artifacts need regeneration and timestamp validation
+- named-person allegation policy needs elevated approval path
+- contradiction engine needs source-authority reasoning
+- only one live source is enabled
+- end-to-end source-to-public proof needs hard validation
+
+**Production Ready**: false
