@@ -637,6 +637,29 @@ class IngestionRun(Base, TimestampMixin):
     )  # Timestamp of last error occurrence
 
 
+class IngestionQueueJob(Base, TimestampMixin):
+    """Queue job for ingestion runs (Phase 14)."""
+
+    __tablename__ = "ingestion_queue_jobs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    source_key: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    state: Mapped[str] = mapped_column(String(80), nullable=False, index=True, default="pending")
+    enqueued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    run_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    records_fetched: Mapped[int] = mapped_column(Integer, default=0)
+    review_items: Mapped[int] = mapped_column(Integer, default=0)
+    created_records: Mapped[int] = mapped_column(Integer, default=0)
+    raw_snapshot_preserved: Mapped[bool] = mapped_column(Boolean, default=False)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    retry_count: Mapped[int | None] = mapped_column(Integer, nullable=True, default=0)
+    retry_after: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
@@ -1482,10 +1505,22 @@ class MemoryClaim(Base, TimestampMixin):
     claim_key: Mapped[str] = mapped_column(
         String(64), nullable=False, unique=True, index=True, default=lambda: uuid4().hex
     )
+    claim_uid: Mapped[str] = mapped_column(
+        String(64), nullable=False, unique=True, index=True, default=lambda: uuid4().hex
+    )
     claim_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
     entity_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("canonical_entities.id"), nullable=False, index=True
     )
+    predicate: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    object_entity_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("canonical_entities.id"), nullable=True, index=True
+    )
+    object_value: Mapped[str | None] = mapped_column(Text, nullable=True)
+    object_value_type: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # enum: entity, literal, date, number, boolean
+    normalized_value: Mapped[str | None] = mapped_column(Text, nullable=True)
     claim_value: Mapped[str] = mapped_column(Text, nullable=False)
     claim_value_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     confidence: Mapped[float] = mapped_column(
@@ -1495,6 +1530,12 @@ class MemoryClaim(Base, TimestampMixin):
         Integer, ForeignKey("source_snapshots.id"), nullable=True, index=True
     )
     extraction_model: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    extraction_run_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("ingestion_runs.id"), nullable=True
+    )
+    derived_from_ai: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false", default=False
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="true", default=True
     )
@@ -1508,6 +1549,33 @@ class MemoryClaim(Base, TimestampMixin):
         server_default="active",
         default="active",
         index=True,
+    )
+    review_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        server_default="pending_review",
+        default="pending_review",
+        index=True,
+    )
+    superseded_by_claim_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("memory_claims.id"), nullable=True
+    )
+    jurisdiction: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    valid_from: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    valid_to: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    observed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    source_quality: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    corroboration_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0", default=0
+    )
+    contradiction_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0", default=0
     )
     last_seen_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
@@ -1530,6 +1598,16 @@ class MemoryEvidenceLink(Base):
         Integer, ForeignKey("source_snapshots.id"), nullable=False, index=True
     )
     evidence_checksum: Mapped[str] = mapped_column(String(64), nullable=False)
+    support_type: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # enum: supports, contradicts, mentions, context, supersedes
+    quote_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    char_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    char_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    page_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    confidence: Mapped[float] = mapped_column(
+        Float, nullable=False, server_default="0.0", default=0.0
+    )
     span_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
     span_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
     span_text: Mapped[str | None] = mapped_column(Text, nullable=True)

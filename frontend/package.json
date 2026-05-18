@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": "25.9.x",
-    "npm": "11.x"
+    "node": ">=20.11 <23",
+    "npm": ">=9"
   },
   "scripts": {
     "dev": "next dev -H 0.0.0.0",
@@ -14,7 +14,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:contracts": "vitest run tests/contracts tests/*.contract.test.ts"
+    "test:contracts": "vitest run tests/contracts tests/*.contract.test.ts",
+    "doctor": "node scripts/doctor.mjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

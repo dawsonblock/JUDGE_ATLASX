@@ -40,6 +40,10 @@ REPAIR_REPORT.md
 research/
 external/
 Research /
+external_reference/
+docs/reference/archived/
+docs/reference/vendor_repos/
+docs/reference/experiments/
 # tools/CLI-Anything-main  -- external CLI tooling reference
 
 # Exclude any local builds that may be produced inside research subtrees
