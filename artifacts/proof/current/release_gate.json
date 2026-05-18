@@ -22,7 +22,7 @@
   "docker_check_timeout_seconds": 60,
   "postgis_proof_required": true,
   "postgis_proof_timeout_seconds": 900,
-  "check_count": 35,
+  "check_count": 37,
   "proof_input_tree_hash": "59f41237717b148f786107c3eefc6a6519928eb4d9a456ed0f8c275ebd0db4aa",
   "proof_input_tree_hash_algorithm": "sha256",
   "proof_input_paths": [
@@ -923,8 +923,8 @@
     "*/JUDGE-main/"
   ],
   "mutation_fail_closed_coverage_result": "PASS",
-  "proof_freshness_result": "UNKNOWN",
-  "archive_validation_result": "NOT_RUN",
+  "proof_freshness_result": "PASS",
+  "archive_validation_result": "FAIL",
   "legacy_shared_token_status": "deprecated, removal plan documented",
   "dependency_security_status": "npm audit issues triaged for alpha; remediation plan documented",
   "backend_pytest_passed": 2908,
@@ -1375,6 +1375,32 @@
       "required": true,
       "cwd": "/Users/dawsonblock/JUDGE_ATLASX",
       "failure_reason": null
+    },
+    {
+      "name": "proof_freshness",
+      "command": "/Users/dawsonblock/JUDGE_ATLASX/backend/.venv/bin/python scripts/check_proof_freshness.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_seconds": 4.305,
+      "log_path": "artifacts/proof/current/proof_freshness.log",
+      "started_at_utc": "2026-05-18T00:03:38.694129+00:00",
+      "finished_at_utc": "2026-05-18T00:03:42.999578+00:00",
+      "required": true,
+      "cwd": "/Users/dawsonblock/JUDGE_ATLASX",
+      "failure_reason": null
+    },
+    {
+      "name": "release_readiness_generation",
+      "command": "generate from proof_manifest.json",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_seconds": 0.0,
+      "log_path": "artifacts/proof/current/release_readiness.md",
+      "started_at_utc": "2026-05-18T00:03:43.007904+00:00",
+      "finished_at_utc": "2026-05-18T00:03:43.007913+00:00",
+      "required": true,
+      "cwd": "/Users/dawsonblock/JUDGE_ATLASX",
+      "failure_reason": null
     }
   ],
   "failed_checks": [],
@@ -1398,7 +1424,7 @@
     "demo_proof": "artifacts/proof/current/demo_proof.log",
     "validate_sources": "artifacts/proof/current/validate_sources.log",
     "verify_source_registry": "artifacts/proof/current/verify_source_registry.log",
-    "source_registry_status": "artifacts/proof/current/source_registry_status.log",
+    "source_registry_status": "artifacts/proof/current/source_registry_status.json",
     "prepare_proof_db": "artifacts/proof/current/prepare_proof_db.log",
     "verify_evidence_store": "artifacts/proof/current/verify_evidence_store.log",
     "verify_audit_chain": "artifacts/proof/current/verify_audit_chain.log",
@@ -1416,8 +1442,19 @@
     "map_route_check": "artifacts/proof/current/map_route_check.log",
     "public_api_boundary": "artifacts/proof/current/public_api_boundary.log",
     "proof_freshness": "artifacts/proof/current/proof_freshness.log",
+    "release_readiness_generation": "artifacts/proof/current/release_readiness.md",
+    "release_gate": "artifacts/proof/current/release_gate.log",
+    "proof_manifest": "artifacts/proof/current/proof_manifest.json",
+    "release_readiness": "artifacts/proof/current/release_readiness.md",
+    "static_guards": "artifacts/proof/current/static_guards.log",
+    "current_proof": "artifacts/proof/current/CURRENT_PROOF.md",
+    "backend_proof_summary": "artifacts/proof/current/backend_proof_summary.json",
+    "frontend_proof_summary": "artifacts/proof/current/frontend_proof_summary.json",
     "archive_validation": "artifacts/proof/current/archive_validation.log",
-    "release_gate": "artifacts/proof/current/release_gate.log"
+    "current_alpha_status": "artifacts/proof/current/CURRENT_ALPHA_STATUS.md",
+    "source_registry_status_md": "artifacts/proof/current/SOURCE_REGISTRY_STATUS.md",
+    "proof_policy": "artifacts/proof/current/PROOF_POLICY.md",
+    "repair_report": "artifacts/proof/current/REPAIR_REPORT.md"
   },
   "known_limitations": [
     "alpha gate only; not a production release gate",
