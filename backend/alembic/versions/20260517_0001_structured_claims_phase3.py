@@ -37,7 +37,31 @@ depends_on = None
 
 def upgrade():
     # Add new columns to memory_claims table
-    op.add_column('memory_claims', sa.Column('claim_uid', sa.String(64), nullable=False, server_default=sa.text('gen_random_uuid()::text')))
+    # SQLite-compatible: make nullable initially, populate in separate step
+    op.add_column('memory_claims', sa.Column('claim_uid', sa.String(64), nullable=True))
+    
+    # Populate claim_uid for existing rows with unique identifiers
+    # Use a batch approach to handle SQLite limitations
+    connection = op.get_bind()
+    
+    # For PostgreSQL, use gen_random_uuid()
+    # For SQLite, use a sequential approach
+    if connection.dialect.name == 'postgresql':
+        connection.execute(
+            sa.text("UPDATE memory_claims SET claim_uid = gen_random_uuid()::text WHERE claim_uid IS NULL")
+        )
+    else:
+        # SQLite: generate sequential UUIDs for existing rows
+        result = connection.execute(sa.text("SELECT id FROM memory_claims WHERE claim_uid IS NULL ORDER BY id"))
+        for row in result:
+            # Generate a simple UUID-like string for SQLite
+            import uuid
+            connection.execute(
+                sa.text("UPDATE memory_claims SET claim_uid = :uid WHERE id = :id"),
+                {"uid": str(uuid.uuid4()), "id": row[0]}
+            )
+    
+    # Now create the unique index after populating
     op.create_index(op.f('ix_memory_claims_claim_uid'), 'memory_claims', ['claim_uid'], unique=True)
     
     op.add_column('memory_claims', sa.Column('predicate', sa.String(80), nullable=True))
@@ -61,6 +85,8 @@ def upgrade():
     
     op.add_column('memory_claims', sa.Column('superseded_by_claim_id', sa.Integer(), nullable=True))
     op.create_foreign_key('fk_memory_claims_superseded_by_claim_id', 'memory_claims', 'memory_claims', ['superseded_by_claim_id'], ['id'])
+    
+    op.add_column('memory_claims', sa.Column('superseded_at', sa.DateTime(timezone=True), nullable=True))
     
     op.add_column('memory_claims', sa.Column('jurisdiction', sa.String(80), nullable=True))
     op.create_index(op.f('ix_memory_claims_jurisdiction'), 'memory_claims', ['jurisdiction'])
@@ -97,6 +123,7 @@ def downgrade():
     op.drop_column('memory_claims', 'jurisdiction')
     op.drop_constraint('fk_memory_claims_superseded_by_claim_id', 'memory_claims', type_='foreignkey')
     op.drop_column('memory_claims', 'superseded_by_claim_id')
+    op.drop_column('memory_claims', 'superseded_at')
     op.drop_index(op.f('ix_memory_claims_review_status'), table_name='memory_claims')
     op.drop_column('memory_claims', 'review_status')
     op.drop_column('memory_claims', 'derived_from_ai')

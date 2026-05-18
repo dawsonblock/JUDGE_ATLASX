@@ -113,8 +113,15 @@ class Settings(BaseSettings):
 
     # Ingestion queue backend selection: "inprocess" or "postgres".
     # inprocess is alpha-only and not production-capable.
-    # postgres is placeholder until implemented.
+    # postgres is alpha-hardened with worker-safe features but not production-certified.
     ingestion_queue_backend: Literal["inprocess", "postgres"] = "inprocess"
+
+    # Allow alpha postgres queue in production environments.
+    # When False, postgres queue is blocked in production.
+    # When True, postgres queue is allowed with explicit override.
+    # Default: False (production-safe default).
+    # Rules: local/dev allowed, test allowed, production blocked unless True.
+    allow_alpha_postgres_queue: bool = False
 
     # Relationship arc publication policy
     # Disabled by default — arcs require manual review

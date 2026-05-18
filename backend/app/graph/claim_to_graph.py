@@ -13,9 +13,10 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from app.models.entities import MemoryClaim, CanonicalEntity
+from app.models.entities import MemoryClaim, CanonicalEntity, EntityGraphEdge
 from app.graph.graph_models import EntityNode, RelationshipEdge
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 import logging
 
 logger = logging.getLogger(__name__)
@@ -95,7 +96,8 @@ def claim_to_relationship(claim: MemoryClaim, db: Session) -> Optional[Relations
         db: Database session
 
     Returns:
-        RelationshipEdge representation of the claim, or None if not a relationship claim or edge should be hidden
+        RelationshipEdge representation of the claim, or None if
+        not a relationship claim or edge should be hidden
 
     Raises:
         ValueError: If claim entity or object entity is not found
@@ -121,7 +123,8 @@ def claim_to_relationship(claim: MemoryClaim, db: Session) -> Optional[Relations
         open_critical = (
             db.query(MemoryContradiction)
             .filter(
-                (MemoryContradiction.claim_a_id == claim.id) | (MemoryContradiction.claim_b_id == claim.id),
+                (MemoryContradiction.claim_a_id == claim.id)
+                | (MemoryContradiction.claim_b_id == claim.id),
                 MemoryContradiction.status == "open",
                 MemoryContradiction.severity == "critical"
             )
@@ -129,7 +132,8 @@ def claim_to_relationship(claim: MemoryClaim, db: Session) -> Optional[Relations
         )
         if open_critical:
             logger.info(
-                "Skipping edge for claim %s with open critical contradiction (contradiction-based hiding)",
+                "Skipping edge for claim %s with open critical "
+                "contradiction (contradiction-based hiding)",
                 claim.id
             )
             return None
@@ -258,18 +262,59 @@ def sync_claim_to_graph(claim: MemoryClaim, db: Session) -> bool:
         # Convert claim to entity node (validation only)
         claim_to_entity_node(claim, db)
 
-        # Convert claim to relationship if applicable (validation only)
-        claim_to_relationship(claim, db)
+        # Convert claim to relationship if applicable and persist to database
+        edge = claim_to_relationship(claim, db)
+        if edge:
+            # Use merge for upsert to avoid race condition
+            # Check if edge already exists
+            existing_edge = db.query(EntityGraphEdge).filter(
+                EntityGraphEdge.subject_type == "canonical_entity",
+                EntityGraphEdge.subject_id == edge.source_entity_id,
+                EntityGraphEdge.predicate == edge.relationship_type,
+                EntityGraphEdge.object_type == "canonical_entity",
+                EntityGraphEdge.object_id == edge.target_entity_id,
+                EntityGraphEdge.status == "active"
+            ).with_for_update().first()
 
+            if existing_edge:
+                # Update existing edge with new properties
+                existing_edge.evidence_refs = edge.properties
+                existing_edge.updated_at = func.now()
+                logger.debug(f"Updated existing graph edge for claim {claim.id}")
+            else:
+                # Create new edge
+                new_edge = EntityGraphEdge(
+                    subject_type="canonical_entity",
+                    subject_id=edge.source_entity_id,
+                    predicate=edge.relationship_type,
+                    object_type="canonical_entity",
+                    object_id=edge.target_entity_id,
+                    evidence_refs=edge.properties,
+                    source_snapshot_id=(
+                        claim.source_snapshot_id if hasattr(claim, "source_snapshot_id") else None
+                    ),
+                    valid_from=claim.valid_from if claim.valid_from else func.now(),
+                    valid_until=claim.valid_to,
+                    created_by="ingestion",
+                    status="active"
+                )
+                db.add(new_edge)
+                logger.debug(f"Created new graph edge for claim {claim.id}")
+
+            db.commit()
+            return True
+
+        # If no edge (e.g., claim doesn't have object_entity_id or is hidden), still return True
         return True
     except Exception as e:
         # Log error but don't raise
+        db.rollback()
         logger.error(f"Error syncing claim {claim.id} to graph: {e}", exc_info=True)
         return False
 
 
 def remove_claim_from_graph(claim: MemoryClaim, db: Session) -> bool:
-    """Remove a claim from the graph.
+    """Remove a claim from the graph by deactivating/hiding its edges.
 
     Args:
         claim: The memory claim to remove
@@ -278,15 +323,33 @@ def remove_claim_from_graph(claim: MemoryClaim, db: Session) -> bool:
     Returns:
         True if removal was successful, False otherwise
 
-    Raises:
-        NotImplementedError: This function is not yet implemented
-
     Note:
-        This is a placeholder for future implementation. The actual
-        graph deletion logic depends on the graph backend being used.
+        This function deactivates edges rather than deleting them to preserve
+        audit trail. Edges are marked with status="retracted" and valid_until set.
+        Only deactivates edges where this claim is the subject (entity_id),
+        not where it appears as an object (to avoid deactivating edges created by other claims).
     """
-    raise NotImplementedError(
-        "Graph deletion logic not yet implemented. "
-        "This will require: 1) Remove entity node if claim is the only reference, "
-        "2) Remove relationship edge, 3) Handle cascading deletions appropriately."
-    )
+    try:
+        # Find only active graph edges where this claim is the subject
+        # We do NOT search by object_entity_id to avoid deactivating edges
+        # that were created by other claims about this entity
+        edges = db.query(EntityGraphEdge).filter(
+            EntityGraphEdge.subject_type == "canonical_entity",
+            EntityGraphEdge.subject_id == claim.entity_id,
+            EntityGraphEdge.status == "active"
+        ).all()
+
+        # Deactivate all edges by setting status to "retracted" and valid_until
+        for edge in edges:
+            edge.status = "retracted"
+            edge.valid_until = func.now()
+            edge.updated_at = func.now()
+            logger.debug(f"Deactivated graph edge {edge.id} for claim {claim.id}")
+
+        db.commit()
+        logger.info(f"Deactivated {len(edges)} graph edges for claim {claim.id}")
+        return True
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error removing claim {claim.id} from graph: {e}", exc_info=True)
+        return False

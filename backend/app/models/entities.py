@@ -1587,6 +1587,9 @@ class MemoryClaim(Base, TimestampMixin):
     superseded_by_claim_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("memory_claims.id"), nullable=True
     )
+    superseded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     jurisdiction: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
     valid_from: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

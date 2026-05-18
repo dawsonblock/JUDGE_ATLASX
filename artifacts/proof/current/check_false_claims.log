@@ -1,5 +1,4 @@
 ERROR: unsupported platform claim phrases detected:
-  /Users/dawsonblock/JUDGE_ATLASX/backend/app/review/publication_gate.py:146: unsupported claim phrase 'is a criminal'
   /Users/dawsonblock/JUDGE_ATLASX/backend/app/review/risk_tier.py:60: unsupported claim phrase 'risk score'
   /Users/dawsonblock/JUDGE_ATLASX/backend/app/review/risk_tier.py:64: unsupported claim phrase 'risk score'
   /Users/dawsonblock/JUDGE_ATLASX/docs/reference/vendor_repos/CLI-Anything-main/README.md:638: unsupported claim phrase 'fully automated'

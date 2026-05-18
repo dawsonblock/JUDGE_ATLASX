@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-05-18T01:31:40.566397+00:00",
+  "generated_at_utc": "2026-05-18T19:18:08.701976+00:00",
   "total_sources": 26,
   "summary": {
     "total_sources": 26,
     "machine_ingest_sources": 7,
     "runnable_now": 1,
-    "enable_ready": 5,
+    "enable_ready": 4,
     "deprecated": 3
   },
   "sources": [
@@ -274,11 +274,11 @@
       "jurisdiction": "Saskatchewan, Canada",
       "source_class": "machine_ingest",
       "source_type": "court_record",
-      "lifecycle_state": "runnable_disabled",
+      "lifecycle_state": "active",
       "canonical_replacement_key": null,
-      "status_reason": "Saskatchewan Court of King's Bench decisions adapter is ready; source not yet enabled.",
-      "operator_next_step": "Confirm terms of use, then /enable via admin panel.",
-      "automation_status": "machine_ready_disabled",
+      "status_reason": "Saskatchewan Court of King's Bench decisions adapter is ready; source enabled for limited ingestion.",
+      "operator_next_step": "Monitor limited ingestion results; expand to full ingestion if successful.",
+      "automation_status": "machine_ready",
       "adapter_key": "canlii_api",
       "adapter_exists": true,
       "adapter_state": "found",
@@ -286,10 +286,10 @@
       "requires_manual_review": true,
       "runnable_now": false,
       "canonical_now": true,
-      "enable_ready": true,
+      "enable_ready": false,
       "blockers": [
-        "lifecycle_state=runnable_disabled",
-        "automation_status=machine_ready_disabled"
+        "lifecycle_state=active",
+        "automation_status=machine_ready"
       ],
       "alpha_status": "configured"
     },

@@ -7,6 +7,8 @@ and automatic supersession decisions.
 from __future__ import annotations
 
 from typing import Optional
+from datetime import datetime, timezone
+from sqlalchemy.orm import Session
 
 # Source authority hierarchy (higher = more authoritative)
 # Based on the JUDGE_ATLASX production roadmap requirements
@@ -140,3 +142,105 @@ def supersede_by_docket(new_claim_status: str, old_claim_status: str) -> bool:
     stale_statuses = ["completed", "archived", "withdrawn"]
 
     return new_claim_status in current_statuses and old_claim_status in stale_statuses
+
+
+def apply_supersession(new_claim, db: Session) -> int:
+    """Apply source authority supersession logic to mark older claims as superseded.
+
+    Supersession rules:
+    - Same subject (entity_id)
+    - Same predicate
+    - Newer observed_at
+    - Higher or equal source authority
+    - Clear correction/supersession relation
+
+    Older claims are marked as superseded with superseded_by_claim_id pointing to newer claim.
+    Audit trail is preserved (older claims not deleted).
+
+    Args:
+        new_claim: The new claim to check for supersession
+        db: Database session
+
+    Returns:
+        Number of claims superseded
+    """
+    from app.models.entities import MemoryClaim, SourceSnapshot, LegalSource
+
+    # Get new claim source authority weight
+    new_authority = 0.10  # default unknown
+    if new_claim.source_snapshot_id:
+        snapshot = db.query(SourceSnapshot).filter(
+            SourceSnapshot.id == new_claim.source_snapshot_id
+        ).first()
+        if snapshot:
+            source = db.query(LegalSource).filter(LegalSource.id == snapshot.source_id).first()
+            if source:
+                new_authority = get_source_authority_weight(source.source_type)
+
+    # Find older claims with same subject and predicate
+    # Use with_for_update to lock rows and prevent race conditions
+    older_claims = (
+        db.query(MemoryClaim)
+        .filter(
+            MemoryClaim.entity_id == new_claim.entity_id,
+            MemoryClaim.predicate == new_claim.predicate,
+            MemoryClaim.status == "active",
+            MemoryClaim.id != new_claim.id,
+        )
+        .with_for_update()
+        .all()
+    )
+
+    superseded_count = 0
+    for old_claim in older_claims:
+        # Skip if already superseded
+        if old_claim.status == "superseded":
+            continue
+
+        # Check if old claim is older (observed_at)
+        if not old_claim.observed_at or not new_claim.observed_at:
+            continue
+        if old_claim.observed_at >= new_claim.observed_at:
+            continue
+
+        # Get old claim source authority weight
+        old_authority = 0.10  # default unknown
+        if old_claim.source_snapshot_id:
+            snapshot = db.query(SourceSnapshot).filter(
+                SourceSnapshot.id == old_claim.source_snapshot_id
+            ).first()
+            if snapshot:
+                source = db.query(LegalSource).filter(LegalSource.id == snapshot.source_id).first()
+                if source:
+                    old_authority = get_source_authority_weight(source.source_type)
+
+        # Check if new claim should supersede old claim
+        # Supersede if: higher authority OR same authority with newer date
+        should_supersede = False
+        if new_authority > old_authority:
+            should_supersede = True
+        elif new_authority == old_authority:
+            # Same authority: newer wins for certain claim types
+            if new_claim.predicate in [
+                "case_status",
+                "sentence",
+                "appeal_outcome",
+                "statute_section",
+                "court_level",
+                "assigned_judge",
+                "legal_name",
+            ]:
+                should_supersede = True
+
+        if should_supersede:
+            # Mark old claim as superseded
+            old_claim.status = "superseded"
+            old_claim.is_active = False
+            old_claim.contradiction_count = 0  # Reset contradiction count
+            old_claim.superseded_by_claim_id = new_claim.id
+            old_claim.superseded_at = datetime.now(timezone.utc)
+            superseded_count += 1
+
+    db.commit()
+    return superseded_count
+

@@ -16,11 +16,7 @@ from app.models.entities import (
     MemoryContradiction,
     LegalSource,
 )
-from app.memory.source_authority import (
-    get_source_authority_weight,
-    calculate_authority_gap,
-    should_supersede,
-)
+from app.memory.source_authority import get_source_authority_weight
 
 logger = logging.getLogger(__name__)
 
@@ -39,15 +35,46 @@ def detect_contradictions(
         List of contradiction dictionaries with details
     """
     # Get all active claims for the entity
+    # Only include claims with status "active" to exclude superseded, disputed, rejected claims
     claims = (
         db.query(MemoryClaim)
         .filter(
             MemoryClaim.entity_id == entity_id,
-            MemoryClaim.is_active == True,
+            MemoryClaim.is_active,
             MemoryClaim.status == "active",
         )
         .all()
     )
+
+    # Pre-fetch source snapshots and legal sources to avoid N+1 queries
+    from app.models.entities import SourceSnapshot
+    source_snapshot_ids = [c.source_snapshot_id for c in claims if c.source_snapshot_id]
+    snapshots_map = {}
+    if source_snapshot_ids:
+        snapshots = db.query(SourceSnapshot).filter(
+            SourceSnapshot.id.in_(source_snapshot_ids)
+        ).all()
+        snapshots_map = {s.id: s for s in snapshots}
+
+    # Pre-fetch legal sources for all snapshots
+    legal_source_ids = [s.source_id for s in snapshots_map.values()]
+    sources_map = {}
+    if legal_source_ids:
+        sources = db.query(LegalSource).filter(
+            LegalSource.id.in_(legal_source_ids)
+        ).all()
+        sources_map = {s.id: s for s in sources}
+
+    # Build a cache mapping claim_id -> source authority weight
+    source_authority_cache = {}
+    for claim in claims:
+        if claim.source_snapshot_id and claim.source_snapshot_id in snapshots_map:
+            snapshot = snapshots_map[claim.source_snapshot_id]
+            if snapshot.source_id in sources_map:
+                source = sources_map[snapshot.source_id]
+                source_authority_cache[claim.id] = get_source_authority_weight(
+                    source.source_type
+                )
 
     contradictions = []
 
@@ -67,7 +94,9 @@ def detect_contradictions(
         # Check for value contradictions
         for i, claim1 in enumerate(predicate_claims):
             for claim2 in predicate_claims[i + 1 :]:
-                contradiction = _check_value_contradiction(claim1, claim2, db)
+                contradiction = _check_value_contradiction(
+                    claim1, claim2, db, source_authority_cache
+                )
                 if contradiction:
                     contradictions.append(contradiction)
                     if persist:
@@ -76,11 +105,43 @@ def detect_contradictions(
         # Check for temporal contradictions
         for i, claim1 in enumerate(predicate_claims):
             for claim2 in predicate_claims[i + 1 :]:
-                contradiction = _check_temporal_contradiction(claim1, claim2, db)
+                contradiction = _check_temporal_contradiction(
+                    claim1, claim2, db, source_authority_cache
+                )
                 if contradiction:
                     contradictions.append(contradiction)
                     if persist:
                         _persist_contradiction(contradiction, db)
+
+    # Check for legal-specific contradictions within predicate groups
+    # This optimizes performance by only checking relevant pairs
+    for predicate, predicate_claims in claims_by_predicate.items():
+        if len(predicate_claims) < 2:
+            continue
+
+        # Map predicates to their specific check functions
+        predicate_checks = {
+            "case_status": _check_case_status_conflict,
+            "sentence": _check_sentence_conflict,
+            "appeal_outcome": _check_appeal_outcome_conflict,
+            "statute_section": _check_statute_version_conflict,
+            "court_level": _check_court_level_conflict,
+            "assigned_judge": _check_judge_assignment_conflict,
+            "legal_name": _check_identity_conflict,
+        }
+
+        # Use predicate-specific check if available
+        check_func = predicate_checks.get(predicate)
+        if check_func:
+            for i, claim1 in enumerate(predicate_claims):
+                for claim2 in predicate_claims[i + 1 :]:
+                    contradiction = check_func(
+                        claim1, claim2, db, source_authority_cache
+                    )
+                    if contradiction:
+                        contradictions.append(contradiction)
+                        if persist:
+                            _persist_contradiction(contradiction, db)
 
     return contradictions
 
@@ -95,30 +156,23 @@ def _persist_contradiction(
         db: Database session
 
     Returns:
-        Created or existing MemoryContradiction, None if failed
+        Persisted MemoryContradiction or None if already exists
     """
-    # Check if contradiction already exists (prevent duplicates)
-    # Check both orderings to account for claim_a_id/claim_b_id vs claim_b_id/claim_a_id
+    from app.models.entities import SourceSnapshot
+
     claim1_id = contradiction["claim1_id"]
     claim2_id = contradiction["claim2_id"]
-    conflict_type = contradiction["type"]
+    conflict_type = contradiction.get("type")
 
+    # Check if contradiction already exists (check both directions to prevent duplicates)
     existing = (
         db.query(MemoryContradiction)
         .filter(
-            (
-                (MemoryContradiction.claim_a_id == claim1_id)
-                & (MemoryContradiction.claim_b_id == claim2_id)
-            )
-            | (
-                (MemoryContradiction.claim_a_id == claim2_id)
-                & (MemoryContradiction.claim_b_id == claim1_id)
-            ),
-            MemoryContradiction.conflict_type == conflict_type,
+            ((MemoryContradiction.claim_a_id == claim1_id) & (MemoryContradiction.claim_b_id == claim2_id)) |
+            ((MemoryContradiction.claim_a_id == claim2_id) & (MemoryContradiction.claim_b_id == claim1_id))
         )
         .first()
     )
-
     if existing:
         return existing
 
@@ -128,10 +182,22 @@ def _persist_contradiction(
 
     source1 = None
     source2 = None
-    if claim1 and claim1.source_id:
-        source1 = db.query(LegalSource).filter(LegalSource.id == claim1.source_id).first()
-    if claim2 and claim2.source_id:
-        source2 = db.query(LegalSource).filter(LegalSource.id == claim2.source_id).first()
+    if claim1 and claim1.source_snapshot_id:
+        snapshot1 = db.query(SourceSnapshot).filter(
+            SourceSnapshot.id == claim1.source_snapshot_id
+        ).first()
+        if snapshot1:
+            source1 = db.query(LegalSource).filter(
+                LegalSource.id == snapshot1.source_id
+            ).first()
+    if claim2 and claim2.source_snapshot_id:
+        snapshot2 = db.query(SourceSnapshot).filter(
+            SourceSnapshot.id == claim2.source_snapshot_id
+        ).first()
+        if snapshot2:
+            source2 = db.query(LegalSource).filter(
+                LegalSource.id == snapshot2.source_id
+            ).first()
 
     weight1 = get_source_authority_weight(source1.source_type if source1 else None)
     weight2 = get_source_authority_weight(source2.source_type if source2 else None)
@@ -206,10 +272,8 @@ def _persist_contradiction(
             )
             return existing
         logger.error(
-            "Failed to find contradiction after IntegrityError rollback for claims %d and %d (type: %s)",
-            claim1_id,
-            claim2_id,
-            conflict_type,
+            "Failed to find contradiction after IntegrityError rollback "
+            f"for claims {claim1_id} and {claim2_id} (type: {conflict_type})",
         )
         return None
 
@@ -219,48 +283,52 @@ def _calculate_severity(
     claim1: MemoryClaim,
     claim2: MemoryClaim,
     db: Session,
+    source_authority_cache: Optional[Dict[int, float]] = None,
 ) -> str:
     """Calculate contradiction severity based on multiple factors.
 
-    Severity calculation considers:
-    - Contradiction type (value vs temporal)
-    - Source authority weight (higher authority = higher severity)
-    - Confidence scores (higher confidence = higher severity)
-    - Claim count (contradictions affecting more claims = higher severity)
-
     Args:
-        contradiction_type: Type of contradiction (value_contradiction, temporal_contradiction)
+        contradiction_type: Type of contradiction
         claim1: First claim
         claim2: Second claim
         db: Database session
+        source_authority_cache: Optional cache mapping claim_id -> source authority weight
 
     Returns:
-        Severity level (low, medium, high, critical)
+        Severity level: "critical", "high", "medium", "low"
     """
-    # Get source authority weights
-    source1 = None
-    source2 = None
-    if claim1.source_snapshot_id:
-        from app.models.entities import SourceSnapshot
-        snapshot1 = db.query(SourceSnapshot).filter(
-            SourceSnapshot.id == claim1.source_snapshot_id
-        ).first()
-        if snapshot1:
-            source1 = db.query(LegalSource).filter(
-                LegalSource.id == snapshot1.source_id
+    # Use cached source authority weights if available
+    if source_authority_cache:
+        weight1 = source_authority_cache.get(claim1.id, 0.10)
+        weight2 = source_authority_cache.get(claim2.id, 0.10)
+    else:
+        # Fallback to database queries for backward compatibility
+        weight1 = 0.10  # default unknown
+        if claim1.source_snapshot_id:
+            from app.models.entities import SourceSnapshot
+            snapshot1 = db.query(SourceSnapshot).filter(
+                SourceSnapshot.id == claim1.source_snapshot_id
             ).first()
-    if claim2.source_snapshot_id:
-        from app.models.entities import SourceSnapshot
-        snapshot2 = db.query(SourceSnapshot).filter(
-            SourceSnapshot.id == claim2.source_snapshot_id
-        ).first()
-        if snapshot2:
-            source2 = db.query(LegalSource).filter(
-                LegalSource.id == snapshot2.source_id
-            ).first()
+            if snapshot1:
+                source1 = db.query(LegalSource).filter(
+                    LegalSource.id == snapshot1.source_id
+                ).first()
+                if source1:
+                    weight1 = get_source_authority_weight(source1.source_type)
 
-    weight1 = get_source_authority_weight(source1.source_type if source1 else None)
-    weight2 = get_source_authority_weight(source2.source_type if source2 else None)
+        weight2 = 0.10  # default unknown
+        if claim2.source_snapshot_id:
+            from app.models.entities import SourceSnapshot
+            snapshot2 = db.query(SourceSnapshot).filter(
+                SourceSnapshot.id == claim2.source_snapshot_id
+            ).first()
+            if snapshot2:
+                source2 = db.query(LegalSource).filter(
+                    LegalSource.id == snapshot2.source_id
+                ).first()
+                if source2:
+                    weight2 = get_source_authority_weight(source2.source_type)
+
     max_authority = max(weight1, weight2)
 
     # Base severity from contradiction type
@@ -298,13 +366,18 @@ def _calculate_severity(
 
 
 def _check_value_contradiction(
-    claim1: MemoryClaim, claim2: MemoryClaim, db: Session
+    claim1: MemoryClaim,
+    claim2: MemoryClaim,
+    db: Session,
+    source_authority_cache: Optional[Dict[int, float]] = None,
 ) -> Optional[Dict[str, any]]:
     """Check if two claims have contradictory values.
 
     Args:
         claim1: First claim
         claim2: Second claim
+        db: Database session
+        source_authority_cache: Optional cache mapping claim_id -> source authority weight
 
     Returns:
         Contradiction dict if found, None otherwise
@@ -322,7 +395,9 @@ def _check_value_contradiction(
         val1 = claim1.normalized_value.lower()
         val2 = claim2.normalized_value.lower()
         if (val1 == "true" and val2 == "false") or (val1 == "false" and val2 == "true"):
-            severity = _calculate_severity("value_contradiction", claim1, claim2, db)
+            severity = _calculate_severity(
+                "value_contradiction", claim1, claim2, db, source_authority_cache
+            )
             return {
                 "type": "value_contradiction",
                 "claim1_id": claim1.id,
@@ -340,7 +415,9 @@ def _check_value_contradiction(
             num2 = float(claim2.normalized_value)
             # If values differ by more than 10%, consider it a contradiction
             if num1 > 0 and abs(num1 - num2) / num1 > 0.1:
-                severity = _calculate_severity("value_contradiction", claim1, claim2, db)
+                severity = _calculate_severity(
+                "value_contradiction", claim1, claim2, db, source_authority_cache
+            )
                 return {
                     "type": "value_contradiction",
                     "claim1_id": claim1.id,
@@ -357,13 +434,18 @@ def _check_value_contradiction(
 
 
 def _check_temporal_contradiction(
-    claim1: MemoryClaim, claim2: MemoryClaim, db: Session
+    claim1: MemoryClaim,
+    claim2: MemoryClaim,
+    db: Session,
+    source_authority_cache: Optional[Dict[int, float]] = None,
 ) -> Optional[Dict[str, any]]:
     """Check if two claims have contradictory temporal validity.
 
     Args:
         claim1: First claim
         claim2: Second claim
+        db: Database session
+        source_authority_cache: Optional cache mapping claim_id -> source authority weight
 
     Returns:
         Contradiction dict if found, None otherwise
@@ -380,13 +462,354 @@ def _check_temporal_contradiction(
     # Check if claims have conflicting validity for the same time period
     if claim1.valid_from == claim2.valid_from:
         if claim1.normalized_value != claim2.normalized_value:
-            severity = _calculate_severity("temporal_contradiction", claim1, claim2, db)
+            severity = _calculate_severity(
+                "temporal_contradiction", claim1, claim2, db, source_authority_cache
+            )
             return {
                 "type": "temporal_contradiction",
                 "claim1_id": claim1.id,
                 "claim2_id": claim2.id,
                 "predicate": claim1.predicate,
                 "valid_from": str(claim1.valid_from),
+                "value1": claim1.normalized_value,
+                "value2": claim2.normalized_value,
+                "severity": severity,
+            }
+
+    return None
+
+
+def _check_case_status_conflict(
+    claim1: MemoryClaim,
+    claim2: MemoryClaim,
+    db: Session,
+    source_authority_cache: Optional[Dict[int, float]] = None,
+) -> Optional[Dict[str, any]]:
+    """Check for case status contradictions.
+
+    Args:
+        claim1: First claim
+        claim2: Second claim
+        db: Database session
+        source_authority_cache: Optional cache mapping claim_id -> source authority weight
+
+    Returns:
+        Contradiction dict if found, None otherwise
+    """
+    if claim1.predicate != "case_status" or claim2.predicate != "case_status":
+        return None
+
+    # Mutually exclusive case statuses
+    contradictory_statuses = {
+        ("convicted", "acquitted"),
+        ("convicted", "dismissed"),
+        ("convicted", "not_guilty"),
+        ("acquitted", "convicted"),
+        ("dismissed", "convicted"),
+        ("not_guilty", "convicted"),
+    }
+
+    val1 = claim1.normalized_value.lower() if claim1.normalized_value else ""
+    val2 = claim2.normalized_value.lower() if claim2.normalized_value else ""
+
+    if (val1, val2) in contradictory_statuses:
+        severity = _calculate_severity(
+            "case_status_conflict", claim1, claim2, db, source_authority_cache
+        )
+        return {
+            "type": "case_status_conflict",
+            "claim1_id": claim1.id,
+            "claim2_id": claim2.id,
+            "predicate": "case_status",
+            "value1": claim1.normalized_value,
+            "value2": claim2.normalized_value,
+            "severity": severity,
+        }
+
+    return None
+
+
+def _check_sentence_conflict(
+    claim1: MemoryClaim,
+    claim2: MemoryClaim,
+    db: Session,
+    source_authority_cache: Optional[Dict[int, float]] = None,
+) -> Optional[Dict[str, any]]:
+    """Check for sentence contradictions (sentenced vs not sentenced).
+
+    Args:
+        claim1: First claim
+        claim2: Second claim
+        db: Database session
+        source_authority_cache: Optional cache mapping claim_id -> source authority weight
+
+    Returns:
+        Contradiction dict if found, None otherwise
+    """
+    if claim1.predicate != "sentence" or claim2.predicate != "sentence":
+        return None
+
+    val1 = claim1.normalized_value.lower() if claim1.normalized_value else ""
+    val2 = claim2.normalized_value.lower() if claim2.normalized_value else ""
+
+    # Check for contradictory sentence states
+    has_sentence1 = val1 and val1 not in ["none", "no_sentence", "not_sentenced"]
+    has_sentence2 = val2 and val2 not in ["none", "no_sentence", "not_sentenced"]
+
+    if has_sentence1 and not has_sentence2:
+        severity = _calculate_severity(
+            "sentence_conflict", claim1, claim2, db, source_authority_cache
+        )
+        return {
+            "type": "sentence_conflict",
+            "claim1_id": claim1.id,
+            "claim2_id": claim2.id,
+            "predicate": "sentence",
+            "value1": claim1.normalized_value,
+            "value2": claim2.normalized_value,
+            "severity": severity,
+        }
+
+    if not has_sentence1 and has_sentence2:
+        severity = _calculate_severity(
+            "sentence_conflict", claim1, claim2, db, source_authority_cache
+        )
+        return {
+            "type": "sentence_conflict",
+            "claim1_id": claim1.id,
+            "claim2_id": claim2.id,
+            "predicate": "sentence",
+            "value1": claim1.normalized_value,
+            "value2": claim2.normalized_value,
+            "severity": severity,
+        }
+
+    return None
+
+
+def _check_appeal_outcome_conflict(
+    claim1: MemoryClaim,
+    claim2: MemoryClaim,
+    db: Session,
+    source_authority_cache: Optional[Dict[int, float]] = None,
+) -> Optional[Dict[str, any]]:
+    """Check for appeal outcome contradictions.
+
+    Args:
+        claim1: First claim
+        claim2: Second claim
+        db: Database session
+        source_authority_cache: Optional cache mapping claim_id -> source authority weight
+
+    Returns:
+        Contradiction dict if found, None otherwise
+    """
+    if claim1.predicate != "appeal_outcome" or claim2.predicate != "appeal_outcome":
+        return None
+
+    val1 = claim1.normalized_value.lower() if claim1.normalized_value else ""
+    val2 = claim2.normalized_value.lower() if claim2.normalized_value else ""
+
+    contradictory_outcomes = {
+        ("upheld", "overturned"),
+        ("upheld", "reversed"),
+        ("overturned", "upheld"),
+        ("reversed", "upheld"),
+        ("affirmed", "reversed"),
+        ("reversed", "affirmed"),
+    }
+
+    if (val1, val2) in contradictory_outcomes:
+        severity = _calculate_severity(
+            "appeal_outcome_conflict", claim1, claim2, db, source_authority_cache
+        )
+        return {
+            "type": "appeal_outcome_conflict",
+            "claim1_id": claim1.id,
+            "claim2_id": claim2.id,
+            "predicate": "appeal_outcome",
+            "value1": claim1.normalized_value,
+            "value2": claim2.normalized_value,
+            "severity": severity,
+        }
+
+    return None
+
+
+def _check_statute_version_conflict(
+    claim1: MemoryClaim,
+    claim2: MemoryClaim,
+    db: Session,
+    source_authority_cache: Optional[Dict[int, float]] = None,
+) -> Optional[Dict[str, any]]:
+    """Check for statute version conflicts.
+
+    Args:
+        claim1: First claim
+        claim2: Second claim
+        db: Database session
+        source_authority_cache: Optional cache mapping claim_id -> source authority weight
+
+    Returns:
+        Contradiction dict if found, None otherwise
+    """
+    if claim1.predicate != "statute_section" or claim2.predicate != "statute_section":
+        return None
+
+    # Check if same statute has different section numbers
+    if claim1.normalized_value != claim2.normalized_value:
+        # Extract statute ID (before the section number) to check if they're from the same statute
+        # Example: "C-46 s.123(1)" -> statute ID is "C-46"
+        val1 = claim1.normalized_value or ""
+        val2 = claim2.normalized_value or ""
+
+        # Try to extract statute ID (pattern: letters/numbers before space or section marker)
+        import re
+        statute_id_pattern = r'^[A-Z0-9-]+'
+        statute1 = re.match(statute_id_pattern, val1)
+        statute2 = re.match(statute_id_pattern, val2)
+
+        # Only flag as contradiction if they're from the same statute
+        # Different sections of the same statute are not contradictions
+        if statute1 and statute2 and statute1.group() == statute2.group():
+            severity = _calculate_severity(
+                "statute_version_conflict", claim1, claim2, db, source_authority_cache
+            )
+            return {
+                "type": "statute_version_conflict",
+                "claim1_id": claim1.id,
+                "claim2_id": claim2.id,
+                "predicate": "statute_section",
+                "value1": claim1.normalized_value,
+                "value2": claim2.normalized_value,
+                "severity": severity,
+            }
+
+    return None
+
+
+def _check_court_level_conflict(
+    claim1: MemoryClaim,
+    claim2: MemoryClaim,
+    db: Session,
+    source_authority_cache: Optional[Dict[int, float]] = None,
+) -> Optional[Dict[str, any]]:
+    """Check for court level contradictions.
+
+    Args:
+        claim1: First claim
+        claim2: Second claim
+        db: Database session
+        source_authority_cache: Optional cache mapping claim_id -> source authority weight
+
+    Returns:
+        Contradiction dict if found, None otherwise
+    """
+    if claim1.predicate != "court_level" or claim2.predicate != "court_level":
+        return None
+
+    val1 = claim1.normalized_value.lower() if claim1.normalized_value else ""
+    val2 = claim2.normalized_value.lower() if claim2.normalized_value else ""
+
+    # Check for contradictory court levels
+    contradictory_levels = {
+        ("provincial", "federal"),
+        ("federal", "provincial"),
+        ("superior_court", "provincial_court"),
+        ("provincial_court", "superior_court"),
+        ("court_of_appeal", "provincial_court"),
+        ("provincial_court", "court_of_appeal"),
+    }
+
+    if (val1, val2) in contradictory_levels:
+        severity = _calculate_severity(
+            "court_level_conflict", claim1, claim2, db, source_authority_cache
+        )
+        return {
+            "type": "court_level_conflict",
+            "claim1_id": claim1.id,
+            "claim2_id": claim2.id,
+            "predicate": "court_level",
+            "value1": claim1.normalized_value,
+            "value2": claim2.normalized_value,
+            "severity": severity,
+        }
+
+    return None
+
+
+def _check_judge_assignment_conflict(
+    claim1: MemoryClaim,
+    claim2: MemoryClaim,
+    db: Session,
+    source_authority_cache: Optional[Dict[int, float]] = None,
+) -> Optional[Dict[str, any]]:
+    """Check for judge assignment contradictions.
+
+    Args:
+        claim1: First claim
+        claim2: Second claim
+        db: Database session
+        source_authority_cache: Optional cache mapping claim_id -> source authority weight
+
+    Returns:
+        Contradiction dict if found, None otherwise
+    """
+    if claim1.predicate != "assigned_judge" or claim2.predicate != "assigned_judge":
+        return None
+
+    # Check if same hearing date has different judges
+    if claim1.observed_at and claim2.observed_at:
+        if claim1.observed_at.date() == claim2.observed_at.date():
+            if claim1.normalized_value != claim2.normalized_value:
+                severity = _calculate_severity(
+                "judge_assignment_conflict", claim1, claim2, db, source_authority_cache
+            )
+                return {
+                    "type": "judge_assignment_conflict",
+                    "claim1_id": claim1.id,
+                    "claim2_id": claim2.id,
+                    "predicate": "assigned_judge",
+                    "value1": claim1.normalized_value,
+                    "value2": claim2.normalized_value,
+                    "hearing_date": str(claim1.observed_at.date()),
+                    "severity": severity,
+                }
+
+    return None
+
+
+def _check_identity_conflict(
+    claim1: MemoryClaim,
+    claim2: MemoryClaim,
+    db: Session,
+    source_authority_cache: Optional[Dict[int, float]] = None,
+) -> Optional[Dict[str, any]]:
+    """Check for identity contradictions (same entity, different values).
+
+    Args:
+        claim1: First claim
+        claim2: Second claim
+        db: Database session
+        source_authority_cache: Optional cache mapping claim_id -> source authority weight
+
+    Returns:
+        Contradiction dict if found, None otherwise
+    """
+    if claim1.predicate != "legal_name" or claim2.predicate != "legal_name":
+        return None
+
+    # Check if same entity has different legal names
+    if claim1.entity_id == claim2.entity_id:
+        if claim1.normalized_value != claim2.normalized_value:
+            severity = _calculate_severity(
+                "identity_conflict", claim1, claim2, db, source_authority_cache
+            )
+            return {
+                "type": "identity_conflict",
+                "claim1_id": claim1.id,
+                "claim2_id": claim2.id,
+                "predicate": "legal_name",
                 "value1": claim1.normalized_value,
                 "value2": claim2.normalized_value,
                 "severity": severity,
@@ -404,26 +827,40 @@ def update_contradiction_counts(db: Session) -> int:
     Returns:
         Number of entities with contradictions
     """
-    entities = db.query(CanonicalEntity).all()
+    BATCH_SIZE = 1000
+    offset = 0
     entities_with_contradictions = 0
 
-    for entity in entities:
-        contradictions = detect_contradictions(entity.id, db)
-        contradiction_count = len(contradictions)
-
-        # Update contradiction counts for all claims on this entity
-        claims = (
-            db.query(MemoryClaim)
-            .filter(MemoryClaim.entity_id == entity.id)
+    while True:
+        entities = (
+            db.query(CanonicalEntity)
+            .offset(offset)
+            .limit(BATCH_SIZE)
             .all()
         )
-        for claim in claims:
-            claim.contradiction_count = contradiction_count
 
-        if contradiction_count > 0:
-            entities_with_contradictions += 1
+        if not entities:
+            break
 
-    db.commit()
+        for entity in entities:
+            contradictions = detect_contradictions(entity.id, db)
+            contradiction_count = len(contradictions)
+
+            # Update contradiction counts for all claims on this entity
+            claims = (
+                db.query(MemoryClaim)
+                .filter(MemoryClaim.entity_id == entity.id)
+                .all()
+            )
+            for claim in claims:
+                claim.contradiction_count = contradiction_count
+
+            if contradiction_count > 0:
+                entities_with_contradictions += 1
+
+        db.commit()
+        offset += BATCH_SIZE
+
     logger.info(
         "Updated contradiction counts for %d entities",
         entities_with_contradictions,
@@ -560,14 +997,19 @@ def auto_supersede_by_authority(contradiction_id: int, db: Session) -> bool:
     # Supersede the lower-authority claim
     claim_to_supersede.status = "superseded"
     claim_to_supersede.is_active = False
-    claim_to_supersede.invalidation_reason = f"Auto-superseded by higher-authority claim {retained_claim.id} (authority: {max(weight_a, weight_b):.2f} vs {min(weight_a, weight_b):.2f})"
+    max_auth = max(weight_a, weight_b)
+    min_auth = min(weight_a, weight_b)
+    claim_to_supersede.invalidation_reason = (
+        f"Auto-superseded by higher-authority claim {retained_claim.id} "
+        f"(authority: {max_auth:.2f} vs {min_auth:.2f})"
+    )
     claim_to_supersede.invalidated_at = datetime.now(timezone.utc)
     claim_to_supersede.superseded_by_claim_id = retained_claim.id
 
     # Mark contradiction as resolved
     contradiction.status = "resolved"
     contradiction.resolved_at = datetime.now(timezone.utc)
-    contradiction.resolution_note = f"Auto-resolved by authority-based supersession"
+    contradiction.resolution_note = "Auto-resolved by authority-based supersession"
 
     db.commit()
     logger.info(

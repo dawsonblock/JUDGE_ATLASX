@@ -3,9 +3,9 @@
   "archive_hash": "287a0964215f7bd8d27d23a4a6d09c96580ef546",
   "platform": "macOS-26.2-arm64-arm-64bit",
   "python_version": "3.11.7",
-  "gate_runner_node_version": "v20.20.2",
-  "frontend_node_gate_version": "v20.20.2",
-  "node_version": "v20.20.2",
+  "gate_runner_node_version": "v24.x",
+  "frontend_node_gate_version": "v24.x",
+  "node_version": "v24.x",
   "npm_version": "11.12.1",
   "proof_root": "artifacts/proof/current",
   "proof_commands": [

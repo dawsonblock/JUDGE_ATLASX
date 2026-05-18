@@ -146,6 +146,9 @@ proof:
 	@echo "=== 13. Release gate ===" >> proof/latest/proof_summary.log
 	@python3 scripts/release_gate.py > proof/latest/release_gate.log 2>&1 || (echo "FAIL: release gate" >> proof/latest/proof_summary.log && exit 1)
 	@echo "PASS: release gate" >> proof/latest/proof_summary.log
+	@echo "=== 13.5. Proof artifact consistency check ===" >> proof/latest/proof_summary.log
+	@cd backend && python -m app.ops.verify_proof_consistency > ../proof/latest/proof_consistency.log 2>&1 || (echo "FAIL: proof consistency" >> ../proof/latest/proof_summary.log && exit 1)
+	@echo "PASS: proof consistency" >> proof/latest/proof_summary.log
 	@echo "=== 14. Proof timestamp staleness check ===" >> proof/latest/proof_summary.log
 	@python3 scripts/check_proof_timestamp.py > proof/latest/timestamp.log 2>&1 || (echo "FAIL: proof timestamp" >> proof/latest/proof_summary.log && exit 1)
 	@echo "PASS: proof timestamp" >> proof/latest/proof_summary.log
