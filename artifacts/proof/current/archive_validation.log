@@ -1,26 +1,26 @@
-Built clean release archive: /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.i2LyyL9Gi1/judge_atlas_archive.zip
-archive_sha256=bb332493ff4bb7ff9f916b5e876af0f16f989bd880528819497fd945d68e81de
+Built clean release archive: /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.pmSmMsRny3/judge_atlas_archive.zip
+archive_sha256=0bad0c579a6d56d940cbd1763e44773e7f952a20eb28c331cd1087fbe19f86ed
 file_count=1019
 Archive validation written to /Users/dawsonblock/JUDGE_ATLASX/artifacts/proof/current/archive_validation.md
 PASS
 PASS
-[archive_validation] INFO: archive=/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.i2LyyL9Gi1/judge_atlas_archive.zip
+[archive_validation] INFO: archive=/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.pmSmMsRny3/judge_atlas_archive.zip
 [archive_validation] INFO: archive_filename=judge_atlas_archive.zip
-[archive_validation] INFO: archive_sha256=bb332493ff4bb7ff9f916b5e876af0f16f989bd880528819497fd945d68e81de
+[archive_validation] INFO: archive_sha256=0bad0c579a6d56d940cbd1763e44773e7f952a20eb28c331cd1087fbe19f86ed
 [archive_validation] INFO: archive_top_level_dirs=./JUDGE_ATLAS-main
-[archive_validation] INFO: extract_dir=/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.i2LyyL9Gi1/extract
-[archive_validation] PASS: located repository root at /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.i2LyyL9Gi1/extract/JUDGE_ATLAS-main
-[archive_validation] INFO: release_gate.json proof_input_tree_hash=0f624eae961a2f8e04615089f84a664fd4740669ee1d8cec125f16fab9aa8c34
-OK: no unsupported platform claim phrases detected in /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.i2LyyL9Gi1/extract/JUDGE_ATLAS-main
+[archive_validation] INFO: extract_dir=/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.pmSmMsRny3/extract
+[archive_validation] PASS: located repository root at /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.pmSmMsRny3/extract/JUDGE_ATLAS-main
+[archive_validation] INFO: release_gate.json proof_input_tree_hash=43ba610430e61e74b4ebbfde049a4a5e88805acca331eaea1e9712383552b9c0
+OK: no unsupported platform claim phrases detected in /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.pmSmMsRny3/extract/JUDGE_ATLAS-main
 [archive_validation] PASS: check_false_claims
-OK: no unsupported platform claim phrases detected in /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.i2LyyL9Gi1/extract/JUDGE_ATLAS-main
+OK: no unsupported platform claim phrases detected in /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.pmSmMsRny3/extract/JUDGE_ATLAS-main
 [archive_validation] PASS: check_truth_claims
-FAIL: missing listed proof input files: scripts/.pytest_cache/v/cache/lastfailed, scripts/.pytest_cache/v/cache/nodeids
-proof_input_tree_hash=a99b5f8855088c55eafcbd38411acb23f8b81e7ec19534885fc588acb8e41b26
-[archive_validation] FAIL: check_proof_freshness rc=1
-FAIL: missing listed proof input files: scripts/.pytest_cache/v/cache/lastfailed, scripts/.pytest_cache/v/cache/nodeids
-proof_input_tree_hash=a99b5f8855088c55eafcbd38411acb23f8b81e7ec19534885fc588acb8e41b26
-[archive_validation] FAIL: check_proof_freshness_strict rc=1
+PASS: proof artifacts are fresh
+proof_input_tree_hash=43ba610430e61e74b4ebbfde049a4a5e88805acca331eaea1e9712383552b9c0
+[archive_validation] PASS: check_proof_freshness
+PASS: proof artifacts are fresh
+proof_input_tree_hash=43ba610430e61e74b4ebbfde049a4a5e88805acca331eaea1e9712383552b9c0
+[archive_validation] PASS: check_proof_freshness_strict
 OK: No committed bytecode files
 [archive_validation] PASS: check_no_pyc
 OK: 2 experimental package(s) have NOT_RUNTIME sentinel.
@@ -50,7 +50,6 @@ PASS  26 source(s) across 1 file(s) validated OK
 [archive_validation] PASS: forbid_frontend_node_modules
 [archive_validation] PASS: forbid_repo_node_modules
 [archive_validation] PASS: forbid_git_dir
-[archive_validation] INFO: proof_freshness actual_hash=a99b5f8855088c55eafcbd38411acb23f8b81e7ec19534885fc588acb8e41b26
-[archive_validation] FAIL: release hash and proof freshness hash differ
-[archive_validation] FAIL: extracted archive checks completed
+[archive_validation] INFO: proof_freshness actual_hash=43ba610430e61e74b4ebbfde049a4a5e88805acca331eaea1e9712383552b9c0
+[archive_validation] PASS: extracted archive checks completed
 Archive validation log written: /Users/dawsonblock/JUDGE_ATLASX/artifacts/proof/current/archive_validation.log

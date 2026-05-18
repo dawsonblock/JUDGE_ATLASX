@@ -1,17 +1,18 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-18T00:09:29.171742+00:00
-- commit_hash: fd1f5fd52a852b6cd50d58f4a852d0b2cb894fa1
+- generated_at_utc: 2026-05-18T01:32:39.475872+00:00
+- commit_hash: 287a0964215f7bd8d27d23a4a6d09c96580ef546
 - alpha_gate_status: PASS
 - alpha_gate_passed: True
 - release_gate_check_count: 37
+- archive_validation_result: PASS
 - docker_available: True
 - postgis_proof_result: PASS
 - egress_proxy_proof_result: PASS
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
-- proof_input_tree_hash: 0f624eae961a2f8e04615089f84a664fd4740669ee1d8cec125f16fab9aa8c34
-- proof_input_file_count: 847
+- proof_input_tree_hash: 43ba610430e61e74b4ebbfde049a4a5e88805acca331eaea1e9712383552b9c0
+- proof_input_file_count: 845
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
@@ -45,7 +46,7 @@
 - Dedicated egress proxy proof passed in the current release gate.
 - Dedicated synthetic demo proof passed in the current release gate.
 - Proof freshness passed against the stored proof-input file list and tree hash.
-- Archive validation has not yet been recorded for this run.
+- Archive validation passed against the final distributable archive shape.
 - archive_validation_log: artifacts/proof/current/archive_validation.log
 - archive_validation_supported_shapes:
   - JUDGE-main/

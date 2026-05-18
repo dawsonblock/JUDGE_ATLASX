@@ -1,53 +1,7 @@
 {
-  "release_mode": "alpha",
-  "generated_at": "2026-05-16T23:11:55.231167+00:00",
-  "git_commit": "7051c4c4ae28a176853ddc9daffd0967894edcc6",
-  "included_directories": [
-    "backend",
-    "frontend",
-    "docs",
-    "deploy",
-    "scripts",
-    "tests",
-    "tools",
-    "artifacts/current"
-  ],
-  "excluded_directories": [
-    ".git",
-    ".next",
-    ".pytest_cache",
-    ".venv",
-    "__pycache__",
-    "artifacts/archive",
-    "artifacts/history",
-    "artifacts/old",
-    "cache",
-    "coverage",
-    "dist",
-    "docs/archive",
-    "duplicate_status_docs",
-    "external_reference",
-    "generated_logs",
-    "legacy_disabled",
-    "node_modules",
-    "old_phase_reports",
-    "reference_only",
-    "reports",
-    "research",
-    "skills",
-    "tmp",
-    "venv"
-  ],
-  "file_count": 927,
-  "proof_scope": [
-    "backend tests",
-    "frontend contract tests",
-    "runtime boundary validation",
-    "source registry validation",
-    "evidence store validation",
-    "ingestion replay tests",
-    "security startup blocker tests",
-    "publication gate tests"
-  ],
-  "optional_reference_bundle": "JUDGE_ATLASX-reference-bundle.zip"
+  "generated_at": "2026-05-18T01:32:39.475872+00:00",
+  "git_commit": "287a0964215f7bd8d27d23a4a6d09c96580ef546",
+  "alpha_gate_passed": true,
+  "archive_validation_result": "PASS",
+  "proof_input_tree_hash": "43ba610430e61e74b4ebbfde049a4a5e88805acca331eaea1e9712383552b9c0"
 }
