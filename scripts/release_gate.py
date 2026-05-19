@@ -1923,12 +1923,6 @@ def main() -> int:
         source_registry_summary,
     )
     proof_policy_rel = _write_proof_policy_md(repo_root, out_dir, payload)
-    repair_report_rel = _write_repair_report_md(
-        repo_root,
-        out_dir,
-        payload,
-        source_registry_summary,
-    )
     payload["logs"]["current_proof"] = current_proof_rel
     payload["logs"] |= grouped_artifacts
 
@@ -1950,13 +1944,27 @@ def main() -> int:
     )
     payload["logs"]["archive_validation"] = archive_step.log_path
 
-    # Recalculate ok after archive validation (check_count stays the same)
-    ok = all(r.exit_code == 0 for r in results) and not _missing_logs(repo_root, results)
+    # Recalculate gate state after archive validation.
+    missing_logs = _missing_logs(repo_root, results)
+    ok = all(r.exit_code == 0 for r in results) and not missing_logs
+    final_blockers = [r.name for r in results if r.exit_code != 0] + (
+        ["missing_logs"] if missing_logs else []
+    )
     payload["alpha_gate_passed"] = ok
+    payload["check_count"] = len(results)
+    payload["checks"] = [asdict(r) for r in results]
+    payload["failed_checks"] = final_blockers
+    payload["release_blockers_remaining"] = final_blockers if not ok else []
 
     payload["logs"]["current_alpha_status"] = current_alpha_status_rel
     payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
     payload["logs"]["proof_policy"] = proof_policy_rel
+    repair_report_rel = _write_repair_report_md(
+        repo_root,
+        out_dir,
+        payload,
+        source_registry_summary,
+    )
     payload["logs"]["repair_report"] = repair_report_rel
 
     # Rewrite release_gate.json with final archive validation result

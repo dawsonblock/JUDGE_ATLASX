@@ -45,6 +45,7 @@ def main() -> int:
         return 1
 
     major, minor = parsed
+
     if major != args.expected_major:
         expected = f"{args.expected_major}.x"
         print(f"Frontend release gate requires Node {expected}. Current Node: {version}. Use nvm use {args.expected_major}.")
@@ -55,7 +56,7 @@ def main() -> int:
         print(f"Frontend release gate requires Node {expected}. Current Node: {version}. Use nvm use {args.expected_major}.{args.expected_minor}.")
         return 1
 
-    print(f"Node gate PASS: {version}")
+    print(f"Node gate PASS: {version} (expected major: {args.expected_major})")
     return 0
 
 

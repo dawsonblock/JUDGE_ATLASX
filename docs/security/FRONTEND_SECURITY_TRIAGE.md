@@ -188,9 +188,27 @@ re-reviewed by the due date or remediated before any production-readiness claim.
 
 ---
 
+### 11. `brace-expansion` — MODERATE (transitive via test/build tooling)
+
+- **Severity**: Moderate (transitive)
+- **Affected packages**: `brace-expansion`
+- **Dependency chain (via)**: test/build-time dependency chain includes `brace-expansion` via tooling transitive dependencies.
+- **Dependency scope**: transitive (not direct)
+- **Runtime scope**: dev-only / build-time; not used by production request handling.
+- **Fix availability**: no direct top-level patch in this repo without upstream dependency updates; tracked for routine dependency refresh.
+- **Triage decision / rationale**: **ACCEPTED — alpha scope**
+  - Package is not directly imported by application runtime code.
+  - No user-controlled runtime input is processed through this package in deployed service paths.
+  - Exposure is limited to local/CI dependency execution context.
+- **Owner**: security-review-alpha
+- **Target fix condition/date**: remediate when upstream dependency chain publishes and validates compatible patched versions; re-evaluate by 2026-06-30 exception review.
+- **Status**: accepted-for-alpha / dev-tooling-only
+
+---
+
 ## Attestation
 
-All 10 vulnerabilities above have been reviewed for JUDGE_ATLAS alpha scope.
+All vulnerabilities listed above have been reviewed for JUDGE_ATLAS alpha scope.
 None of the affected packages process user input at runtime in JUDGE_ATLAS.
 All are build-time devDependencies or are blocked by upstream package release schedules.
 
