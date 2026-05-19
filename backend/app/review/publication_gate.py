@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from app.models.entities import CrimeIncident, LegalInstrument, Location, ReviewItem, MemoryClaim
 from app.models.geocode_cache import GeocodeCache
+from app.models.geo_legal_event import GeoLegalEvent
 from app.policies.publication_policy import can_publish_entity, entity_public_visibility
 from app.policies.state_model import (
     ReviewQueueDecision,
@@ -227,4 +228,122 @@ def assert_memory_claim_publication_ready(claim: MemoryClaim, db: Session) -> No
             if source and source.lifecycle_state in ["deprecated", "quarantined"]:
                 raise PublicationBlockedError(
                     f"MemoryClaim {claim.id} source '{source.source_id}' is {source.lifecycle_state} — cannot publish"
+                )
+
+
+def assert_geo_legal_event_publication_ready(
+    event: GeoLegalEvent, db: Session
+) -> None:
+    """Raise PublicationBlockedError if a GeoLegalEvent is not publication-ready.
+
+    GeoLegalEvents are materialized events that have already passed the
+    publication gate for their underlying sources. This function performs
+    final validation before map rendering.
+
+    Requirements:
+    - review_status = approved
+    - publish_status in [public_safe, public_redacted]
+    - confidence above threshold (configurable, default 0.7)
+    - Location coordinates are present and valid
+    - No unresolved high-risk contradictions in linked claims
+    """
+    # Check review status
+    if event.review_status != "approved":
+        raise PublicationBlockedError(
+            f"GeoLegalEvent {event.id} review_status='{event.review_status}' — must be 'approved'"
+        )
+
+    # Check publish status
+    if event.publish_status not in ["public_safe", "public_redacted"]:
+        raise PublicationBlockedError(
+            f"GeoLegalEvent {event.id} publish_status='{event.publish_status}' — must be 'public_safe' or 'public_redacted'"
+        )
+
+    # Check confidence
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    min_confidence = getattr(settings, "public_map_min_confidence", 0.7)
+    if event.confidence < min_confidence:
+        raise PublicationBlockedError(
+            f"GeoLegalEvent {event.id} confidence={event.confidence} — must be >= {min_confidence}"
+        )
+
+    # Check location coordinates
+    if event.lat is None or event.lng is None:
+        raise PublicationBlockedError(
+            f"GeoLegalEvent {event.id} has missing coordinates — cannot render on map"
+        )
+
+    # Validate coordinate ranges
+    if not (-90 <= event.lat <= 90) or not (-180 <= event.lng <= 180):
+        raise PublicationBlockedError(
+            f"GeoLegalEvent {event.id} has invalid coordinates ({event.lat}, {event.lng})"
+        )
+
+    # Check for unresolved high-risk contradictions in linked claims
+    if event.claim_ids:
+        from app.memory.contradiction_engine import get_open_contradictions_by_claim
+        from app.models.entities import MemoryClaim
+
+        # Convert string IDs to integers for querying MemoryClaim.id (primary key)
+        claim_int_ids = []
+        for claim_id in event.claim_ids:
+            try:
+                claim_int_ids.append(int(claim_id))
+            except (ValueError, TypeError):
+                # Skip invalid claim IDs
+                continue
+
+        if claim_int_ids:
+            # Bulk query all claims at once
+            claims = db.query(MemoryClaim).filter(
+                MemoryClaim.id.in_(claim_int_ids)
+            ).all()
+
+            high_risk_claims = []
+            for claim in claims:
+                open_contradictions = get_open_contradictions_by_claim(claim.id, db)
+                high_critical_contradictions = [
+                    c for c in open_contradictions
+                    if c.severity in ["high", "critical"]
+                ]
+                if high_critical_contradictions:
+                    high_risk_claims.append(claim.id)
+
+            if high_risk_claims:
+                raise PublicationBlockedError(
+                    f"GeoLegalEvent {event.id} has {len(high_risk_claims)} linked claims with open high/critical contradictions"
+                )
+
+    # Check event type-specific rules
+    if event.event_type and event.event_type in ["crime_event", "police_release"]:
+        # Crime and police events require higher confidence
+        if event.confidence < 0.8:
+            raise PublicationBlockedError(
+                f"GeoLegalEvent {event.id} is a {event.event_type} with confidence {event.confidence} — crime/police events require confidence >= 0.8"
+            )
+
+    # Check source health if source_ids are present
+    if event.source_ids:
+        from app.models.entities import LegalSource
+
+        # Convert string IDs to integers for querying LegalSource.id (primary key)
+        source_int_ids = []
+        for source_id in event.source_ids:
+            try:
+                source_int_ids.append(int(source_id))
+            except (ValueError, TypeError):
+                # Skip invalid source IDs
+                continue
+
+        if source_int_ids:
+            blocked_sources = db.query(LegalSource).filter(
+                LegalSource.id.in_(source_int_ids),
+                LegalSource.lifecycle_state.in_(["deprecated", "quarantined", "blocked"])
+            ).all()
+
+            if blocked_sources:
+                raise PublicationBlockedError(
+                    f"GeoLegalEvent {event.id} has {len(blocked_sources)} blocked/deprecated sources"
                 )
