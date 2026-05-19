@@ -23,8 +23,8 @@ def _parse_major_minor(node_version: str) -> tuple[int, int] | None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Frontend Node version gate")
-    parser.add_argument("--expected-major", type=int, default=25)
-    parser.add_argument("--expected-minor", type=int, default=9)
+    parser.add_argument("--expected-major", type=int, default=24)
+    parser.add_argument("--expected-minor", type=int, default=0)
     args = parser.parse_args()
 
     proc = subprocess.run(
