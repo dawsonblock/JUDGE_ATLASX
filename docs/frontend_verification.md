@@ -9,7 +9,7 @@ The frontend requires **Node 20**. This is enforced at three levels:
 | `frontend/.nvmrc` | `20` |
 | `frontend/package.json` engines | `>=20.11.0` |
 | `scripts/release_gate.py` | `nvm use 20` + `--expected-major 20` |
-| `scripts/check_frontend_node_gate.py` | defaults `--expected-major 20 --expected-minor 0` |
+| `scripts/check_frontend_node_gate.py` | defaults `--expected-major 20` (accepts any 20.x; optional `--expected-minor` for exact 20.y.x) |
 
 ## Setup
 

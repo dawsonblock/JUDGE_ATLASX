@@ -2,7 +2,8 @@
 """Fail-closed Node version gate for frontend proof.
 
 Expected behavior:
-- PASS only when Node major/minor version matches required version
+- PASS when Node major matches required major
+- If expected minor is provided, enforce exact major/minor match
 - Emit clear mismatch message for proof logs
 """
 
@@ -24,7 +25,7 @@ def _parse_major_minor(node_version: str) -> tuple[int, int] | None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Frontend Node version gate")
     parser.add_argument("--expected-major", type=int, default=20)
-    parser.add_argument("--expected-minor", type=int, default=0)
+    parser.add_argument("--expected-minor", type=int)
     args = parser.parse_args()
 
     proc = subprocess.run(
@@ -44,7 +45,12 @@ def main() -> int:
         return 1
 
     major, minor = parsed
-    if (major, minor) != (args.expected_major, args.expected_minor):
+    if major != args.expected_major:
+        expected = f"{args.expected_major}.x"
+        print(f"Frontend release gate requires Node {expected}. Current Node: {version}. Use nvm use {args.expected_major}.")
+        return 1
+
+    if args.expected_minor is not None and minor != args.expected_minor:
         expected = f"{args.expected_major}.{args.expected_minor}.x"
         print(f"Frontend release gate requires Node {expected}. Current Node: {version}. Use nvm use {args.expected_major}.{args.expected_minor}.")
         return 1
