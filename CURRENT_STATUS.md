@@ -27,8 +27,8 @@ The current release meets the clean-alpha hardening criteria for phases 1–13.
 
 ## Current Proof Metadata
 
-- Proof timestamp: 2026-05-19 22:02:21 UTC
-- Commit: 1f28e795d0c9c6deae74f3931a8eb5184b976008
+- Proof timestamp: 2026-05-19 22:54:59 UTC
+- Commit: 6cf8570cff222c932dfb960dca31837d3a9d1c0d
 - Alpha gate: PASS
 - Docker proof: PASS
 - PostGIS proof: PASS

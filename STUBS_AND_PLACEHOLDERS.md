@@ -6,8 +6,8 @@
 
 #### Routes
 
-- `backend/app/api/routes/live_map.py` — **Not mounted** (experimental; awaiting auth tests)
-- `backend/app/api/routes/workflow_admin.py` — **Not mounted** (experimental; security boundary not validated)
+- `backend/app/api/routes/live_map.py` — **Not present in current tree** (do not add/mount without auth boundary tests)
+- `backend/app/api/routes/workflow_admin.py` — **Not present in current tree** (do not add/mount without admin/source_admin auth tests)
 - Memory query system (`/api/memory/*`) — **Shallow implementation** (only observation, status, limit; missing subject/predicate/object detail, match_reason, salience)
 
 #### Services

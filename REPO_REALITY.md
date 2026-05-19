@@ -87,14 +87,14 @@
 - **Risk**: AI outputs are hypotheses; not authoritative
 
 #### Live Map / Workflow Admin Routes 🟡
-- **Status**: Stub code (if it exists)
-- **Implemented**: Route stubs
-- **Missing**: 
-  - Security boundary validation (live_map: admin mode bypass risk)
-  - Auth integration (workflow_admin: needs role enforcement)
-  - Test coverage
-- **Scope**: Experimental; not mounted
-- **Risk**: If mounted without security tests, could expose private data
+- **Status**: Experimental modules are not present in current tree
+- **Implemented**: No mounted `live_map` or `workflow_admin` endpoints
+- **Missing**:
+  - Any future experimental route must pass auth boundary tests before mount
+  - Explicit admin/source_admin enforcement for workflow control endpoints
+  - Public filter bypass prevention tests for map-style admin switches
+- **Scope**: Absent from active route registration
+- **Risk**: Low in current state; rises if reintroduced without boundary tests
 
 #### Event Origin Tracking 🟡
 - **Status**: Partially implemented

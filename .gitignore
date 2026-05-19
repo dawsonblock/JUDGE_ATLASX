@@ -53,6 +53,8 @@ judge_atlas_*.zip
 REPAIR_REPORT.md
 *_PROOF.md
 *_PROOF_*.md
+!CURRENT_PROOF.md
+!artifacts/proof/current/CURRENT_PROOF.md
 
 # ---- Non-shipping / reference trees (HARD-ENFORCED) -------------------------
 # These directories MUST NOT be tracked, committed, or shipped.
@@ -60,6 +62,7 @@ REPAIR_REPORT.md
 # None of these must contain runtime product code or secrets.
 research/
 external/
+external_reference/
 Research /
 Research/
 external_reference/

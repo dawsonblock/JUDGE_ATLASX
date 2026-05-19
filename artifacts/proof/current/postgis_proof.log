@@ -163,14 +163,14 @@ Server:
 [proof_postgis] Stage: container start
 [proof_postgis] Starting PostGIS container...
 WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
-3155047c196577dd1a15f947c8ad84b12f249bd9898b230e264e62c5728923fe
+a5d970f95dec3a05dfa6ce9c63871655e52ea8603ed12b5386792c9fc892bd6a
 [proof_postgis] PASS: container start requested
 [proof_postgis] Stage: pg_isready wait loop
 [proof_postgis] Waiting for Postgres to be ready...
 [proof_postgis] Postgres ready after 3s
 [proof_postgis] PASS: pg_isready
 [proof_postgis] Stage: host connectivity wait loop
-[proof_postgis] PASS: host connectivity ready after 4s
+[proof_postgis] PASS: host connectivity ready after 3s
 [proof_postgis] Stage: ensure proof database exists
 [proof_postgis] PASS: proof database exists
 [proof_postgis] Stage: PostGIS extension check
@@ -265,7 +265,7 @@ app/tests/test_map_bbox.py::test_bbox_validation_rejects_south_greater_than_nort
 app/tests/test_map_bbox.py::test_map_events_bbox_returns_only_events_in_bounds PASSED [ 90%]
 app/tests/test_map_bbox.py::test_bbox_query_does_not_crash_with_postgresql_dialect PASSED [100%]
 
-============================== 11 passed in 0.12s ==============================
+============================== 11 passed in 0.10s ==============================
 [proof_postgis] PASS: spatial smoke tests
 [proof_postgis] Stage: public/private map visibility test
 [proof_postgis] Running public/private visibility proof...
@@ -275,7 +275,7 @@ app/tests/test_map_bbox.py::test_bbox_query_does_not_crash_with_postgresql_diale
 [proof_postgis] Stage: evidence snapshot immutability test
 [proof_postgis] Running evidence snapshot immutability proof...
 .................                                                        [100%]
-17 passed in 0.04s
+17 passed in 0.06s
 [proof_postgis] PASS: evidence snapshot immutability test
 [proof_postgis] Stage: cleanup
 [proof_postgis] Cleanup: removing container 'judge_postgis_proof'

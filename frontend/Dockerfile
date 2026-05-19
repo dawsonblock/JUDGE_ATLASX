@@ -1,4 +1,4 @@
-FROM node:25.9.0-slim
+FROM node:20.20.2-slim
 
 ENV NEXT_TELEMETRY_DISABLED=1
 

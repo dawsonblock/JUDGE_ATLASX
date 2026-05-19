@@ -11,9 +11,9 @@ This repository is an **alpha platform**, not a production legal system.
 
 - **Proof location**: `artifacts/proof/current/CURRENT_PROOF.md`
 - **Release readiness**: `artifacts/proof/current/release_readiness.md`
-- **Latest proof run**: 2026-05-19 22:02:21 UTC
+- **Latest proof run**: 2026-05-19 22:54:59 UTC
 - **Proof status**: PASS
-- **Commit hash**: 1f28e795d0c9c6deae74f3931a8eb5184b976008
+- **Commit hash**: 6cf8570cff222c932dfb960dca31837d3a9d1c0d
 - **Runtime baseline**: Python 3.11.7, Node v20.20.2, npm 10.8.2
 - **production_ready flag**: false
 
