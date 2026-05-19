@@ -802,7 +802,7 @@ def _write_repair_report_md(
             "artifacts/proof/current/public_api_boundary.log",
         ),
         (
-            "12. Frontend Node 24 Gate",
+            "12. Frontend Node 20 Gate",
             phase_status(checks.get("frontend_node_gate", {}).get("status") == "PASS"),
             "artifacts/proof/current/frontend_node_gate.log",
         ),
@@ -1356,9 +1356,9 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 24 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 24 failed -- install Node 24 via: nvm install 24'; exit 1; };"
-                    f" \"{python_exe}\" scripts/check_frontend_node_gate.py --expected-major 24 --expected-minor 0"
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
+                    f" \"{python_exe}\" scripts/check_frontend_node_gate.py --expected-major 20 --expected-minor 0"
                 ),
             ],
         ),
@@ -1369,8 +1369,8 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 24 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 24 failed -- install Node 24 via: nvm install 24'; exit 1; };"
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
                     " npm ci --prefix frontend"
                 ),
             ],
@@ -1383,8 +1383,8 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 24 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 24 failed -- install Node 24 via: nvm install 24'; exit 1; };"
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
                     " npm run lint --prefix frontend"
                 ),
             ],
@@ -1396,8 +1396,8 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 24 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 24 failed -- install Node 24 via: nvm install 24'; exit 1; };"
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
                     " npm run typecheck --prefix frontend"
                 ),
             ],
@@ -1409,8 +1409,8 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 24 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 24 failed -- install Node 24 via: nvm install 24'; exit 1; };"
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
                     " npm run test:contracts --prefix frontend"
                 ),
             ],
@@ -1422,8 +1422,8 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 24 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 24 failed -- install Node 24 via: nvm install 24'; exit 1; };"
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
                     " npm run build --prefix frontend"
                 ),
             ],
