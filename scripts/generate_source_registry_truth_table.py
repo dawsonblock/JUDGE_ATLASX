@@ -38,6 +38,22 @@ except Exception:
     ADAPTER_REGISTRY_AVAILABLE = False
 
 
+def _source_display_name(source: dict) -> str:
+    """Return the best available display name for a source registry entry.
+
+    Fallback chain: source_name → name → source_key → source_id → UNKNOWN_SOURCE.
+    Robust against stale dicts that omit one field.
+    """
+    return (
+        source.get("source_name")
+        or source.get("name")
+        or source.get("source_key")
+        or source.get("id")
+        or source.get("source_id")
+        or "UNKNOWN_SOURCE"
+    )
+
+
 def load_sources_yaml() -> list[dict[str, Any]]:
     """Load all sources from YAML."""
     yaml_path = (
@@ -156,7 +172,7 @@ def generate_truth_table_markdown(sources: list[dict[str, Any]]) -> str:
 
     for source in sources:
         source_key = source.get("source_key", "")
-        name = (source.get("source_name", "") or "").replace("|", "\\|")
+        name = _source_display_name(source).replace("|", "\\|")
         jurisdiction = source.get("jurisdiction", "")
         source_class = source.get("source_class", "")
         source_type = source.get("source_type", "")
@@ -235,7 +251,7 @@ def generate_truth_table_json(sources: list[dict[str, Any]]) -> dict[str, Any]:
 
         row = {
             "source_key": source_key,
-            "source_name": source.get("source_name", ""),
+            "source_name": _source_display_name(source),
             "jurisdiction": source.get("jurisdiction", ""),
             "source_class": source.get("source_class", ""),
             "source_type": source.get("source_type", ""),
