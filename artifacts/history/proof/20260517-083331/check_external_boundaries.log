@@ -1,0 +1,11 @@
+OK: 2 experimental package(s) have NOT_RUNTIME sentinel.
+
+ERROR: Unauthorised runtime imports from experimental packages:
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/api/routes/admin_legacy_ingest.py:33: runtime import from experimental package 'app.ingestion.crime_sources.chicago_socrata'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/api/routes/admin_legacy_ingest.py:34: runtime import from experimental package 'app.ingestion.crime_sources.toronto'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/api/routes/admin_legacy_ingest.py:35: runtime import from experimental package 'app.ingestion.crime_sources.los_angeles'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/api/routes/admin_legacy_ingest.py:36: runtime import from experimental package 'app.ingestion.crime_sources.statscan'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/api/routes/admin_legacy_ingest.py:40: runtime import from experimental package 'app.ingestion.crime_sources.fbi_crime_data'
+
+Add an explicit entry to _EXPERIMENTAL_CALLERS_ALLOWLIST in this script if the import is intentional and gated behind a feature flag.
+OK: No imports from external sub-repo packages found.

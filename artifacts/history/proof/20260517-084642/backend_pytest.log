@@ -1,0 +1,64 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  7%]
+........................................................................ [  9%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 17%]
+........................................................................ [ 19%]
+........................................................................ [ 22%]
+........................................................................ [ 24%]
+........................................................................ [ 27%]
+........................................................................ [ 29%]
+........................................................................ [ 31%]
+........................................................................ [ 34%]
+........................................................................ [ 36%]
+.................................................F
+=================================== FAILURES ===================================
+_____________________ test_invalid_backend_value_rejected ______________________
+backend/app/tests/test_ingestion_queue_backend.py:133: in test_invalid_backend_value_rejected
+    assert any(
+E   assert False
+E    +  where False = any(<generator object test_invalid_backend_value_rejected.<locals>.<genexpr> at 0x1165e2f80>)
+----------------------------- Captured stdout call -----------------------------
+ERROR: Legacy shared-token admin authentication is not allowed in production. Ensure JTA_ENABLE_LEGACY_ADMIN_TOKEN=false and unset JTA_ADMIN_TOKEN / JTA_ADMIN_REVIEW_TOKEN. Use JWT Bearer authentication for admin operations.
+ERROR: JTA_RATE_LIMIT_BACKEND=memory is unsafe in production with multiple workers or replicas. Set JTA_RATE_LIMIT_BACKEND=redis, or set JTA_ALLOW_IN_MEMORY_RATE_LIMIT_PRODUCTION=true only for verified single-node deployments.
+ERROR: JTA_EVIDENCE_STORE_REQUIRED must be true in production. Set JTA_EVIDENCE_STORE_REQUIRED=true and configure JTA_EVIDENCE_STORE_ROOT.
+ERROR: JTA_FETCH_EGRESS_PROXY is not set. Outbound ingestion fetches are not routed through an egress proxy, which leaves the service exposed to DNS rebinding attacks. Set JTA_FETCH_EGRESS_PROXY to an HTTP/HTTPS proxy URL, or set JTA_ALLOW_DIRECT_PROD_FETCH_WITH_NETWORK_POLICY=1 if egress is enforced by the infrastructure network policy.
+ERROR: Unknown JTA_INGESTION_QUEUE_BACKEND value: invalid_backend. Valid values are 'inprocess' or 'postgres'.
+[STARTUP] Production safety checks passed
+=============================== warnings summary ===============================
+app/tests/test_admin_security.py::TestAuditLogging::test_review_actions_need_audit_log
+app/tests/test_admin_security.py::TestAuditLogging::test_admin_api_calls_need_audit_log
+app/tests/test_ai_pipeline.py::test_approved_review_item_can_publish_safe_event
+app/tests/test_ai_pipeline.py::test_blocked_review_item_cannot_publish
+app/tests/test_ai_pipeline.py::test_ai_review_items_use_database_pagination
+app/tests/test_api.py::test_invalid_post_event_foreign_keys_return_422_with_admin_token
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/auth/admin.py:241: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token, authorization)
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_require_admin_token_returns_admin_actor
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_admin_security.py:246: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    else require_admin_token(x_jta_admin_token="test-secret-token")
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_actor_id_is_not_raw_token
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_admin_security.py:266: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token="super-secret-value-12345")
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_actor_id_is_stable_label
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_admin_security.py:350: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token="token-abc")
+
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/security/import_authority.py:51: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/app/tests/test_ingestion_queue_backend.py::test_invalid_backend_value_rejected
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 1129 passed, 14 warnings in 32.56s

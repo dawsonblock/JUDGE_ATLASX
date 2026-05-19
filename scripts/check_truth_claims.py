@@ -286,15 +286,25 @@ KNOWN_TOP_LEVEL_DIRS = frozenset({
 
 
 def _normalize_to_repo_root(rel_path: str) -> str:
-    """Strip an archive-root prefix from rel_path if the first component is
-    not a known repo top-level directory.
+    """Strip archive-root prefix(es) from rel_path until the first component
+    is a known repo top-level directory.
 
-    This allows check() to work correctly when invoked with
-    root=parent-of-extracted-archive.
+    Handles:
+      - Direct paths: ``backend/app/foo.py`` → unchanged
+      - Single archive wrapper: ``JUDGE_ATLASX-main/backend/app/foo.py``
+        → ``backend/app/foo.py``
+      - Double archive wrapper: ``extracted/JUDGE_ATLASX-main/backend/app/foo.py``
+        → ``backend/app/foo.py``
+
+    Stops after 3 stripping attempts to avoid infinite loops.
     """
-    parts = rel_path.split("/", 1)
-    if len(parts) == 2 and parts[0] not in KNOWN_TOP_LEVEL_DIRS:
-        return parts[1]
+    for _ in range(3):
+        parts = rel_path.split("/", 1)
+        if len(parts) < 2:
+            break
+        if parts[0] in KNOWN_TOP_LEVEL_DIRS:
+            break
+        rel_path = parts[1]
     return rel_path
 
 

@@ -1,0 +1,6 @@
+Source registry verification
+  Generated at   : 2026-05-18T22:06:26.317502+00:00
+  Total sources  : 26
+  Status counts  : {'machine_ready_enabled': 1, 'adapter_missing': 17, 'deprecated': 2, 'machine_ready_disabled': 5, 'disabled_stub': 1}
+  Violations     : 0
+PASS: source registry is consistent

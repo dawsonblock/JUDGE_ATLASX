@@ -72,17 +72,35 @@ re-reviewed by the due date or remediated before any production-readiness claim.
 
 ---
 
-### 4. `next` — HIGH — GHSA-9g9p-9gw9-jx7f
+### 4. `next` — HIGH (multiple advisories)
 
-- **Advisory**: <https://github.com/advisories/GHSA-9g9p-9gw9-jx7f>
-- **Severity**: High
+**Advisory 1:** GHSA-9g9p-9gw9-jx7f
 - **Title**: Next.js self-hosted applications vulnerable to DoS via Image Optimization
-- **Affected packages**: `next`
+- **Severity**: High
 - **Fix target from audit**: `next@16.2.6` (semver-major)
+
+**Advisory 2:** GHSA-8h8q-6873-q5fj
+- **Title**: Next.js Vulnerable to Denial of Service with Server Components
+- **Severity**: High
+- **Fix target from audit**: `next@16.2.6` (semver-major)
+
+**Advisory 3:** GHSA-c4j6-fc7j-m34r
+- **Title**: Next.js vulnerable to server-side request forgery in applications using WebSocket upgrades
+- **Severity**: High
+- **Fix target from audit**: `next@16.2.6` (semver-major)
+
+**Advisory 4:** GHSA-36qx-fr4f-26g5
+- **Title**: Next.js has a Middleware / Proxy bypass in Pages Router applications using i18n
+- **Severity**: High
+- **Fix target from audit**: `next@16.2.6` (semver-major)
+
+- **Affected packages**: `next`
 - **Triage decision**: **ACCEPTED — alpha scope / NOT self-hosted image optimization in production**
   - JUDGE_ATLAS alpha does not expose the Next.js Image Optimization endpoint to the public internet.
   - Alpha deployments run behind an authenticated API gateway; the image route is not publicly reachable
     without authentication.
+  - WebSocket upgrades are not used in JUDGE_ATLAS.
+  - i18n middleware is not enabled in JUDGE_ATLAS.
   - Remediation: upgrade `next` to patched version when available.
 - **Owner**: security-review-alpha
 - **Status**: accepted-for-alpha / track-upstream-patch

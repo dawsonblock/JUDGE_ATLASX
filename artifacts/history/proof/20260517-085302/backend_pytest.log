@@ -1,0 +1,73 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  7%]
+........................................................................ [  9%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 17%]
+........................................................................ [ 19%]
+........................................................................ [ 22%]
+........................................................................ [ 24%]
+........................................................................ [ 27%]
+........................................................................ [ 29%]
+........................................................................ [ 31%]
+........................................................................ [ 34%]
+........................................................................ [ 36%]
+........................................................................ [ 39%]
+........................................................................ [ 41%]
+........................................................................ [ 44%]
+........................................................................ [ 46%]
+........................................................................ [ 49%]
+........................................................................ [ 51%]
+........................................................................ [ 54%]
+........................................................................ [ 56%]
+........................................................................ [ 59%]
+..F
+=================================== FAILURES ===================================
+_ TestAnonymousDenied.test_anonymous_denied[POST-/api/admin/ingest/gdelt-body6] _
+backend/app/tests/test_mutation_rbac_matrix.py:115: in test_anonymous_denied
+    _assert_denied(resp, "anonymous", f"{method} {path}")
+backend/app/tests/test_mutation_rbac_matrix.py:69: in _assert_denied
+    assert response.status_code in (401, 403), (
+E   AssertionError: Role 'anonymous' should be DENIED on POST /api/admin/ingest/gdelt, got HTTP 404: {"detail":"Not Found"}
+E   assert 404 in (401, 403)
+E    +  where 404 = <Response [404 Not Found]>.status_code
+=============================== warnings summary ===============================
+app/tests/test_admin_security.py::TestAuditLogging::test_review_actions_need_audit_log
+app/tests/test_admin_security.py::TestAuditLogging::test_admin_api_calls_need_audit_log
+app/tests/test_ai_pipeline.py::test_approved_review_item_can_publish_safe_event
+app/tests/test_ai_pipeline.py::test_blocked_review_item_cannot_publish
+app/tests/test_ai_pipeline.py::test_ai_review_items_use_database_pagination
+app/tests/test_api.py::test_invalid_post_event_foreign_keys_return_422_with_admin_token
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/auth/admin.py:241: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token, authorization)
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_require_admin_token_returns_admin_actor
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_admin_security.py:246: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    else require_admin_token(x_jta_admin_token="test-secret-token")
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_actor_id_is_not_raw_token
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_admin_security.py:266: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token="super-secret-value-12345")
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_actor_id_is_stable_label
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_admin_security.py:350: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token="token-abc")
+
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/security/import_authority.py:51: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(
+
+app/tests/test_legacy_shared_token_requires_opt_in.py::TestLegacySharedTokenRequiresOptIn::test_shared_token_allowed_only_with_local_opt_in
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_legacy_shared_token_requires_opt_in.py:44: DeprecationWarning: Shared-token import authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_imports(x_jta_admin_token="test-token", authorization=None)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/app/tests/test_mutation_rbac_matrix.py::TestAnonymousDenied::test_anonymous_denied[POST-/api/admin/ingest/gdelt-body6]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 1730 passed, 15 warnings in 27.40s

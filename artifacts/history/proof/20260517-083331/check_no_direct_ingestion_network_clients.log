@@ -1,0 +1,11 @@
+OK: 14 adapter file(s) checked — no direct network client imports found.
+
+ERROR: Runtime code imports from experimental packages (app.ingestion.crime_sources / app.ingestion.laws):
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/api/routes/admin_legacy_ingest.py:33: runtime import from experimental package 'app.ingestion.crime_sources.chicago_socrata'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/api/routes/admin_legacy_ingest.py:34: runtime import from experimental package 'app.ingestion.crime_sources.toronto'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/api/routes/admin_legacy_ingest.py:35: runtime import from experimental package 'app.ingestion.crime_sources.los_angeles'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/api/routes/admin_legacy_ingest.py:36: runtime import from experimental package 'app.ingestion.crime_sources.statscan'
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/api/routes/admin_legacy_ingest.py:40: runtime import from experimental package 'app.ingestion.crime_sources.fbi_crime_data'
+
+Add an explicit entry to _EXPERIMENTAL_CALLERS in this script if the import is intentional and gated behind a feature flag.
+OK: Ingestion tree checked — no unauthorised direct network client imports found outside allowlisted modules.

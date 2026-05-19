@@ -9,7 +9,11 @@ import threading
 import time
 import uuid
 
-from app.workers.queue_backend import IngestionJobRecord, JobState
+from app.workers.queue_backend import (
+    IngestionJobRecord,
+    JobState,
+    QueueBackendCapabilities,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +22,7 @@ class InProcessIngestionQueue:
     """Thread-safe in-process ingestion queue.
 
     Jobs are executed synchronously when ``run_next()`` is called.
+    Alpha-only backend; not production-capable.
     """
 
     def __init__(self, max_history: int = 500) -> None:
@@ -25,6 +30,11 @@ class InProcessIngestionQueue:
         self._pending: list[str] = []
         self._records: dict[str, IngestionJobRecord] = {}
         self._max_history = max_history
+        self._capabilities = QueueBackendCapabilities(
+            name="inprocess",
+            supports_production=False,
+            implementation_status="alpha",
+        )
 
     def enqueue(self, source_key: str) -> str:
         job_id = str(uuid.uuid4())

@@ -2,10 +2,148 @@
 
 # Future Architecture
 
-Status: NOT_IMPLEMENTED — planning document only
+Status: PLANNING — strategic roadmap and implementation plan
 
-This document describes capabilities that are explicitly **not present** in the current codebase.
-None of the systems below are operational. This document is a planning reference for post-v1 development.
+This document describes the strategic roadmap for JUDGE_ATLASX evolution from the current document-centric alpha to a claim-centric, evidence-governed intelligence platform. It includes both the strategic 10-phase roadmap and detailed planning for future capabilities.
+
+---
+
+## Strategic Roadmap Overview
+
+### Mission Statement
+JUDGE_ATLASX is an evidence-governed Canadian legal intelligence platform that transforms raw legal documents into structured claims, entities, and temporal graphs while maintaining strict evidence authority and AI-derivative boundaries.
+
+### System Evolution
+**Current State (Alpha):** Documents → Search → Review → Display
+**Target State (v1.0):** Evidence → Claims → Entities → Events → Graph → Reasoned Retrieval
+
+### 10-Phase Strategic Plan
+
+| Phase | Name | Duration | Status | Dependencies |
+|-------|------|----------|--------|--------------|
+| Phase 1 | Stabilize Foundation | 4-7 weeks | Phase 1A Complete | None |
+| Phase 2 | Canonical Data Model | 2-4 weeks | Complete | Phase 1 |
+| Phase 3 | Ingestion Hardening | 2-4 weeks | Partial | Phase 1, 2 |
+| Phase 4 | Temporal Graph System | 4-6 weeks | Partial | Phase 2, 5 |
+| Phase 5 | Retrieval Intelligence | 4-6 weeks | Partial | Phase 1, 2 |
+| Phase 6 | Human Review Architecture | 3-4 weeks | Partial | Phase 1, 2 |
+| Phase 7 | Public Interface | 4-6 weeks | Partial | Phase 6 |
+| Phase 8 | Entity Resolution Engine | 6-8 weeks | Partial | Phase 5 |
+| Phase 9 | National Scaling | 8-12 weeks | Not Started | Phase 8 |
+| Phase 10 | Long-Term Intelligence Layer | 8-12 weeks | Not Started | Phase 8 |
+
+### Phase Completion Status
+
+**Phase 1 (Stabilize Foundation):**
+- ✅ Phase 1A: Repository cleanup and boundary enforcement (completed May 16, 2026)
+- ⚠️ Phase 1B: Infrastructure hardening (Redis, object storage, vector DB) - IN PROGRESS
+- ⚠️ Phase 1C: Evidence vault operations (replay, lineage, integrity) - PENDING
+
+**Phase 2 (Canonical Data Model):**
+- ✅ Complete - 8 canonical entities locked (May 16, 2026)
+- ✅ Database schema with 50+ alembic migrations
+- ✅ Immutability rules and constraints enforced
+
+**Phase 3 (Ingestion Hardening):**
+- ✅ Adapter contracts with parser_version immutability
+- ✅ Source registry with automation status gating
+- ❌ Redis caching layer (Phase 1B dependency)
+- ❌ Object storage for large files (Phase 1B dependency)
+
+**Phase 4 (Temporal Graph System):**
+- ✅ Temporal fields in legal sections
+- ✅ Temporal reasoner module exists
+- ❌ Time-travel queries not exposed in API
+- ❌ Graph traversal optimizations not implemented
+
+**Phase 5 (Retrieval Intelligence):**
+- ✅ Evidence vault with snapshot integrity
+- ✅ MemoryClaim with evidence linkage
+- ❌ Semantic search disabled (embeddings_enabled=false)
+- ❌ No vector database backend (Phase 1B dependency)
+
+**Phase 6 (Human Review Architecture):**
+- ✅ ReviewItem table with status transitions
+- ✅ Review queue API endpoints
+- ❌ JWT authentication disabled by default
+- ❌ No RBAC system (roles, permissions)
+
+**Phase 7 (Public Interface):**
+- ✅ Next.js 14 frontend with TypeScript
+- ✅ Map components and entity detail views
+- ❌ No public correction/takedown system
+- ❌ No public API documentation
+
+**Phase 8 (Entity Resolution Engine):**
+- ✅ CanonicalEntity table with merge tracking
+- ✅ Entity resolution module exists
+- ❌ Entity resolution not automated (manual only)
+- ❌ No fuzzy matching algorithms
+
+**Phase 9 (National Scaling):**
+- ❌ Not Started - Canada-only, no multi-jurisdiction support
+
+**Phase 10 (Long-Term Intelligence Layer):**
+- ✅ AI modules exist (claim extraction, contradiction detection)
+- ❌ AI not integrated with production workflows
+- ❌ No AI drift detection
+- ❌ No claim salience scoring
+
+---
+
+## Target Final Architecture
+
+### Claim-Centric Data Model
+- **Evidence Layer:** Immutable SourceSnapshots with hash verification
+- **Claim Layer:** MemoryClaims extracted from evidence, non-authoritative
+- **Entity Layer:** CanonicalEntities with deduplication and merge tracking
+- **Relationship Layer:** RelationshipEvidence with provenance and confidence
+- **Temporal Layer:** Valid_from/valid_to fields for time-travel queries
+- **Graph Layer:** Multi-hop traversal with influence scoring
+
+### Evidence Governance Rules
+1. **Evidence is Authoritative:** All claims must trace to SourceSnapshot
+2. **AI is Derivative:** AI outputs are suggestions only, never auto-applied
+3. **No Autonomous Accusation:** AI cannot create legal records or make publication decisions
+4. **Publication Requires Review:** Public visibility requires human approval
+5. **Immutable Audit Trail:** AuditLog is append-only with chain integrity
+
+### Technical Risks and Mitigations
+
+**Graph Poisoning:**
+- Risk: Malicious actors inject false relationships
+- Mitigation: Evidence-required policy, manual review for high-confidence edges, minimum evidence threshold (2 sources)
+
+**AI Drift:**
+- Risk: AI models drift from ground truth over time
+- Mitigation: Non-authoritative marker, manual review before publication, periodic model retraining, claim salience decay
+
+**Scaling Review:**
+- Risk: Review queue overwhelms human reviewers
+- Mitigation: Automated triage, confidence-based routing, review analytics, escalation workflows
+
+**Legal Exposure:**
+- Risk: Incorrect information causes legal liability
+- Mitigation: Evidence-authoritative rule, correction/takedown system, jurisdiction-specific privacy rules, legal review of public features
+
+---
+
+## Implementation Policy
+
+> Features listed in this document **must not** be implemented piecemeal without:
+>
+> 1. A corresponding entry in the completion checklist for the phase
+> 2. A policy review for any feature that touches publication decisions or PII
+> 3. A sprint plan approved before coding begins
+> 4. Proof gate validation before merging to main
+>
+> Partial stubs for unimplemented features **must** carry a `NOT_IMPLEMENTED` comment at module top level.
+
+---
+
+## Detailed Future Capabilities
+
+The sections below describe specific capabilities that are explicitly **not present** in the current codebase or are only partially implemented.
 
 ---
 

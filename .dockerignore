@@ -1,80 +1,90 @@
-# External vendor / workspace siblings / research — never include in any image
-external/
-external_reference/
+# ---- Non-shipping reference trees (NEVER in any image) ----------------------
 research/
 Research /
+Research/
+external/
+external_reference/
 
-# Environment
-.env
-.env.*
-!.env.example
-!*.env.example
-
-# Python artefacts
+# ---- Python artefacts --------------------------------------------------------
 __pycache__/
 *.py[cod]
+*.pyo
 *.so
-
-# Virtual environments
-.venv
-backend/.venv
-env/
-venv/
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# Testing / coverage
+*.egg-info/
 .pytest_cache/
-.coverage
-htmlcov/
+.mypy_cache/
+.ruff_cache/
+.nox/
 .tox/
 
-# Database
-*.db
-*.sqlite3
-*.sqlite
-*.dump
-evidence_store/
-data/local/
+# ---- Virtual environments ----------------------------------------------------
+.venv/
+venv/
+env/
 
-# Logs
-*.log
-artifacts/proof/*.log
-artifacts/proof/current/*.log
-
-# Certificates / secrets
+# ---- Secrets and local config ------------------------------------------------
+.env
+.env.local
+.env.production
+.env.development
 *.pem
 *.key
 *.p12
 *.pfx
+*.crt
+id_rsa
+id_ed25519
 
-# Proof / history artifacts
-artifacts/history/
-artifacts/proof/history/
-artifacts/proof/latest/
-proof/latest/
+# ---- Node / frontend build artefacts ----------------------------------------
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/dist/
+frontend/build/
+*.tsbuildinfo
 
-# Documentation
-docs/
-*.md
-
-# Git
-.git/
-.gitignore
-
-# Docker
-Dockerfile*
-docker-compose*
-.dockerignore
-
-# Release archives
+# ---- Release archives --------------------------------------------------------
+dist/
+build/
+release/
 *.zip
 *.tar
 *.tar.gz
 
-# Misc
+# ---- IDE / OS ----------------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
 .DS_Store
+Thumbs.db
+
+# ---- Testing / coverage ------------------------------------------------------
+.coverage
+htmlcov/
+
+# ---- Database and local data stores ------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+evidence_store/
+data/local/
+logs/
+tmp/
+temp/
+
+# ---- Proof archive (historical; not for images) -----------------------------
+artifacts/proof/archive/
+artifacts/proof/history/
+
+# ---- Documentation (not needed in app images) --------------------------------
+docs/
+
+# ---- Git / CI ----------------------------------------------------------------
+.git/
+.gitignore
+.github/
+
+# ---- Source files (images use installed package, not source) ----------------
+*.md

@@ -1,5 +1,9 @@
 # PROOF_POLICY
 
+## Truth Statement
+
+JUDGE_ATLASX is an evidence-governed Canadian legal intelligence alpha. Evidence is authoritative. AI and memory outputs are derivative only. All public-facing data requires human review approval and must be linked to an evidence snapshot. This is an alpha release, not a production legal authority.
+
 - generated_at_utc: 2026-05-15T07:24:58.369721+00:00
 - commit_hash: 58f055d0bb56c4d69ebd6407ca6ad950b843b27f
 

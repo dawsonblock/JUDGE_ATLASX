@@ -11,6 +11,7 @@ Default validation reads the stored manifest from
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import hashlib
 import importlib.util
 import json
@@ -61,6 +62,7 @@ IGNORE_PATH_PREFIXES = {
     "node_modules/",
     "artifacts/proof/current/",
     "artifacts/proof/history/",
+    "scripts/.pytest_cache/",
 }
 
 IGNORE_GLOB_PATTERNS = {
@@ -70,6 +72,7 @@ IGNORE_GLOB_PATTERNS = {
     "**/build/**",
     "**/*.tsbuildinfo",
     "**/__pycache__/**",
+    "**/.pytest_cache/**",
     "**/*.pyc",
     "**/*.pyo",
     "**/*.log",
@@ -106,8 +109,8 @@ def _is_ignored(rel_path: str) -> bool:
         return True
     if norm.startswith("artifacts/proof/v"):
         return True
-    path_obj = Path(norm)
-    if any(path_obj.match(pattern) for pattern in IGNORE_GLOB_PATTERNS):
+    # Use fnmatch for proper glob-style pattern matching
+    if any(fnmatch.fnmatch(norm, pattern) for pattern in IGNORE_GLOB_PATTERNS):
         return True
     return False
 
@@ -152,7 +155,8 @@ def discover_proof_input_files(repo_root: Path) -> list[str]:
 
     # Keep proof freshness aligned with the same text files checked for truth claims.
     for rel in _load_truth_claim_scanned_paths(repo_root):
-        files.add(rel)
+        if not _is_ignored(rel):
+            files.add(rel)
     return sorted(files)
 
 

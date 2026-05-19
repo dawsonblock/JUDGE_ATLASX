@@ -11,7 +11,7 @@ from app.graph.canonical_ids import (
     normalize_entity_name,
 )
 from app.graph.edge_models import EdgePredicate, EntityType, EdgeKey, EdgeRecord
-from app.graph.graph_models import GraphNode, GraphPath
+from app.graph.graph_models import GraphNode, GraphPath, EntityNode, RelationshipEdge
 from app.graph.confidence import (
     weighted_confidence,
     decay_confidence,
@@ -36,6 +36,7 @@ __all__ = [
     "EdgeKey",
     "EdgePredicate",
     "EdgeRecord",
+    "EntityNode",
     "EntityRegistry",
     "EntityType",
     "execute_merge",
@@ -52,6 +53,7 @@ __all__ = [
     "normalize_entity_name",
     "propagate_confidence",
     "propose_merge",
+    "RelationshipEdge",
     "resolve_merge_chain",
     "ResolveResult",
     "TemporalChain",

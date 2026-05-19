@@ -1,0 +1,56 @@
+{
+  "regenerated_at": "2026-05-18T19:13:06.207246+00:00",
+  "total_steps": 6,
+  "passed": 2,
+  "failed": 4,
+  "steps": [
+    {
+      "name": "check_no_pyc",
+      "command": "bash scripts/check_no_pyc.sh",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_seconds": 0.056,
+      "log_path": "artifacts/proof/current/check_no_pyc.log"
+    },
+    {
+      "name": "check_false_claims",
+      "command": "/Users/dawsonblock/JUDGE_ATLASX/backend/.venv/bin/python scripts/check_false_claims.py",
+      "status": "FAIL",
+      "exit_code": 1,
+      "duration_seconds": 16.991,
+      "log_path": "artifacts/proof/current/check_false_claims.log"
+    },
+    {
+      "name": "check_external_boundaries",
+      "command": "/Users/dawsonblock/JUDGE_ATLASX/backend/.venv/bin/python scripts/check_external_boundaries.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_seconds": 2.886,
+      "log_path": "artifacts/proof/current/check_external_boundaries.log"
+    },
+    {
+      "name": "validate_sources",
+      "command": "/Users/dawsonblock/JUDGE_ATLASX/backend/.venv/bin/python backend/tools/validate_sources.py",
+      "status": "FAIL",
+      "exit_code": 1,
+      "duration_seconds": 0.82,
+      "log_path": "artifacts/proof/current/validate_sources.log"
+    },
+    {
+      "name": "auth_mutation_route_coverage",
+      "command": "/Users/dawsonblock/JUDGE_ATLASX/backend/.venv/bin/python scripts/auth_mutation_route_coverage.py",
+      "status": "FAIL",
+      "exit_code": 2,
+      "duration_seconds": 0.058,
+      "log_path": "artifacts/proof/current/auth_mutation_route_coverage.log"
+    },
+    {
+      "name": "verify_source_registry",
+      "command": "/Users/dawsonblock/JUDGE_ATLASX/backend/.venv/bin/python scripts/verify_source_registry.py",
+      "status": "FAIL",
+      "exit_code": 1,
+      "duration_seconds": 1.328,
+      "log_path": "artifacts/proof/current/verify_source_registry.log"
+    }
+  ]
+}

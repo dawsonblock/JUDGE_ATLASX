@@ -2,6 +2,12 @@
 
 This document is the canonical policy reference for source governance in alpha.
 
+## Truth Statement
+
+JUDGE_ATLASX is an evidence-governed Canadian legal intelligence alpha. Evidence is authoritative. AI and memory outputs are derivative only. All public-facing data requires human review approval and must be linked to an evidence snapshot. This is an alpha release, not a production legal authority.
+
+The source registry is the authoritative source of truth for ingestion status. Only sources marked as "enabled_runnable" in the source registry are currently active.
+
 ## Allowed Source States
 
 - `machine_ingest`

@@ -92,8 +92,30 @@ docker-smoke:
 	docker compose down -v
 
 proof:
-	@python3 scripts/validate_runtime_boundaries.py
-	@python3 scripts/verify_source_registry.py
+	@echo "=== Running authoritative proof bundle generation ==="
+	@mkdir -p proof/latest
+	@echo "=== 1. Runtime boundary checks ===" > proof/latest/proof_summary.log
+	@python3 scripts/validate_runtime_boundaries.py > proof/latest/runtime_boundaries.log 2>&1 || (echo "FAIL: runtime boundaries" >> proof/latest/proof_summary.log && exit 1)
+	@echo "PASS: runtime boundaries" >> proof/latest/proof_summary.log
+	@echo "=== 2. Frontend doctor ===" >> proof/latest/proof_summary.log
+	@cd frontend && npm run doctor > ../proof/latest/frontend_doctor.log 2>&1 || (echo "FAIL: frontend doctor" >> ../proof/latest/proof_summary.log && exit 1)
+	@echo "PASS: frontend doctor" >> proof/latest/proof_summary.log
+	@echo "=== 3. Frontend build ===" >> proof/latest/proof_summary.log
+	@cd frontend && npm run build > ../proof/latest/frontend_build.log 2>&1 || (echo "FAIL: frontend build" >> ../proof/latest/proof_summary.log && exit 1)
+	@echo "PASS: frontend build" >> proof/latest/proof_summary.log
+	@echo "=== 4. Source registry validation ===" >> proof/latest/proof_summary.log
+	@python3 scripts/verify_source_registry.py > proof/latest/source_registry.log 2>&1 || (echo "FAIL: source registry" >> proof/latest/proof_summary.log && exit 1)
+	@echo "PASS: source registry" >> proof/latest/proof_summary.log
+	@echo "=== 5. Evidence hash verification ===" >> proof/latest/proof_summary.log
+	@python3 scripts/verify_snapshot_hashes.py > proof/latest/evidence_verify.log 2>&1 || (echo "FAIL: evidence hashes" >> proof/latest/proof_summary.log && exit 1)
+	@echo "PASS: evidence hashes" >> proof/latest/proof_summary.log
+	@echo "=== 6. Audit chain verification ===" >> proof/latest/proof_summary.log
+	@python3 scripts/verify_audit_chain.py > proof/latest/audit_chain.log 2>&1 || (echo "FAIL: audit chain" >> proof/latest/proof_summary.log && exit 1)
+	@echo "PASS: audit chain" >> proof/latest/proof_summary.log
+	@echo "=== 7. Backend tests ===" >> proof/latest/proof_summary.log
+	@cd backend && python -m pytest -q > ../proof/latest/backend_tests.log 2>&1 || (echo "FAIL: backend tests" >> ../proof/latest/proof_summary.log && exit 1)
+	@echo "PASS: backend tests" >> proof/latest/proof_summary.log
+	@echo "=== 8. Publication gate tests ===" >> proof/latest/proof_summary.log
 	@cd backend && python -m pytest -q \
 		app/tests/test_ingestion_result_gate.py \
 		app/tests/test_machine_ingest_publication_block.py \
@@ -103,10 +125,43 @@ proof:
 		app/tests/test_mutation_rbac_matrix.py \
 		app/tests/test_review_gates.py \
 		app/tests/test_evidence_required_for_publish.py \
-		app/tests/test_ai_review_requires_reviewer_or_source_admin.py
-	@python3 scripts/release_gate.py || true
-	@python3 scripts/generate_alpha_proof_artifacts.py
-	@echo "Proof complete: artifacts/current/PROOF_REPORT.md and artifacts/current/PROOF_MANIFEST.json"
+		app/tests/test_ai_review_requires_reviewer_or_source_admin.py \
+		app/tests/test_contradiction_intelligence.py \
+		app/tests/test_claim_to_graph.py \
+		app/tests/test_e2e_source_to_public_api.py \
+		app/tests/test_public_api_safety.py > ../proof/latest/publication_gate.log 2>&1 || (echo "FAIL: publication gate tests" >> ../proof/latest/proof_summary.log && exit 1)
+	@echo "PASS: publication gate tests" >> proof/latest/proof_summary.log
+	@echo "=== 9. Contradiction tests ===" >> proof/latest/proof_summary.log
+	@cd backend && python -m pytest -q app/tests/test_contradiction_intelligence.py > ../proof/latest/contradictions.log 2>&1 || (echo "FAIL: contradiction tests" >> ../proof/latest/proof_summary.log && exit 1)
+	@echo "PASS: contradiction tests" >> proof/latest/proof_summary.log
+	@echo "=== 10. Queue tests ===" >> proof/latest/proof_summary.log
+	@cd backend && python -m pytest -q app/tests/test_postgres_queue.py > ../proof/latest/queue.log 2>&1 || (echo "FAIL: queue tests" >> ../proof/latest/proof_summary.log && exit 1)
+	@echo "PASS: queue tests" >> proof/latest/proof_summary.log
+	@echo "=== 11. OpenAPI contract tests ===" >> proof/latest/proof_summary.log
+	@python3 scripts/check_api_contracts.py > proof/latest/openapi_contracts.log 2>&1 || (echo "FAIL: OpenAPI contracts" >> proof/latest/proof_summary.log && exit 1)
+	@echo "PASS: OpenAPI contracts" >> proof/latest/proof_summary.log
+	@echo "=== 12. Release size check ===" >> proof/latest/proof_summary.log
+	@python3 scripts/check_release_size.py > proof/latest/release_size.log 2>&1 || (echo "FAIL: release size" >> proof/latest/proof_summary.log && exit 1)
+	@echo "PASS: release size" >> proof/latest/proof_summary.log
+	@echo "=== 13. Release gate ===" >> proof/latest/proof_summary.log
+	@python3 scripts/release_gate.py > proof/latest/release_gate.log 2>&1 || (echo "FAIL: release gate" >> proof/latest/proof_summary.log && exit 1)
+	@echo "PASS: release gate" >> proof/latest/proof_summary.log
+	@echo "=== 13.5. Proof artifact consistency check ===" >> proof/latest/proof_summary.log
+	@cd backend && python -m app.ops.verify_proof_consistency > ../proof/latest/proof_consistency.log 2>&1 || (echo "FAIL: proof consistency" >> ../proof/latest/proof_summary.log && exit 1)
+	@echo "PASS: proof consistency" >> proof/latest/proof_summary.log
+	@echo "=== 14. Proof timestamp staleness check ===" >> proof/latest/proof_summary.log
+	@python3 scripts/check_proof_timestamp.py > proof/latest/timestamp.log 2>&1 || (echo "FAIL: proof timestamp" >> proof/latest/proof_summary.log && exit 1)
+	@echo "PASS: proof timestamp" >> proof/latest/proof_summary.log
+	@echo "=== 15. Generate proof artifacts ===" >> proof/latest/proof_summary.log
+	@python3 scripts/generate_alpha_proof_artifacts.py > proof/latest/generate_artifacts.log 2>&1 || (echo "FAIL: generate artifacts" >> proof/latest/proof_summary.log && exit 1)
+	@echo "PASS: generate artifacts" >> proof/latest/proof_summary.log
+	@cp artifacts/current/PROOF_REPORT.md proof/latest/
+	@cp artifacts/current/PROOF_MANIFEST.json proof/latest/
+	@cp artifacts/current/RELEASE_MANIFEST.json proof/latest/
+	@echo "=== Proof complete: proof/latest/ ===" >> proof/latest/proof_summary.log
+	@echo "Files: PROOF_REPORT.md, PROOF_MANIFEST.json, RELEASE_MANIFEST.json" >> proof/latest/proof_summary.log
+	@echo "=== Proof complete: proof/latest/ ==="
+	@echo "Files: PROOF_REPORT.md, PROOF_MANIFEST.json, RELEASE_MANIFEST.json"
 
 build-clean-release:
 	@python3 scripts/build_clean_release.py

@@ -10,7 +10,10 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from app.graph.edge_models import EdgeRecord
+    try:
+        from app.graph.edge_models import EdgeRecord
+    except ImportError:
+        EdgeRecord = None  # type: ignore
 
 
 @dataclass
@@ -38,6 +41,32 @@ class GraphNode:
         return (
             self.entity_type == other.entity_type and self.entity_id == other.entity_id
         )
+
+
+@dataclass
+class EntityNode:
+    """A node representing an entity in the claim-to-graph projection.
+
+    Used for projecting memory claims to graph entities with properties.
+    """
+
+    entity_id: int
+    entity_type: str
+    canonical_name: str
+    properties: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class RelationshipEdge:
+    """An edge representing a relationship between entities in the claim-to-graph projection.
+
+    Used for projecting memory claims with object_entity_id to graph relationships.
+    """
+
+    source_entity_id: int
+    target_entity_id: int
+    relationship_type: str
+    properties: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

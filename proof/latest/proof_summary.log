@@ -1,0 +1,10 @@
+=== 1. Runtime boundary checks ===
+PASS: runtime boundaries
+=== 2. Frontend doctor ===
+PASS: frontend doctor
+=== 3. Frontend build ===
+PASS: frontend build
+=== 4. Source registry validation ===
+PASS: source registry
+=== 5. Evidence hash verification ===
+FAIL: evidence hashes

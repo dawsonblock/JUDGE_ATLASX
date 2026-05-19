@@ -1,0 +1,10 @@
+Frontend Build Report - Node 20.20.2
+
+✓ Compiled successfully
+✓ Linting and checking validity of types
+✓ Collecting page data
+✓ Generating static pages (20/20)
+✓ Collecting build traces
+✓ Finalizing page optimization
+
+Build completed successfully under Node v20.20.2 (within required range >=20.11 <23)

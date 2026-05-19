@@ -31,6 +31,7 @@ def _egress_safe_prod_settings(**overrides):
         redis_url="redis://localhost:6379/0",
         evidence_store_required=True,
         cors_origins="https://example.com",
+        ingestion_queue_backend="inprocess",
     )
     defaults.update(overrides)
     return types.SimpleNamespace(**defaults)
@@ -45,6 +46,7 @@ def test_egress_proxy_set_no_exit(monkeypatch):
     """When JTA_FETCH_EGRESS_PROXY is set, production start-up must succeed."""
     monkeypatch.setenv("JTA_ALLOW_IN_MEMORY_RATE_LIMIT_PRODUCTION", "1")
     monkeypatch.setenv("JTA_FETCH_EGRESS_PROXY", "http://squid-proxy:3128")
+    monkeypatch.setenv("JTA_ALLOW_INPROCESS_QUEUE_PRODUCTION", "1")
     monkeypatch.delenv("JTA_ALLOW_DIRECT_PROD_FETCH_WITH_NETWORK_POLICY", raising=False)
 
     settings = _egress_safe_prod_settings()
@@ -55,6 +57,7 @@ def test_egress_proxy_set_no_exit(monkeypatch):
 def test_no_egress_proxy_and_no_network_policy_override_exits(monkeypatch):
     """Missing proxy AND no network-policy override must cause sys.exit(1)."""
     monkeypatch.setenv("JTA_ALLOW_IN_MEMORY_RATE_LIMIT_PRODUCTION", "1")
+    monkeypatch.setenv("JTA_ALLOW_INPROCESS_QUEUE_PRODUCTION", "1")
     monkeypatch.delenv("JTA_FETCH_EGRESS_PROXY", raising=False)
     monkeypatch.delenv("JTA_ALLOW_DIRECT_PROD_FETCH_WITH_NETWORK_POLICY", raising=False)
 
@@ -68,6 +71,7 @@ def test_network_policy_escape_hatch_suppresses_exit(monkeypatch):
     """JTA_ALLOW_DIRECT_PROD_FETCH_WITH_NETWORK_POLICY=1 must suppress the exit
     even when JTA_FETCH_EGRESS_PROXY is absent."""
     monkeypatch.setenv("JTA_ALLOW_IN_MEMORY_RATE_LIMIT_PRODUCTION", "1")
+    monkeypatch.setenv("JTA_ALLOW_INPROCESS_QUEUE_PRODUCTION", "1")
     monkeypatch.delenv("JTA_FETCH_EGRESS_PROXY", raising=False)
     monkeypatch.setenv("JTA_ALLOW_DIRECT_PROD_FETCH_WITH_NETWORK_POLICY", "1")
 

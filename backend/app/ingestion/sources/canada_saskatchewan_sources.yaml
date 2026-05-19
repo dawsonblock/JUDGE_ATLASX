@@ -503,7 +503,7 @@ sources:
       var. Database: skkb (Saskatchewan Court of King's Bench). Register at https://www.canlii.org/en/info/api.html"
     lifecycle_state: runnable_disabled
     status_reason: Saskatchewan Court of King's Bench decisions adapter is ready; source not yet enabled.
-    operator_next_step: Confirm terms of use, then /enable via admin panel.
+    operator_next_step: Confirm terms of use, then enable via admin panel after clean proof.
     confidence_class: primary_official
     retention_policy: indefinite
     canonical_url: https://api.canlii.org/v1

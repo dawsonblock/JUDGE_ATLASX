@@ -1,0 +1,70 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  7%]
+........................................................................ [  9%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 17%]
+........................................................................ [ 19%]
+......................................................................ss [ 22%]
+........................................................................ [ 24%]
+........................................................................ [ 27%]
+........................................................................ [ 29%]
+........................................................................ [ 31%]
+........................................................................ [ 34%]
+........................................................................ [ 36%]
+........................................................................ [ 39%]
+........................................................................ [ 41%]
+........................................................................ [ 44%]
+........................................................................ [ 46%]
+........................................................................ [ 49%]
+........................................................................ [ 51%]
+........................................................................ [ 54%]
+........................................................................ [ 56%]
+.............................................................sssss...... [ 58%]
+........................................................................ [ 61%]
+..............................................sssss..................... [ 63%]
+......................................................................F
+=================================== FAILURES ===================================
+________________________ test_egress_proxy_set_no_exit _________________________
+backend/app/tests/test_production_fetch_egress_policy.py:53: in test_egress_proxy_set_no_exit
+    _validate_production_safety(settings)
+backend/app/main.py:144: in _validate_production_safety
+    sys.exit(1)
+E   SystemExit: 1
+----------------------------- Captured stdout call -----------------------------
+ERROR: JTA_INGESTION_QUEUE_BACKEND=inprocess is not allowed in production. The in-process queue is alpha-only and not production-capable. A production-capable queue backend must be implemented before production deployment.
+=============================== warnings summary ===============================
+app/tests/test_admin_security.py: 2 warnings
+app/tests/test_ai_pipeline.py: 3 warnings
+app/tests/test_api.py: 4 warnings
+app/tests/test_outcomes_and_ingestion.py: 3 warnings
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/auth/admin.py:241: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token, authorization)
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_require_admin_token_returns_admin_actor
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_admin_security.py:246: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    else require_admin_token(x_jta_admin_token="test-secret-token")
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_actor_id_is_not_raw_token
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_admin_security.py:266: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token="super-secret-value-12345")
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_actor_id_is_stable_label
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_admin_security.py:350: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token="token-abc")
+
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/security/import_authority.py:51: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(
+
+app/tests/test_legacy_shared_token_requires_opt_in.py::TestLegacySharedTokenRequiresOptIn::test_shared_token_allowed_only_with_local_opt_in
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_legacy_shared_token_requires_opt_in.py:44: DeprecationWarning: Shared-token import authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_imports(x_jta_admin_token="test-token", authorization=None)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/app/tests/test_production_fetch_egress_policy.py::test_egress_proxy_set_no_exit
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 1930 passed, 12 skipped, 18 warnings in 36.47s

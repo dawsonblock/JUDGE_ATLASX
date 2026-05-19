@@ -18,13 +18,19 @@ def test_get_ingestion_queue_uses_inprocess_backend() -> None:
     queue = get_ingestion_queue(
         settings=SimpleNamespace(ingestion_queue_backend="inprocess")
     )
+    assert queue is not None
     assert isinstance(queue, InProcessIngestionQueue)
+    assert queue._capabilities.supports_production is False
+    assert queue._capabilities.implementation_status == "alpha"
 
 
 def test_get_ingestion_queue_uses_postgres_backend() -> None:
     _reset_ingestion_queue_for_tests()
     queue = get_ingestion_queue(settings=SimpleNamespace(ingestion_queue_backend="postgres"))
+    assert queue is not None
     assert isinstance(queue, PostgresIngestionQueue)
+    assert queue._capabilities.supports_production is False
+    assert queue._capabilities.implementation_status == "placeholder"
 
 
 def test_get_ingestion_queue_rejects_invalid_backend() -> None:

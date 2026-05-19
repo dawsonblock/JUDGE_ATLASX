@@ -77,6 +77,41 @@ def _check_schema_and_policy(sources: list[dict]) -> list[str]:
             elif not isinstance(value, list):
                 errors.append(f"{key}:unsupported_type:{field_name}")
 
+        # Phase 7: Tighten validation - require adapter configuration for machine_ingest sources
+        if source_class == "machine_ingest":
+            if "adapter" not in src:
+                errors.append(f"{key}:missing_adapter_configuration")
+            elif not src["adapter"]:
+                errors.append(f"{key}:empty_adapter_configuration")
+
+        # Phase 7: Require test fixtures for all sources
+        if "test_fixtures" not in src:
+            errors.append(f"{key}:missing_test_fixtures")
+        elif not src["test_fixtures"]:
+            errors.append(f"{key}:empty_test_fixtures")
+
+        # Phase 7: Require deprecation policy for deprecated sources
+        lifecycle_state = src.get("lifecycle_state")
+        if lifecycle_state == "deprecated":
+            if "deprecation_policy" not in src:
+                errors.append(f"{key}:missing_deprecation_policy")
+            elif not src["deprecation_policy"]:
+                errors.append(f"{key}:empty_deprecation_policy")
+
+        # Phase 7: Require public status flag for public sources
+        if src.get("public_publish_default") is True:
+            if "public_status" not in src:
+                errors.append(f"{key}:missing_public_status_flag")
+            elif src["public_status"] is None:
+                errors.append(f"{key}:null_public_status_flag")
+
+        # Phase 7: Require secret requirements for sources that need secrets
+        if src.get("requires_secrets", False):
+            if "secret_requirements" not in src:
+                errors.append(f"{key}:missing_secret_requirements")
+            elif not src["secret_requirements"]:
+                errors.append(f"{key}:empty_secret_requirements")
+
     return errors
 
 

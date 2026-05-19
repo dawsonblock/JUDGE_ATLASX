@@ -134,6 +134,7 @@ def _source_row(source: dict) -> dict:
     source_row = {
         "source_id": source_id,
         "source_key": source_key,
+        "source_name": _source_display_name(source),
         "name": source.get("source_name") or source_key,
         "source_type": source.get("source_type") or "unknown",
         "jurisdiction": (

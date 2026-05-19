@@ -37,20 +37,32 @@ Only `machine_ingest` sources can be run via `judgectl ingest run` or `judgectl 
 
 ## Canada-First Sources
 
-The primary ingest path is Canadian court records.
+The primary ingest path is Canadian legal sources.
 
-### Active machine-ingest paths
+### Active machine-ingest path
 
 | Source Key | Description | API Required |
 |------------|-------------|--------------|
-| `sk_courts_qb_decisions` | Saskatchewan Court of King's Bench (CanLII) | JTA_CANLII_API_KEY |
+| `justice_canada_laws_xml` | Justice Canada Consolidated Acts and Regulations XML | None (public feed) |
+
+This is the only source currently enabled and runnable in the source registry.
+
+### Enable-ready but disabled
+
+The following sources have adapters ready and are enable-ready, but are currently disabled pending operator approval:
+
+| Source Key | Description | API Required |
+|------------|-------------|--------------|
 | `sk_courts_ca_decisions` | Saskatchewan Court of Appeal (CanLII) | JTA_CANLII_API_KEY |
+| `federal_court_canada` | Federal Court of Canada Decisions | None (HTML scraper) |
+| `scc_decisions` | Supreme Court of Canada Decisions | None (Lexum API) |
+| `sk_legislature_hansard` | Saskatchewan Legislative Assembly Hansard | None (HTML scraper) |
 
 ### Portal-reference only (no scraper)
 
 Many sources are registered as `portal_reference` or `disabled_stub`. These cannot be automatically ingested and serve as reference entries only.
 
-See `CANADA_DATA_SOURCES.md` for the full list.
+See `SOURCE_REGISTRY_STATUS.md` for the full source registry truth table.
 
 ---
 

@@ -1,0 +1,103 @@
+Built clean release archive: /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/judge_atlas_archive.zip
+archive_sha256=d7c42181aa6d503e41bf6e5400e407e31a6ebce1d9ed88035304dd8bcaa9ca38
+file_count=1003
+Archive validation written to /Users/dawsonblock/JUDGE_ATLASX/artifacts/proof/current/archive_validation.md
+PASS
+PASS
+[archive_validation] INFO: archive=/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/judge_atlas_archive.zip
+[archive_validation] INFO: archive_filename=judge_atlas_archive.zip
+[archive_validation] INFO: archive_sha256=d7c42181aa6d503e41bf6e5400e407e31a6ebce1d9ed88035304dd8bcaa9ca38
+[archive_validation] INFO: archive_top_level_dirs=./JUDGE_ATLAS-main
+[archive_validation] INFO: extract_dir=/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract
+[archive_validation] PASS: located repository root at /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main
+[archive_validation] INFO: release_gate.json proof_input_tree_hash=7fad8aae4009c8010f36c3ac841c7616da1853055f5ffafd02b9d8b60b6eaee5
+ERROR: unsupported platform claim phrases detected:
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/main.py:193: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/main.py:197: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/core/config.py:92: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/tests/test_ingestion_queue_backend.py:19: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/tests/test_ingestion_queue_backend.py:27: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/tests/test_ingestion_queue_backend.py:86: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/workers/queue_backend.py:61: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/workers/queue_backend.py:91: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/workers/postgres_queue.py:4: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/workers/postgres_queue.py:27: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/workers/postgres_queue.py:32: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/workers/ingestion_queue.py:51: unsupported claim phrase 'production-ready'
+[archive_validation] FAIL: check_false_claims rc=1
+ERROR: unsupported platform claim phrases detected:
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/main.py:193: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/main.py:197: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/core/config.py:92: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/tests/test_ingestion_queue_backend.py:19: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/tests/test_ingestion_queue_backend.py:27: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/tests/test_ingestion_queue_backend.py:86: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/workers/queue_backend.py:61: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/workers/queue_backend.py:91: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/workers/postgres_queue.py:4: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/workers/postgres_queue.py:27: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/workers/postgres_queue.py:32: unsupported claim phrase 'production-ready'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/workers/ingestion_queue.py:51: unsupported claim phrase 'production-ready'
+[archive_validation] FAIL: check_truth_claims rc=1
+PASS: proof artifacts are fresh
+proof_input_tree_hash=7fad8aae4009c8010f36c3ac841c7616da1853055f5ffafd02b9d8b60b6eaee5
+[archive_validation] PASS: check_proof_freshness
+PASS: proof artifacts are fresh
+proof_input_tree_hash=7fad8aae4009c8010f36c3ac841c7616da1853055f5ffafd02b9d8b60b6eaee5
+[archive_validation] PASS: check_proof_freshness_strict
+OK: No committed bytecode files
+[archive_validation] PASS: check_no_pyc
+OK: 2 experimental package(s) have NOT_RUNTIME sentinel.
+
+ERROR: Unauthorised runtime imports from experimental packages:
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:33: runtime import from experimental package 'app.ingestion.crime_sources.chicago_socrata'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:34: runtime import from experimental package 'app.ingestion.crime_sources.toronto'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:35: runtime import from experimental package 'app.ingestion.crime_sources.los_angeles'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:36: runtime import from experimental package 'app.ingestion.crime_sources.statscan'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:40: runtime import from experimental package 'app.ingestion.crime_sources.fbi_crime_data'
+
+Add an explicit entry to _EXPERIMENTAL_CALLERS_ALLOWLIST in this script if the import is intentional and gated behind a feature flag.
+OK: No imports from external sub-repo packages found.
+[archive_validation] FAIL: check_external_boundaries rc=1
+OK: 2 experimental package(s) have NOT_RUNTIME sentinel.
+
+ERROR: Unauthorised runtime imports from experimental packages:
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:33: runtime import from experimental package 'app.ingestion.crime_sources.chicago_socrata'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:34: runtime import from experimental package 'app.ingestion.crime_sources.toronto'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:35: runtime import from experimental package 'app.ingestion.crime_sources.los_angeles'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:36: runtime import from experimental package 'app.ingestion.crime_sources.statscan'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:40: runtime import from experimental package 'app.ingestion.crime_sources.fbi_crime_data'
+
+Add an explicit entry to _EXPERIMENTAL_CALLERS_ALLOWLIST in this script if the import is intentional and gated behind a feature flag.
+OK: No imports from external sub-repo packages found.
+[archive_validation] FAIL: check_repo_boundaries rc=1
+OK: 14 adapter file(s) checked — no direct network client imports found.
+
+ERROR: Runtime code imports from experimental packages (app.ingestion.crime_sources / app.ingestion.laws):
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:33: runtime import from experimental package 'app.ingestion.crime_sources.chicago_socrata'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:34: runtime import from experimental package 'app.ingestion.crime_sources.toronto'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:35: runtime import from experimental package 'app.ingestion.crime_sources.los_angeles'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:36: runtime import from experimental package 'app.ingestion.crime_sources.statscan'
+  /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.WVh9QOJFoi/extract/JUDGE_ATLAS-main/backend/app/api/routes/admin_legacy_ingest.py:40: runtime import from experimental package 'app.ingestion.crime_sources.fbi_crime_data'
+
+Add an explicit entry to _EXPERIMENTAL_CALLERS in this script if the import is intentional and gated behind a feature flag.
+OK: Ingestion tree checked — no unauthorised direct network client imports found outside allowlisted modules.
+[archive_validation] FAIL: check_no_direct_ingestion_network_clients rc=1
+PASS  26 source(s) across 1 file(s) validated OK
+[archive_validation] PASS: validate_workflows
+[archive_validation] PASS: required_proof_manifest
+[archive_validation] PASS: required_release_gate
+[archive_validation] PASS: required_release_readiness
+[archive_validation] PASS: required_current_alpha_status
+[archive_validation] PASS: required_source_registry_status
+[archive_validation] PASS: required_proof_policy
+[archive_validation] PASS: forbid_python_bytecode
+[archive_validation] PASS: forbid_pycache_dirs
+[archive_validation] PASS: forbid_backend_venv
+[archive_validation] PASS: forbid_repo_venv
+[archive_validation] PASS: forbid_frontend_node_modules
+[archive_validation] PASS: forbid_repo_node_modules
+[archive_validation] PASS: forbid_git_dir
+[archive_validation] INFO: proof_freshness actual_hash=7fad8aae4009c8010f36c3ac841c7616da1853055f5ffafd02b9d8b60b6eaee5
+[archive_validation] FAIL: extracted archive checks completed
+Archive validation log written: /Users/dawsonblock/JUDGE_ATLASX/artifacts/proof/current/archive_validation.log

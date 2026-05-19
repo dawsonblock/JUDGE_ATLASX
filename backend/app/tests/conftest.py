@@ -84,3 +84,9 @@ def db_session():
         session.close()
         transaction.rollback()
         connection.close()
+
+
+@pytest.fixture
+def repo_root() -> Path:
+    """Return the repository root directory (parent of backend/)."""
+    return Path(__file__).parent.parent.parent.parent

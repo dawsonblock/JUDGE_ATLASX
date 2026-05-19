@@ -11,6 +11,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -42,6 +43,7 @@ class Location(Base, TimestampMixin):
     region: Mapped[str | None] = mapped_column(String(80))
     latitude: Mapped[float] = mapped_column(Float, nullable=False)
     longitude: Mapped[float] = mapped_column(Float, nullable=False)
+    geocode_cache_id: Mapped[int | None] = mapped_column(ForeignKey("geocode_cache.id"), nullable=True)
     # NOTE: geom column exists only on PostgreSQL (PostGIS), managed by Alembic.
     # The ORM does not map it because bbox filtering uses lat/lon only.
     # Future: Add geom mapping when triggers/generated columns maintain it.
@@ -635,6 +637,55 @@ class IngestionRun(Base, TimestampMixin):
     last_error_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )  # Timestamp of last error occurrence
+
+
+class IngestionQueueJob(Base, TimestampMixin):
+    """Queue job for ingestion runs (Phase 14)."""
+
+    __tablename__ = "ingestion_queue_jobs"
+    __table_args__ = (
+        # Unique constraint on (source_key, idempotency_key) for idempotency
+        Index('ix_ingestion_queue_jobs_source_key_idempotency_key', 'source_key', 'idempotency_key', unique=True),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    source_key: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    state: Mapped[str] = mapped_column(String(80), nullable=False, index=True, default="pending")
+    enqueued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    run_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    records_fetched: Mapped[int] = mapped_column(Integer, default=0)
+    review_items: Mapped[int] = mapped_column(Integer, default=0)
+    created_records: Mapped[int] = mapped_column(Integer, default=0)
+    raw_snapshot_preserved: Mapped[bool] = mapped_column(Boolean, default=False)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    retry_count: Mapped[int | None] = mapped_column(Integer, nullable=True, default=0)
+    retry_after: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Production-grade concurrency fields
+    locked_by: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    dead_lettered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class DeadLetterQueueJob(Base, TimestampMixin):
+    """Dead-letter queue for failed ingestion jobs (Phase 14)."""
+
+    __tablename__ = "dead_letter_queue_jobs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    original_job_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    source_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    job_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    payload_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    final_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0)
+    dead_lettered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class AuditLog(Base):
@@ -1482,10 +1533,22 @@ class MemoryClaim(Base, TimestampMixin):
     claim_key: Mapped[str] = mapped_column(
         String(64), nullable=False, unique=True, index=True, default=lambda: uuid4().hex
     )
+    claim_uid: Mapped[str] = mapped_column(
+        String(64), nullable=False, unique=True, index=True, default=lambda: uuid4().hex
+    )
     claim_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
     entity_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("canonical_entities.id"), nullable=False, index=True
     )
+    predicate: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    object_entity_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("canonical_entities.id"), nullable=True, index=True
+    )
+    object_value: Mapped[str | None] = mapped_column(Text, nullable=True)
+    object_value_type: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # enum: entity, literal, date, number, boolean
+    normalized_value: Mapped[str | None] = mapped_column(Text, nullable=True)
     claim_value: Mapped[str] = mapped_column(Text, nullable=False)
     claim_value_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     confidence: Mapped[float] = mapped_column(
@@ -1495,6 +1558,12 @@ class MemoryClaim(Base, TimestampMixin):
         Integer, ForeignKey("source_snapshots.id"), nullable=True, index=True
     )
     extraction_model: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    extraction_run_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("ingestion_runs.id"), nullable=True
+    )
+    derived_from_ai: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false", default=False
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="true", default=True
     )
@@ -1509,12 +1578,59 @@ class MemoryClaim(Base, TimestampMixin):
         default="active",
         index=True,
     )
+    review_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        server_default="pending_review",
+        default="pending_review",
+        index=True,
+    )
+    superseded_by_claim_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("memory_claims.id"), nullable=True
+    )
+    superseded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    jurisdiction: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    valid_from: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    valid_to: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    observed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    source_quality: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    corroboration_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0", default=0
+    )
+    contradiction_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0", default=0
+    )
     last_seen_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     # Dense vector embedding for semantic retrieval (stored as JSON float array).
     # Populated by the embeddings service when JTA_EMBEDDINGS_ENABLED=true.
     claim_embedding: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # Claim sensitivity classification for publication policy
+    claim_sensitivity: Mapped[str | None] = mapped_column(
+        String(80),
+        nullable=True,
+        index=True,
+    )  # enum: public_record, legal_proceeding, criminal_allegation_named_person, criminal_allegation_private_person, misconduct_allegation, statistical_aggregate, legislation, court_metadata
+    publication_sensitivity: Mapped[str | None] = mapped_column(
+        String(80),
+        nullable=True,
+        index=True,
+    )  # enum: public_record, legal_proceeding, criminal_allegation_named_person, criminal_allegation_private_person, misconduct_allegation, statistical_aggregate, legislation, court_metadata
+    # Elevated approval fields for sensitive claims
+    elevated_review_status: Mapped[str | None] = mapped_column(
+        String(20), nullable=True, index=True
+    )  # enum: pending_review, approved, rejected
+    elevated_reviewer_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    elevated_reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class MemoryEvidenceLink(Base):
@@ -1530,6 +1646,16 @@ class MemoryEvidenceLink(Base):
         Integer, ForeignKey("source_snapshots.id"), nullable=False, index=True
     )
     evidence_checksum: Mapped[str] = mapped_column(String(64), nullable=False)
+    support_type: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # enum: supports, contradicts, mentions, context, supersedes
+    quote_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    char_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    char_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    page_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    confidence: Mapped[float] = mapped_column(
+        Float, nullable=False, server_default="0.0", default=0.0
+    )
     span_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
     span_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
     span_text: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1591,6 +1717,61 @@ class MemoryInvalidation(Base):
     )
     invalidated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class MemoryContradiction(Base):
+    """Persistent contradiction records between claims.
+
+    Stores detected contradictions for review and resolution tracking.
+    """
+
+    __tablename__ = "memory_contradictions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    claim_a_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("memory_claims.id"), nullable=False, index=True
+    )
+    claim_b_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("memory_claims.id"), nullable=False, index=True
+    )
+    conflict_type: Mapped[str] = mapped_column(
+        String(50), nullable=False, index=True
+    )  # value_conflict, temporal_overlap, identity_conflict, jurisdiction_conflict, source_conflict, legal_status_conflict
+    severity: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default="medium", index=True
+    )  # low, medium, high, critical
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default="open", index=True
+    )  # open, reviewing, resolved, false_positive, ignored
+    detected_by: Mapped[str] = mapped_column(
+        String(50), nullable=False, server_default="system"
+    )  # system or user
+    detected_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    source_authority_weight: Mapped[float] = mapped_column(
+        Float, nullable=True
+    )  # Authority weight for resolution (higher = more authoritative source)
+    resolved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    reviewer_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=True
+    )
+    resolution_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "claim_a_id", "claim_b_id", "conflict_type",
+            name="uq_memory_contradictions_claims"
+        ),
     )
 
 

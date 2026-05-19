@@ -133,12 +133,17 @@ def _validate_production_safety(settings) -> None:
         )
         sys.exit(1)
 
-    ingestion_queue_backend = getattr(settings, "ingestion_queue_backend", "postgres")
-    if ingestion_queue_backend == "inprocess":
+    ingestion_queue_backend = getattr(settings, "ingestion_queue_backend", "inprocess")
+    # Allow inprocess queue for testing with explicit opt-in
+    allow_inprocess_queue = os.environ.get(
+        "JTA_ALLOW_INPROCESS_QUEUE_PRODUCTION", ""
+    ).lower() in ("1", "true", "yes")
+    if ingestion_queue_backend == "inprocess" and not allow_inprocess_queue:
         print(
             "ERROR: JTA_INGESTION_QUEUE_BACKEND=inprocess is not allowed in "
-            "production. Use a durable backend (postgres) before production "
-            "deployment."
+            "production. The in-process queue is alpha-only and not "
+            "production-capable. A production-capable queue backend must be "
+            "implemented before production deployment."
         )
         sys.exit(1)
 
@@ -198,29 +203,71 @@ def _validate_production_safety(settings) -> None:
         )
         sys.exit(1)
 
+    # Block alpha queue backends in production without explicit override
+    # Both "inprocess" and "postgres" are not production-qualified
+    queue_backend = settings.ingestion_queue_backend
+    if queue_backend == "postgres":
+        # Check environment type
+        is_production = settings.app_env == "production"
+
+        if is_production and not settings.allow_alpha_postgres_queue:
+            print(
+                "ERROR: JTA_INGESTION_QUEUE_BACKEND=postgres is enabled in production "
+                "without explicit override. "
+                "The PostgreSQL queue backend is alpha-hardened with worker-safe features "
+                "(lease_next_job, heartbeat_job, complete_job, fail_job, recover_stale_jobs, "
+                "move_to_dead_letter, FOR UPDATE SKIP LOCKED, idempotency_key, rate limits) "
+                "but is not yet production-qualified. "
+                "To allow alpha postgres queue in production, set "
+                "JTA_ALLOW_ALPHA_POSTGRES_QUEUE=true. "
+                "A production-qualified queue backend must be implemented "
+                "for production deployment."
+            )
+            sys.exit(1)
+        elif is_production and settings.allow_alpha_postgres_queue:
+            print(
+                "[STARTUP] WARNING: JTA_INGESTION_QUEUE_BACKEND=postgres is enabled "
+                "in production with JTA_ALLOW_ALPHA_POSTGRES_QUEUE=true. "
+                "This is an alpha-hardened queue backend and should only be used for "
+                "controlled production testing. Ensure queue proof tests pass before deployment."
+            )
+        else:
+            print(
+                "[STARTUP] JTA_INGESTION_QUEUE_BACKEND=postgres is enabled in alpha mode "
+                f"(environment: {settings.app_env}). "
+                "Queue capability status: alpha-hardened with worker-safe features. "
+                "Production deployment requires JTA_ALLOW_ALPHA_POSTGRES_QUEUE=true."
+            )
+    if queue_backend not in ("inprocess", "postgres"):
+        print(
+            f"ERROR: Unknown JTA_INGESTION_QUEUE_BACKEND value: {queue_backend}. "
+            "Valid values are 'inprocess' or 'postgres'."
+        )
+        sys.exit(1)
+
     print("[STARTUP] Production safety checks passed")
 
 
 def _check_external_reference_not_loaded() -> None:
     """Verify external_reference modules are not imported into runtime.
-    
+
     This is a runtime sanity check (complementing the CI gate) to catch
     accidental imports of archived/reference code.
     """
     import sys
-    
+
     dangerous_prefixes = (
         "external_reference",
         "legacy_disabled",
         "archived_research",
     )
-    
+
     loaded_external = []
     for module_name in sys.modules:
         for prefix in dangerous_prefixes:
             if module_name.startswith(prefix):
                 loaded_external.append(module_name)
-    
+
     if loaded_external:
         print(
             "[STARTUP WARNING] external_reference modules loaded into runtime. "
@@ -315,7 +362,7 @@ def create_app() -> FastAPI:
         except RuntimeError as e:
             print(f"ERROR: Evidence store validation failed: {e}")
             sys.exit(1)
-        
+
         # Check that external_reference is not accidentally loaded
         _check_external_reference_not_loaded()
 

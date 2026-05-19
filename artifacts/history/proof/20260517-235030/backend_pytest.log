@@ -1,0 +1,125 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  7%]
+........................................................................ [  9%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 17%]
+........................................................................ [ 19%]
+........................................................................ [ 22%]
+........................................................................ [ 24%]
+........................................................................ [ 27%]
+........................................................................ [ 29%]
+........................................................................ [ 31%]
+........................................................................ [ 34%]
+........................................................................ [ 36%]
+........................................................................ [ 39%]
+........................................................................ [ 41%]
+........................................................................ [ 44%]
+........................................................................ [ 46%]
+........................................................................ [ 49%]
+........................................................................ [ 51%]
+........................................................................ [ 54%]
+........................................................................ [ 56%]
+...........................................................sssss........ [ 59%]
+........................................................................ [ 61%]
+............................................sssss....................... [ 63%]
+........................................................................ [ 66%]
+..........................................................F
+=================================== FAILURES ===================================
+______________ test_sources_coverage_returns_active_source_counts ______________
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
+    self.dialect.do_execute(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+E   sqlite3.OperationalError: attempt to write a readonly database
+
+The above exception was the direct cause of the following exception:
+backend/app/tests/test_public_status_and_coverage_endpoints.py:25: in test_sources_coverage_returns_active_source_counts
+    db.commit()
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2030: in commit
+    trans.commit(_to_root=True)
+<string>:2: in commit
+    ???
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1311: in commit
+    self._prepare_impl()
+<string>:2: in _prepare_impl
+    ???
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1286: in _prepare_impl
+    self.session.flush()
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4331: in flush
+    self._flush(objects)
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4466: in _flush
+    with util.safe_reraise():
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:121: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4427: in _flush
+    flush_context.execute()
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
+    rec.execute(self)
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
+    util.preloaded.orm_persistence.save_obj(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:93: in save_obj
+    _emit_insert_statements(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1233: in _emit_insert_statements
+    result = connection.execute(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1419: in execute
+    return meth(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:527: in _execute_on_connection
+    return connection._execute_clauseelement(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1641: in _execute_clauseelement
+    ret = self._execute_context(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context
+    return self._exec_single_context(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1986: in _exec_single_context
+    self._handle_dbapi_exception(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2363: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
+    self.dialect.do_execute(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+E   sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) attempt to write a readonly database
+E   [SQL: INSERT INTO source_registry (source_key, source_name, country, province_state, city, source_type, source_tier, license, license_url, fetch_method, update_cadence, fields_supported, precision_level, auto_publish_enabled, requires_manual_review, parser_version, automation_status, last_successful_fetch, last_error, last_error_at, is_active, rate_limit_rpm, last_ingested_at, health_score, reliability_score, admin_notes, config_json, notes, jurisdiction, category, priority, enabled_default, public_record_authority, base_url, allowed_domains, refresh_interval_minutes, parser, creates, public_publish_default, terms_url, source_class, lifecycle_state, canonical_replacement_key, status_reason, operator_next_step, section_key, confidence_class, retention_policy, canonical_url, evidence_required, terms_verified, authentication_required, rate_limit_policy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at]
+E   [parameters: ('test_source_08575862bb', 'Test Coverage Source', 'Canada', None, None, 'court_record', 'official', None, None, 'manual', 'manual', None, 'city_centroid', 0, 1, None, None, None, None, None, 1, 60, None, 1.0, 1.0, None, None, None, 'CA-SK', None, 5, 0, 'unknown', None, None, None, None, None, 0, None, None, None, None, None, None, None, None, None, None, 0, None, 0, None)]
+E   (Background on this error at: https://sqlalche.me/e/20/e3q8)
+=============================== warnings summary ===============================
+app/tests/test_admin_security.py: 2 warnings
+app/tests/test_ai_pipeline.py: 3 warnings
+app/tests/test_api.py: 4 warnings
+app/tests/test_outcomes_and_ingestion.py: 3 warnings
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/auth/admin.py:241: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token, authorization)
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_require_admin_token_returns_admin_actor
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_admin_security.py:246: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    else require_admin_token(x_jta_admin_token="test-secret-token")
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_actor_id_is_not_raw_token
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_admin_security.py:266: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token="super-secret-value-12345")
+
+app/tests/test_admin_security.py::TestAdminActorIdentity::test_actor_id_is_stable_label
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_admin_security.py:350: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(x_jta_admin_token="token-abc")
+
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/security/import_authority.py:51: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_token(
+
+app/tests/test_legacy_shared_token_requires_opt_in.py::TestLegacySharedTokenRequiresOptIn::test_shared_token_allowed_only_with_local_opt_in
+  /Users/dawsonblock/JUDGE_ATLASX/backend/app/tests/test_legacy_shared_token_requires_opt_in.py:44: DeprecationWarning: Shared-token import authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_imports(x_jta_admin_token="test-token", authorization=None)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/app/tests/test_public_status_and_coverage_endpoints.py::test_sources_coverage_returns_active_source_counts
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 1992 passed, 10 skipped, 18 warnings in 74.20s (0:01:14)

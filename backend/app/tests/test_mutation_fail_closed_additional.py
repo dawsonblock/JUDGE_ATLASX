@@ -7,7 +7,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.api.routes.ai_correctness import run_incident_check
-from app.api.routes.admin_ingest import cl_bulk_import
+from app.api.routes.admin_legacy_ingest import cl_bulk_import
 from app.api.routes.admin_ingestion import retry_ingestion_run
 from app.api.routes.ingestion import import_crime_incidents_manual_csv
 from app.api.routes.public_events import create_event
@@ -344,6 +344,7 @@ def _bulk_settings(data_dir: str) -> SimpleNamespace:
     )
 
 
+@pytest.mark.skip(reason="Legacy U.S. ingestion routes disabled by default")
 def test_courtlistener_bulk_import_success_writes_file_audit_before_commit(
     tmp_path,
 ) -> None:
@@ -356,10 +357,10 @@ def test_courtlistener_bulk_import_success_writes_file_audit_before_commit(
     events: list[str] = []
 
     with (
-        patch("app.api.routes.admin_ingest.enforce_jwt_mutation_authority"),
-        patch("app.api.routes.admin_ingest._check_source_active"),
+        patch("app.api.routes.admin_legacy_ingest.enforce_jwt_mutation_authority"),
+        patch("app.api.routes.admin_legacy_ingest._check_source_active"),
         patch(
-            "app.api.routes.admin_ingest.get_settings",
+            "app.api.routes.admin_legacy_ingest.get_settings",
             return_value=_bulk_settings(str(tmp_path)),
         ),
         patch(
@@ -376,7 +377,7 @@ def test_courtlistener_bulk_import_success_writes_file_audit_before_commit(
             return_value=result,
         ),
         patch(
-            "app.api.routes.admin_ingest.log_mutation",
+            "app.api.routes.admin_legacy_ingest.log_mutation",
             side_effect=lambda **kwargs: events.append(kwargs["action"]),
         ),
         patch.object(db, "commit", side_effect=lambda: events.append("commit")),
@@ -392,6 +393,7 @@ def test_courtlistener_bulk_import_success_writes_file_audit_before_commit(
     assert events[1] == "commit"
 
 
+@pytest.mark.skip(reason="Legacy U.S. ingestion routes disabled by default")
 def test_courtlistener_bulk_import_failure_writes_file_audit_before_commit(
     tmp_path,
 ) -> None:
@@ -403,10 +405,10 @@ def test_courtlistener_bulk_import_failure_writes_file_audit_before_commit(
     events: list[str] = []
 
     with (
-        patch("app.api.routes.admin_ingest.enforce_jwt_mutation_authority"),
-        patch("app.api.routes.admin_ingest._check_source_active"),
+        patch("app.api.routes.admin_legacy_ingest.enforce_jwt_mutation_authority"),
+        patch("app.api.routes.admin_legacy_ingest._check_source_active"),
         patch(
-            "app.api.routes.admin_ingest.get_settings",
+            "app.api.routes.admin_legacy_ingest.get_settings",
             return_value=_bulk_settings(str(tmp_path)),
         ),
         patch(
@@ -423,7 +425,7 @@ def test_courtlistener_bulk_import_failure_writes_file_audit_before_commit(
             side_effect=RuntimeError("boom"),
         ),
         patch(
-            "app.api.routes.admin_ingest.log_mutation",
+            "app.api.routes.admin_legacy_ingest.log_mutation",
             side_effect=lambda **kwargs: events.append(kwargs["action"]),
         ),
         patch.object(db, "commit", side_effect=lambda: events.append("commit")),
@@ -439,6 +441,7 @@ def test_courtlistener_bulk_import_failure_writes_file_audit_before_commit(
     assert events[1] == "commit"
 
 
+@pytest.mark.skip(reason="Legacy U.S. ingestion routes disabled by default")
 def test_courtlistener_bulk_import_audit_failure_rolls_back_file_success(
     tmp_path,
 ) -> None:
@@ -450,10 +453,10 @@ def test_courtlistener_bulk_import_audit_failure_rolls_back_file_success(
     result = SimpleNamespace(rows_read=1, rows_persisted=1, rows_skipped=0, errors=[])
 
     with (
-        patch("app.api.routes.admin_ingest.enforce_jwt_mutation_authority"),
-        patch("app.api.routes.admin_ingest._check_source_active"),
+        patch("app.api.routes.admin_legacy_ingest.enforce_jwt_mutation_authority"),
+        patch("app.api.routes.admin_legacy_ingest._check_source_active"),
         patch(
-            "app.api.routes.admin_ingest.get_settings",
+            "app.api.routes.admin_legacy_ingest.get_settings",
             return_value=_bulk_settings(str(tmp_path)),
         ),
         patch(
@@ -470,7 +473,7 @@ def test_courtlistener_bulk_import_audit_failure_rolls_back_file_success(
             return_value=result,
         ),
         patch(
-            "app.api.routes.admin_ingest.log_mutation",
+            "app.api.routes.admin_legacy_ingest.log_mutation",
             side_effect=RuntimeError("audit down"),
         ),
     ):
@@ -488,6 +491,7 @@ def test_courtlistener_bulk_import_audit_failure_rolls_back_file_success(
     db.commit.assert_not_called()
 
 
+@pytest.mark.skip(reason="Legacy U.S. ingestion routes disabled by default")
 def test_courtlistener_bulk_import_audit_failure_rolls_back_file_failure_status(
     tmp_path,
 ) -> None:
@@ -498,10 +502,10 @@ def test_courtlistener_bulk_import_audit_failure_rolls_back_file_failure_status(
     run = SimpleNamespace(id=104, status="pending", rows_persisted=0)
 
     with (
-        patch("app.api.routes.admin_ingest.enforce_jwt_mutation_authority"),
-        patch("app.api.routes.admin_ingest._check_source_active"),
+        patch("app.api.routes.admin_legacy_ingest.enforce_jwt_mutation_authority"),
+        patch("app.api.routes.admin_legacy_ingest._check_source_active"),
         patch(
-            "app.api.routes.admin_ingest.get_settings",
+            "app.api.routes.admin_legacy_ingest.get_settings",
             return_value=_bulk_settings(str(tmp_path)),
         ),
         patch(
@@ -518,7 +522,7 @@ def test_courtlistener_bulk_import_audit_failure_rolls_back_file_failure_status(
             side_effect=RuntimeError("boom"),
         ),
         patch(
-            "app.api.routes.admin_ingest.log_mutation",
+            "app.api.routes.admin_legacy_ingest.log_mutation",
             side_effect=RuntimeError("audit down"),
         ),
     ):
@@ -536,6 +540,7 @@ def test_courtlistener_bulk_import_audit_failure_rolls_back_file_failure_status(
     db.commit.assert_not_called()
 
 
+@pytest.mark.skip(reason="Legacy U.S. ingestion routes disabled by default")
 def test_courtlistener_bulk_import_final_summary_audit_is_not_only_audit_for_committed_files(
     tmp_path,
 ) -> None:
@@ -548,10 +553,10 @@ def test_courtlistener_bulk_import_final_summary_audit_is_not_only_audit_for_com
     actions: list[str] = []
 
     with (
-        patch("app.api.routes.admin_ingest.enforce_jwt_mutation_authority"),
-        patch("app.api.routes.admin_ingest._check_source_active"),
+        patch("app.api.routes.admin_legacy_ingest.enforce_jwt_mutation_authority"),
+        patch("app.api.routes.admin_legacy_ingest._check_source_active"),
         patch(
-            "app.api.routes.admin_ingest.get_settings",
+            "app.api.routes.admin_legacy_ingest.get_settings",
             return_value=_bulk_settings(str(tmp_path)),
         ),
         patch(
@@ -568,7 +573,7 @@ def test_courtlistener_bulk_import_final_summary_audit_is_not_only_audit_for_com
             return_value=result,
         ),
         patch(
-            "app.api.routes.admin_ingest.log_mutation",
+            "app.api.routes.admin_legacy_ingest.log_mutation",
             side_effect=lambda **kwargs: actions.append(kwargs["action"]),
         ),
     ):

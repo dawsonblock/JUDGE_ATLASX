@@ -154,7 +154,8 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _archive_current_proof(repo_root: Path, out_dir: Path) -> str | None:
+def _archive_current_proof(repo_root: Path, out_dir: Path, keep_files: list[str] | None = None) -> str | None:
+    """Archive current proof files to history, optionally keeping certain files in current directory."""
     history_root = repo_root / "artifacts" / "history" / "proof"
     history_root.mkdir(parents=True, exist_ok=True)
     entries = [p for p in out_dir.iterdir() if p.exists()]
@@ -164,6 +165,9 @@ def _archive_current_proof(repo_root: Path, out_dir: Path) -> str | None:
     target = history_root / stamp
     target.mkdir(parents=True, exist_ok=True)
     for entry in entries:
+        # Keep specified files in current directory
+        if keep_files and entry.name in keep_files:
+            continue
         move(str(entry), str(target / entry.name))
     return str(target.relative_to(repo_root))
 
@@ -798,7 +802,7 @@ def _write_repair_report_md(
             "artifacts/proof/current/public_api_boundary.log",
         ),
         (
-            "12. Frontend Node 25.9 Gate",
+            "12. Frontend Node 20 Gate",
             phase_status(checks.get("frontend_node_gate", {}).get("status") == "PASS"),
             "artifacts/proof/current/frontend_node_gate.log",
         ),
@@ -911,44 +915,25 @@ def _write_current_proof_md(
     status = "PASS" if payload["alpha_gate_passed"] else "BLOCKED"
     failed_checks = payload.get("failed_checks", [])
     blocked_checks = payload.get("blocked_checks", {})
+
     lines = [
         "# CURRENT_PROOF",
         "",
         f"- generated_at_utc: {payload.get('timestamp_utc', 'unknown')}",
         f"- commit_hash: {payload.get('commit_hash', 'unknown')}",
         f"- alpha_gate_status: {status}",
-        f"- alpha_gate_passed: {str(payload.get('alpha_gate_passed', False)).lower()}",
+        f"- alpha_gate_passed: {payload.get('alpha_gate_passed', False)}",
         f"- release_gate_check_count: {check_count}",
-        f"- docker_available: {str(payload.get('docker_available', False)).lower()}",
+        f"- archive_validation_result: {payload.get('archive_validation_result', 'UNKNOWN')}",
+        f"- docker_available: {payload.get('docker_available', False)}",
         f"- postgis_proof_result: {payload.get('postgis_proof_result', 'UNKNOWN')}",
-        (
-            "- egress_proxy_proof_result: "
-            f"{payload.get('egress_proxy_proof_result', 'UNKNOWN')}"
-        ),
-        (
-            "- demo_proof_result: "
-            f"{payload.get('demo_proof_result', 'UNKNOWN')}"
-        ),
-        (
-            "- proof_freshness_result: "
-            f"{payload.get('proof_freshness_result', 'UNKNOWN')}"
-        ),
-        (
-            "- proof_input_tree_hash: "
-            f"{payload.get('proof_input_tree_hash', 'unknown')}"
-        ),
-        (
-            "- proof_input_file_count: "
-            f"{payload.get('proof_input_file_count', 0)}"
-        ),
-        (
-            "- egress_proxy_proof_log: "
-            f"{payload.get('egress_proxy_proof_log', 'unknown')}"
-        ),
-        (
-            "- demo_proof_log: "
-            f"{payload.get('demo_proof_log', 'unknown')}"
-        ),
+        f"- egress_proxy_proof_result: {payload.get('egress_proxy_proof_result', 'UNKNOWN')}",
+        f"- demo_proof_result: {payload.get('demo_proof_result', 'UNKNOWN')}",
+        f"- proof_freshness_result: {payload.get('proof_freshness_result', 'UNKNOWN')}",
+        f"- proof_input_tree_hash: {payload.get('proof_input_tree_hash', 'unknown')}",
+        f"- proof_input_file_count: {payload.get('proof_input_file_count', 0)}",
+        f"- egress_proxy_proof_log: {payload.get('egress_proxy_proof_log', 'unknown')}",
+        f"- demo_proof_log: {payload.get('demo_proof_log', 'unknown')}",
         "",
         "## Runtime Metadata",
         "",
@@ -1146,61 +1131,11 @@ def _write_current_proof_md(
 
     current_proof_path = out_dir / "CURRENT_PROOF.md"
     current_proof_path.write_text("\n".join(lines), encoding="utf-8")
-    return str(current_proof_path.relative_to(repo_root))
-
-
-def _write_fix_verification_report_md(
-    repo_root: Path,
-    out_dir: Path,
-    payload: dict,
-    check_count: int,
-) -> str:
-    alpha_ok = bool(payload.get("alpha_gate_passed", False))
-    blockers = payload.get("release_blockers_remaining", [])
-    status = "clean alpha" if alpha_ok else "blocked alpha"
-    lines = [
-        "# FIX_VERIFICATION_REPORT",
-        "",
-        f"- generated_at_utc: {payload.get('timestamp_utc', 'unknown')}",
-        f"- commit_hash: {payload.get('commit_hash', 'unknown')}",
-        f"- status: {status}",
-        "- operational_posture: alpha",
-        "- production_ready: false",
-        f"- alpha_gate_passed: {str(alpha_ok).lower()}",
-        f"- release_gate_check_count: {check_count}",
-        "",
-        "## Verification Facts",
-        "",
-        f"- check_path_hygiene: {'PASS' if not blockers else 'SEE_RELEASE_GATE'}",
-        f"- check_no_generated_files: {'PASS' if 'repo_generated_files' not in blockers else 'FAIL'}",
-        f"- check_false_claims: {'PASS' if 'check_false_claims' not in blockers else 'FAIL'}",
-        f"- check_source_registry_docs: {'PASS' if 'check_source_registry_docs' not in blockers else 'FAIL'}",
-        f"- check_proof_freshness: {payload.get('proof_freshness_result', 'UNKNOWN')}",
-        f"- archive_validation: {payload.get('archive_validation_result', 'UNKNOWN')}",
-        "",
-        "## Scope Statements",
-        "",
-        "- This is an alpha platform.",
-        "- It is not ready for production deployment.",
-        "- Evidence is authoritative.",
-        "- AI and memory outputs are derivative.",
-        "- Legal correlations are hypotheses, not verdicts.",
-        "- Public outputs require review approval.",
-        "- Source coverage is incomplete.",
-        "- Machine ingestion does not imply auto-publication.",
-        "",
-        "## Remaining Blockers",
-        "",
-    ]
-    if blockers:
-        lines.extend(f"- {item}" for item in blockers)
-    else:
-        lines.append("- none")
-    lines.append("")
-
-    output_path = out_dir / "FIX_VERIFICATION_REPORT.md"
-    output_path.write_text("\n".join(lines), encoding="utf-8")
-    return str(output_path.relative_to(repo_root))
+    # Return relative path if possible, otherwise absolute path
+    try:
+        return str(current_proof_path.relative_to(repo_root))
+    except ValueError:
+        return str(current_proof_path)
 
 
 def main() -> int:
@@ -1549,7 +1484,17 @@ def main() -> int:
         timeout_seconds=900,
     )
 
-    archived_current_proof = _archive_current_proof(repo_root, out_dir)
+    # Archive current proof to history before execution, but keep structured proof files
+    # for archive validation step
+    keep_files = [
+        "release_gate.json",
+        "backend_proof_summary.json",
+        "frontend_proof_summary.json",
+        "source_registry_status.json",
+        "CURRENT_PROOF.md",
+        "release_readiness.md",
+    ]
+    archived_current_proof = _archive_current_proof(repo_root, out_dir, keep_files=keep_files)
 
     # Clear stale gate artifacts before execution so each run is
     # self-contained.
@@ -1560,7 +1505,6 @@ def main() -> int:
         "proof_manifest.json",
         "CURRENT_PROOF.md",
         "CURRENT_ALPHA_STATUS.md",
-        "FIX_VERIFICATION_REPORT.md",
         "SOURCE_REGISTRY_STATUS.md",
         "SOURCE_REGISTRY_STATUS.json",
         "source_registry_status.json",
@@ -1700,7 +1644,7 @@ def main() -> int:
         repo_root / "docs" / "deployment-guide" / "DEPENDENCY_REMEDIATION_PLAN.md"
     ).exists()
 
-    gate_runner_node_version = frontend_node_gate_version or (
+    gate_runner_node_version = (
         subprocess.run(["node", "--version"], capture_output=True, text=True)
         .stdout.strip()
         or "unknown"
@@ -1892,29 +1836,9 @@ def main() -> int:
         source_registry_summary,
     )
     _write_proof_policy_md(repo_root, out_dir, payload)
-    _write_current_proof_md(
-        repo_root,
-        out_dir,
-        payload,
-        check_count=len(results),
-    )
-    _write_fix_verification_report_md(
-        repo_root,
-        out_dir,
-        payload,
-        check_count=len(results),
-    )
 
-    archive_step = _run(
-        repo_root,
-        out_dir,
-        _archive_validation_spec.name,
-        _archive_validation_spec.log_name,
-        list(_archive_validation_spec.command),
-        timeout_seconds=_archive_validation_spec.timeout_seconds,
-        required=_archive_validation_spec.required,
-    )
-    results.append(archive_step)
+    # Archive validation will run after all proof files are written (moved from earlier position)
+    # This ensures validation runs against the complete current proof state
 
     manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
@@ -1951,9 +1875,7 @@ def main() -> int:
     payload["alpha_gate_passed"] = ok
     payload["check_count"] = len(results)
     payload["proof_freshness_result"] = pf_step.status
-    payload["archive_validation_result"] = (
-        "PASS" if archive_step.exit_code == 0 else "FAIL"
-    )
+    # archive_validation_result will be set after archive validation runs
     payload["checks"] = [asdict(r) for r in results]
     payload["logs"] = {r.name: r.log_path for r in results}
     payload["failed_checks"] = [r.name for r in results if r.exit_code != 0] + (
@@ -1971,21 +1893,26 @@ def main() -> int:
         else []
     )
 
-    # Phase 3: write final release_gate.json and CURRENT_PROOF.md.
+    # Phase 3: write release_gate.json and CURRENT_PROOF.md before archive validation
+    # Archive validation requires these files to exist in the archive with correct check_count
     with gate_log_path.open("a", encoding="utf-8") as gate_log:
         gate_log.write(
             f"{pf_step.name}: {pf_step.status} rc={pf_step.exit_code} "
             f"dur={pf_step.duration_seconds}s log={pf_step.log_path}\n"
         )
-        gate_log.write(f"alpha_gate_passed={str(ok).lower()}\n")
 
+    # Set check_count to include the upcoming archive step
+    payload["check_count"] = len(results) + 1
+
+    # Write release_gate.json with check_count that includes archive step
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
+    # Write CURRENT_PROOF.md with same check_count
     current_proof_rel = _write_current_proof_md(
         repo_root,
         out_dir,
         payload,
-        check_count=len(results),
+        check_count=len(results) + 1,
     )
     grouped_artifacts = _write_grouped_proof_artifacts(repo_root, out_dir, payload)
     current_alpha_status_rel = _write_current_alpha_status_md(repo_root, out_dir, payload)
@@ -2002,20 +1929,92 @@ def main() -> int:
         payload,
         source_registry_summary,
     )
-    fix_verification_report_rel = _write_fix_verification_report_md(
+    payload["logs"]["current_proof"] = current_proof_rel
+    payload["logs"] |= grouped_artifacts
+
+    # Run archive validation after CURRENT_PROOF.md is written
+    archive_step = _run(
+        repo_root,
+        out_dir,
+        _archive_validation_spec.name,
+        _archive_validation_spec.log_name,
+        list(_archive_validation_spec.command),
+        timeout_seconds=_archive_validation_spec.timeout_seconds,
+        required=_archive_validation_spec.required,
+    )
+    results.append(archive_step)
+
+    # Update payload with archive validation result
+    payload["archive_validation_result"] = (
+        "PASS" if archive_step.exit_code == 0 else "FAIL"
+    )
+    payload["logs"]["archive_validation"] = archive_step.log_path
+
+    # Recalculate ok after archive validation (check_count stays the same)
+    ok = all(r.exit_code == 0 for r in results) and not _missing_logs(repo_root, results)
+    payload["alpha_gate_passed"] = ok
+
+    payload["logs"]["current_alpha_status"] = current_alpha_status_rel
+    payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
+    payload["logs"]["proof_policy"] = proof_policy_rel
+    payload["logs"]["repair_report"] = repair_report_rel
+
+    # Rewrite release_gate.json with final archive validation result
+    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    # Rewrite CURRENT_PROOF.md with final archive validation result
+    current_proof_rel = _write_current_proof_md(
         repo_root,
         out_dir,
         payload,
         check_count=len(results),
     )
-    payload["logs"]["current_proof"] = current_proof_rel
-    payload["logs"] |= grouped_artifacts
-    payload["logs"]["current_alpha_status"] = current_alpha_status_rel
-    payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
-    payload["logs"]["proof_policy"] = proof_policy_rel
-    payload["logs"]["repair_report"] = repair_report_rel
-    payload["logs"]["fix_verification_report"] = fix_verification_report_rel
-    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    # Sync artifacts/current with final proof state
+    artifacts_current_dir = repo_root / "artifacts" / "current"
+    artifacts_current_dir.mkdir(parents=True, exist_ok=True)
+
+    # Write PROOF_MANIFEST.json (copy of release_gate.json)
+    proof_manifest_path = artifacts_current_dir / "PROOF_MANIFEST.json"
+    proof_manifest_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    # Write PROOF_REPORT.md (copy of CURRENT_PROOF.md)
+    proof_report_path = artifacts_current_dir / "PROOF_REPORT.md"
+    proof_report_path.write_text((out_dir / "CURRENT_PROOF.md").read_text(encoding="utf-8"))
+
+    # Write RELEASE_MANIFEST.json with current metadata
+    release_manifest = {
+        "generated_at": payload.get("timestamp_utc"),
+        "git_commit": payload.get("commit_hash"),
+        "alpha_gate_passed": payload.get("alpha_gate_passed"),
+        "archive_validation_result": payload.get("archive_validation_result"),
+        "proof_input_tree_hash": payload.get("proof_input_tree_hash"),
+    }
+    release_manifest_path = artifacts_current_dir / "RELEASE_MANIFEST.json"
+    release_manifest_path.write_text(json.dumps(release_manifest, indent=2) + "\n", encoding="utf-8")
+
+    # Verify all required proof files exist in current directory
+    required_files = [
+        "release_gate.json",
+        "proof_manifest.json",
+        "CURRENT_PROOF.md",
+        "CURRENT_ALPHA_STATUS.md",
+        "SOURCE_REGISTRY_STATUS.md",
+        "PROOF_POLICY.md",
+        "REPAIR_REPORT.md",
+        "backend_proof_summary.json",
+        "frontend_proof_summary.json",
+        "source_registry_status.json",
+        "release_readiness.md",
+    ]
+    missing_required = []
+    for filename in required_files:
+        if not (out_dir / filename).exists():
+            missing_required.append(filename)
+    if missing_required:
+        print(f"WARNING: Missing required proof files in {out_dir.relative_to(repo_root)}:")
+        for filename in missing_required:
+            print(f"  - {filename}")
 
     if ok:
         print(f"PASS: wrote {out_path.relative_to(repo_root)}")

@@ -77,7 +77,8 @@ jobs:
       - name: Frontend Node 20 gate
         run: |
           source ./backend/.venv/bin/activate
-          python scripts/check_frontend_node_gate.py --expected-major 20
+          NODE_MINOR=$(node -p "process.versions.node.split('.')[1]")
+          python scripts/check_frontend_node_gate.py --expected-major 20 --expected-minor "$NODE_MINOR"
 
       - name: Install frontend dependencies
         working-directory: ./frontend

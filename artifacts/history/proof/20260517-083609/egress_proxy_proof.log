@@ -1,0 +1,284 @@
+[proof_egress_proxy] STAGE: environment
+[proof_egress_proxy] Backend Python: /Users/dawsonblock/JUDGE_ATLASX/backend/.venv/bin/python
+[proof_egress_proxy] STAGE: production startup egress policy tests
+F.F                                                                      [100%]
+=================================== FAILURES ===================================
+________________________ test_egress_proxy_set_no_exit _________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a328d10>
+
+    def test_egress_proxy_set_no_exit(monkeypatch):
+        """When JTA_FETCH_EGRESS_PROXY is set, production start-up must succeed."""
+        monkeypatch.setenv("JTA_ALLOW_IN_MEMORY_RATE_LIMIT_PRODUCTION", "1")
+        monkeypatch.setenv("JTA_FETCH_EGRESS_PROXY", "http://squid-proxy:3128")
+        monkeypatch.delenv("JTA_ALLOW_DIRECT_PROD_FETCH_WITH_NETWORK_POLICY", raising=False)
+    
+        settings = _egress_safe_prod_settings()
+        # Should complete without calling sys.exit
+>       _validate_production_safety(settings)
+
+app/tests/test_production_fetch_egress_policy.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+settings = namespace(app_env='production', jwt_secret_key='fe358ee4c60851539f4da4bfed39af5aa6200076e8ada63c1a7934568a482b05', jwt...ckend='memory', redis_url='redis://localhost:6379/0', evidence_store_required=True, cors_origins='https://example.com')
+
+    def _validate_production_safety(settings) -> None:
+        """Validate production safety settings. Fail fast if unsafe."""
+        if settings.app_env != "production":
+            return  # Skip checks outside production
+    
+        # Check JWT secret key is not a weak or placeholder value
+        if _is_placeholder_secret(settings.jwt_secret_key, "JTA_JWT_SECRET_KEY"):
+            print(
+                "ERROR: JTA_JWT_SECRET_KEY is a placeholder or too short. "
+                "Generate a cryptographically random secret: "
+                "python -c 'import secrets; print(secrets.token_urlsafe(48))' "
+                "and set JTA_JWT_SECRET_KEY before running in production."
+            )
+            sys.exit(1)
+    
+        # Check first admin bootstrap secret is not a placeholder
+        first_admin = getattr(settings, "first_admin_secret", None) or ""
+        if first_admin and _is_placeholder_secret(first_admin, "JTA_FIRST_ADMIN_SECRET"):
+            print(
+                "ERROR: JTA_FIRST_ADMIN_SECRET is a placeholder or too short. "
+                "Generate a secure value: "
+                "python -c 'import secrets; print(secrets.token_urlsafe(32))' "
+                "and set JTA_FIRST_ADMIN_SECRET before running in production."
+            )
+            sys.exit(1)
+    
+        # Require JWT auth to be explicitly enabled in production
+        if not settings.jwt_auth_enabled:
+            print(
+                "ERROR: JTA_JWT_AUTH_ENABLED must be true in production. "
+                "Set JTA_JWT_AUTH_ENABLED=true once admin users have been created."
+            )
+            sys.exit(1)
+    
+        # Legacy shared-token admin auth must stay off in production.
+        # Fail fast both when the feature flag is enabled and when legacy shared-token
+        # secrets are configured at all, because some auth paths may still consult the
+        # shared tokens directly.
+        legacy_admin_token_configured = bool(getattr(settings, "admin_token", None))
+        legacy_review_token_configured = bool(
+            getattr(settings, "admin_review_token", None)
+        )
+        if (
+            settings.enable_legacy_admin_token
+            or legacy_admin_token_configured
+            or legacy_review_token_configured
+        ):
+            print(
+                "ERROR: Legacy shared-token admin authentication is not allowed in "
+                "production. Ensure JTA_ENABLE_LEGACY_ADMIN_TOKEN=false and unset "
+                "JTA_ADMIN_TOKEN / JTA_ADMIN_REVIEW_TOKEN. Use JWT Bearer "
+                "authentication for admin operations."
+            )
+            sys.exit(1)
+    
+        # Reject in-memory rate limiting in production (not safe across multiple workers/replicas)
+        # unless the operator explicitly opts in with JTA_ALLOW_IN_MEMORY_RATE_LIMIT_PRODUCTION=true.
+        if settings.rate_limit_backend != "redis":
+            allow_override = os.environ.get(
+                "JTA_ALLOW_IN_MEMORY_RATE_LIMIT_PRODUCTION", ""
+            ).lower()
+            if allow_override not in ("1", "true", "yes"):
+                print(
+                    "ERROR: JTA_RATE_LIMIT_BACKEND=memory is unsafe in production with "
+                    "multiple workers or replicas. Set JTA_RATE_LIMIT_BACKEND=redis, or "
+                    "set JTA_ALLOW_IN_MEMORY_RATE_LIMIT_PRODUCTION=true only for "
+                    "verified single-node deployments."
+                )
+                sys.exit(1)
+    
+        # Check Redis availability if configured
+        if settings.rate_limit_backend == "redis":
+            import redis
+    
+            try:
+                r = redis.Redis.from_url(settings.redis_url, socket_connect_timeout=2)
+                r.ping()
+            except Exception as e:
+                print(
+                    f"ERROR: Redis configured but unavailable in production: {e}. "
+                    "Rate limiting requires Redis in production."
+                )
+                sys.exit(1)
+    
+        # Require evidence vault in production
+        if not settings.evidence_store_required:
+            print(
+                "ERROR: JTA_EVIDENCE_STORE_REQUIRED must be true in production. "
+                "Set JTA_EVIDENCE_STORE_REQUIRED=true and configure JTA_EVIDENCE_STORE_ROOT."
+            )
+            sys.exit(1)
+    
+        # Hard-fail when JTA_FETCH_EGRESS_PROXY is not set in production.
+        # All outbound ingestion fetches must route through an egress proxy to
+        # mitigate DNS rebinding attacks (see safe_fetch.py § DNS Rebinding).
+        # If the deployment enforces egress at the network/infrastructure level
+        # instead, set JTA_ALLOW_DIRECT_PROD_FETCH_WITH_NETWORK_POLICY=1 to
+        # acknowledge the responsibility and suppress this check.
+        if not os.environ.get("JTA_FETCH_EGRESS_PROXY") and not os.environ.get(
+            "JTA_ALLOW_DIRECT_PROD_FETCH_WITH_NETWORK_POLICY"
+        ):
+            print(
+                "ERROR: JTA_FETCH_EGRESS_PROXY is not set. Outbound ingestion "
+                "fetches are not routed through an egress proxy, which leaves the "
+                "service exposed to DNS rebinding attacks. Set JTA_FETCH_EGRESS_PROXY "
+                "to an HTTP/HTTPS proxy URL, or set "
+                "JTA_ALLOW_DIRECT_PROD_FETCH_WITH_NETWORK_POLICY=1 if egress is "
+                "enforced by the infrastructure network policy."
+            )
+            sys.exit(1)
+    
+        # Block placeholder queue backends in production
+        # The "postgres" backend is a placeholder and not production ready
+>       queue_backend = settings.ingestion_queue_backend
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'types.SimpleNamespace' object has no attribute 'ingestion_queue_backend'
+
+app/main.py:194: AttributeError
+_______________ test_network_policy_escape_hatch_suppresses_exit _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a3172d0>
+
+    def test_network_policy_escape_hatch_suppresses_exit(monkeypatch):
+        """JTA_ALLOW_DIRECT_PROD_FETCH_WITH_NETWORK_POLICY=1 must suppress the exit
+        even when JTA_FETCH_EGRESS_PROXY is absent."""
+        monkeypatch.setenv("JTA_ALLOW_IN_MEMORY_RATE_LIMIT_PRODUCTION", "1")
+        monkeypatch.delenv("JTA_FETCH_EGRESS_PROXY", raising=False)
+        monkeypatch.setenv("JTA_ALLOW_DIRECT_PROD_FETCH_WITH_NETWORK_POLICY", "1")
+    
+        settings = _egress_safe_prod_settings()
+        # Should complete without calling sys.exit
+>       _validate_production_safety(settings)
+
+app/tests/test_production_fetch_egress_policy.py:76: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+settings = namespace(app_env='production', jwt_secret_key='a63843636f3dda60222619f11f659ea913ed4c2ae3ca10364848391242ee12e2', jwt...ckend='memory', redis_url='redis://localhost:6379/0', evidence_store_required=True, cors_origins='https://example.com')
+
+    def _validate_production_safety(settings) -> None:
+        """Validate production safety settings. Fail fast if unsafe."""
+        if settings.app_env != "production":
+            return  # Skip checks outside production
+    
+        # Check JWT secret key is not a weak or placeholder value
+        if _is_placeholder_secret(settings.jwt_secret_key, "JTA_JWT_SECRET_KEY"):
+            print(
+                "ERROR: JTA_JWT_SECRET_KEY is a placeholder or too short. "
+                "Generate a cryptographically random secret: "
+                "python -c 'import secrets; print(secrets.token_urlsafe(48))' "
+                "and set JTA_JWT_SECRET_KEY before running in production."
+            )
+            sys.exit(1)
+    
+        # Check first admin bootstrap secret is not a placeholder
+        first_admin = getattr(settings, "first_admin_secret", None) or ""
+        if first_admin and _is_placeholder_secret(first_admin, "JTA_FIRST_ADMIN_SECRET"):
+            print(
+                "ERROR: JTA_FIRST_ADMIN_SECRET is a placeholder or too short. "
+                "Generate a secure value: "
+                "python -c 'import secrets; print(secrets.token_urlsafe(32))' "
+                "and set JTA_FIRST_ADMIN_SECRET before running in production."
+            )
+            sys.exit(1)
+    
+        # Require JWT auth to be explicitly enabled in production
+        if not settings.jwt_auth_enabled:
+            print(
+                "ERROR: JTA_JWT_AUTH_ENABLED must be true in production. "
+                "Set JTA_JWT_AUTH_ENABLED=true once admin users have been created."
+            )
+            sys.exit(1)
+    
+        # Legacy shared-token admin auth must stay off in production.
+        # Fail fast both when the feature flag is enabled and when legacy shared-token
+        # secrets are configured at all, because some auth paths may still consult the
+        # shared tokens directly.
+        legacy_admin_token_configured = bool(getattr(settings, "admin_token", None))
+        legacy_review_token_configured = bool(
+            getattr(settings, "admin_review_token", None)
+        )
+        if (
+            settings.enable_legacy_admin_token
+            or legacy_admin_token_configured
+            or legacy_review_token_configured
+        ):
+            print(
+                "ERROR: Legacy shared-token admin authentication is not allowed in "
+                "production. Ensure JTA_ENABLE_LEGACY_ADMIN_TOKEN=false and unset "
+                "JTA_ADMIN_TOKEN / JTA_ADMIN_REVIEW_TOKEN. Use JWT Bearer "
+                "authentication for admin operations."
+            )
+            sys.exit(1)
+    
+        # Reject in-memory rate limiting in production (not safe across multiple workers/replicas)
+        # unless the operator explicitly opts in with JTA_ALLOW_IN_MEMORY_RATE_LIMIT_PRODUCTION=true.
+        if settings.rate_limit_backend != "redis":
+            allow_override = os.environ.get(
+                "JTA_ALLOW_IN_MEMORY_RATE_LIMIT_PRODUCTION", ""
+            ).lower()
+            if allow_override not in ("1", "true", "yes"):
+                print(
+                    "ERROR: JTA_RATE_LIMIT_BACKEND=memory is unsafe in production with "
+                    "multiple workers or replicas. Set JTA_RATE_LIMIT_BACKEND=redis, or "
+                    "set JTA_ALLOW_IN_MEMORY_RATE_LIMIT_PRODUCTION=true only for "
+                    "verified single-node deployments."
+                )
+                sys.exit(1)
+    
+        # Check Redis availability if configured
+        if settings.rate_limit_backend == "redis":
+            import redis
+    
+            try:
+                r = redis.Redis.from_url(settings.redis_url, socket_connect_timeout=2)
+                r.ping()
+            except Exception as e:
+                print(
+                    f"ERROR: Redis configured but unavailable in production: {e}. "
+                    "Rate limiting requires Redis in production."
+                )
+                sys.exit(1)
+    
+        # Require evidence vault in production
+        if not settings.evidence_store_required:
+            print(
+                "ERROR: JTA_EVIDENCE_STORE_REQUIRED must be true in production. "
+                "Set JTA_EVIDENCE_STORE_REQUIRED=true and configure JTA_EVIDENCE_STORE_ROOT."
+            )
+            sys.exit(1)
+    
+        # Hard-fail when JTA_FETCH_EGRESS_PROXY is not set in production.
+        # All outbound ingestion fetches must route through an egress proxy to
+        # mitigate DNS rebinding attacks (see safe_fetch.py § DNS Rebinding).
+        # If the deployment enforces egress at the network/infrastructure level
+        # instead, set JTA_ALLOW_DIRECT_PROD_FETCH_WITH_NETWORK_POLICY=1 to
+        # acknowledge the responsibility and suppress this check.
+        if not os.environ.get("JTA_FETCH_EGRESS_PROXY") and not os.environ.get(
+            "JTA_ALLOW_DIRECT_PROD_FETCH_WITH_NETWORK_POLICY"
+        ):
+            print(
+                "ERROR: JTA_FETCH_EGRESS_PROXY is not set. Outbound ingestion "
+                "fetches are not routed through an egress proxy, which leaves the "
+                "service exposed to DNS rebinding attacks. Set JTA_FETCH_EGRESS_PROXY "
+                "to an HTTP/HTTPS proxy URL, or set "
+                "JTA_ALLOW_DIRECT_PROD_FETCH_WITH_NETWORK_POLICY=1 if egress is "
+                "enforced by the infrastructure network policy."
+            )
+            sys.exit(1)
+    
+        # Block placeholder queue backends in production
+        # The "postgres" backend is a placeholder and not production ready
+>       queue_backend = settings.ingestion_queue_backend
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'types.SimpleNamespace' object has no attribute 'ingestion_queue_backend'
+
+app/main.py:194: AttributeError
+=========================== short test summary info ============================
+FAILED app/tests/test_production_fetch_egress_policy.py::test_egress_proxy_set_no_exit
+FAILED app/tests/test_production_fetch_egress_policy.py::test_network_policy_escape_hatch_suppresses_exit
+2 failed, 1 passed in 0.08s

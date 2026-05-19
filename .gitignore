@@ -54,14 +54,18 @@ REPAIR_REPORT.md
 *_PROOF.md
 *_PROOF_*.md
 
-# ---- Non-shipping / reference trees ----------------------------------------
-# These directories are present for research, vendored dependencies, or
-# developer tooling. They are NOT part of the release archive and MUST NOT
-# contain runtime product code or secrets.
+# ---- Non-shipping / reference trees (HARD-ENFORCED) -------------------------
+# These directories MUST NOT be tracked, committed, or shipped.
+# They contain third-party research repos, vendored deps, or dev tooling.
+# None of these must contain runtime product code or secrets.
 research/
 external/
 Research /
-# tools/CLI-Anything-main  -- external CLI tooling reference
+Research/
+external_reference/
+docs/reference/archived/
+docs/reference/vendor_repos/
+docs/reference/experiments/
 
 # Exclude any local builds that may be produced inside research subtrees
 research/**/__pycache__/

@@ -1,0 +1,18 @@
+{
+  "corrupt_snapshots": 0,
+  "duplicate_hashes": 0,
+  "errors": [
+    "database_error=OperationalError: (sqlite3.OperationalError) no such table: source_snapshots\n[SQL: SELECT source_snapshots.id, source_snapshots.source_key, source_snapshots.source_url, source_snapshots.fetched_at, source_snapshots.content_hash, source_snapshots.raw_content, source_snapshots.extracted_text, source_snapshots.http_status, source_snapshots.content_type, source_snapshots.headers_json, source_snapshots.error_message, source_snapshots.storage_backend, source_snapshots.storage_path, source_snapshots.retention_until, source_snapshots.created_at, source_snapshots.ingestion_run_id, source_snapshots.original_content_hash, source_snapshots.stored_content_hash, source_snapshots.content_size_bytes, source_snapshots.stored_size_bytes, source_snapshots.is_truncated, source_snapshots.extractor_name, source_snapshots.extractor_version \nFROM source_snapshots ORDER BY source_snapshots.id]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)"
+  ],
+  "integrity_failures": 1,
+  "missing_snapshot_files": 0,
+  "orphan_files": 0,
+  "orphan_snapshot_rows": 0,
+  "rejected_or_quarantined_count": 0,
+  "snapshots_checked": 0,
+  "status": "FAIL",
+  "verified_snapshots": 0,
+  "warnings": []
+}
+
+
