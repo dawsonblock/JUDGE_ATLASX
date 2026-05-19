@@ -1947,18 +1947,14 @@ def main() -> int:
     # Recalculate gate state after archive validation.
     missing_logs = _missing_logs(repo_root, results)
     ok = all(r.exit_code == 0 for r in results) and not missing_logs
+    final_blockers = [r.name for r in results if r.exit_code != 0] + (
+        ["missing_logs"] if missing_logs else []
+    )
     payload["alpha_gate_passed"] = ok
     payload["check_count"] = len(results)
     payload["checks"] = [asdict(r) for r in results]
-    payload["failed_checks"] = [r.name for r in results if r.exit_code != 0] + (
-        ["missing_logs"] if missing_logs else []
-    )
-    payload["release_blockers_remaining"] = (
-        [r.name for r in results if r.exit_code != 0]
-        + (["missing_logs"] if missing_logs else [])
-        if not ok
-        else []
-    )
+    payload["failed_checks"] = final_blockers
+    payload["release_blockers_remaining"] = final_blockers if not ok else []
 
     payload["logs"]["current_alpha_status"] = current_alpha_status_rel
     payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
