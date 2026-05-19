@@ -1,6 +1,14 @@
 # External vendor / workspace siblings / research — never include in any image
 external/
+external_reference/
 research/
+Research /
+
+# Environment
+.env
+.env.*
+!.env.example
+!*.env.example
 
 # Python artefacts
 __pycache__/
@@ -8,8 +16,8 @@ __pycache__/
 *.so
 
 # Virtual environments
-.env
 .venv
+backend/.venv
 env/
 venv/
 
@@ -28,6 +36,27 @@ htmlcov/
 # Database
 *.db
 *.sqlite3
+*.sqlite
+*.dump
+evidence_store/
+data/local/
+
+# Logs
+*.log
+artifacts/proof/*.log
+artifacts/proof/current/*.log
+
+# Certificates / secrets
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Proof / history artifacts
+artifacts/history/
+artifacts/proof/history/
+artifacts/proof/latest/
+proof/latest/
 
 # Documentation
 docs/
@@ -42,6 +71,10 @@ Dockerfile*
 docker-compose*
 .dockerignore
 
+# Release archives
+*.zip
+*.tar
+*.tar.gz
+
 # Misc
 .DS_Store
-*.log

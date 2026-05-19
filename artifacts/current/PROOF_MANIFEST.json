@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-17T02:57:59.433272+00:00",
+  "generated_at": "2026-05-19T22:07:15.528889+00:00",
   "release_mode": "alpha",
   "environment": {},
   "git_commit": "unknown",
@@ -27,7 +27,7 @@
     "dist",
     "coverage"
   ],
-  "proof_hash": "8dc5dd328609c796ead81c20fba1e1490f4245e9715fbce8d82079c9387a35e5",
+  "proof_hash": "9f531a6f20318712da1c77c75898908c85418872de37694259180ee4b5510d12",
   "source": {
     "release_gate": "artifacts/proof/current/release_gate.json",
     "proof_manifest": "artifacts/proof/current/proof_manifest.json"

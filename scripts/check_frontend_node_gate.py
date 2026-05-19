@@ -2,7 +2,8 @@
 """Fail-closed Node version gate for frontend proof.
 
 Expected behavior:
-- PASS only when Node major/minor version matches required version
+- PASS for Node 20.x (any minor version)
+- FAIL for Node 22, 24, 25, etc.
 - Emit clear mismatch message for proof logs
 """
 
@@ -23,8 +24,8 @@ def _parse_major_minor(node_version: str) -> tuple[int, int] | None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Frontend Node version gate")
-    parser.add_argument("--expected-major", type=int, default=25)
-    parser.add_argument("--expected-minor", type=int, default=9)
+    parser.add_argument("--expected-major", type=int, default=20)
+    parser.add_argument("--expected-minor", type=int, default=None)  # None means accept any minor
     args = parser.parse_args()
 
     proc = subprocess.run(
@@ -44,12 +45,20 @@ def main() -> int:
         return 1
 
     major, minor = parsed
-    if (major, minor) != (args.expected_major, args.expected_minor):
-        expected = f"{args.expected_major}.{args.expected_minor}.x"
-        print(f"Frontend release gate requires Node {expected}. Current Node: {version}. Use nvm use {args.expected_major}.{args.expected_minor}.")
-        return 1
+    
+    # Check major version (and minor if specified)
+    if args.expected_minor is not None:
+        if (major, minor) != (args.expected_major, args.expected_minor):
+            expected = f"{args.expected_major}.{args.expected_minor}.x"
+            print(f"Frontend release gate requires Node {expected}. Current Node: {version}. Use nvm use {args.expected_major}.{args.expected_minor}.")
+            return 1
+    else:
+        # Only check major version
+        if major != args.expected_major:
+            print(f"Frontend release gate requires Node {args.expected_major}.x. Current Node: {version}. Use nvm use {args.expected_major}.")
+            return 1
 
-    print(f"Node gate PASS: {version}")
+    print(f"Node gate PASS: {version} (expected major: {args.expected_major})")
     return 0
 
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """CI guard: fail if any repository path component contains whitespace or control characters.
 
-Walks the entire repository, skipping .git, research/, and external/, and reports
+Walks the repository, skipping generated/dependency/reference trees (including
+external_reference/), and reports
 any path components that contain whitespace (spaces, tabs, newlines) or ASCII
 control characters (0x00–0x1F, 0x7F). Such paths cause double-directory bugs
 under git and platform-specific inconsistencies.
@@ -24,6 +25,7 @@ SKIP_DIRS: frozenset[str] = frozenset({
     ".git",
     "research",
     "external",
+    "external_reference",
     ".venv",
     "venv",
     ".nox",

@@ -31,7 +31,12 @@ def _valid_files(root: str = "JUDGE_ATLAS-main") -> dict[str, str]:
         prefix + "docs/README.md": "docs\n",
         prefix + "scripts/release_gate.py": "print('gate')\n",
         prefix + "artifacts/proof/current/CURRENT_PROOF.md": "current proof\n",
-        prefix + "artifacts/proof/current/release_readiness.md": "current readiness\n",
+        prefix + "artifacts/proof/current/CURRENT_ALPHA_STATUS.md": "current alpha status\n",
+        prefix + "artifacts/proof/current/SOURCE_REGISTRY_STATUS.md": "source registry status\n",
+        prefix + "artifacts/proof/current/source_registry_status.json": "{}\n",
+        prefix + "artifacts/proof/current/release_gate.json": "{}\n",
+        prefix + "artifacts/proof/current/proof_manifest.json": "{}\n",
+        prefix + "artifacts/proof/current/FIX_VERIFICATION_REPORT.md": "fix verification report\n",
         prefix + "README.md": "repo readme\n",
         prefix + "STATUS.md": "Production ready: FALSE\n",
     }
@@ -90,7 +95,7 @@ def test_validate_release_archive_rejects_missing_current_proof_dir(tmp_path: Pa
     archive = tmp_path / "missing-proof.zip"
     files = _valid_files()
     files.pop("JUDGE_ATLAS-main/artifacts/proof/current/CURRENT_PROOF.md")
-    files.pop("JUDGE_ATLAS-main/artifacts/proof/current/release_readiness.md")
+    files.pop("JUDGE_ATLAS-main/artifacts/proof/current/CURRENT_ALPHA_STATUS.md")
     _write_zip(archive, files)
 
     report = module.inspect_archive(archive, expected_root="JUDGE_ATLAS-main")

@@ -10,21 +10,21 @@
 [docker_runtime] INFO: timeout=60s
 [docker_runtime] Running docker version...
 Client:
- Version:           29.4.2
+ Version:           29.4.3
  API version:       1.54
  Go version:        go1.26.2
  Git commit:        055a478
- Built:             Fri May  1 01:23:38 2026
+ Built:             Wed May  6 17:06:34 2026
  OS/Arch:           darwin/arm64
  Context:           desktop-linux
 
-Server: Docker Desktop 4.72.0 (225998)
+Server: Docker Desktop 4.74.0 (227015)
  Engine:
-  Version:          29.4.2
+  Version:          29.4.3
   API version:      1.54 (minimum version 1.40)
   Go version:       go1.26.2
-  Git commit:       d329809
-  Built:            Fri May  1 01:25:57 2026
+  Git commit:       56be731
+  Built:            Wed May  6 17:09:05 2026
   OS/Arch:          linux/arm64
   Experimental:     false
  containerd:
@@ -40,12 +40,12 @@ Server: Docker Desktop 4.72.0 (225998)
 [docker_runtime] PASS: docker version completed
 [docker_runtime] Running docker info...
 Client:
- Version:    29.4.2
+ Version:    29.4.3
  Context:    desktop-linux
  Debug Mode: false
  Plugins:
   agent: Docker AI Agent Runner (Docker Inc.)
-    Version:  v1.50.0
+    Version:  v1.57.0
     Path:     /Users/dawsonblock/.docker/cli-plugins/docker-agent
   ai: Docker AI Agent - Ask Gordon (Docker Inc.)
     Version:  v1.20.2
@@ -72,16 +72,16 @@ Client:
     Version:  v1.4.0
     Path:     /Users/dawsonblock/.docker/cli-plugins/docker-init
   mcp: Docker MCP Plugin (Docker Inc.)
-    Version:  v0.40.4
+    Version:  v0.42.1
     Path:     /Users/dawsonblock/.docker/cli-plugins/docker-mcp
   model: Docker Model Runner (Docker Inc.)
     Version:  v1.1.37
     Path:     /Users/dawsonblock/.docker/cli-plugins/docker-model
   offload: Docker Offload (Docker Inc.)
-    Version:  v0.5.85
+    Version:  v0.5.89
     Path:     /Users/dawsonblock/.docker/cli-plugins/docker-offload
   pass: Docker Pass Secrets Manager Plugin (beta) (Docker Inc.)
-    Version:  v0.0.25
+    Version:  v0.0.27
     Path:     /Users/dawsonblock/.docker/cli-plugins/docker-pass
   sandbox: Docker Sandbox (Docker Inc.)
     Version:  v0.12.0
@@ -94,12 +94,12 @@ Client:
     Path:     /Users/dawsonblock/.docker/cli-plugins/docker-scout
 
 Server:
- Containers: 76
-  Running: 10
+ Containers: 73
+  Running: 7
   Paused: 0
   Stopped: 66
  Images: 58
- Server Version: 29.4.2
+ Server Version: 29.4.3
  Storage Driver: overlayfs
   driver-type: io.containerd.snapshotter.v1
  Logging Driver: json-file
@@ -115,7 +115,7 @@ Server:
  Discovered Devices:
   cdi: docker.com/gpu=webgpu
  Swarm: inactive
- Runtimes: runc io.containerd.runc.v2
+ Runtimes: io.containerd.runc.v2 runc
  Default Runtime: runc
  Init Binary: docker-init
  containerd version: 77c84241c7cbdd9b4eca2591793e3d4f4317c590
@@ -163,14 +163,14 @@ Server:
 [proof_postgis] Stage: container start
 [proof_postgis] Starting PostGIS container...
 WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
-b93aaf8c6c74eefa060f2aefe368f58d114b758441f53183179b7f51e00b7547
+3155047c196577dd1a15f947c8ad84b12f249bd9898b230e264e62c5728923fe
 [proof_postgis] PASS: container start requested
 [proof_postgis] Stage: pg_isready wait loop
 [proof_postgis] Waiting for Postgres to be ready...
-[proof_postgis] Postgres ready after 4s
+[proof_postgis] Postgres ready after 3s
 [proof_postgis] PASS: pg_isready
 [proof_postgis] Stage: host connectivity wait loop
-[proof_postgis] PASS: host connectivity ready after 9s
+[proof_postgis] PASS: host connectivity ready after 4s
 [proof_postgis] Stage: ensure proof database exists
 [proof_postgis] PASS: proof database exists
 [proof_postgis] Stage: PostGIS extension check
@@ -265,17 +265,17 @@ app/tests/test_map_bbox.py::test_bbox_validation_rejects_south_greater_than_nort
 app/tests/test_map_bbox.py::test_map_events_bbox_returns_only_events_in_bounds PASSED [ 90%]
 app/tests/test_map_bbox.py::test_bbox_query_does_not_crash_with_postgresql_dialect PASSED [100%]
 
-============================== 11 passed in 0.09s ==============================
+============================== 11 passed in 0.12s ==============================
 [proof_postgis] PASS: spatial smoke tests
 [proof_postgis] Stage: public/private map visibility test
 [proof_postgis] Running public/private visibility proof...
 .......                                                                  [100%]
-7 passed in 0.05s
+7 passed in 0.06s
 [proof_postgis] PASS: public/private map visibility test
 [proof_postgis] Stage: evidence snapshot immutability test
 [proof_postgis] Running evidence snapshot immutability proof...
 .................                                                        [100%]
-17 passed in 0.05s
+17 passed in 0.04s
 [proof_postgis] PASS: evidence snapshot immutability test
 [proof_postgis] Stage: cleanup
 [proof_postgis] Cleanup: removing container 'judge_postgis_proof'

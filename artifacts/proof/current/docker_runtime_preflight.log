@@ -3,21 +3,21 @@
 [docker_runtime] INFO: timeout=60s
 [docker_runtime] Running docker version...
 Client:
- Version:           29.4.2
+ Version:           29.4.3
  API version:       1.54
  Go version:        go1.26.2
  Git commit:        055a478
- Built:             Fri May  1 01:23:38 2026
+ Built:             Wed May  6 17:06:34 2026
  OS/Arch:           darwin/arm64
  Context:           desktop-linux
 
-Server: Docker Desktop 4.72.0 (225998)
+Server: Docker Desktop 4.74.0 (227015)
  Engine:
-  Version:          29.4.2
+  Version:          29.4.3
   API version:      1.54 (minimum version 1.40)
   Go version:       go1.26.2
-  Git commit:       d329809
-  Built:            Fri May  1 01:25:57 2026
+  Git commit:       56be731
+  Built:            Wed May  6 17:09:05 2026
   OS/Arch:          linux/arm64
   Experimental:     false
  containerd:
@@ -33,12 +33,12 @@ Server: Docker Desktop 4.72.0 (225998)
 [docker_runtime] PASS: docker version completed
 [docker_runtime] Running docker info...
 Client:
- Version:    29.4.2
+ Version:    29.4.3
  Context:    desktop-linux
  Debug Mode: false
  Plugins:
   agent: Docker AI Agent Runner (Docker Inc.)
-    Version:  v1.50.0
+    Version:  v1.57.0
     Path:     /Users/dawsonblock/.docker/cli-plugins/docker-agent
   ai: Docker AI Agent - Ask Gordon (Docker Inc.)
     Version:  v1.20.2
@@ -65,16 +65,16 @@ Client:
     Version:  v1.4.0
     Path:     /Users/dawsonblock/.docker/cli-plugins/docker-init
   mcp: Docker MCP Plugin (Docker Inc.)
-    Version:  v0.40.4
+    Version:  v0.42.1
     Path:     /Users/dawsonblock/.docker/cli-plugins/docker-mcp
   model: Docker Model Runner (Docker Inc.)
     Version:  v1.1.37
     Path:     /Users/dawsonblock/.docker/cli-plugins/docker-model
   offload: Docker Offload (Docker Inc.)
-    Version:  v0.5.85
+    Version:  v0.5.89
     Path:     /Users/dawsonblock/.docker/cli-plugins/docker-offload
   pass: Docker Pass Secrets Manager Plugin (beta) (Docker Inc.)
-    Version:  v0.0.25
+    Version:  v0.0.27
     Path:     /Users/dawsonblock/.docker/cli-plugins/docker-pass
   sandbox: Docker Sandbox (Docker Inc.)
     Version:  v0.12.0
@@ -87,12 +87,12 @@ Client:
     Path:     /Users/dawsonblock/.docker/cli-plugins/docker-scout
 
 Server:
- Containers: 76
-  Running: 10
+ Containers: 73
+  Running: 7
   Paused: 0
   Stopped: 66
  Images: 58
- Server Version: 29.4.2
+ Server Version: 29.4.3
  Storage Driver: overlayfs
   driver-type: io.containerd.snapshotter.v1
  Logging Driver: json-file

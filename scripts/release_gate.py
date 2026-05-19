@@ -1149,6 +1149,60 @@ def _write_current_proof_md(
     return str(current_proof_path.relative_to(repo_root))
 
 
+def _write_fix_verification_report_md(
+    repo_root: Path,
+    out_dir: Path,
+    payload: dict,
+    check_count: int,
+) -> str:
+    alpha_ok = bool(payload.get("alpha_gate_passed", False))
+    blockers = payload.get("release_blockers_remaining", [])
+    status = "clean alpha" if alpha_ok else "blocked alpha"
+    lines = [
+        "# FIX_VERIFICATION_REPORT",
+        "",
+        f"- generated_at_utc: {payload.get('timestamp_utc', 'unknown')}",
+        f"- commit_hash: {payload.get('commit_hash', 'unknown')}",
+        f"- status: {status}",
+        "- operational_posture: alpha",
+        "- production_ready: false",
+        f"- alpha_gate_passed: {str(alpha_ok).lower()}",
+        f"- release_gate_check_count: {check_count}",
+        "",
+        "## Verification Facts",
+        "",
+        f"- check_path_hygiene: {'PASS' if not blockers else 'SEE_RELEASE_GATE'}",
+        f"- check_no_generated_files: {'PASS' if 'repo_generated_files' not in blockers else 'FAIL'}",
+        f"- check_false_claims: {'PASS' if 'check_false_claims' not in blockers else 'FAIL'}",
+        f"- check_source_registry_docs: {'PASS' if 'check_source_registry_docs' not in blockers else 'FAIL'}",
+        f"- check_proof_freshness: {payload.get('proof_freshness_result', 'UNKNOWN')}",
+        f"- archive_validation: {payload.get('archive_validation_result', 'UNKNOWN')}",
+        "",
+        "## Scope Statements",
+        "",
+        "- This is an alpha platform.",
+        "- It is not ready for production deployment.",
+        "- Evidence is authoritative.",
+        "- AI and memory outputs are derivative.",
+        "- Legal correlations are hypotheses, not verdicts.",
+        "- Public outputs require review approval.",
+        "- Source coverage is incomplete.",
+        "- Machine ingestion does not imply auto-publication.",
+        "",
+        "## Remaining Blockers",
+        "",
+    ]
+    if blockers:
+        lines.extend(f"- {item}" for item in blockers)
+    else:
+        lines.append("- none")
+    lines.append("")
+
+    output_path = out_dir / "FIX_VERIFICATION_REPORT.md"
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+    return str(output_path.relative_to(repo_root))
+
+
 def main() -> int:
     repo_root = Path(__file__).resolve().parents[1]
     out_dir = repo_root / "artifacts" / "proof" / "current"
@@ -1367,9 +1421,9 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 25.9.0 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 25.9.0 failed -- install Node 25.9.0 via: nvm install 25.9.0'; exit 1; };"
-                    f" \"{python_exe}\" scripts/check_frontend_node_gate.py --expected-major 25 --expected-minor 9"
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
+                    f" \"{python_exe}\" scripts/check_frontend_node_gate.py --expected-major 20"
                 ),
             ],
         ),
@@ -1380,8 +1434,8 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 25.9.0 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 25.9.0 failed -- install Node 25.9.0 via: nvm install 25.9.0'; exit 1; };"
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
                     " npm ci --prefix frontend"
                 ),
             ],
@@ -1394,8 +1448,8 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 25.9.0 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 25.9.0 failed -- install Node 25.9.0 via: nvm install 25.9.0'; exit 1; };"
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
                     " npm run lint --prefix frontend"
                 ),
             ],
@@ -1407,8 +1461,8 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 25.9.0 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 25.9.0 failed -- install Node 25.9.0 via: nvm install 25.9.0'; exit 1; };"
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
                     " npm run typecheck --prefix frontend"
                 ),
             ],
@@ -1420,8 +1474,8 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 25.9.0 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 25.9.0 failed -- install Node 25.9.0 via: nvm install 25.9.0'; exit 1; };"
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
                     " npm run test:contracts --prefix frontend"
                 ),
             ],
@@ -1433,8 +1487,8 @@ def main() -> int:
                 "bash", "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
-                    " nvm use 25.9.0 >/dev/null 2>&1"
-                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 25.9.0 failed -- install Node 25.9.0 via: nvm install 25.9.0'; exit 1; };"
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
                     " npm run build --prefix frontend"
                 ),
             ],
@@ -1506,6 +1560,7 @@ def main() -> int:
         "proof_manifest.json",
         "CURRENT_PROOF.md",
         "CURRENT_ALPHA_STATUS.md",
+        "FIX_VERIFICATION_REPORT.md",
         "SOURCE_REGISTRY_STATUS.md",
         "SOURCE_REGISTRY_STATUS.json",
         "source_registry_status.json",
@@ -1645,7 +1700,7 @@ def main() -> int:
         repo_root / "docs" / "deployment-guide" / "DEPENDENCY_REMEDIATION_PLAN.md"
     ).exists()
 
-    gate_runner_node_version = (
+    gate_runner_node_version = frontend_node_gate_version or (
         subprocess.run(["node", "--version"], capture_output=True, text=True)
         .stdout.strip()
         or "unknown"
@@ -1843,6 +1898,12 @@ def main() -> int:
         payload,
         check_count=len(results),
     )
+    _write_fix_verification_report_md(
+        repo_root,
+        out_dir,
+        payload,
+        check_count=len(results),
+    )
 
     archive_step = _run(
         repo_root,
@@ -1941,12 +2002,19 @@ def main() -> int:
         payload,
         source_registry_summary,
     )
+    fix_verification_report_rel = _write_fix_verification_report_md(
+        repo_root,
+        out_dir,
+        payload,
+        check_count=len(results),
+    )
     payload["logs"]["current_proof"] = current_proof_rel
     payload["logs"] |= grouped_artifacts
     payload["logs"]["current_alpha_status"] = current_alpha_status_rel
     payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
     payload["logs"]["proof_policy"] = proof_policy_rel
     payload["logs"]["repair_report"] = repair_report_rel
+    payload["logs"]["fix_verification_report"] = fix_verification_report_rel
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
     if ok:
