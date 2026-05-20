@@ -87,7 +87,7 @@
 - **Risk**: AI outputs are hypotheses; not authoritative
 
 #### Live Map / Workflow Admin Routes 🟡
-- **Status**: Experimental modules are not present in current tree
+- **Status**: Experimental modules exist in tree but are unmounted
 - **Implemented**: No mounted `live_map` or `workflow_admin` endpoints
 - **Missing**:
   - Any future experimental route must pass auth boundary tests before mount

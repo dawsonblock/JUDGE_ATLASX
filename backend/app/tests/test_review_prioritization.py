@@ -1,22 +1,22 @@
-"""Tests for risk tiering logic (Phase 2).
+"""Tests for review-priority tier logic (Phase 2).
 
-Tests risk tier calculation with correct thresholds and rules.
+Tests review-priority tier calculation with correct thresholds and rules.
 """
 
 import pytest
 
 from app.models.entities import MemoryClaim, CanonicalEntity
-from app.review.risk_tier import (
-    calculate_claim_risk_tier,
-    calculate_entity_risk_tier,
+from app.review.review_priority import (
+    calculate_claim_review_priority_tier,
+    calculate_entity_review_priority_tier,
     can_auto_approve,
     get_review_requirements,
 )
 from app.db.session import SessionLocal
 
 
-class TestRiskTierThresholds:
-    """Test risk tier threshold logic."""
+class TestReviewPriorityThresholds:
+    """Test review-priority tier threshold logic."""
 
     def test_official_statute_update_low_risk(self, db_session):
         """Test official statute update results in low risk tier."""
@@ -41,7 +41,7 @@ class TestRiskTierThresholds:
         db_session.add(claim)
         db_session.commit()
 
-        tier = calculate_claim_risk_tier(claim.id, db_session)
+        tier = calculate_claim_review_priority_tier(claim.id, db_session)
         assert tier == "low"
 
     def test_court_decision_extraction_medium_risk(self, db_session):
@@ -67,7 +67,7 @@ class TestRiskTierThresholds:
         db_session.add(claim)
         db_session.commit()
 
-        tier = calculate_claim_risk_tier(claim.id, db_session)
+        tier = calculate_claim_review_priority_tier(claim.id, db_session)
         assert tier == "medium"
 
     def test_unresolved_contradiction_high_risk(self, db_session):
@@ -93,7 +93,7 @@ class TestRiskTierThresholds:
         db_session.add(claim)
         db_session.commit()
 
-        tier = calculate_claim_risk_tier(claim.id, db_session)
+        tier = calculate_claim_review_priority_tier(claim.id, db_session)
         assert tier == "high"
 
     def test_criminal_allegation_named_person_critical_risk(self, db_session):
@@ -119,7 +119,7 @@ class TestRiskTierThresholds:
         db_session.add(claim)
         db_session.commit()
 
-        tier = calculate_claim_risk_tier(claim.id, db_session)
+        tier = calculate_claim_review_priority_tier(claim.id, db_session)
         assert tier == "critical"
 
     def test_low_confidence_claim_high_risk(self, db_session):
@@ -145,12 +145,12 @@ class TestRiskTierThresholds:
         db_session.add(claim)
         db_session.commit()
 
-        tier = calculate_claim_risk_tier(claim.id, db_session)
+        tier = calculate_claim_review_priority_tier(claim.id, db_session)
         assert tier in ["high", "critical"]
 
 
 class TestReviewRequirements:
-    """Test review requirements per risk tier."""
+    """Test review requirements per review-priority tier."""
 
     def test_critical_requires_review_and_evidence(self):
         """Test critical tier requires review and evidence."""
@@ -237,8 +237,8 @@ class TestAutoApproval:
         assert can_approve is False
 
 
-class TestEntityRiskTier:
-    """Test entity-level risk tier calculation."""
+class TestEntityReviewPriorityTier:
+    """Test entity-level review-priority tier calculation."""
 
     def test_entity_risk_max_of_claims(self, db_session):
         """Test entity risk is max of its claims' risks."""
@@ -276,7 +276,7 @@ class TestEntityRiskTier:
         db_session.add_all([claim1, claim2])
         db_session.commit()
 
-        tier = calculate_entity_risk_tier(entity.id, db_session)
+        tier = calculate_entity_review_priority_tier(entity.id, db_session)
         assert tier == "critical"  # Max of low and critical
 
 

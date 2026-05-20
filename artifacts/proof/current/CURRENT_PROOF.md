@@ -1,29 +1,30 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-19T23:11:35.458622+00:00
-- commit_hash: 6cf8570cff222c932dfb960dca31837d3a9d1c0d
-- alpha_gate_status: PASS
-- alpha_gate_passed: true
+- generated_at_utc: 2026-05-20T01:43:35.184379+00:00
+- commit_hash: cac765bdf5964314a063c2486c7819ae8152a5cf
+- alpha_gate_status: BLOCKED
+- alpha_gate_passed: False
 - release_gate_check_count: 37
-- docker_available: true
-- postgis_proof_result: PASS
+- archive_validation_result: FAIL
+- docker_available: True
+- postgis_proof_result: FAIL
 - egress_proxy_proof_result: PASS
-- demo_proof_result: PASS
+- demo_proof_result: FAIL
 - proof_freshness_result: PASS
-- proof_input_tree_hash: 8dfeb893fbe8ea3a627f1f1ec89b0944cfba6e0a9e0d9dfd1e1ce9519d9618b5
-- proof_input_file_count: 848
+- proof_input_tree_hash: 285ed8140f298b716fb01dc2b6a2ae2b86b0841e8e7cfea2e56c83a101956066
+- proof_input_file_count: 981
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
 ## Runtime Metadata
 
 - gate_runner_python_version: 3.11.7
-- gate_runner_python_executable: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/bin/python3
+- gate_runner_python_executable: /Users/dawsonblock/.pyenv/versions/3.11.7/bin/python3
 - backend_test_python_version: 3.11.7
 - backend_test_python_executable: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/bin/python
 - backend_required_python: >=3.11
-- node_version: v20.20.2
-- npm_version: 10.8.2
+- node_version: v24.15.0
+- npm_version: 11.12.1
 - platform: macOS-26.2-arm64-arm-64bit
 - test_database_backend: sqlite
 - test_database_url_type: sqlite_file
@@ -41,11 +42,11 @@
 - make verify = local no-Docker quality checks.
 - make release-proof-local = Docker/PostGIS alpha release gate.
 - Current alpha release is blocked if Docker/PostGIS proof fails.
-- Docker/PostGIS proof passed in the current release gate.
+- Docker/PostGIS proof did not pass in the current release gate.
 - Dedicated egress proxy proof passed in the current release gate.
-- Dedicated synthetic demo proof passed in the current release gate.
+- Dedicated synthetic demo proof did not pass in the current release gate.
 - Proof freshness passed against the stored proof-input file list and tree hash.
-- Archive validation passed against the final distributable archive shape.
+- Archive validation has not yet been recorded for this run.
 - archive_validation_log: artifacts/proof/current/archive_validation.log
 - archive_validation_supported_shapes:
   - JUDGE-main/
@@ -58,16 +59,28 @@
 
 ## Current Proof Facts
 
-- backend pytest: 2916 passed, 9 skipped
-- backend import proof: PASS (96 routes)
+- backend pytest: 567 passed, 0 skipped
+- backend import proof: PASS (99 routes)
 - frontend contracts: 48 passed
-- public API boundary: 33 passed
+- public API boundary: 34 passed
 - Docker runtime preflight: PASS
-- PostGIS proof: PASS
+- PostGIS proof: FAIL
 - egress proxy proof: PASS
-- demo proof: PASS
+- demo proof: FAIL
 - mutation fail-closed coverage: PASS
-- Alembic migrations: 56
+- Alembic migrations: 69
+
+## Failed Checks
+
+- backend_pytest
+- check_migrations
+- postgis_proof
+- demo_proof
+- validate_sources
+- prepare_proof_db
+- frontend_typecheck
+- public_api_boundary
+- archive_validation
 
 ## Egress Proxy Coverage
 

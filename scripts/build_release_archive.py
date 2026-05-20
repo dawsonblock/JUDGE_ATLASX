@@ -24,8 +24,15 @@ DEFAULT_INCLUDE_TOP_LEVEL = (
     "docs",
     "scripts",
     "infra",
-    "alembic",
-    "artifacts/proof/current",
+)
+DEFAULT_INCLUDE_PROOF_FILES = (
+    "artifacts/proof/current/CURRENT_PROOF.md",
+    "artifacts/proof/current/CURRENT_ALPHA_STATUS.md",
+    "artifacts/proof/current/SOURCE_REGISTRY_STATUS.md",
+    "artifacts/proof/current/source_registry_status.json",
+    "artifacts/proof/current/release_gate.json",
+    "artifacts/proof/current/proof_manifest.json",
+    "artifacts/proof/current/FIX_VERIFICATION_REPORT.md",
 )
 DEFAULT_INCLUDE_FILES = (
     "README.md",
@@ -47,6 +54,7 @@ DEFAULT_INCLUDE_FILES = (
 EXCLUDED_PREFIXES = (
     "research/",
     "external/",
+    "external_reference/",
     "node_modules/",
     "frontend/node_modules/",
     "frontend/.next/",
@@ -56,7 +64,9 @@ EXCLUDED_PREFIXES = (
     ".git/",
     "artifacts/proof/archive/",
     "artifacts/proof/history/",
+    "artifacts/proof/latest/",
     "artifacts/history/",
+    "proof/latest/",
     "logs/",
     "tmp/",
     "temp/",
@@ -201,6 +211,16 @@ def _collect_files(repo_root: Path, include_external: bool, include_proof_archiv
                 included_top_level.add(rel_path.split("/", 1)[0])
 
     for rel in DEFAULT_INCLUDE_FILES:
+        path = repo_root / rel
+        if path.is_file():
+            rel_path = _normalize(path.relative_to(repo_root))
+            if _is_excluded(rel_path, include_external, include_proof_archive):
+                excluded_top_level.add(rel_path.split("/", 1)[0])
+                continue
+            included.add(path)
+            included_top_level.add(rel_path.split("/", 1)[0])
+
+    for rel in DEFAULT_INCLUDE_PROOF_FILES:
         path = repo_root / rel
         if path.is_file():
             rel_path = _normalize(path.relative_to(repo_root))

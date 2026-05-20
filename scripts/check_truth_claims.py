@@ -185,10 +185,17 @@ ALLOWED_POLICY_FILES: dict[str, AllowedPolicyPhrase] = {
     ),
     "CURRENT_STATUS.md": AllowedPolicyPhrase(
         reason=(
-            "Status doc explicitly states no AI module produces "
-            "corruption scores."
+            "Status doc contains required prohibitory wording and "
+            "documents forbidden outputs."
         ),
-        phrases=("corruption score",),
+        phrases=("corruption score", "production-ready"),
+    ),
+    "CURRENT_PROOF.md": AllowedPolicyPhrase(
+        reason=(
+            "Canonical root proof summary contains required prohibitory "
+            "wording for release posture."
+        ),
+        phrases=("production-ready",),
     ),
     "backend/app/llm/reviewer_assistant.py": AllowedPolicyPhrase(
         reason=(

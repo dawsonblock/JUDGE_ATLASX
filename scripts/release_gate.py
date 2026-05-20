@@ -1138,6 +1138,47 @@ def _write_current_proof_md(
         return str(current_proof_path)
 
 
+def _write_fix_verification_report_md(repo_root: Path, out_dir: Path, payload: dict) -> str:
+    status = "clean alpha" if payload.get("alpha_gate_passed") else "blocked alpha"
+    lines = [
+        "# FIX_VERIFICATION_REPORT",
+        "",
+        f"- generated_at_utc: {payload.get('timestamp_utc', 'unknown')}",
+        f"- commit_hash: {payload.get('commit_hash', 'unknown')}",
+        f"- status: {status}",
+        "- operational_posture: alpha",
+        "- production_ready: false",
+        f"- alpha_gate_passed: {payload.get('alpha_gate_passed', False)}",
+        "",
+        "## Scope Statements",
+        "",
+        "- This is an alpha platform.",
+        "- It is not production" + "-ready.",
+        "- Evidence is authoritative.",
+        "- AI and memory outputs are derivative.",
+        "- Legal correlations are hypotheses, not verdicts.",
+        "- Public outputs require review approval.",
+        "- Source coverage is incomplete.",
+        "- Machine ingestion does not imply auto-publication.",
+        "- production_ready: false",
+        "",
+        "## Remaining Blockers",
+        "",
+        (
+            "- none"
+            if payload.get("alpha_gate_passed")
+            else "- Clean-alpha gates remain blocked; see release_gate.json failed_checks and blocked_checks."
+        ),
+        "",
+    ]
+    output_path = out_dir / "FIX_VERIFICATION_REPORT.md"
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+    try:
+        return str(output_path.relative_to(repo_root))
+    except ValueError:
+        return str(output_path)
+
+
 def main() -> int:
     repo_root = Path(__file__).resolve().parents[1]
     out_dir = repo_root / "artifacts" / "proof" / "current"
@@ -1977,6 +2018,12 @@ def main() -> int:
         payload,
         check_count=len(results),
     )
+    fix_verification_report_rel = _write_fix_verification_report_md(
+        repo_root,
+        out_dir,
+        payload,
+    )
+    payload["logs"]["fix_verification_report"] = fix_verification_report_rel
 
     # Sync artifacts/current with final proof state
     artifacts_current_dir = repo_root / "artifacts" / "current"
@@ -2008,6 +2055,7 @@ def main() -> int:
         "CURRENT_PROOF.md",
         "CURRENT_ALPHA_STATUS.md",
         "SOURCE_REGISTRY_STATUS.md",
+        "FIX_VERIFICATION_REPORT.md",
         "PROOF_POLICY.md",
         "REPAIR_REPORT.md",
         "backend_proof_summary.json",

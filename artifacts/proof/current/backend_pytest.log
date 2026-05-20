@@ -1,49 +1,45 @@
 ........................................................................ [  2%]
 ........................................................................ [  4%]
-........................................................................ [  7%]
-........................................................................ [  9%]
-........................................................................ [ 12%]
-........................................................................ [ 14%]
-........................................................................ [ 17%]
-........................................................................ [ 19%]
-........................................................................ [ 22%]
-........................................................................ [ 24%]
-........................................................................ [ 27%]
-........................................................................ [ 29%]
-........................................................................ [ 32%]
-........................................................................ [ 34%]
-........................................................................ [ 36%]
-........................................................................ [ 39%]
-........................................................................ [ 41%]
-........................................................................ [ 44%]
-........................................................................ [ 46%]
-........................................................................ [ 49%]
-........................................................................ [ 51%]
-........................................................................ [ 54%]
-........................................................................ [ 56%]
-........................................................................ [ 59%]
-........................................................................ [ 61%]
-.............................................sssss...................... [ 64%]
-........................................................................ [ 66%]
-........................................................................ [ 68%]
-........................................................................ [ 71%]
-........................................................................ [ 73%]
-........................................................................ [ 76%]
-.....................ssss............................................... [ 78%]
-........................................................................ [ 81%]
-........................................................................ [ 83%]
-........................................................................ [ 86%]
-........................................................................ [ 88%]
-........................................................................ [ 91%]
-........................................................................ [ 93%]
-........................................................................ [ 96%]
-........................................................................ [ 98%]
-.............................................                            [100%]
+........................................................................ [  6%]
+........................................................................ [  8%]
+........................................................................ [ 10%]
+........................................................................ [ 13%]
+........................................................................ [ 15%]
+...............................................................F
+=================================== FAILURES ===================================
+_____________ TestConfidenceCalculation.test_source_quality_score ______________
+backend/app/tests/test_confidence_scorer.py:57: in test_source_quality_score
+    confidence = calculate_claim_confidence(claim.id, db_session)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/app/memory/confidence_scorer.py:53: in calculate_claim_confidence
+    source_quality_score = _get_source_quality_score(claim_id, db)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/app/memory/confidence_scorer.py:111: in _get_source_quality_score
+    if snapshot and snapshot.source_quality:
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'SourceSnapshot' object has no attribute 'source_quality'
 =============================== warnings summary ===============================
-app/tests/test_admin_security.py: 2 warnings
-app/tests/test_ai_pipeline.py: 3 warnings
-app/tests/test_api.py: 4 warnings
-app/tests/test_outcomes_and_ingestion.py: 3 warnings
+backend/app/tests/test_contract_validation.py:21
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_contract_validation.py:21: PytestCollectionWarning: cannot collect test class 'TestInputSchema' because it has a __init__ constructor (from: app/tests/test_contract_validation.py)
+    class TestInputSchema(BaseModel):
+
+backend/app/tests/test_gate.py:14
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_gate.py:14: PytestCollectionWarning: cannot collect test class 'TestGate' because it has a __init__ constructor (from: app/tests/test_gate.py)
+    class TestGate:
+
+backend/app/tests/test_gate.py:14
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_gate.py:14: PytestCollectionWarning: cannot collect test class 'TestGate' because it has a __init__ constructor (from: app/tests/test_test_gate.py)
+    class TestGate:
+
+app/tests/test_admin_security.py::TestAuditLogging::test_review_actions_need_audit_log
+app/tests/test_admin_security.py::TestAuditLogging::test_admin_api_calls_need_audit_log
+app/tests/test_ai_pipeline.py::test_approved_review_item_can_publish_safe_event
+app/tests/test_ai_pipeline.py::test_blocked_review_item_cannot_publish
+app/tests/test_ai_pipeline.py::test_ai_review_items_use_database_pagination
+app/tests/test_api.py::test_invalid_post_event_foreign_keys_return_422_with_admin_token
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
   /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/auth/admin.py:241: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
     actor = require_admin_token(x_jta_admin_token, authorization)
 
@@ -64,9 +60,8 @@ app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
   /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/security/import_authority.py:51: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
     actor = require_admin_token(
 
-app/tests/test_legacy_shared_token_requires_opt_in.py::TestLegacySharedTokenRequiresOptIn::test_shared_token_allowed_only_with_local_opt_in
-  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_legacy_shared_token_requires_opt_in.py:44: DeprecationWarning: Shared-token import authentication is deprecated and will be removed. Migrate to JWT authentication.
-    actor = require_admin_imports(x_jta_admin_token="test-token", authorization=None)
-
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-2916 passed, 9 skipped, 18 warnings in 51.61s
+=========================== short test summary info ============================
+FAILED backend/app/tests/test_confidence_scorer.py::TestConfidenceCalculation::test_source_quality_score
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 567 passed, 17 warnings in 22.85s

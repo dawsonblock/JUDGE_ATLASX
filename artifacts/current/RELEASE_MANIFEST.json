@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-05-18T01:32:39.475872+00:00",
-  "git_commit": "287a0964215f7bd8d27d23a4a6d09c96580ef546",
-  "alpha_gate_passed": true,
-  "archive_validation_result": "PASS",
-  "proof_input_tree_hash": "43ba610430e61e74b4ebbfde049a4a5e88805acca331eaea1e9712383552b9c0"
+  "generated_at": "2026-05-20T01:43:35.184379+00:00",
+  "git_commit": "cac765bdf5964314a063c2486c7819ae8152a5cf",
+  "alpha_gate_passed": false,
+  "archive_validation_result": "FAIL",
+  "proof_input_tree_hash": "285ed8140f298b716fb01dc2b6a2ae2b86b0841e8e7cfea2e56c83a101956066"
 }

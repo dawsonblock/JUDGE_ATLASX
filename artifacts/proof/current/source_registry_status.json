@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-19T23:09:11.604821+00:00",
+  "generated_at_utc": "2026-05-20T01:42:40.950407+00:00",
   "total_sources": 26,
   "summary": {
     "total_sources": 26,
@@ -277,7 +277,7 @@
       "lifecycle_state": "runnable_disabled",
       "canonical_replacement_key": null,
       "status_reason": "Saskatchewan Court of King's Bench decisions adapter is ready; source not yet enabled.",
-      "operator_next_step": "Confirm terms of use, then /enable via admin panel.",
+      "operator_next_step": "Confirm terms of use, then enable via admin panel after clean proof.",
       "automation_status": "machine_ready_disabled",
       "adapter_key": "canlii_api",
       "adapter_exists": true,

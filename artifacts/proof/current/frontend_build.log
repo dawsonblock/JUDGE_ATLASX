@@ -9,12 +9,17 @@
    Creating an optimized production build ...
  ✓ Compiled successfully
    Linting and checking validity of types ...
+
+./components/admin/WorkflowRunsPanel.tsx
+71:6  Warning: React Hook useEffect has a missing dependency: 'fetchRuns'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
    Collecting page data ...
-   Generating static pages (0/20) ...
-   Generating static pages (5/20) 
-   Generating static pages (10/20) 
-   Generating static pages (15/20) 
- ✓ Generating static pages (20/20)
+   Generating static pages (0/23) ...
+   Generating static pages (5/23) 
+   Generating static pages (11/23) 
+   Generating static pages (17/23) 
+ ✓ Generating static pages (23/23)
    Finalizing page optimization ...
    Collecting build traces ...
 
@@ -22,7 +27,10 @@ Route (app)                                  Size     First Load JS
 ┌ ƒ /                                        186 B          96.2 kB
 ├ ○ /_not-found                              873 B          88.2 kB
 ├ ƒ /admin/ai-checks                         950 B          97.1 kB
-├ ƒ /admin/review                            153 B          87.5 kB
+├ ƒ /admin/review                            160 B          87.5 kB
+├ ƒ /admin/review/claims                     160 B          87.5 kB
+├ ƒ /admin/review/contradictions             160 B          87.5 kB
+├ ƒ /admin/review/entities                   160 B          87.5 kB
 ├ ƒ /admin/sources                           5.92 kB         102 kB
 ├ ○ /api/admin/csrf                          0 B                0 B
 ├ ƒ /api/admin/ingestion-runs                0 B                0 B
@@ -38,14 +46,14 @@ Route (app)                                  Size     First Load JS
 ├ ƒ /cases                                   1.87 kB         107 kB
 ├ ƒ /cases/[id]                              186 B          96.2 kB
 ├ ƒ /dashboard                               186 B          96.2 kB
-├ ○ /defendants                              153 B          87.5 kB
+├ ○ /defendants                              160 B          87.5 kB
 ├ ƒ /defendants/[id]                         186 B          96.2 kB
 ├ ƒ /judges                                  1.86 kB         107 kB
 ├ ƒ /judges/[id]                             186 B          96.2 kB
 ├ ○ /login                                   1.21 kB        88.6 kB
 ├ ○ /map                                     221 kB          308 kB
-├ ƒ /records/[id]                            153 B          87.5 kB
-└ ƒ /sources                                 153 B          87.5 kB
+├ ƒ /records/[id]                            160 B          87.5 kB
+└ ƒ /sources                                 160 B          87.5 kB
 + First Load JS shared by all                87.3 kB
   ├ chunks/117-607fd91aade7dcf6.js           31.7 kB
   ├ chunks/fd9d1056-9e191f0896c1d560.js      53.6 kB

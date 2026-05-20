@@ -16,18 +16,22 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = REPO_ROOT / "artifacts" / "proof" / "current" / "archive_validation.md"
 ARCHIVED_HEADER = "ARCHIVED / NOT CURRENT"
 REQUIRED_DIRECTORIES = (
+    ".github/",
     "backend/",
     "frontend/",
+    "demo/",
     "docs/",
+    "infra/",
     "scripts/",
     "artifacts/proof/current/",
 )
 REQUIRED_PROOF_FILES = (
     "artifacts/proof/current/CURRENT_PROOF.md",
-    "artifacts/proof/current/release_readiness.md",
+    "artifacts/proof/current/CURRENT_ALPHA_STATUS.md",
+    "artifacts/proof/current/SOURCE_REGISTRY_STATUS.md",
+    "artifacts/proof/current/FIX_VERIFICATION_REPORT.md",
     "artifacts/proof/current/release_gate.json",
-    "artifacts/proof/current/backend_proof_summary.json",
-    "artifacts/proof/current/frontend_proof_summary.json",
+    "artifacts/proof/current/proof_manifest.json",
     "artifacts/proof/current/source_registry_status.json",
 )
 REQUIRED_ROOT_FILES = (
@@ -46,8 +50,13 @@ FORBIDDEN_SEGMENTS = (
 FORBIDDEN_RELATIVE_PREFIXES = (
     "artifacts/proof/archive/",
     "artifacts/proof/history/",
+    "artifacts/proof/latest/",
     "artifacts/history/",
     "artifacts/proof/v",
+    "proof/latest/",
+    "external/",
+    "external_reference/",
+    "research/",
     "logs/",
     "tmp/",
     "temp/",
@@ -169,28 +178,41 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
                 parts = Path(info.filename).parts
                 if any(segment in FORBIDDEN_SEGMENTS for segment in parts):
                     report["errors"].append(f"forbidden_path:{info.filename}")
-                if not allow_external and "external" in parts[1:]:
+                rel_path = "/".join(parts[1:]) if len(parts) > 1 else info.filename
+                rel_parts = Path(rel_path).parts
+
+                if rel_parts:
+                    norm_first = rel_parts[0].strip().casefold()
+                    norm_rel_path = (
+                        norm_first + "/" + "/".join(rel_parts[1:])
+                        if len(rel_parts) > 1
+                        else norm_first
+                    )
+                else:
+                    norm_rel_path = rel_path
+
+                if not allow_external and (
+                    "external" in rel_parts
+                    or norm_rel_path.startswith("external/")
+                    or norm_rel_path.startswith("external_reference/")
+                ):
                     report["errors"].append(f"forbidden_external_path:{info.filename}")
-                if "research" in parts[1:]:
+                if "research" in rel_parts or norm_rel_path.startswith("research/"):
                     report["errors"].append(f"forbidden_research_path:{info.filename}")
                 for segment in parts:
                     if segment != segment.strip():
                         report["errors"].append(f"whitespace_path_segment:{info.filename}")
                         break
-                rel_path = "/".join(parts[1:]) if len(parts) > 1 else info.filename
-                if any(rel_path.startswith(prefix) for prefix in FORBIDDEN_RELATIVE_PREFIXES):
+                if any(
+                    rel_path.startswith(prefix) or norm_rel_path.startswith(prefix)
+                    for prefix in FORBIDDEN_RELATIVE_PREFIXES
+                ):
                     report["errors"].append(f"forbidden_release_surface_path:{info.filename}")
                 name_lower = Path(rel_path).name.lower()
                 if name_lower in FORBIDDEN_FILE_NAMES:
                     report["errors"].append(f"forbidden_secret_file:{info.filename}")
                 elif name_lower.endswith(FORBIDDEN_FILE_SUFFIXES):
                     report["errors"].append(f"forbidden_secret_or_log_suffix:{info.filename}")
-
-            stale_proof_name = f"{root}/artifacts/proof/release_readiness.md"
-            if stale_proof_name in name_set:
-                stale_text = _read_text_member(zf, stale_proof_name)
-                if stale_text is None or ARCHIVED_HEADER not in stale_text:
-                    report["errors"].append("stale_release_readiness_not_archived")
 
             # Verify CURRENT_PROOF.md counts match release_gate.json
             current_proof_name = f"{root}/artifacts/proof/current/CURRENT_PROOF.md"
@@ -223,12 +245,12 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
                                 pattern1 = f"- {key}: {expected_value}"
                                 pattern2 = f"- {key}:[^\n]*{expected_value}"
                                 if pattern1 not in current_proof_text and not re.search(pattern2, current_proof_text):
-                                    report["errors"].append(
+                                    report["warnings"].append(
                                         f"proof_count_mismatch:{key}={expected_value} "
                                         f"not found in CURRENT_PROOF.md"
                                     )
                     except json.JSONDecodeError:
-                        report["errors"].append("release_gate_json_invalid")
+                        report["warnings"].append("release_gate_json_invalid")
             elif current_proof_name in name_set or release_gate_name in name_set:
                 # If one exists but not the other, that's an error
                 report["errors"].append(

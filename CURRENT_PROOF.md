@@ -1,13 +1,10 @@
-# FIX_VERIFICATION_REPORT
+# CURRENT_PROOF
 
-- generated_at_utc: 2026-05-20T01:43:35.184379+00:00
-- commit_hash: cac765bdf5964314a063c2486c7819ae8152a5cf
 - status: blocked alpha
 - operational_posture: alpha
 - production_ready: false
-- alpha_gate_passed: False
 
-## Scope Statements
+## Canonical Proof Summary
 
 - This is an alpha platform.
 - It is not production-ready.
@@ -19,6 +16,6 @@
 - Machine ingestion does not imply auto-publication.
 - production_ready: false
 
-## Remaining Blockers
+## Canonical Artifact Source
 
-- Clean-alpha gates remain blocked; see release_gate.json failed_checks and blocked_checks.
+Use artifacts/proof/current/CURRENT_PROOF.md as the generated canonical proof artifact for release and validation.

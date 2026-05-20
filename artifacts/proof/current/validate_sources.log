@@ -17,8 +17,6 @@ SOURCE VALIDATION: FAIL
 - saskatoon_open_data_crime:missing_test_fixtures
 - saskatoon_police_open_data:missing_test_fixtures
 - web_monitor_saskatoon_police_news:missing_test_fixtures
-- sk_courts_qb_decisions:invalid_automation_status
-- sk_courts_qb_decisions:invalid_lifecycle_state
 - sk_courts_qb_decisions:missing_adapter_configuration
 - sk_courts_qb_decisions:missing_test_fixtures
 - sk_courts_ca_decisions:missing_adapter_configuration

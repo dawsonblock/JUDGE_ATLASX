@@ -1,61 +1,31 @@
 # CURRENT_STATUS
 
-**Status**: clean alpha  
+**Status**: blocked alpha  
 **Production ready**: NO  
 **Last updated**: 2026-05-19
 
-## Alpha Release Gate Status
+## Platform Posture
 
-The current release meets the clean-alpha hardening criteria for phases 1–13.
-
-| Phase | Status | Blocker |
-|-------|--------|---------|
-| 1: Freeze features | ✓ Complete | None |
-| 2: Remove generated junk | ✓ Complete | None |
-| 3: Remove env/release junk | ✓ Complete | None |
-| 4: Canonical proof file | ✓ Complete | None |
-| 5: Fix builder/validator contract | ✓ Complete | None |
-| 6: False-claim scanner hardening | ✓ Complete | None |
-| 7: Standardize Node 20 | ✓ Complete | None |
-| 8: Standardize Python 3.11 | ✓ Complete | None |
-| 9: Route boundary review | ✓ Confirmed non-existent | None |
-| 10: Regenerate source registry | ✓ Complete | None |
-| 11: Regenerate proof | ✓ Complete | None |
-| 12: Build & validate archive | ✓ Complete | None |
-| 13: Update status docs | ✓ Complete | None |
-| 14: Bi-temporal foundation | ⏸ Deferred | All prior phases |
-
-## Current Proof Metadata
-
-- Proof timestamp: 2026-05-19 22:54:59 UTC
-- Commit: 6cf8570cff222c932dfb960dca31837d3a9d1c0d
-- Alpha gate: PASS
-- Docker proof: PASS
-- PostGIS proof: PASS
-- Archive validation: PASS
-- Proof freshness: PASS
-
-## Runtime Baseline
-
-- Python: 3.11.7
-- Node: v20.20.2
-- npm: 10.8.2
+- This is an alpha platform.
+- It is not production-ready.
+- Evidence is authoritative.
+- AI and memory outputs are derivative.
+- Legal correlations are hypotheses, not verdicts.
+- Public outputs require review approval.
+- Source coverage is incomplete.
+- Machine ingestion does not imply auto-publication.
 - production_ready: false
 
-## Definition of Done for This Phase
+## Current Release Truth
 
-A **clean alpha** release requires:
+- Release status is blocked alpha until every clean-alpha gate passes in the current tree.
+- Bi-temporal modeling is deferred until clean alpha is complete.
+- Experimental route modules exist but remain unmounted from the active API router.
 
-- ✓ All phases 1–13 complete
-- ✓ All validation scripts pass
-- ✓ Backend tests pass (Python 3.11)
-- ✓ Frontend checks pass (Node 20)
-- ✓ Generated archive validates
-- ✓ Proof artifacts current and consistent
-- ✓ No junk (env, logs, pycache, external_reference) in release
-- ✓ Status docs updated with current facts
-- ✓ `production_ready: false` stated throughout
+## Clean-Alpha Exit Criteria
 
----
-
-For detailed phase breakdown, see `artifacts/proof/current/CURRENT_PROOF.md`.
+- Archive build/validation passes with current-proof summary files only.
+- False-claim scanner passes with review-priority wording.
+- Node baseline remains 20 in frontend and proof workflows.
+- Python baseline remains 3.11 in proof workflows.
+- Proof consistency and proof freshness both pass on regenerated artifacts.
