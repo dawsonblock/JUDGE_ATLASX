@@ -275,7 +275,7 @@ class TestEntityReviewPriorityTier:
         # Add multiple claims
         for i in range(3):
             claim = MemoryClaim(
-                claim_key=f"test_claim_{i}",
+                claim_key=f"test_claim_{i}_{uuid4().hex[:8]}",
                 claim_type="test",
                 entity_id=entity.id,
                 claim_value=f"Test value {i}",
