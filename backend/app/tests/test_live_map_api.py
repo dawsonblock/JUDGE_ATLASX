@@ -18,6 +18,14 @@ from app.main import app
 from app.models.geo_legal_event import GeoLegalEvent as GeoLegalEventModel
 from app.schemas.geo_legal_event import GeoLegalEvent
 
+_LIVE_MAP_MOUNTED = any(
+    getattr(route, "path", None) == "/api/live-map/events" for route in app.routes
+)
+pytestmark = pytest.mark.skipif(
+    not _LIVE_MAP_MOUNTED,
+    reason="live_map route intentionally unmounted for public boundary hardening",
+)
+
 
 @pytest.fixture
 def client(db_session):

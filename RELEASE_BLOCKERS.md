@@ -1,8 +1,10 @@
 # RELEASE_BLOCKERS
 
-## Current Blockers for Clean Alpha Release
 
-- none
+## Current Blockers for Blocked Alpha Release
+
+- backend_pytest: backend tests must all pass (see proof logs)
+- live_map public boundary: unauthenticated admin_mode leaks internal data (see plan)
 
 ## Completed Resolution Summary
 
@@ -25,6 +27,6 @@
 
 ## Status Assertion
 
-- release_status: clean alpha
+- release_status: blocked alpha
 - production_ready: false
 - operational_posture: alpha

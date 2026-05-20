@@ -48,7 +48,7 @@ def calculate_claim_review_priority_tier(claim_id: int, db: Session) -> str:
     confidence_priority_value = 1.0 - claim.confidence
 
     # Priority lift from contradictions
-    contradiction_priority_value = min(0.3, (claim.contradiction_count or 0) * 0.1)
+    contradiction_priority_value = min(0.5, (claim.contradiction_count or 0) * 0.2)
 
     # Priority lift from lack of evidence
     evidence_priority_value = 0.0
@@ -57,11 +57,20 @@ def calculate_claim_review_priority_tier(claim_id: int, db: Session) -> str:
     elif claim.corroboration_count == 1:
         evidence_priority_value = 0.1
 
+    # Claim-type sensitivity adjustments
+    claim_type_priority_value = 0.0
+    claim_type = (claim.claim_type or "").lower()
+    if claim_type == "criminal_allegation":
+        claim_type_priority_value = 0.45
+    elif claim_type in {"case_outcome", "appeal_outcome", "sentence"}:
+        claim_type_priority_value = 0.15
+
     # Calculate total review-priority value
     total_priority_value = (
         confidence_priority_value
         + contradiction_priority_value
         + evidence_priority_value
+        + claim_type_priority_value
     )
     total_priority_value = min(1.0, total_priority_value)  # Cap at 1.0
 

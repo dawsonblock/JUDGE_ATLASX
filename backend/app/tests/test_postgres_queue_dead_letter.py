@@ -1,14 +1,34 @@
 """Tests for Postgres queue dead-letter queue behavior."""
 import uuid
+import pytest
 
 from app.workers.postgres_queue import PostgresIngestionQueue
 from app.models.entities import IngestionQueueJob, DeadLetterQueueJob
 from app.db.session import SessionLocal
 
 
+def _clear_tables(db):
+    db.query(DeadLetterQueueJob).delete()
+    db.query(IngestionQueueJob).delete()
+
+
+@pytest.fixture(autouse=True)
+def _clean_queue_tables():
+    db = SessionLocal()
+    try:
+        _clear_tables(db)
+        db.commit()
+        yield
+    finally:
+        _clear_tables(db)
+        db.commit()
+        db.close()
+
+
 def test_fail_job_moves_to_dlq_after_max_retries():
     """Test that fail_job moves job to DLQ after max retries."""
     queue = PostgresIngestionQueue()
+    queue._retry_delay_seconds = 0
     worker_id = f"worker-{uuid.uuid4()}"
     source_key = "test_source"
 

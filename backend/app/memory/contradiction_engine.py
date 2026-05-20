@@ -111,7 +111,6 @@ def detect_contradictions(
                 )
 
     contradictions = []
-
     # Group claims by predicate
     claims_by_predicate: Dict[str, List[MemoryClaim]] = {}
     for claim in claims:
@@ -120,35 +119,6 @@ def detect_contradictions(
             claims_by_predicate[predicate] = []
         claims_by_predicate[predicate].append(claim)
 
-    # Check for contradictions within each predicate group
-    for predicate, predicate_claims in claims_by_predicate.items():
-        if len(predicate_claims) < 2:
-            continue
-
-        # Check for value contradictions
-        for i, claim1 in enumerate(predicate_claims):
-            for claim2 in predicate_claims[i + 1 :]:
-                contradiction = _check_value_contradiction(
-                    claim1, claim2, db, source_authority_cache
-                )
-                if contradiction:
-                    contradictions.append(contradiction)
-                    if persist:
-                        _persist_contradiction(contradiction, db)
-
-        # Check for temporal contradictions
-        for i, claim1 in enumerate(predicate_claims):
-            for claim2 in predicate_claims[i + 1 :]:
-                contradiction = _check_temporal_contradiction(
-                    claim1, claim2, db, source_authority_cache
-                )
-                if contradiction:
-                    contradictions.append(contradiction)
-                    if persist:
-                        _persist_contradiction(contradiction, db)
-
-    # Check for legal-specific contradictions within predicate groups
-    # This optimizes performance by only checking relevant pairs
     for predicate, predicate_claims in claims_by_predicate.items():
         if len(predicate_claims) < 2:
             continue
@@ -164,19 +134,37 @@ def detect_contradictions(
             "legal_name": _check_identity_conflict,
             "same_as": _check_identity_conflict,
         }
-
-        # Use predicate-specific check if available
         check_func = predicate_checks.get(predicate)
-        if check_func:
-            for i, claim1 in enumerate(predicate_claims):
-                for claim2 in predicate_claims[i + 1 :]:
-                    contradiction = check_func(
-                        claim1, claim2, db, source_authority_cache
-                    )
+
+        # For each unique claim pair
+        for i, claim1 in enumerate(predicate_claims):
+            for claim2 in predicate_claims[i + 1 :]:
+                # Priority for generic checks: temporal > value.
+                # Predicate-specific contradictions are checked separately and may
+                # provide more precise legal conflict typing than generic value diff.
+                temporal = _check_temporal_contradiction(claim1, claim2, db, source_authority_cache)
+                if temporal:
+                    contradictions.append(temporal)
+                    if persist:
+                        _persist_contradiction(temporal, db)
+                if check_func:
+                    contradiction = check_func(claim1, claim2, db, source_authority_cache)
                     if contradiction:
                         contradictions.append(contradiction)
                         if persist:
                             _persist_contradiction(contradiction, db)
+                        # Prefer specific legal contradiction type to generic value.
+                        continue
+
+                if temporal:
+                    # Do not also emit generic value contradiction for same pair.
+                    continue
+
+                value = _check_value_contradiction(claim1, claim2, db, source_authority_cache)
+                if value:
+                    contradictions.append(value)
+                    if persist:
+                        _persist_contradiction(value, db)
 
     return contradictions
 

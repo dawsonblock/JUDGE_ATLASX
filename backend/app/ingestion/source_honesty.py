@@ -14,6 +14,13 @@ from app.models.entities import SourceRegistry
 logger = logging.getLogger(__name__)
 
 
+def _as_utc(dt: datetime) -> datetime:
+    """Normalize naive/aware datetimes to UTC-aware for safe arithmetic."""
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
 def calculate_source_honesty_score(source_key: str, db: Session) -> float:
     """Calculate honesty score for a source based on reliability metrics.
 
@@ -35,7 +42,7 @@ def calculate_source_honesty_score(source_key: str, db: Session) -> float:
     # Adjust for error rate
     error_penalty = 0.0
     if registry.last_error_at:
-        days_since_error = (datetime.now(timezone.utc) - registry.last_error_at).days
+        days_since_error = (datetime.now(timezone.utc) - _as_utc(registry.last_error_at)).days
         if days_since_error < 1:
             error_penalty = 0.3
         elif days_since_error < 7:
@@ -46,7 +53,7 @@ def calculate_source_honesty_score(source_key: str, db: Session) -> float:
     # Adjust for consistency (last_successful_fetch vs last_ingested_at)
     consistency_bonus = 0.0
     if registry.last_successful_fetch and registry.last_ingested_at:
-        time_diff = abs((registry.last_successful_fetch - registry.last_ingested_at).total_seconds())
+        time_diff = abs((_as_utc(registry.last_successful_fetch) - _as_utc(registry.last_ingested_at)).total_seconds())
         if time_diff < 3600:  # Less than 1 hour
             consistency_bonus = 0.1
 
@@ -117,14 +124,14 @@ def get_source_quality_metrics(source_key: str, db: Session) -> Dict[str, any]:
     # Calculate uptime percentage (last 30 days)
     uptime_days = 0
     if registry.last_successful_fetch:
-        days_since_last_success = (datetime.now(timezone.utc) - registry.last_successful_fetch).days
+        days_since_last_success = (datetime.now(timezone.utc) - _as_utc(registry.last_successful_fetch)).days
         uptime_days = max(0, 30 - days_since_last_success)
     uptime_percentage = uptime_days / 30.0
 
     # Calculate error frequency
     error_frequency = 0.0
     if registry.last_error_at and registry.last_ingested_at:
-        time_span = (registry.last_ingested_at - registry.last_error_at).total_seconds()
+        time_span = (_as_utc(registry.last_ingested_at) - _as_utc(registry.last_error_at)).total_seconds()
         if time_span > 0:
             error_frequency = 1.0 / (time_span / 86400)  # Errors per day
 

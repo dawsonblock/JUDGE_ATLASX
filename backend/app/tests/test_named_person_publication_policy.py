@@ -1,6 +1,7 @@
 """Tests for named-person criminal allegation publication policy (Phase 4)."""
 import pytest
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from app.models.entities import MemoryClaim, CanonicalEntity, SourceSnapshot, LegalSource
 from app.review.publication_gate import assert_memory_claim_publication_ready, PublicationBlockedError
@@ -12,12 +13,16 @@ def test_named_person_criminal_allegation_requires_elevated_approval():
     db = SessionLocal()
 
     try:
+        entity = CanonicalEntity(entity_type="person", canonical_name="Named Person A")
+        db.add(entity)
+        db.commit()
+
         # Create a claim with criminal_allegation_named_person sensitivity
         claim = MemoryClaim(
-            claim_key="test-claim-1",
-            claim_uid="uid-1",
+            claim_key=f"test-claim-1-{uuid4().hex[:8]}",
+            claim_uid=f"uid-1-{uuid4().hex[:8]}",
             claim_type="criminal_allegation",
-            entity_id=1,
+            entity_id=entity.id,
             claim_value="Test claim",
             confidence=0.8,
             review_status="approved",
@@ -42,12 +47,24 @@ def test_named_person_criminal_allegation_with_elevated_approval_passes():
     db = SessionLocal()
 
     try:
+        entity = CanonicalEntity(entity_type="person", canonical_name="Named Person B")
+        db.add(entity)
+        db.commit()
+
+        source = LegalSource(source_key=f"named-person-src-{uuid4().hex[:8]}", source_type="official_court", lifecycle_state="active", is_active=True)
+        db.add(source)
+        db.commit()
+
+        snapshot = SourceSnapshot(source_id=source.id, source_key=source.source_id, content_hash=uuid4().hex, fetched_at=datetime.now(timezone.utc), parser_version="1.0")
+        db.add(snapshot)
+        db.commit()
+
         # Create a claim with elevated approval
         claim = MemoryClaim(
-            claim_key="test-claim-2",
-            claim_uid="uid-2",
+            claim_key=f"test-claim-2-{uuid4().hex[:8]}",
+            claim_uid=f"uid-2-{uuid4().hex[:8]}",
             claim_type="criminal_allegation",
-            entity_id=1,
+            entity_id=entity.id,
             claim_value="Test claim",
             confidence=0.8,
             review_status="approved",
@@ -62,7 +79,7 @@ def test_named_person_criminal_allegation_with_elevated_approval_passes():
         from app.models.entities import MemoryEvidenceLink
         evidence = MemoryEvidenceLink(
             claim_id=claim.id,
-            snapshot_id=1,
+            snapshot_id=snapshot.id,
             evidence_checksum="abc123",
             support_type="supports",
         )
@@ -87,12 +104,24 @@ def test_public_record_criminal_allegation_does_not_require_elevated_approval():
     db = SessionLocal()
 
     try:
+        entity = CanonicalEntity(entity_type="person", canonical_name="Named Person C")
+        db.add(entity)
+        db.commit()
+
+        source = LegalSource(source_key=f"public-record-src-{uuid4().hex[:8]}", source_type="official_court", lifecycle_state="active", is_active=True)
+        db.add(source)
+        db.commit()
+
+        snapshot = SourceSnapshot(source_id=source.id, source_key=source.source_id, content_hash=uuid4().hex, fetched_at=datetime.now(timezone.utc), parser_version="1.0")
+        db.add(snapshot)
+        db.commit()
+
         # Create a claim with public_record sensitivity
         claim = MemoryClaim(
-            claim_key="test-claim-3",
-            claim_uid="uid-3",
+            claim_key=f"test-claim-3-{uuid4().hex[:8]}",
+            claim_uid=f"uid-3-{uuid4().hex[:8]}",
             claim_type="criminal_allegation",
-            entity_id=1,
+            entity_id=entity.id,
             claim_value="Test claim",
             confidence=0.8,
             review_status="approved",
@@ -104,7 +133,7 @@ def test_public_record_criminal_allegation_does_not_require_elevated_approval():
         from app.models.entities import MemoryEvidenceLink
         evidence = MemoryEvidenceLink(
             claim_id=claim.id,
-            snapshot_id=1,
+            snapshot_id=snapshot.id,
             evidence_checksum="abc123",
             support_type="supports",
         )
@@ -127,12 +156,24 @@ def test_non_criminal_allegation_does_not_require_elevated_approval():
     db = SessionLocal()
 
     try:
+        entity = CanonicalEntity(entity_type="person", canonical_name="Named Person D")
+        db.add(entity)
+        db.commit()
+
+        source = LegalSource(source_key=f"non-crim-src-{uuid4().hex[:8]}", source_type="official_court", lifecycle_state="active", is_active=True)
+        db.add(source)
+        db.commit()
+
+        snapshot = SourceSnapshot(source_id=source.id, source_key=source.source_id, content_hash=uuid4().hex, fetched_at=datetime.now(timezone.utc), parser_version="1.0")
+        db.add(snapshot)
+        db.commit()
+
         # Create a claim with different sensitivity
         claim = MemoryClaim(
-            claim_key="test-claim-4",
-            claim_uid="uid-4",
+            claim_key=f"test-claim-4-{uuid4().hex[:8]}",
+            claim_uid=f"uid-4-{uuid4().hex[:8]}",
             claim_type="employment",
-            entity_id=1,
+            entity_id=entity.id,
             claim_value="Test claim",
             confidence=0.8,
             review_status="approved",
@@ -144,7 +185,7 @@ def test_non_criminal_allegation_does_not_require_elevated_approval():
         from app.models.entities import MemoryEvidenceLink
         evidence = MemoryEvidenceLink(
             claim_id=claim.id,
-            snapshot_id=1,
+            snapshot_id=snapshot.id,
             evidence_checksum="abc123",
             support_type="supports",
         )
@@ -167,12 +208,16 @@ def test_elevated_approval_fields_are_set():
     db = SessionLocal()
 
     try:
+        entity = CanonicalEntity(entity_type="person", canonical_name="Named Person E")
+        db.add(entity)
+        db.commit()
+
         # Create a claim with elevated approval
         claim = MemoryClaim(
-            claim_key="test-claim-5",
-            claim_uid="uid-5",
+            claim_key=f"test-claim-5-{uuid4().hex[:8]}",
+            claim_uid=f"uid-5-{uuid4().hex[:8]}",
             claim_type="criminal_allegation",
-            entity_id=1,
+            entity_id=entity.id,
             claim_value="Test claim",
             confidence=0.8,
             review_status="approved",

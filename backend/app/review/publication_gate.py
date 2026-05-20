@@ -165,6 +165,13 @@ def assert_memory_claim_publication_ready(claim: MemoryClaim, db: Session) -> No
             f"MemoryClaim {claim.id} has {len(high_critical_contradictions)} open high/critical contradictions"
         )
 
+    # Fail closed when contradiction metadata indicates unresolved conflicts,
+    # even if durable contradiction rows are not yet materialized.
+    if (claim.contradiction_count or 0) > 0:
+        raise PublicationBlockedError(
+            f"MemoryClaim {claim.id} contradiction_count={claim.contradiction_count} — unresolved contradictions block publication"
+        )
+
     # Check named-person criminal allegations have elevated approval
     if claim.claim_sensitivity == "criminal_allegation_named_person":
         # Require elevated review approval for named-person criminal allegations

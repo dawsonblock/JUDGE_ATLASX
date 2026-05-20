@@ -4,13 +4,15 @@ Tests publication gate checks for memory claims.
 """
 
 import pytest
+from sqlalchemy import event
+from sqlalchemy.orm import Session
 
 from app.models.entities import MemoryClaim, MemoryEvidenceLink, SourceSnapshot, CanonicalEntity
 from app.review.publication_gate import (
     PublicationBlockedError,
     assert_memory_claim_publication_ready,
 )
-from app.db.session import SessionLocal
+from app.db.session import engine
 
 
 class TestMemoryClaimPublicationGate:
@@ -209,10 +211,22 @@ class TestMemoryClaimPublicationGate:
 
 @pytest.fixture
 def db_session():
-    """Create a database session for testing."""
-    session = SessionLocal()
+    """Create an isolated database session for testing."""
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = Session(bind=connection, future=True)
+    nested = connection.begin_nested()
+
+    @event.listens_for(session, "after_transaction_end")
+    def _restart_savepoint(sess, trans):
+        nonlocal nested
+        if trans.nested and not getattr(trans._parent, "nested", False):
+            nested = connection.begin_nested()
+
     try:
         yield session
     finally:
-        session.rollback()
+        event.remove(session, "after_transaction_end", _restart_savepoint)
         session.close()
+        transaction.rollback()
+        connection.close()

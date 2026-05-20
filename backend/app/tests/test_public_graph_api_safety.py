@@ -252,7 +252,7 @@ def test_public_graph_does_not_expose_quarantined_source_edges(
     """Test that public graph endpoints do not expose edges from quarantined sources."""
     # Create a quarantined source
     source = LegalSource(
-        source_key="test_source",
+        source_key="test_source_quarantined",
         lifecycle_state="quarantined",
         is_active=False,
     )

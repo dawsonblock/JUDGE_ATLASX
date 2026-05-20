@@ -1,13 +1,26 @@
 """Tests for Postgres queue row-level locking behavior."""
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
 from app.workers.postgres_queue import PostgresIngestionQueue
 from app.models.entities import IngestionQueueJob
 from app.db.session import SessionLocal
+
+
+@pytest.fixture(autouse=True)
+def _clean_queue_tables():
+    db = SessionLocal()
+    try:
+        db.query(IngestionQueueJob).delete()
+        db.commit()
+        yield
+    finally:
+        db.query(IngestionQueueJob).delete()
+        db.commit()
+        db.close()
 
 
 def test_lease_next_job_acquires_lock():
@@ -71,7 +84,7 @@ def test_lease_next_job_recovers_stale_locks():
         job = db.query(IngestionQueueJob).filter_by(job_id=job_id).first()
         job.locked_by = "old-worker"
         job.locked_at = datetime.now(timezone.utc)
-        job.lease_expires_at = datetime.now(timezone.utc).timestamp() - 100  # Expired
+        job.lease_expires_at = datetime.now(timezone.utc) - timedelta(seconds=100)  # Expired
         job.state = "running"
         db.commit()
     finally:
@@ -86,7 +99,7 @@ def test_lease_next_job_recovers_stale_locks():
     try:
         job = db.query(IngestionQueueJob).filter_by(job_id=job_id).first()
         assert job.locked_by == worker_id
-        assert job.lease_expires_at > datetime.now(timezone.utc)
+        assert job.lease_expires_at > datetime.now(timezone.utc).replace(tzinfo=None)
     finally:
         db.close()
 
@@ -160,7 +173,7 @@ def test_heartbeat_updates_timestamp():
     try:
         job = db.query(IngestionQueueJob).filter_by(job_id=job_id).first()
         assert job.last_heartbeat_at is not None
-        assert job.last_heartbeat_at > datetime.now(timezone.utc).timestamp() - 10
+        assert job.last_heartbeat_at > datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(seconds=10)
     finally:
         db.close()
 

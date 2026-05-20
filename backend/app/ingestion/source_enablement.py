@@ -67,6 +67,10 @@ def disable_source(
     Returns:
         (success, message) tuple
     """
+    # Back-compat: some callers still pass (source_key, disabled_by, reason, db)
+    if not isinstance(db, Session) and isinstance(reason, Session):
+        db, reason = reason, db
+
     registry = db.query(SourceRegistry).filter_by(source_key=source_key).first()
     if not registry:
         return False, f"Source {source_key} not found"
@@ -169,7 +173,7 @@ def rollback_source_enablement(
     Returns:
         (success, message) tuple
     """
-    return disable_source(source_key, "system_rollback", reason, db)
+    return disable_source(source_key, "system_rollback", db, reason)
 
 
 def batch_enable_sources(

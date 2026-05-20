@@ -115,6 +115,10 @@ class PostgresIngestionQueue:
         finally:
             db.close()
 
+    def enqueue(self, source_key: str, idempotency_key: Optional[str] = None) -> str:
+        """Backwards-compatible alias expected by legacy tests/callers."""
+        return self.enqueue_job(source_key, idempotency_key=idempotency_key)
+
     def lease_next_job(self, worker_id: str, lease_seconds: int = 300) -> Optional[str]:
         """Lease the next pending job with row-level locking."""
         db = SessionLocal()
@@ -126,40 +130,57 @@ class PostgresIngestionQueue:
             # Recover stale locks first
             self.recover_stale_jobs()
 
-            now = datetime.now(timezone.utc).timestamp()
-            lease_expires = datetime.now(timezone.utc).timestamp() + lease_seconds
+            now_dt = datetime.now(timezone.utc)
+            now_ts = now_dt.timestamp()
+            lease_expires_at = datetime.fromtimestamp(now_ts + lease_seconds, tz=timezone.utc)
 
-            # Use SELECT FOR UPDATE SKIP LOCKED for safe concurrent job acquisition
-            job = db.execute(
-                text("""
-                    SELECT id FROM ingestion_queue_jobs
-                    WHERE state = :pending_state
-                    AND (retry_after IS NULL OR retry_after <= :now)
-                    AND (locked_by IS NULL OR lease_expires_at IS NULL OR lease_expires_at <= :now)
-                    ORDER BY enqueued_at
-                    LIMIT 1
-                    FOR UPDATE SKIP LOCKED
-                """),
-                {
-                    "pending_state": JobState.PENDING.value,
-                    "now": now,
-                }
-            ).fetchone()
+            # SQLite doesn't support FOR UPDATE SKIP LOCKED. Use a simpler fallback there.
+            if db.bind is not None and db.bind.dialect.name == "sqlite":
+                from app.models.entities import IngestionQueueJob
 
-            if not job:
-                return None
+                job_obj = (
+                    db.query(IngestionQueueJob)
+                    .filter(
+                        IngestionQueueJob.state == JobState.PENDING.value,
+                        (IngestionQueueJob.retry_after.is_(None) | (IngestionQueueJob.retry_after <= now_ts)),
+                    )
+                    .order_by(IngestionQueueJob.enqueued_at)
+                    .first()
+                )
+            else:
+                # Use SELECT FOR UPDATE SKIP LOCKED for safe concurrent job acquisition
+                job = db.execute(
+                    text("""
+                        SELECT id FROM ingestion_queue_jobs
+                        WHERE state = :pending_state
+                        AND (retry_after IS NULL OR retry_after <= :now_ts)
+                        AND (locked_by IS NULL OR lease_expires_at IS NULL OR lease_expires_at <= :now_dt)
+                        ORDER BY enqueued_at
+                        LIMIT 1
+                        FOR UPDATE SKIP LOCKED
+                    """),
+                    {
+                        "pending_state": JobState.PENDING.value,
+                        "now_ts": now_ts,
+                        "now_dt": now_dt,
+                    }
+                ).fetchone()
 
-            # Load the full job object
-            job_obj = db.query(IngestionQueueJob).filter_by(id=job[0]).first()
+                if not job:
+                    return None
+
+                # Load the full job object
+                job_obj = db.query(IngestionQueueJob).filter_by(id=job[0]).first()
+
             if not job_obj:
                 return None
 
             # Acquire lock
             job_obj.locked_by = worker_id
-            job_obj.locked_at = datetime.now(timezone.utc)
-            job_obj.lease_expires_at = datetime.fromtimestamp(lease_expires, tz=timezone.utc)
+            job_obj.locked_at = now_dt
+            job_obj.lease_expires_at = lease_expires_at
             job_obj.state = JobState.RUNNING.value
-            job_obj.started_at = datetime.now(timezone.utc)
+            job_obj.started_at = now_dt
             db.commit()
 
             logger.info(
@@ -420,7 +441,7 @@ class PostgresIngestionQueue:
                 db.commit()
                 
                 # Move to dead-letter queue
-                self._move_to_dead_letter_queue(job, db)
+                self.move_to_dead_letter(job.job_id)
                 logger.error("Job %s failed after %d retries, moved to DLQ", job_id, job.retry_count)
 
             return self._job_to_record(job)

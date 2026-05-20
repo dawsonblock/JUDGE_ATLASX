@@ -1,4 +1,5 @@
 import hashlib
+import json
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
@@ -17,8 +18,10 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    case,
     func,
 )
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
@@ -1313,6 +1316,18 @@ class SourceRegistry(Base, TimestampMixin):
         String(50), nullable=True
     )  # e.g. 'polite_1rps', 'bulk_10rps', 'no_limit'
 
+    def __init__(self, **kwargs):
+        """Back-compat initializer for legacy fixtures.
+
+        Some tests/builders still pass list values for JSON-like Text columns.
+        Normalize those inputs so SQLite can bind them correctly.
+        """
+        for key in ("allowed_domains", "creates"):
+            value = kwargs.get(key)
+            if isinstance(value, list):
+                kwargs[key] = json.dumps(value)
+        super().__init__(**kwargs)
+
 
 class SourceAdapterContract(Base, TimestampMixin):
     """Registry of adapter parser_version contracts for ingestion validation.
@@ -1723,7 +1738,15 @@ class EntityGraphEdge(Base):
 
     def __init__(self, **kwargs):
         """Back-compat initializer for legacy test fixtures."""
-        kwargs.pop("public_status", None)  # Legacy field, no longer used
+        public_status = kwargs.pop("public_status", None)
+        if public_status is not None:
+            refs = kwargs.get("evidence_refs")
+            if not isinstance(refs, dict):
+                refs = {} if refs is None else {"legacy_refs": refs}
+            refs["public_status"] = public_status
+            kwargs["evidence_refs"] = refs
+            if "status" not in kwargs:
+                kwargs["status"] = "active" if public_status == "public" else "disputed"
 
         source_entity_id = kwargs.pop("source_entity_id", None)
         if source_entity_id is not None and "subject_id" not in kwargs:
@@ -1784,6 +1807,25 @@ class EntityGraphEdge(Base):
         if refs and isinstance(refs[0], dict):
             return refs[0].get("claim_id")
         return None
+
+    @hybrid_property
+    def public_status(self) -> str:
+        refs = self.evidence_refs or {}
+        if isinstance(refs, dict):
+            explicit = refs.get("public_status")
+            if explicit in {"public", "hidden"}:
+                return explicit
+        return "public" if self.status == "active" else "hidden"
+
+    @public_status.expression
+    def public_status(cls):
+        explicit = func.json_extract(cls.evidence_refs, "$.public_status")
+        return case(
+            (explicit == "public", "public"),
+            (explicit == "hidden", "hidden"),
+            (cls.status == "active", "public"),
+            else_="hidden",
+        )
 
     @support_claim_id.setter
     def support_claim_id(self, value: int | None) -> None:

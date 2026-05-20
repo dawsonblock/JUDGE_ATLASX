@@ -4,6 +4,8 @@ Tests review-priority tier calculation with correct thresholds and rules.
 """
 
 import pytest
+from sqlalchemy import event
+from sqlalchemy.orm import Session
 
 from app.models.entities import MemoryClaim, CanonicalEntity
 from app.review.review_priority import (
@@ -12,7 +14,7 @@ from app.review.review_priority import (
     can_auto_approve,
     get_review_requirements,
 )
-from app.db.session import SessionLocal
+from app.db.session import engine
 
 
 class TestReviewPriorityThresholds:
@@ -282,10 +284,22 @@ class TestEntityReviewPriorityTier:
 
 @pytest.fixture
 def db_session():
-    """Create a database session for testing."""
-    session = SessionLocal()
+    """Create an isolated database session for testing."""
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = Session(bind=connection, future=True)
+    nested = connection.begin_nested()
+
+    @event.listens_for(session, "after_transaction_end")
+    def _restart_savepoint(sess, trans):
+        nonlocal nested
+        if trans.nested and not getattr(trans._parent, "nested", False):
+            nested = connection.begin_nested()
+
     try:
         yield session
     finally:
-        session.rollback()
+        event.remove(session, "after_transaction_end", _restart_savepoint)
         session.close()
+        transaction.rollback()
+        connection.close()

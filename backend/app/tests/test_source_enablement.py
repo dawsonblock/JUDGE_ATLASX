@@ -4,6 +4,8 @@ Tests source enablement, validation, and rollback.
 """
 
 import pytest
+from sqlalchemy import event
+from sqlalchemy.orm import Session
 
 from app.models.entities import SourceRegistry
 from app.ingestion.source_enablement import (
@@ -14,7 +16,7 @@ from app.ingestion.source_enablement import (
     rollback_source_enablement,
     batch_enable_sources,
 )
-from app.db.session import SessionLocal
+from app.db.session import engine
 
 
 class TestSourceEnablement:
@@ -33,7 +35,9 @@ class TestSourceEnablement:
             parser_version="1.0",
             allowed_domains=["example.com"],
             base_url="https://example.com",
-            automation_status="ready",
+            automation_status="machine_ready_disabled",
+            public_record_authority="official",
+            terms_url="https://example.com/terms",
         )
         db_session.add(registry)
         db_session.commit()
@@ -59,6 +63,8 @@ class TestSourceEnablement:
             parser_version="1.0",
             allowed_domains=["example.com"],
             base_url="https://example.com",
+            public_record_authority="official",
+            terms_url="https://example.com/terms",
         )
         db_session.add(registry)
         db_session.commit()
@@ -104,7 +110,9 @@ class TestSourceValidation:
             parser_version="1.0",
             allowed_domains=["example.com"],
             base_url="https://example.com",
-            automation_status="ready",
+            automation_status="machine_ready_disabled",
+            public_record_authority="official",
+            terms_url="https://example.com/terms",
         )
         db_session.add(registry)
         db_session.commit()
@@ -150,7 +158,9 @@ class TestNextSourceToEnable:
                 parser_version="1.0",
                 allowed_domains=["example.com"],
                 base_url="https://example.com",
-                automation_status="ready",
+                automation_status="machine_ready_disabled",
+                public_record_authority="official",
+                terms_url="https://example.com/terms",
                 health_score=0.5 + (i * 0.1),
             )
             db_session.add(registry)
@@ -210,7 +220,9 @@ class TestBatchEnablement:
                 parser_version="1.0",
                 allowed_domains=["example.com"],
                 base_url="https://example.com",
-                automation_status="ready",
+                automation_status="machine_ready_disabled",
+                public_record_authority="official",
+                terms_url="https://example.com/terms",
             )
             db_session.add(registry)
         db_session.commit()
@@ -224,10 +236,22 @@ class TestBatchEnablement:
 
 @pytest.fixture
 def db_session():
-    """Create a database session for testing."""
-    session = SessionLocal()
+    """Create an isolated database session for testing."""
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = Session(bind=connection, future=True)
+    nested = connection.begin_nested()
+
+    @event.listens_for(session, "after_transaction_end")
+    def _restart_savepoint(sess, trans):
+        nonlocal nested
+        if trans.nested and not getattr(trans._parent, "nested", False):
+            nested = connection.begin_nested()
+
     try:
         yield session
     finally:
-        session.rollback()
+        event.remove(session, "after_transaction_end", _restart_savepoint)
         session.close()
+        transaction.rollback()
+        connection.close()

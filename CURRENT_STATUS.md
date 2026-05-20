@@ -19,7 +19,7 @@
 ## Current Release Truth
 
 - Release status is blocked alpha until every clean-alpha gate passes in the current tree.
-- Bi-temporal modeling is deferred until clean alpha is complete.
+- Bi-temporal modeling is deferred until blocked alpha is resolved and clean alpha is achieved.
 - Experimental route modules exist but remain unmounted from the active API router.
 
 ## Clean-Alpha Exit Criteria

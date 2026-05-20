@@ -1,7 +1,7 @@
 # STATUS
 
 **Repository**: JUDGE_ATLASX-main  
-**Current release status**: clean alpha  
+**Current release status**: blocked alpha  
 **Production ready**: FALSE  
 **As of**: 2026-05-19
 

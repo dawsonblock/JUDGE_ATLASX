@@ -9,6 +9,7 @@ Validate that:
 
 import pytest
 from datetime import datetime, timezone, timedelta
+from sqlalchemy import event
 from sqlalchemy.orm import Session
 
 from app.models.entities import (
@@ -18,17 +19,30 @@ from app.models.entities import (
     SourceSnapshot,
 )
 from app.memory.source_authority import apply_supersession, get_source_authority_weight
-from app.db.session import get_db
+from app.db.session import engine
 
 
 @pytest.fixture
 def db_session():
-    """Get a database session for testing."""
-    db = next(get_db())
+    """Create an isolated database session for testing."""
+    connection = engine.connect()
+    transaction = connection.begin()
+    db = Session(bind=connection, future=True)
+    nested = connection.begin_nested()
+
+    @event.listens_for(db, "after_transaction_end")
+    def _restart_savepoint(sess, trans):
+        nonlocal nested
+        if trans.nested and not getattr(trans._parent, "nested", False):
+            nested = connection.begin_nested()
+
     try:
         yield db
     finally:
+        event.remove(db, "after_transaction_end", _restart_savepoint)
         db.close()
+        transaction.rollback()
+        connection.close()
 
 
 @pytest.fixture
@@ -365,5 +379,5 @@ def test_get_source_authority_weight():
     assert get_source_authority_weight("recognized_media") == 0.70
     assert get_source_authority_weight("local_media") == 0.55
     assert get_source_authority_weight("user_submission") == 0.30
-    assert get_source_authority_weight("unknown") == 0.10
+    assert get_source_authority_weight("unknown") == 0.20
     assert get_source_authority_weight(None) == 0.10

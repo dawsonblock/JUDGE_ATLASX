@@ -1,9 +1,23 @@
 """Tests for Postgres queue idempotency key behavior."""
 import uuid
+import pytest
 
 from app.workers.postgres_queue import PostgresIngestionQueue
 from app.models.entities import IngestionQueueJob
 from app.db.session import SessionLocal
+
+
+@pytest.fixture(autouse=True)
+def _clean_queue_tables():
+    db = SessionLocal()
+    try:
+        db.query(IngestionQueueJob).delete()
+        db.commit()
+        yield
+    finally:
+        db.query(IngestionQueueJob).delete()
+        db.commit()
+        db.close()
 
 
 def test_enqueue_job_with_idempotency_key():

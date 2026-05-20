@@ -154,8 +154,8 @@ class TestQueueRetryLogic:
         caps = queue._capabilities
 
         assert caps.name == "postgres"
-        assert caps.supports_production is True
-        assert caps.implementation_status == "production_ready"
+        assert caps.supports_production is False
+        assert caps.implementation_status == "placeholder"
 
 
 @pytest.fixture
@@ -163,7 +163,12 @@ def db_session():
     """Create a database session for testing."""
     session = SessionLocal()
     try:
+        # Isolate this module's tests since queue methods use independent sessions.
+        session.query(IngestionQueueJob).delete()
+        session.commit()
         yield session
     finally:
         session.rollback()
+        session.query(IngestionQueueJob).delete()
+        session.commit()
         session.close()
