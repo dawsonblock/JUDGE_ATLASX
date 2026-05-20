@@ -101,7 +101,7 @@ def rebuild_entity_state(entity_id: int, db: Session) -> MemoryEntityState:
     state_data = _build_state_summary(entity, claims)
 
     # Calculate state checksum
-    state_checksum = hash_utils.hash_json(state_data)
+    state_checksum = hash_utils.stable_json_hash(state_data)
 
     # Update or create entity state
     entity_state = (

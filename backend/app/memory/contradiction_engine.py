@@ -32,29 +32,32 @@ def _get_source_authority_weight(source: LegalSource | str | None) -> float:
 
 
 def detect_contradictions(
-    entity_id: int, db: Session, persist: bool = True
+    entity_id: int | List[MemoryClaim], db: Session, persist: bool = True
 ) -> List[Dict[str, any]]:
     """Detect contradictions between claims for a given entity.
 
     Args:
-        entity_id: ID of the entity to check
+        entity_id: Entity ID to check, or a pre-fetched list of claims
         db: Database session
         persist: Whether to persist contradictions to database
 
     Returns:
         List of contradiction dictionaries with details
     """
-    # Get all active claims for the entity
-    # Only include claims with status "active" to exclude superseded, disputed, rejected claims
-    claims = (
-        db.query(MemoryClaim)
-        .filter(
-            MemoryClaim.entity_id == entity_id,
-            MemoryClaim.is_active,
-            MemoryClaim.status == "active",
+    if isinstance(entity_id, list):
+        claims = entity_id
+    else:
+        # Get all active claims for the entity
+        # Only include claims with status "active" to exclude superseded, disputed, rejected claims
+        claims = (
+            db.query(MemoryClaim)
+            .filter(
+                MemoryClaim.entity_id == entity_id,
+                MemoryClaim.is_active,
+                MemoryClaim.status == "active",
+            )
+            .all()
         )
-        .all()
-    )
 
     # Pre-fetch source snapshots and legal sources to avoid N+1 queries
     from app.models.entities import SourceSnapshot
@@ -159,6 +162,7 @@ def detect_contradictions(
             "court_level": _check_court_level_conflict,
             "assigned_judge": _check_judge_assignment_conflict,
             "legal_name": _check_identity_conflict,
+            "same_as": _check_identity_conflict,
         }
 
         # Use predicate-specific check if available
@@ -475,6 +479,23 @@ def _check_value_contradiction(
         except (ValueError, TypeError):
             pass
 
+    # Generic textual contradiction fallback for same-predicate claims.
+    if claim1.predicate and claim1.predicate == claim2.predicate:
+        text_like_types = {None, "text", "string", "literal", "entity"}
+        if claim1.object_value_type in text_like_types and claim2.object_value_type in text_like_types:
+            severity = _calculate_severity(
+                "value_contradiction", claim1, claim2, db, source_authority_cache
+            )
+            return {
+                "type": "value_contradiction",
+                "claim1_id": claim1.id,
+                "claim2_id": claim2.id,
+                "predicate": claim1.predicate,
+                "value1": claim1.normalized_value,
+                "value2": claim2.normalized_value,
+                "severity": severity,
+            }
+
     return None
 
 
@@ -597,25 +618,8 @@ def _check_sentence_conflict(
     val1 = claim1.normalized_value.lower() if claim1.normalized_value else ""
     val2 = claim2.normalized_value.lower() if claim2.normalized_value else ""
 
-    # Check for contradictory sentence states
-    has_sentence1 = val1 and val1 not in ["none", "no_sentence", "not_sentenced"]
-    has_sentence2 = val2 and val2 not in ["none", "no_sentence", "not_sentenced"]
-
-    if has_sentence1 and not has_sentence2:
-        severity = _calculate_severity(
-            "sentence_conflict", claim1, claim2, db, source_authority_cache
-        )
-        return {
-            "type": "sentence_conflict",
-            "claim1_id": claim1.id,
-            "claim2_id": claim2.id,
-            "predicate": "sentence",
-            "value1": claim1.normalized_value,
-            "value2": claim2.normalized_value,
-            "severity": severity,
-        }
-
-    if not has_sentence1 and has_sentence2:
+    # Any materially different sentence values are contradictory.
+    if val1 and val2 and val1 != val2:
         severity = _calculate_severity(
             "sentence_conflict", claim1, claim2, db, source_authority_cache
         )
@@ -710,7 +714,7 @@ def _check_statute_version_conflict(
 
         # Try to extract statute ID (pattern: letters/numbers before space or section marker)
         import re
-        statute_id_pattern = r'^[A-Z0-9-]+'
+        statute_id_pattern = r'^[A-Za-z0-9\-]+'
         statute1 = re.match(statute_id_pattern, val1)
         statute2 = re.match(statute_id_pattern, val2)
 
@@ -764,6 +768,8 @@ def _check_court_level_conflict(
         ("provincial_court", "superior_court"),
         ("court_of_appeal", "provincial_court"),
         ("provincial_court", "court_of_appeal"),
+        ("trial_court", "appellate_court"),
+        ("appellate_court", "trial_court"),
     }
 
     if (val1, val2) in contradictory_levels:
@@ -803,23 +809,21 @@ def _check_judge_assignment_conflict(
     if claim1.predicate != "assigned_judge" or claim2.predicate != "assigned_judge":
         return None
 
-    # Check if same hearing date has different judges
-    if claim1.observed_at and claim2.observed_at:
-        if claim1.observed_at.date() == claim2.observed_at.date():
-            if claim1.normalized_value != claim2.normalized_value:
-                severity = _calculate_severity(
+    if claim1.normalized_value and claim2.normalized_value:
+        if claim1.normalized_value != claim2.normalized_value:
+            severity = _calculate_severity(
                 "judge_assignment_conflict", claim1, claim2, db, source_authority_cache
             )
-                return {
-                    "type": "judge_assignment_conflict",
-                    "claim1_id": claim1.id,
-                    "claim2_id": claim2.id,
-                    "predicate": "assigned_judge",
-                    "value1": claim1.normalized_value,
-                    "value2": claim2.normalized_value,
-                    "hearing_date": str(claim1.observed_at.date()),
-                    "severity": severity,
-                }
+            return {
+                "type": "judge_assignment_conflict",
+                "claim1_id": claim1.id,
+                "claim2_id": claim2.id,
+                "predicate": "assigned_judge",
+                "value1": claim1.normalized_value,
+                "value2": claim2.normalized_value,
+                "hearing_date": str(claim1.observed_at.date()) if claim1.observed_at else None,
+                "severity": severity,
+            }
 
     return None
 
@@ -841,10 +845,12 @@ def _check_identity_conflict(
     Returns:
         Contradiction dict if found, None otherwise
     """
-    if claim1.predicate != "legal_name" or claim2.predicate != "legal_name":
+    if claim1.predicate != claim2.predicate:
+        return None
+    if claim1.predicate not in {"legal_name", "same_as"}:
         return None
 
-    # Check if same entity has different legal names
+    # Check if same entity has conflicting identity values.
     if claim1.entity_id == claim2.entity_id:
         if claim1.normalized_value != claim2.normalized_value:
             severity = _calculate_severity(
@@ -854,7 +860,7 @@ def _check_identity_conflict(
                 "type": "identity_conflict",
                 "claim1_id": claim1.id,
                 "claim2_id": claim2.id,
-                "predicate": "legal_name",
+                "predicate": claim1.predicate,
                 "value1": claim1.normalized_value,
                 "value2": claim2.normalized_value,
                 "severity": severity,

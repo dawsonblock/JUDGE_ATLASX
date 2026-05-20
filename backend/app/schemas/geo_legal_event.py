@@ -7,7 +7,7 @@ to provide a consistent interface for the live map API.
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class GeoLegalEvent(BaseModel):
@@ -52,9 +52,48 @@ class GeoLegalEvent(BaseModel):
 
     # Classification
     tags: list[str] = Field(default_factory=list)
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict, alias="metadata_json")
 
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def _normalize_tags(cls, value):
+        return value or []
+
+    @field_validator("metadata", mode="before")
+    @classmethod
+    def _normalize_metadata(cls, value):
+        return value or {}
+
+    @field_validator("event_type")
+    @classmethod
+    def _validate_event_type(cls, value: str) -> str:
+        if value not in EVENT_TYPES:
+            raise ValueError(f"Invalid event_type: {value}")
+        return value
+
+    @field_validator("review_status")
+    @classmethod
+    def _validate_review_status(cls, value: str) -> str:
+        if value not in REVIEW_STATUSES:
+            raise ValueError(f"Invalid review_status: {value}")
+        return value
+
+    @field_validator("publish_status")
+    @classmethod
+    def _validate_publish_status(cls, value: str) -> str:
+        if value not in PUBLISH_STATUSES:
+            raise ValueError(f"Invalid publish_status: {value}")
+        return value
+
+    @field_validator("confidence_label")
+    @classmethod
+    def _validate_confidence_label(cls, value: str) -> str:
+        allowed = set(CONFIDENCE_LABELS.values())
+        if value not in allowed:
+            raise ValueError(f"Invalid confidence_label: {value}")
+        return value
 
 
 # Event types

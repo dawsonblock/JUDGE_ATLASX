@@ -38,8 +38,8 @@ class PostgresIngestionQueue:
         self._dsn = dsn
         self._capabilities = QueueBackendCapabilities(
             name="postgres",
-            supports_production=True,
-            implementation_status="production_ready",
+            supports_production=False,
+            implementation_status="placeholder",
         )
         self._max_retries = 3
         self._retry_delay_seconds = 60

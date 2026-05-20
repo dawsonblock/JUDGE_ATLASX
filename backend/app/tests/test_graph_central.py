@@ -12,7 +12,6 @@ from app.graph.graph_central import (
     batch_rebuild_entity_states,
     get_entity_graph,
 )
-from app.db.session import SessionLocal
 
 
 class TestEntityResolution:
@@ -157,13 +156,3 @@ class TestEntityGraph:
         with pytest.raises(ValueError):
             get_entity_graph(999999, db_session)
 
-
-@pytest.fixture
-def db_session():
-    """Create a database session for testing."""
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.rollback()
-        session.close()

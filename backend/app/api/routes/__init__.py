@@ -15,6 +15,7 @@ from app.api.routes import (
     evidence_store,
     graph,
     ingestion,
+    live_map,
     map,
     map_record,
     public_events,
@@ -29,6 +30,7 @@ from fastapi import APIRouter
 router = APIRouter()
 router.include_router(auth.router)
 router.include_router(public_events.router)
+router.include_router(live_map.router)
 router.include_router(map.router)
 router.include_router(map_record.router)
 router.include_router(boundaries.router)

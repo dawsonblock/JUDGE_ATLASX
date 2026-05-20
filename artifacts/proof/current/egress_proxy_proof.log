@@ -8,5 +8,5 @@
 2 passed in 0.02s
 [proof_egress_proxy] STAGE: ssrf context coverage tests
 ....................................                                     [100%]
-36 passed in 2.07s
+36 passed in 1.90s
 [proof_egress_proxy] PASS: egress proxy proof checks completed

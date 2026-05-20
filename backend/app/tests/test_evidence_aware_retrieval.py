@@ -17,7 +17,6 @@ from app.retrieval.evidence_aware import (
     rank_evidence_by_relevance,
     get_evidence_summary,
 )
-from app.db.session import SessionLocal
 
 
 class TestEvidenceAwareRetrieval:
@@ -190,6 +189,14 @@ class TestEvidenceRanking:
             source_quality="court_record",
         )
         db_session.add(snapshot)
+
+        snapshot2 = SourceSnapshot(
+            source_id="court_source_2",
+            snapshot_hash="hash_2",
+            content="Court record addendum",
+            source_quality="court_record",
+        )
+        db_session.add(snapshot2)
         db_session.commit()
 
         # Supporting evidence with quote match
@@ -206,7 +213,7 @@ class TestEvidenceRanking:
         # Supporting evidence without quote match
         link2 = MemoryEvidenceLink(
             claim_id=claim.id,
-            snapshot_id=snapshot.id,
+            snapshot_id=snapshot2.id,
             evidence_checksum="checksum2",
             support_type="supports",
             confidence=0.7,
@@ -254,6 +261,14 @@ class TestEvidenceSummary:
             source_quality="court_record",
         )
         db_session.add(snapshot)
+
+        snapshot2 = SourceSnapshot(
+            source_id="court_source_2",
+            snapshot_hash="hash_2",
+            content="Court record supplemental",
+            source_quality="court_record",
+        )
+        db_session.add(snapshot2)
         db_session.commit()
 
         # Add various evidence types
@@ -268,7 +283,7 @@ class TestEvidenceSummary:
 
         link2 = MemoryEvidenceLink(
             claim_id=claim.id,
-            snapshot_id=snapshot.id,
+            snapshot_id=snapshot2.id,
             evidence_checksum="checksum2",
             support_type="contradicts",
             confidence=0.6,
@@ -283,13 +298,3 @@ class TestEvidenceSummary:
         assert summary["contradicting_count"] == 1
         assert "evidence_score" in summary
 
-
-@pytest.fixture
-def db_session():
-    """Create a database session for testing."""
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.rollback()
-        session.close()

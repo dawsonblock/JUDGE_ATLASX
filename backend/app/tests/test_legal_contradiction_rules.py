@@ -16,17 +16,6 @@ from sqlalchemy.orm import Session
 
 from app.models.entities import MemoryClaim, CanonicalEntity, SourceSnapshot, LegalSource
 from app.memory.contradiction_engine import detect_contradictions
-from app.db.session import get_db
-
-
-@pytest.fixture
-def db_session():
-    """Get a database session for testing."""
-    db = next(get_db())
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @pytest.fixture

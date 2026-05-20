@@ -8,7 +8,6 @@ from datetime import datetime, timezone
 from sqlalchemy.exc import IntegrityError
 
 from app.models.entities import MemoryClaim, CanonicalEntity
-from app.db.session import SessionLocal
 
 
 class TestMemoryClaimSchema:
@@ -261,6 +260,9 @@ class TestMemoryClaimSchema:
             entity_id=entity.id,
             claim_value="Original value",
         )
+        db_session.add(claim1)
+        db_session.flush()
+
         claim2 = MemoryClaim(
             claim_key="test_claim_2",
             claim_type="test",
@@ -268,7 +270,7 @@ class TestMemoryClaimSchema:
             claim_value="Superseding value",
             superseded_by_claim_id=claim1.id,
         )
-        db_session.add_all([claim1, claim2])
+        db_session.add(claim2)
         db_session.commit()
 
         assert claim2.superseded_by_claim_id == claim1.id
@@ -363,13 +365,3 @@ class TestMemoryClaimSchema:
 
         assert claim.review_status == "approved"
 
-
-@pytest.fixture
-def db_session():
-    """Create a database session for testing."""
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.rollback()
-        session.close()

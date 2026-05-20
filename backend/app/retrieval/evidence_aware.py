@@ -3,6 +3,7 @@
 Provides retrieval that considers evidence quality, confidence, and relevance.
 """
 
+import json
 import logging
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
@@ -10,6 +11,24 @@ from sqlalchemy.orm import Session
 from app.models.entities import MemoryClaim, MemoryEvidenceLink, SourceSnapshot
 
 logger = logging.getLogger(__name__)
+
+
+def _get_snapshot_source_quality(snapshot: SourceSnapshot) -> str:
+    """Resolve source quality from current or legacy SourceSnapshot storage."""
+    quality = getattr(snapshot, "source_quality", None)
+    if quality:
+        return str(quality).lower()
+
+    headers_json = getattr(snapshot, "headers_json", None)
+    if headers_json:
+        try:
+            parsed = json.loads(headers_json)
+            if isinstance(parsed, dict) and parsed.get("source_quality"):
+                return str(parsed["source_quality"]).lower()
+        except (TypeError, ValueError, json.JSONDecodeError):
+            logger.debug("Invalid headers_json for snapshot quality", exc_info=True)
+
+    return "unknown"
 
 
 def retrieve_claims_with_evidence(
@@ -109,7 +128,7 @@ def filter_evidence_by_quality(
         if not snapshot:
             continue
 
-        source_rank = quality_rank.get(snapshot.source_quality, 0)
+        source_rank = quality_rank.get(_get_snapshot_source_quality(snapshot), 0)
         if source_rank < min_rank:
             continue
 
@@ -207,7 +226,7 @@ def _calculate_relevance_score(
     snapshot = db.query(SourceSnapshot).filter_by(id=link.snapshot_id).first()
     if snapshot:
         quality_rank = {"court_record": 0.3, "official_gov": 0.2, "news_only_context": 0.1}
-        score += quality_rank.get(snapshot.source_quality, 0.0)
+        score += quality_rank.get(_get_snapshot_source_quality(snapshot), 0.0)
 
     # Quote match bonus
     if link.quote_text and claim.claim_value:
