@@ -1,17 +1,17 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-20T08:16:44.285999+00:00
-- commit_hash: 8bdef40ec9777aa9dc89a5f5102c2e5e9b9e6b07
+- generated_at_utc: 2026-05-20T09:53:11.138269+00:00
+- commit_hash: 864b006283e408703eb7f532a30fbc601f0deb63
 - alpha_gate_status: BLOCKED
 - alpha_gate_passed: False
 - release_gate_check_count: 37
-- archive_validation_result: FAIL
+- archive_validation_result: PASS
 - docker_available: True
 - postgis_proof_result: PASS
 - egress_proxy_proof_result: PASS
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
-- proof_input_tree_hash: 9eb2cb72aef0de0962db58622c5ef4ed779091fd0b2d6dd1646b89c441db21e3
+- proof_input_tree_hash: de01600be5e43f62f718a821bfb9ba7d0d9fe4c01ebd4f2ce2defc423bec00ae
 - proof_input_file_count: 982
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
@@ -23,8 +23,8 @@
 - backend_test_python_version: 3.11.7
 - backend_test_python_executable: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/bin/python
 - backend_required_python: >=3.11
-- node_version: v20.20.2
-- npm_version: 10.8.2
+- node_version: v24.15.0
+- npm_version: 11.12.1
 - platform: macOS-26.2-arm64-arm-64bit
 - test_database_backend: sqlite
 - test_database_url_type: sqlite_file
@@ -46,7 +46,7 @@
 - Dedicated egress proxy proof passed in the current release gate.
 - Dedicated synthetic demo proof passed in the current release gate.
 - Proof freshness passed against the stored proof-input file list and tree hash.
-- Archive validation has not yet been recorded for this run.
+- Archive validation passed against the final distributable archive shape.
 - archive_validation_log: artifacts/proof/current/archive_validation.log
 - archive_validation_supported_shapes:
   - JUDGE-main/
@@ -59,7 +59,7 @@
 
 ## Current Proof Facts
 
-- backend pytest: 727 passed, 0 skipped
+- backend pytest: 827 passed, 0 skipped
 - backend import proof: PASS (99 routes)
 - frontend contracts: 48 passed
 - public API boundary: 55 passed
@@ -73,7 +73,6 @@
 ## Failed Checks
 
 - backend_pytest
-- archive_validation
 
 ## Egress Proxy Coverage
 

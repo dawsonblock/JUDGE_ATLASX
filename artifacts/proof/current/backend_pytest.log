@@ -8,12 +8,55 @@
 ........................................................................ [ 17%]
 ........................................................................ [ 19%]
 ........................................................................ [ 21%]
-.......F
+........................................................................ [ 23%]
+...................................F
 =================================== FAILURES ===================================
-________________ TestQueueMetrics.test_get_queue_metrics_empty _________________
-backend/app/tests/test_dashboard_metrics.py:59: in test_get_queue_metrics_empty
-    assert metrics["total_pending"] == 0
-E   assert 42 == 0
+________________ TestEventLinking.test_link_event_to_defendant _________________
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
+    self.dialect.do_execute(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+E   sqlite3.IntegrityError: UNIQUE constraint failed: events.event_id
+
+The above exception was the direct cause of the following exception:
+backend/app/tests/test_event_ingestion.py:157: in test_link_event_to_defendant
+    db_session.flush()
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4331: in flush
+    self._flush(objects)
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4466: in _flush
+    with util.safe_reraise():
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:121: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4427: in _flush
+    flush_context.execute()
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
+    rec.execute(self)
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
+    util.preloaded.orm_persistence.save_obj(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:93: in save_obj
+    _emit_insert_statements(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1233: in _emit_insert_statements
+    result = connection.execute(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1419: in execute
+    return meth(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:527: in _execute_on_connection
+    return connection._execute_clauseelement(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1641: in _execute_clauseelement
+    ret = self._execute_context(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context
+    return self._exec_single_context(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1986: in _exec_single_context
+    self._handle_dbapi_exception(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2363: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
+    self.dialect.do_execute(
+backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+E   sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) UNIQUE constraint failed: events.event_id
+E   [SQL: INSERT INTO events (event_id, court_id, judge_id, case_id, primary_location_id, event_type, event_subtype, decision_result, decision_date, posted_date, title, summary, repeat_offender_flag, verified_flag, source_quality, last_verified_at, review_status, reviewed_at, reviewed_by, review_notes, correction_note, dispute_note, public_visibility) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at, updated_at]
+E   [parameters: ('test_event_001', 23, None, 20, 25, 'hearing', None, None, None, None, 'Test Hearing', 'Test summary', 0, 0, 'court_record', None, 'pending_review', None, None, None, None, None, 0)]
+E   (Background on this error at: https://sqlalche.me/e/20/gkpj)
 =============================== warnings summary ===============================
 backend/app/tests/test_contract_validation.py:21
   /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_contract_validation.py:21: PytestCollectionWarning: cannot collect test class 'TestInputSchema' because it has a __init__ constructor (from: app/tests/test_contract_validation.py)
@@ -58,6 +101,6 @@ app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 =========================== short test summary info ============================
-FAILED backend/app/tests/test_dashboard_metrics.py::TestQueueMetrics::test_get_queue_metrics_empty
+FAILED backend/app/tests/test_event_ingestion.py::TestEventLinking::test_link_event_to_defendant
 !!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
-1 failed, 727 passed, 17 warnings in 22.50s
+1 failed, 827 passed, 17 warnings in 24.03s

@@ -120,7 +120,7 @@ class DataFlowValidator:
         published_without_review = []
         published_claims = (
             self.db.query(MemoryClaim)
-            .filter(MemoryClaim.public_visibility == True)
+            .filter(MemoryClaim.review_status == "approved")
             .all()
         )
 

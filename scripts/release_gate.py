@@ -1967,6 +1967,15 @@ def main() -> int:
     payload["logs"]["current_proof"] = current_proof_rel
     payload["logs"] |= grouped_artifacts
 
+    # Ensure required proof files exist before archive validation builds the
+    # clean archive snapshot.
+    fix_verification_report_rel = _write_fix_verification_report_md(
+        repo_root,
+        out_dir,
+        payload,
+    )
+    payload["logs"]["fix_verification_report"] = fix_verification_report_rel
+
     # Run archive validation after CURRENT_PROOF.md is written
     archive_step = _run(
         repo_root,

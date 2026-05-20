@@ -12,7 +12,6 @@ from app.ingestion.event_ingestion import (
     link_event_to_defendant,
     validate_event_data,
 )
-from app.db.session import SessionLocal
 
 
 class TestEventIngestion:
@@ -271,13 +270,3 @@ class TestEventValidation:
         assert len(result["errors"]) > 0
         assert any("Invalid date format" in error for error in result["errors"])
 
-
-@pytest.fixture
-def db_session():
-    """Create a database session for testing."""
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.rollback()
-        session.close()

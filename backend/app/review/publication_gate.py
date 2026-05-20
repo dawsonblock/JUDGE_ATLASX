@@ -249,6 +249,10 @@ def assert_memory_claim_publication_ready(claim: MemoryClaim, db: Session) -> No
                 source = db.query(LegalSource).filter(
                     LegalSource.source_id == str(run_source_name)
                 ).first()
+                if source is None and str(run_source_name).isdigit():
+                    source = db.query(LegalSource).filter(
+                        LegalSource.id == int(str(run_source_name))
+                    ).first()
             lifecycle_state = getattr(source, "lifecycle_state", None) if source else None
             if lifecycle_state in ["deprecated", "quarantined"]:
                 raise PublicationBlockedError(

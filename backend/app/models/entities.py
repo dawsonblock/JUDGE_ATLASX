@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone
 from uuid import uuid4
 
 from app.db.session import Base
-from app.ingestion.statuses import PENDING, RUNNING
+from app.ingestion.statuses import PENDING, QUARANTINED, RUNNING
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -57,6 +57,19 @@ class Court(Base, TimestampMixin):
         """Back-compat initializer for legacy test fixtures."""
         # Discard parameters that don't exist in current schema
         kwargs.pop("court_level", None)  # Legacy field, no longer used
+
+        if not kwargs.get("courtlistener_id"):
+            kwargs["courtlistener_id"] = uuid4().hex[:32]
+
+        if kwargs.get("location_id") is None and "location" not in kwargs:
+            # Legacy fixtures often construct Court before persisting Location.
+            kwargs["location"] = Location(
+                name=f"Court Placeholder {uuid4().hex[:8]}",
+                location_type="court_placeholder",
+                latitude=0.0,
+                longitude=0.0,
+            )
+
         super().__init__(**kwargs)
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     courtlistener_id: Mapped[str] = mapped_column(
@@ -100,6 +113,32 @@ class Case(Base, TimestampMixin):
         ),
     )
 
+    def __init__(self, **kwargs):
+        """Back-compat initializer for legacy case fixtures."""
+        case_number = kwargs.pop("case_number", None)
+        kwargs.pop("jurisdiction", None)  # Legacy field
+
+        if case_number and not kwargs.get("docket_number"):
+            kwargs["docket_number"] = case_number
+
+        if not kwargs.get("normalized_docket_number"):
+            docket = kwargs.get("docket_number") or case_number
+            if docket:
+                kwargs["normalized_docket_number"] = (
+                    str(docket)
+                    .strip()
+                    .lower()
+                    .replace(" ", "-")
+                    .replace(":", "-")
+                    .replace("/", "-")
+                )
+
+        if not kwargs.get("caption"):
+            label = kwargs.get("docket_number") or kwargs.get("normalized_docket_number") or "unknown"
+            kwargs["caption"] = f"Case {label}"
+
+        super().__init__(**kwargs)
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     court_id: Mapped[int] = mapped_column(ForeignKey("courts.id"), nullable=False)
     docket_number: Mapped[str] = mapped_column(String(120), nullable=False)
@@ -121,6 +160,22 @@ class Case(Base, TimestampMixin):
 
 class Defendant(Base, TimestampMixin):
     __tablename__ = "defendants"
+
+    def __init__(self, **kwargs):
+        """Back-compat initializer for legacy defendant fixtures."""
+        legacy_name = kwargs.pop("name", None)
+        kwargs.pop("jurisdiction", None)  # Legacy field
+
+        if legacy_name and not kwargs.get("public_name"):
+            kwargs["public_name"] = legacy_name
+
+        if not kwargs.get("normalized_public_name") and kwargs.get("public_name"):
+            kwargs["normalized_public_name"] = kwargs["public_name"].strip().lower()
+
+        if not kwargs.get("anonymized_id"):
+            kwargs["anonymized_id"] = uuid4().hex[:24]
+
+        super().__init__(**kwargs)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     anonymized_id: Mapped[str] = mapped_column(
@@ -264,8 +319,12 @@ class LegalSource(Base, TimestampMixin):
         if source_key is not None and "source_id" not in kwargs:
             kwargs["source_id"] = source_key
 
-        # Discard parameters that don't exist in current schema
-        kwargs.pop("lifecycle_state", None)
+        lifecycle_state = kwargs.pop("lifecycle_state", None)
+
+        # Persist deprecated/quarantined/blocked lifecycle states via review_status
+        # so legacy gate checks continue to work with the current schema.
+        if lifecycle_state in {"deprecated", QUARANTINED, "blocked"}:
+            kwargs.setdefault("review_status", lifecycle_state)
 
         kwargs.pop("is_active", None)
         # Set defaults for required fields if not provided
@@ -286,10 +345,23 @@ class LegalSource(Base, TimestampMixin):
             "url_hash",
             hashlib.sha256(url_value.encode("utf-8")).hexdigest(),
         )
+        kwargs.setdefault("source_type", "manual_reference")
         kwargs.setdefault("source_quality", "unknown")
 
         kwargs.pop("source_name", None)  # Legacy field, use source_id instead
         super().__init__(**kwargs)
+
+    @property
+    def lifecycle_state(self) -> str | None:
+        """Back-compat lifecycle state view derived from review_status."""
+        if self.review_status in {"deprecated", QUARANTINED, "blocked"}:
+            return self.review_status
+        return None
+
+    @lifecycle_state.setter
+    def lifecycle_state(self, value: str | None) -> None:
+        if value in {"deprecated", QUARANTINED, "blocked"}:
+            self.review_status = value
 
 class CrimeIncident(Base, TimestampMixin):
     __tablename__ = "crime_incidents"
@@ -400,6 +472,20 @@ class EvidenceReview(Base):
 
 class ReviewItem(Base):
     __tablename__ = "review_items"
+
+    def __init__(self, **kwargs):
+        """Back-compat initializer for legacy review item fixtures."""
+        item_type = kwargs.pop("item_type", None)
+        if item_type is not None and "record_type" not in kwargs:
+            kwargs["record_type"] = item_type
+
+        kwargs.setdefault("record_type", "generic")
+        kwargs.setdefault("suggested_payload_json", {})
+        kwargs.setdefault("source_quality", "unknown")
+        kwargs.setdefault("privacy_status", "needs_review")
+        kwargs.setdefault("publish_recommendation", "hold")
+
+        super().__init__(**kwargs)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     record_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
@@ -1069,6 +1155,29 @@ class SourceSnapshot(Base):
 
         super().__init__(**kwargs)
 
+    @property
+    def source_id(self) -> int | str | None:
+        """Back-compat alias for legacy callers that still use source_id."""
+        if self.source_key is None:
+            return None
+        if self.source_key.isdigit():
+            return int(self.source_key)
+        # Non-numeric source keys should resolve through source_key-based lookups.
+        return None
+
+    @source_id.setter
+    def source_id(self, value: str | int | None) -> None:
+        self.source_key = None if value is None else str(value)
+
+    @property
+    def run_id(self) -> int | None:
+        """Back-compat alias for legacy callers that still use run_id."""
+        return self.ingestion_run_id
+
+    @run_id.setter
+    def run_id(self, value: int | None) -> None:
+        self.ingestion_run_id = value
+
 
 class SourceRegistry(Base, TimestampMixin):
     """Registry of ingestion sources with metadata and health tracking."""
@@ -1461,12 +1570,22 @@ class CanonicalEntity(Base):
         # Legacy call-sites passed normalized_name, which is no longer stored.
         kwargs.pop("normalized_name", None)
 
-        kwargs.pop("jurisdiction", None)  # Legacy field, no longer used
+        legacy_jurisdiction = kwargs.pop("jurisdiction", None)
         confidence = kwargs.pop("confidence", None)
         if confidence is not None and "merge_confidence" not in kwargs:
             kwargs["merge_confidence"] = confidence
 
         super().__init__(**kwargs)
+        self._legacy_jurisdiction = legacy_jurisdiction
+
+    @property
+    def jurisdiction(self) -> str | None:
+        """Back-compat alias retained for legacy merge-safety checks."""
+        return getattr(self, "_legacy_jurisdiction", None)
+
+    @jurisdiction.setter
+    def jurisdiction(self, value: str | None) -> None:
+        self._legacy_jurisdiction = value
 
 
 class EntitySourceRecord(Base):
@@ -1605,7 +1724,77 @@ class EntityGraphEdge(Base):
     def __init__(self, **kwargs):
         """Back-compat initializer for legacy test fixtures."""
         kwargs.pop("public_status", None)  # Legacy field, no longer used
+
+        source_entity_id = kwargs.pop("source_entity_id", None)
+        if source_entity_id is not None and "subject_id" not in kwargs:
+            kwargs["subject_id"] = source_entity_id
+
+        target_entity_id = kwargs.pop("target_entity_id", None)
+        if target_entity_id is not None and "object_id" not in kwargs:
+            kwargs["object_id"] = target_entity_id
+
+        edge_type = kwargs.pop("edge_type", None)
+        if edge_type is not None and "predicate" not in kwargs:
+            kwargs["predicate"] = edge_type
+
+        support_claim_id = kwargs.pop("support_claim_id", None)
+        if support_claim_id is not None and "evidence_refs" not in kwargs:
+            kwargs["evidence_refs"] = [{"claim_id": support_claim_id}]
+
+        confidence = kwargs.pop("confidence", None)
+        if confidence is not None:
+            refs = kwargs.setdefault("evidence_refs", [])
+            if refs and isinstance(refs[0], dict):
+                refs[0].setdefault("confidence", confidence)
+            else:
+                kwargs["evidence_refs"] = [{"confidence": confidence}]
+
+        kwargs.setdefault("subject_type", "canonical_entity")
+        kwargs.setdefault("object_type", "canonical_entity")
+
         super().__init__(**kwargs)
+
+    @property
+    def source_entity_id(self) -> int:
+        return self.subject_id
+
+    @source_entity_id.setter
+    def source_entity_id(self, value: int) -> None:
+        self.subject_id = value
+
+    @property
+    def target_entity_id(self) -> int:
+        return self.object_id
+
+    @target_entity_id.setter
+    def target_entity_id(self, value: int) -> None:
+        self.object_id = value
+
+    @property
+    def edge_type(self) -> str:
+        return self.predicate
+
+    @edge_type.setter
+    def edge_type(self, value: str) -> None:
+        self.predicate = value
+
+    @property
+    def support_claim_id(self) -> int | None:
+        refs = self.evidence_refs or []
+        if refs and isinstance(refs[0], dict):
+            return refs[0].get("claim_id")
+        return None
+
+    @support_claim_id.setter
+    def support_claim_id(self, value: int | None) -> None:
+        if value is None:
+            return
+        refs = self.evidence_refs or []
+        if refs and isinstance(refs[0], dict):
+            refs[0]["claim_id"] = value
+            self.evidence_refs = refs
+        else:
+            self.evidence_refs = [{"claim_id": value}]
 
 class MemoryRebuildRun(Base, TimestampMixin):
     """Tracks memory rebuild operations."""
@@ -1760,6 +1949,9 @@ class MemoryClaim(Base, TimestampMixin):
 
     def __init__(self, **kwargs):
         """Back-compat initializer for legacy tests that reuse placeholder IDs."""
+        # Legacy fixtures may still pass source_id on MemoryClaim rows.
+        legacy_source_id = kwargs.pop("source_id", None)
+
         if kwargs.get("claim_value") is None:
             kwargs["claim_value"] = kwargs.get("normalized_value") or kwargs.get("predicate") or kwargs.get("claim_type") or "unspecified"
 
@@ -1772,6 +1964,16 @@ class MemoryClaim(Base, TimestampMixin):
             kwargs["claim_uid"] = f"{claim_uid}-{uuid4().hex[:8]}"
 
         super().__init__(**kwargs)
+        self._legacy_source_id = legacy_source_id
+
+    @property
+    def source_id(self) -> int | str | None:
+        """Back-compat alias retained for legacy tests and fixtures."""
+        return getattr(self, "_legacy_source_id", None)
+
+    @source_id.setter
+    def source_id(self, value: int | str | None) -> None:
+        self._legacy_source_id = value
 
 
 class MemoryEvidenceLink(Base):

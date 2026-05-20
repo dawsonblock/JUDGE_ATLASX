@@ -51,7 +51,10 @@ def propose_safe_merge(
 
     # Check for same entity
     if entity1.id == entity2.id:
-        return {"status": "error", "message": "Cannot merge entity with itself"}
+        return {
+            "status": "error",
+            "message": "Cannot merge same entity with itself",
+        }
 
     # Get merge proposal from graph layer
     proposal = propose_entity_merge(entity_id_1, entity_id_2, db)

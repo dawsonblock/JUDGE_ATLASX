@@ -9,6 +9,9 @@ ARCHIVE_HELPER="${ROOT_DIR}/scripts/archive_validation_paths.py"
 mkdir -p "$(dirname "${LOG_PATH}")"
 : >"${LOG_PATH}"
 
+# Capture all output, including early archive build/validation failures.
+exec > >(tee -a "${LOG_PATH}") 2>&1
+
 log() {
   echo "[archive_validation] $*"
 }
@@ -94,8 +97,6 @@ PYTHON_BIN="${JUDGE_MAIN_ROOT}/backend/.venv/bin/python"
 if [[ ! -x "${PYTHON_BIN}" ]]; then
   PYTHON_BIN="python3"
 fi
-
-exec > >(tee -a "${LOG_PATH}") 2>&1
 
 ARCHIVE_BASENAME="$(basename "${ARCHIVE_PATH}")"
 ARCHIVE_SHA256="$(archive_sha256 "${ARCHIVE_PATH}")"
