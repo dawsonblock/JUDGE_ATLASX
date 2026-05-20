@@ -130,6 +130,13 @@ def check_ingestion_allowed(registry: SourceRegistry) -> tuple[bool, str]:
     return True, "ok"
 
 
+def is_ingestion_allowed(source_key: str, db: Session) -> bool:
+    """Compatibility wrapper returning only boolean allow/deny."""
+    registry = require_source_registry(db, source_key)
+    allowed, _reason = check_ingestion_allowed(registry)
+    return allowed
+
+
 def get_enable_blockers(registry: SourceRegistry) -> list[str]:
     """Compute lifecycle and configuration blockers for source enablement.
 

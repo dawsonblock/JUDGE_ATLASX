@@ -38,7 +38,7 @@ class GeocodeCache(Base):
     
     # Metadata
     source_key = Column(String(255), nullable=True)  # Which source triggered this lookup
-    metadata = Column(Text, nullable=True)  # JSON string for additional metadata
+    metadata_json = Column("metadata", Text, nullable=True)  # JSON string for additional metadata
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))

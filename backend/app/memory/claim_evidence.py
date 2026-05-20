@@ -3,6 +3,7 @@
 Implements validation for evidence links between claims and source snapshots.
 """
 
+import hashlib
 import logging
 from typing import Optional
 from sqlalchemy.orm import Session
@@ -154,9 +155,13 @@ def create_evidence_link(
             )
 
     # Create evidence link
+    checksum_payload = f"{claim_id}:{snapshot_id}:{support_type}:{quote_text or ''}:{char_start}:{char_end}:{page_number}".encode("utf-8")
+    evidence_checksum = hashlib.sha256(checksum_payload).hexdigest()
+
     link = MemoryEvidenceLink(
         claim_id=claim_id,
         snapshot_id=snapshot_id,
+        evidence_checksum=evidence_checksum,
         support_type=support_type,
         quote_text=quote_text,
         char_start=char_start,

@@ -7,6 +7,8 @@ import logging
 from typing import Dict, Any, List, Optional
 from sqlalchemy.orm import Session
 
+from app.ingestion.statuses import COMPLETED
+
 logger = logging.getLogger(__name__)
 
 
@@ -36,7 +38,7 @@ class DataFlowValidator:
         issues = []
 
         for run in recent_runs:
-            if run.persisted_count == 0 and run.status == "completed":
+            if run.persisted_count == 0 and run.status == COMPLETED:
                 issues.append(f"Run {run.id} completed with no persisted records")
                 valid = False
 

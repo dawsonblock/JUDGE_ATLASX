@@ -13,6 +13,8 @@ These constants drive two enforcement gates:
 
 from __future__ import annotations
 
+from app.workers.queue_backend import JobState
+
 # ---------------------------------------------------------------------------
 # Status constants
 # ---------------------------------------------------------------------------

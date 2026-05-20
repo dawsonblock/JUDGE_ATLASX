@@ -22,7 +22,7 @@ class TestEvidenceLinkValidation:
         """Test that public claims must have supporting evidence."""
         # Create a public claim
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key="test_claim_1_public",
             claim_type="test",
             entity_id=1,
             claim_value="Test value",
@@ -59,7 +59,7 @@ class TestEvidenceLinkValidation:
     def test_non_public_claim_does_not_require_evidence(self, db_session):
         """Test that non-public claims don't require evidence."""
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key="test_claim_1_draft",
             claim_type="test",
             entity_id=1,
             claim_value="Test value",
@@ -79,7 +79,7 @@ class TestOrphanEvidenceDetection:
         """Test detection of evidence links with missing references."""
         # Create a claim and snapshot
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key="test_claim_1_orphan",
             claim_type="test",
             entity_id=1,
             claim_value="Test value",
@@ -124,7 +124,7 @@ class TestEvidenceLinkCreation:
     def test_create_evidence_link_valid(self, db_session):
         """Test creating a valid evidence link."""
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key="test_claim_1_create_valid",
             claim_type="test",
             entity_id=1,
             claim_value="Test value",
@@ -164,7 +164,7 @@ class TestEvidenceLinkCreation:
     def test_create_evidence_link_invalid_support_type(self, db_session):
         """Test that invalid support_type raises ValueError."""
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key="test_claim_1_invalid_support",
             claim_type="test",
             entity_id=1,
             claim_value="Test value",
@@ -193,7 +193,7 @@ class TestEvidenceLinkCreation:
     def test_create_evidence_link_invalid_confidence(self, db_session):
         """Test that confidence outside 0.0-1.0 range raises ValueError."""
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key="test_claim_1_invalid_type",
             claim_type="test",
             entity_id=1,
             claim_value="Test value",
@@ -223,7 +223,7 @@ class TestEvidenceLinkCreation:
     def test_create_evidence_link_invalid_char_offsets(self, db_session):
         """Test that invalid character offsets raise ValueError."""
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key="test_claim_1_invalid_offsets",
             claim_type="test",
             entity_id=1,
             claim_value="Test value",

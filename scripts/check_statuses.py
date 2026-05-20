@@ -49,6 +49,10 @@ _SKIP_FILE_NAMES = {
     "custody.py",  # CustodyStage domain enum; quarantined is a custody lifecycle stage, not ingestion status
     "ingestion_state.py",  # IngestionState enum: editorial-pipeline states, not IngestionRun job statuses
     "publication_policy.py",  # Relationship state domain enums (pending, active, etc.) — not ingestion statuses
+    "workflow_step_models.py",  # Workflow engine run/step lifecycle states, not ingestion job statuses
+    "publication_gate.py",  # Checks LegalSource.lifecycle_state for deprecated/quarantined, not ingestion status
+    "geocoding.py",  # Geocoding service status enum (exact, approximate, failed) not ingestion status
+    "done_criteria.py",  # Phase completion tracking uses completed/pending as dict keys, not ingestion status
 }
 
 

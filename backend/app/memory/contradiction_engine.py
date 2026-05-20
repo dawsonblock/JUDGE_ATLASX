@@ -21,6 +21,16 @@ from app.memory.source_authority import get_source_authority_weight
 logger = logging.getLogger(__name__)
 
 
+def _get_source_authority_weight(source: LegalSource | str | None) -> float:
+    """Compatibility wrapper for legacy tests/callers.
+
+    Accepts either a LegalSource instance, source_type string, or None.
+    """
+    if isinstance(source, LegalSource):
+        return get_source_authority_weight(source.source_type)
+    return get_source_authority_weight(source)
+
+
 def detect_contradictions(
     entity_id: int, db: Session, persist: bool = True
 ) -> List[Dict[str, any]]:

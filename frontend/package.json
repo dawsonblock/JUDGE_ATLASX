@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "next dev -H 0.0.0.0",
+    "doctor": "node scripts/doctor.mjs",
     "build": "next build",
     "proof:build": "node scripts/proof_frontend_build.mjs",
     "start": "next start -H 0.0.0.0",
@@ -35,6 +36,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "date-fns": "^3.6.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.468.0",
     "maplibre-gl": "^4.7.1",

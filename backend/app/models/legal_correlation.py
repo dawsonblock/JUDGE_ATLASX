@@ -48,7 +48,7 @@ class LegalCorrelation(Base):
     )
 
     # Metadata
-    metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # JSON object
+    metadata_json: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)  # JSON object
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(

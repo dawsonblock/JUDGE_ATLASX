@@ -277,11 +277,12 @@ export function useLiveMapPolling(options: PollingOptions = {}) {
 
   // Check for stale data
   useEffect(() => {
-    if (!state.lastUpdate) return;
+    const lastUpdate = state.lastUpdate;
+    if (!lastUpdate) return;
 
     const checkStale = () => {
       const now = new Date();
-      const timeSinceUpdate = now.getTime() - state.lastUpdate.getTime();
+      const timeSinceUpdate = now.getTime() - lastUpdate.getTime();
       const isStale = timeSinceUpdate > STALE_THRESHOLD;
 
       setState((prev) => ({ ...prev, isStale }));

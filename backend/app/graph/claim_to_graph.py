@@ -262,6 +262,31 @@ def sync_claim_to_graph(claim: MemoryClaim, db: Session) -> bool:
         # Convert claim to entity node (validation only)
         claim_to_entity_node(claim, db)
 
+        if claim.object_entity_id:
+            # Keep graph edges in sync with claim visibility transitions.
+            hidden_statuses = {"disputed", "rejected", "superseded"}
+            sibling_edges = db.query(EntityGraphEdge).filter(
+                EntityGraphEdge.subject_type == "canonical_entity",
+                EntityGraphEdge.subject_id == claim.entity_id,
+                EntityGraphEdge.object_type == "canonical_entity",
+                EntityGraphEdge.object_id == claim.object_entity_id,
+                EntityGraphEdge.status == "active",
+            ).all()
+            for sibling_edge in sibling_edges:
+                evidence_refs = sibling_edge.evidence_refs or {}
+                if not isinstance(evidence_refs, dict):
+                    continue
+                sibling_claim_id = evidence_refs.get("claim_id")
+                if not sibling_claim_id:
+                    continue
+                sibling_claim = db.query(MemoryClaim).filter(
+                    MemoryClaim.id == sibling_claim_id
+                ).first()
+                if sibling_claim and sibling_claim.status in hidden_statuses:
+                    sibling_edge.status = "retracted"
+                    sibling_edge.valid_until = func.now()
+                    sibling_edge.updated_at = func.now()
+
         # Convert claim to relationship if applicable and persist to database
         edge = claim_to_relationship(claim, db)
         if edge:
@@ -302,6 +327,11 @@ def sync_claim_to_graph(claim: MemoryClaim, db: Session) -> bool:
                 logger.debug(f"Created new graph edge for claim {claim.id}")
 
             db.commit()
+            return True
+
+        # If relationship edges are hidden by status, retract any existing active edges.
+        if claim.object_entity_id and claim.status in ["disputed", "rejected", "superseded"]:
+            remove_claim_from_graph(claim, db)
             return True
 
         # If no edge (e.g., claim doesn't have object_entity_id or is hidden), still return True

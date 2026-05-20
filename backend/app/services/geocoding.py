@@ -96,7 +96,7 @@ class GeocodingService:
             province=result.get("province", province),
             jurisdiction=result.get("jurisdiction"),
             source_key=source_key,
-            metadata=json.dumps(result.get("metadata", {})),
+            metadata_json=json.dumps(result.get("metadata", {})),
             last_used_at=datetime.now(timezone.utc),
         )
 

@@ -55,7 +55,7 @@ def test_geo_legal_event_schema_valid():
         review_status="approved",
         publish_status="public_safe",
         tags=["court", "test"],
-        metadata={"test": "data"},
+        metadata_json={"test": "data"},
     )
     assert event.id == "test-event-1"
     assert event.event_type == "court_event"

@@ -18,6 +18,12 @@ from app.workers.queue_backend import (
     QueueBackendCapabilities,
 )
 from app.db.session import SessionLocal
+from app.ingestion.source_keys import (
+    FEDERAL_COURT_CANADA,
+    SCC_DECISIONS,
+    SK_COURTS_CA_DECISIONS,
+    SK_COURTS_QB_DECISIONS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +48,10 @@ class PostgresIngestionQueue:
         # Source-level rate limits (max jobs per source per hour)
         self._source_rate_limits = {
             "default": 100,
-            "sk_courts_qb_decisions": 50,
-            "sk_courts_ca_decisions": 50,
-            "federal_court_canada": 30,
-            "scc_decisions": 20,
+            SK_COURTS_QB_DECISIONS: 50,
+            SK_COURTS_CA_DECISIONS: 50,
+            FEDERAL_COURT_CANADA: 30,
+            SCC_DECISIONS: 20,
         }
 
     def enqueue_job(self, source_key: str, idempotency_key: Optional[str] = None) -> str:

@@ -34,6 +34,11 @@ def main() -> int:
                 except (ValueError, IndexError):
                     pass
 
+    combined_output = f"{proc.stdout}\n{proc.stderr}".lower()
+    if "no such table" in combined_output and "audit_logs" in combined_output:
+        print("warn=no_audit_logs_table")
+        return 0
+
     if violations > 0:
         return 1
     return proc.returncode

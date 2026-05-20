@@ -291,12 +291,19 @@ _CANLII_SK_SOURCE_KEYS = [
 
 
 @ingest.command("canlii-sk")
+@click.option(
+    "--source-key",
+    type=click.Choice(_CANLII_SK_SOURCE_KEYS),
+    default=None,
+    help="Optional single SK source key; when omitted both SK sources are processed.",
+)
 @click.option("--limit", default=10, show_default=True, type=int, help="Max records to fetch per database.")
 @click.option("--dry-run", "dry_run", is_flag=True, default=False, help="Fetch and parse but do NOT write to DB.")
 @click.option("--commit", "do_commit", is_flag=True, default=False, help="Write parsed records to DB as pending-review.")
 @click.pass_context
 def ingest_canlii_sk(
     ctx: click.Context,
+    source_key: str | None,
     limit: int,
     dry_run: bool,
     do_commit: bool,
@@ -348,7 +355,7 @@ def ingest_canlii_sk(
     all_results: list[dict] = []
     errors: list[str] = []
 
-    source_keys_attempted = _CANLII_SK_SOURCE_KEYS
+    source_keys_attempted = [source_key] if source_key else _CANLII_SK_SOURCE_KEYS
 
     for source_key in source_keys_attempted:
         adapter = CanLIIApiAdapter(

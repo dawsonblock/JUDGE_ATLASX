@@ -243,3 +243,16 @@ def resolve_merge_chain(db: Session, entity_id: int) -> int:
             return current_id
 
         current_id = entity.merged_into_id
+
+
+def propose_entity_merge(entity_a_id: int, entity_b_id: int, db: Session) -> dict:
+    """Compatibility wrapper for legacy graph callers expecting dict output."""
+    result = propose_merge(db, entity_a_id, entity_b_id)
+    return {
+        "success": result.success,
+        "source_id": result.source_id,
+        "target_id": result.target_id,
+        "confidence": result.confidence,
+        "reason": result.reason,
+        "committed": result.committed,
+    }
