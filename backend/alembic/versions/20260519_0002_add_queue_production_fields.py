@@ -59,7 +59,7 @@ def upgrade():
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column('retry_attempts', sa.Integer(), server_default='0', nullable=False),
         sa.Column('retry_count_at_failure', sa.Integer(), server_default='0', nullable=False),
-        sa.Column('resolved', sa.Boolean(), nullable=False, server_default='false'),
+        sa.Column('resolved', sa.Boolean(), nullable=False, server_default=sa.text('false')),
         sa.Column('resolved_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('resolved_by', sa.String(120), nullable=True),
         sa.Column('resolution_notes', sa.Text(), nullable=True),

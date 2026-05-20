@@ -66,22 +66,43 @@ def detect_contradictions(
         ).all()
         snapshots_map = {s.id: s for s in snapshots}
 
-    # Pre-fetch legal sources for all snapshots
-    legal_source_ids = [s.source_id for s in snapshots_map.values()]
+    # Pre-fetch legal sources for all snapshots (legacy source_id and current source_key)
+    legal_source_ids = [
+        s.source_id
+        for s in snapshots_map.values()
+        if getattr(s, "source_id", None) is not None
+    ]
+    legal_source_keys = [
+        str(s.source_key)
+        for s in snapshots_map.values()
+        if getattr(s, "source_key", None)
+    ]
     sources_map = {}
+    sources_by_key = {}
     if legal_source_ids:
         sources = db.query(LegalSource).filter(
             LegalSource.id.in_(legal_source_ids)
         ).all()
         sources_map = {s.id: s for s in sources}
+    if legal_source_keys:
+        key_sources = db.query(LegalSource).filter(
+            LegalSource.source_id.in_(legal_source_keys)
+        ).all()
+        sources_by_key = {s.source_id: s for s in key_sources}
 
     # Build a cache mapping claim_id -> source authority weight
     source_authority_cache = {}
     for claim in claims:
         if claim.source_snapshot_id and claim.source_snapshot_id in snapshots_map:
             snapshot = snapshots_map[claim.source_snapshot_id]
-            if snapshot.source_id in sources_map:
-                source = sources_map[snapshot.source_id]
+            source = None
+            snapshot_source_id = getattr(snapshot, "source_id", None)
+            snapshot_source_key = getattr(snapshot, "source_key", None)
+            if snapshot_source_id in sources_map:
+                source = sources_map[snapshot_source_id]
+            elif snapshot_source_key:
+                source = sources_by_key.get(str(snapshot_source_key))
+            if source is not None:
                 source_authority_cache[claim.id] = get_source_authority_weight(
                     source.source_type
                 )
@@ -197,17 +218,31 @@ def _persist_contradiction(
             SourceSnapshot.id == claim1.source_snapshot_id
         ).first()
         if snapshot1:
-            source1 = db.query(LegalSource).filter(
-                LegalSource.id == snapshot1.source_id
-            ).first()
+            snapshot_source_id = getattr(snapshot1, "source_id", None)
+            snapshot_source_key = getattr(snapshot1, "source_key", None)
+            if snapshot_source_id is not None:
+                source1 = db.query(LegalSource).filter(
+                    LegalSource.id == snapshot_source_id
+                ).first()
+            elif snapshot_source_key:
+                source1 = db.query(LegalSource).filter(
+                    LegalSource.source_id == str(snapshot_source_key)
+                ).first()
     if claim2 and claim2.source_snapshot_id:
         snapshot2 = db.query(SourceSnapshot).filter(
             SourceSnapshot.id == claim2.source_snapshot_id
         ).first()
         if snapshot2:
-            source2 = db.query(LegalSource).filter(
-                LegalSource.id == snapshot2.source_id
-            ).first()
+            snapshot_source_id = getattr(snapshot2, "source_id", None)
+            snapshot_source_key = getattr(snapshot2, "source_key", None)
+            if snapshot_source_id is not None:
+                source2 = db.query(LegalSource).filter(
+                    LegalSource.id == snapshot_source_id
+                ).first()
+            elif snapshot_source_key:
+                source2 = db.query(LegalSource).filter(
+                    LegalSource.source_id == str(snapshot_source_key)
+                ).first()
 
     weight1 = get_source_authority_weight(source1.source_type if source1 else None)
     weight2 = get_source_authority_weight(source2.source_type if source2 else None)
@@ -309,11 +344,11 @@ def _calculate_severity(
     """
     # Use cached source authority weights if available
     if source_authority_cache:
-        weight1 = source_authority_cache.get(claim1.id, 0.10)
-        weight2 = source_authority_cache.get(claim2.id, 0.10)
+        weight1 = source_authority_cache.get(claim1.id, 1.0)
+        weight2 = source_authority_cache.get(claim2.id, 1.0)
     else:
         # Fallback to database queries for backward compatibility
-        weight1 = 0.10  # default unknown
+        weight1 = 1.0  # default unknown (neutral)
         if claim1.source_snapshot_id:
             from app.models.entities import SourceSnapshot
             snapshot1 = db.query(SourceSnapshot).filter(
@@ -326,7 +361,7 @@ def _calculate_severity(
                 if source1:
                     weight1 = get_source_authority_weight(source1.source_type)
 
-        weight2 = 0.10  # default unknown
+        weight2 = 1.0  # default unknown (neutral)
         if claim2.source_snapshot_id:
             from app.models.entities import SourceSnapshot
             snapshot2 = db.query(SourceSnapshot).filter(
@@ -405,9 +440,9 @@ def _check_value_contradiction(
         val1 = claim1.normalized_value.lower()
         val2 = claim2.normalized_value.lower()
         if (val1 == "true" and val2 == "false") or (val1 == "false" and val2 == "true"):
-            severity = _calculate_severity(
-                "value_contradiction", claim1, claim2, db, source_authority_cache
-            )
+            # Explicit boolean inversions are high-impact contradictions even when
+            # source-authority metadata is unavailable.
+            severity = "high"
             return {
                 "type": "value_contradiction",
                 "claim1_id": claim1.id,
@@ -971,18 +1006,42 @@ def auto_supersede_by_authority(contradiction_id: int, db: Session) -> bool:
             SourceSnapshot.id == claim_a.source_snapshot_id
         ).first()
         if snapshot_a:
-            source_a = db.query(LegalSource).filter(
-                LegalSource.id == snapshot_a.source_id
-            ).first()
+            snapshot_source_id = getattr(snapshot_a, "source_id", None)
+            snapshot_source_key = getattr(snapshot_a, "source_key", None)
+            if snapshot_source_id is not None:
+                source_a = db.query(LegalSource).filter(
+                    LegalSource.id == snapshot_source_id
+                ).first()
+            elif snapshot_source_key:
+                source_key = str(snapshot_source_key)
+                source_a = db.query(LegalSource).filter(
+                    LegalSource.source_id == source_key
+                ).first()
+                if source_a is None and source_key.isdigit():
+                    source_a = db.query(LegalSource).filter(
+                        LegalSource.id == int(source_key)
+                    ).first()
     if claim_b.source_snapshot_id:
         from app.models.entities import SourceSnapshot
         snapshot_b = db.query(SourceSnapshot).filter(
             SourceSnapshot.id == claim_b.source_snapshot_id
         ).first()
         if snapshot_b:
-            source_b = db.query(LegalSource).filter(
-                LegalSource.id == snapshot_b.source_id
-            ).first()
+            snapshot_source_id = getattr(snapshot_b, "source_id", None)
+            snapshot_source_key = getattr(snapshot_b, "source_key", None)
+            if snapshot_source_id is not None:
+                source_b = db.query(LegalSource).filter(
+                    LegalSource.id == snapshot_source_id
+                ).first()
+            elif snapshot_source_key:
+                source_key = str(snapshot_source_key)
+                source_b = db.query(LegalSource).filter(
+                    LegalSource.source_id == source_key
+                ).first()
+                if source_b is None and source_key.isdigit():
+                    source_b = db.query(LegalSource).filter(
+                        LegalSource.id == int(source_key)
+                    ).first()
 
     weight_a = get_source_authority_weight(source_a.source_type if source_a else None)
     weight_b = get_source_authority_weight(source_b.source_type if source_b else None)

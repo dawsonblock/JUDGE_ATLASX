@@ -22,15 +22,15 @@
     },
     {
       "name": "check_migrations",
-      "status": "FAIL",
+      "status": "PASS",
       "log": "artifacts/proof/current/check_migrations.log",
-      "exit_code": 1
+      "exit_code": 0
     },
     {
       "name": "prepare_proof_db",
-      "status": "FAIL",
+      "status": "PASS",
       "log": "artifacts/proof/current/prepare_proof_db.log",
-      "exit_code": 1
+      "exit_code": 0
     },
     {
       "name": "verify_evidence_store",
@@ -58,17 +58,17 @@
     },
     {
       "name": "validate_sources",
-      "status": "FAIL",
+      "status": "PASS",
       "log": "artifacts/proof/current/validate_sources.log",
-      "exit_code": 1
+      "exit_code": 0
     }
   ],
   "route_count": 99,
-  "pytest_passed": 567,
+  "pytest_passed": 727,
   "pytest_skipped": 0,
   "proof_db_counts": {
-    "audit_logs": 0,
-    "source_snapshots": 0,
+    "audit_logs": 3,
+    "source_snapshots": 3,
     "source_registry": 0
   }
 }

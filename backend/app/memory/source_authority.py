@@ -14,15 +14,18 @@ from sqlalchemy.orm import Session
 # Based on the JUDGE_ATLASX production roadmap requirements
 SOURCE_AUTHORITY_WEIGHTS = {
     "official_court": 1.00,
+    "official_court_record": 1.00,
     "official_legislation": 1.00,
     "official_statistics": 0.95,
+    "official_government": 0.80,
     "government_publication": 0.90,
     "court_record": 0.90,
     "recognized_media": 0.70,
     "local_media": 0.55,
+    "social_media": 0.40,
     "user_submission": 0.30,
     "ai_extraction": 0.20,
-    "unknown": 0.10,
+    "unknown": 0.20,
 }
 
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

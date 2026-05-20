@@ -145,4 +145,4 @@ class TestSecurityChecks:
         }
 
         with pytest.raises(APIValidationError):
-            validate_request_security(data, check_fields=["safe_field"])
+            validate_request_security(data, check_fields=["comment"])

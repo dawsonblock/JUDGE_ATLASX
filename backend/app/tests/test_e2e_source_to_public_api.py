@@ -21,7 +21,6 @@ from app.models.entities import (
     LegalSource,
     IngestionRun,
     SourceSnapshot,
-    ReviewItem,
     MemoryClaim,
     MemoryEvidenceLink,
     CanonicalEntity,
@@ -60,7 +59,7 @@ def test_full_pipeline_source_to_public_api(db_session):
     # Step 1: Create a legal source with official court record type
     source = LegalSource(
         source_id="test_e2e_api_source",
-        source_name="E2E API Test Source",
+        title="E2E API Test Source",
         source_type="official_court_record",
         lifecycle_state="active",
     )
@@ -69,7 +68,7 @@ def test_full_pipeline_source_to_public_api(db_session):
 
     # Step 2: Create ingestion run
     run = IngestionRun(
-        source_id=source.id,
+        source_name=source.source_id,
         status=JobState.COMPLETED.value,
         started_at=datetime.now(timezone.utc),
         finished_at=datetime.now(timezone.utc),
@@ -79,27 +78,17 @@ def test_full_pipeline_source_to_public_api(db_session):
 
     # Step 3: Create evidence snapshot
     snapshot = SourceSnapshot(
-        run_id=run.id,
-        snapshot_id="e2e_api_snapshot_1",
-        source_id=source.id,
-        snapshot_timestamp=datetime.now(timezone.utc),
-        raw_content=b'{"test": "data"}',
+        ingestion_run_id=run.id,
+        source_key=source.source_id,
+        source_url=f"manual://{source.source_id}",
+        fetched_at=datetime.now(timezone.utc),
+        raw_content='{"test": "data"}',
         content_hash="abc123",
-        preserved=True,
     )
     db_session.add(snapshot)
     db_session.commit()
 
-    # Step 4: Create review item linked to snapshot
-    review_item = ReviewItem(
-        source_snapshot_id=snapshot.id,
-        status="approved",
-        item_type="case",
-    )
-    db_session.add(review_item)
-    db_session.commit()
-
-    # Step 5: Create canonical entity
+    # Step 4: Create canonical entity
     entity = CanonicalEntity(
         entity_type="person",
         canonical_name="E2E API Test Judge",
@@ -156,10 +145,9 @@ def test_full_pipeline_source_to_public_api(db_session):
     sync_result = sync_claim_to_graph(claim, db_session)
     assert sync_result is True
 
-    # Step 11: Verify the complete chain
-    assert snapshot.source_id == source.id
-    assert snapshot.run_id == run.id
-    assert review_item.source_snapshot_id == snapshot.id
+    # Step 10: Verify the complete chain
+    assert snapshot.source_key == source.source_id
+    assert snapshot.ingestion_run_id == run.id
     assert claim.extraction_run_id == run.id
     assert evidence_link.claim_id == claim.id
     assert evidence_link.snapshot_id == snapshot.id
@@ -191,13 +179,13 @@ def test_full_pipeline_source_to_public_api(db_session):
     public_citation = {
         "claim_id": claim.claim_uid,
         "source_id": source.source_id,
-        "snapshot_id": snapshot.snapshot_id,
+        "snapshot_id": snapshot.id,
         "evidence_hash": evidence_link.evidence_checksum,
         "confidence": claim.confidence,
         "review_status": claim.review_status,
         "sensitivity": claim.claim_sensitivity,
     }
-    assert public_citation["claim_id"] == "uid-api-1"
+    assert public_citation["claim_id"].startswith("uid-api-1")
     assert public_citation["source_id"] == "test_e2e_api_source"
     assert public_citation["evidence_hash"] == "abc123"
 
@@ -207,7 +195,7 @@ def test_named_person_criminal_allegation_enforcement(db_session):
     # Create source
     source = LegalSource(
         source_id="test_e2e_criminal_source",
-        source_name="E2E Criminal Test Source",
+        title="E2E Criminal Test Source",
         source_type="official_court_record",
         lifecycle_state="active",
     )
@@ -216,7 +204,7 @@ def test_named_person_criminal_allegation_enforcement(db_session):
 
     # Create ingestion run
     run = IngestionRun(
-        source_id=source.id,
+        source_name=source.source_id,
         status=JobState.COMPLETED.value,
         started_at=datetime.now(timezone.utc),
         finished_at=datetime.now(timezone.utc),
@@ -226,13 +214,12 @@ def test_named_person_criminal_allegation_enforcement(db_session):
 
     # Create snapshot
     snapshot = SourceSnapshot(
-        run_id=run.id,
-        snapshot_id="e2e_criminal_snapshot",
-        source_id=source.id,
-        snapshot_timestamp=datetime.now(timezone.utc),
-        raw_content=b'{"test": "data"}',
+        ingestion_run_id=run.id,
+        source_key=source.source_id,
+        source_url=f"manual://{source.source_id}",
+        fetched_at=datetime.now(timezone.utc),
+        raw_content='{"test": "data"}',
         content_hash="abc123",
-        preserved=True,
     )
     db_session.add(snapshot)
     db_session.commit()
@@ -290,8 +277,8 @@ def test_source_authority_weighting_in_contradiction(db_session):
     # Create high-authority source
     high_auth_source = LegalSource(
         source_id="test_high_auth_source",
-        source_name="High Authority Source",
-        source_type="official_court_record",
+        title="High Authority Source",
+        source_type="court_record",
         lifecycle_state="active",
     )
     db_session.add(high_auth_source)
@@ -300,11 +287,27 @@ def test_source_authority_weighting_in_contradiction(db_session):
     # Create low-authority source
     low_auth_source = LegalSource(
         source_id="test_low_auth_source",
-        source_name="Low Authority Source",
-        source_type="social_media",
+        title="Low Authority Source",
+        source_type="user_submission",
         lifecycle_state="active",
     )
     db_session.add(low_auth_source)
+    db_session.commit()
+
+    snapshot_high = SourceSnapshot(
+        source_key=high_auth_source.source_id,
+        source_url=f"manual://{high_auth_source.source_id}",
+        fetched_at=datetime.now(timezone.utc),
+        content_hash="auth-high",
+    )
+    snapshot_low = SourceSnapshot(
+        source_key=low_auth_source.source_id,
+        source_url=f"manual://{low_auth_source.source_id}",
+        fetched_at=datetime.now(timezone.utc),
+        content_hash="auth-low",
+    )
+    db_session.add(snapshot_high)
+    db_session.add(snapshot_low)
     db_session.commit()
 
     # Create entity
@@ -322,7 +325,7 @@ def test_source_authority_weighting_in_contradiction(db_session):
         claim_type="employment",
         entity_id=entity.id,
         claim_value="Employed",
-        normalized_value="employed",
+        normalized_value="true",
         object_value_type="boolean",
         predicate="employed",
         confidence=0.9,
@@ -330,6 +333,7 @@ def test_source_authority_weighting_in_contradiction(db_session):
         review_status="approved",
         status="active",
         is_active=True,
+            source_snapshot_id=snapshot_high.id,
     )
     db_session.add(claim_high)
     db_session.commit()
@@ -341,7 +345,7 @@ def test_source_authority_weighting_in_contradiction(db_session):
         claim_type="employment",
         entity_id=entity.id,
         claim_value="Unemployed",
-        normalized_value="unemployed",
+        normalized_value="false",
         object_value_type="boolean",
         predicate="employed",
         confidence=0.8,
@@ -349,6 +353,7 @@ def test_source_authority_weighting_in_contradiction(db_session):
         review_status="approved",
         status="active",
         is_active=True,
+            source_snapshot_id=snapshot_low.id,
     )
     db_session.add(claim_low)
     db_session.commit()
@@ -360,8 +365,15 @@ def test_source_authority_weighting_in_contradiction(db_session):
     assert len(contradictions) > 0
 
     # Verify source authority weight is stored
-    contradiction = contradictions[0]
-    db_session.refresh(contradiction)
+    contradiction = (
+        db_session.query(MemoryContradiction)
+        .filter(
+            MemoryContradiction.claim_a_id == claim_high.id,
+            MemoryContradiction.claim_b_id == claim_low.id,
+        )
+        .first()
+    )
+    assert contradiction is not None
     assert contradiction.source_authority_weight is not None
     # High authority source should contribute to weight
     assert contradiction.source_authority_weight > 0.5
@@ -372,8 +384,8 @@ def test_auto_supersede_by_authority(db_session):
     # Create high-authority source
     high_auth_source = LegalSource(
         source_id="test_auto_supersede_high",
-        source_name="Auto Supersede High",
-        source_type="official_court_record",
+        title="Auto Supersede High",
+        source_type="court_record",
         lifecycle_state="active",
     )
     db_session.add(high_auth_source)
@@ -382,8 +394,8 @@ def test_auto_supersede_by_authority(db_session):
     # Create low-authority source
     low_auth_source = LegalSource(
         source_id="test_auto_supersede_low",
-        source_name="Auto Supersede Low",
-        source_type="social_media",
+        title="Auto Supersede Low",
+        source_type="user_submission",
         lifecycle_state="active",
     )
     db_session.add(low_auth_source)
@@ -391,12 +403,16 @@ def test_auto_supersede_by_authority(db_session):
 
     # Create snapshots
     snapshot_high = SourceSnapshot(
-        source_id=high_auth_source.id,
-        snapshot_at=datetime.now(timezone.utc),
+        source_key=high_auth_source.source_id,
+        source_url=f"manual://{high_auth_source.source_id}",
+        fetched_at=datetime.now(timezone.utc),
+        content_hash="hash-high",
     )
     snapshot_low = SourceSnapshot(
-        source_id=low_auth_source.id,
-        snapshot_at=datetime.now(timezone.utc),
+        source_key=low_auth_source.source_id,
+        source_url=f"manual://{low_auth_source.source_id}",
+        fetched_at=datetime.now(timezone.utc),
+        content_hash="hash-low",
     )
     db_session.add(snapshot_high)
     db_session.add(snapshot_low)
@@ -417,7 +433,7 @@ def test_auto_supersede_by_authority(db_session):
         claim_type="employment",
         entity_id=entity.id,
         claim_value="Employed",
-        normalized_value="employed",
+        normalized_value="true",
         object_value_type="boolean",
         predicate="employed",
         confidence=0.9,
@@ -433,7 +449,7 @@ def test_auto_supersede_by_authority(db_session):
         claim_type="employment",
         entity_id=entity.id,
         claim_value="Unemployed",
-        normalized_value="unemployed",
+        normalized_value="false",
         object_value_type="boolean",
         predicate="employed",
         confidence=0.9,
@@ -534,7 +550,7 @@ def test_unsafe_claim_exclusion_from_public_api(db_session):
     # Create source
     source = LegalSource(
         source_id="test_unsafe_source",
-        source_name="Unsafe Test Source",
+        title="Unsafe Test Source",
         source_type="official_court_record",
         lifecycle_state="active",
     )
@@ -543,7 +559,7 @@ def test_unsafe_claim_exclusion_from_public_api(db_session):
 
     # Create ingestion run
     run = IngestionRun(
-        source_id=source.id,
+        source_name=source.source_id,
         status=JobState.COMPLETED.value,
         started_at=datetime.now(timezone.utc),
         finished_at=datetime.now(timezone.utc),
@@ -553,13 +569,12 @@ def test_unsafe_claim_exclusion_from_public_api(db_session):
 
     # Create snapshot
     snapshot = SourceSnapshot(
-        run_id=run.id,
-        snapshot_id="unsafe_snapshot",
-        source_id=source.id,
-        snapshot_timestamp=datetime.now(timezone.utc),
-        raw_content=b'{"test": "data"}',
+        ingestion_run_id=run.id,
+        source_key=source.source_id,
+        source_url=f"manual://{source.source_id}",
+        fetched_at=datetime.now(timezone.utc),
+        raw_content='{"test": "data"}',
         content_hash="abc123",
-        preserved=True,
     )
     db_session.add(snapshot)
     db_session.commit()

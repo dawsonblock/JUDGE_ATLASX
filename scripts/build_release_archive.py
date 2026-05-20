@@ -33,6 +33,8 @@ DEFAULT_INCLUDE_PROOF_FILES = (
     "artifacts/proof/current/release_gate.json",
     "artifacts/proof/current/proof_manifest.json",
     "artifacts/proof/current/FIX_VERIFICATION_REPORT.md",
+    "artifacts/proof/current/release_readiness.md",
+    "artifacts/proof/current/PROOF_POLICY.md",
 )
 DEFAULT_INCLUDE_FILES = (
     "README.md",

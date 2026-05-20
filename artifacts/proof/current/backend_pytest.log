@@ -5,19 +5,15 @@
 ........................................................................ [ 10%]
 ........................................................................ [ 13%]
 ........................................................................ [ 15%]
-...............................................................F
+........................................................................ [ 17%]
+........................................................................ [ 19%]
+........................................................................ [ 21%]
+.......F
 =================================== FAILURES ===================================
-_____________ TestConfidenceCalculation.test_source_quality_score ______________
-backend/app/tests/test_confidence_scorer.py:57: in test_source_quality_score
-    confidence = calculate_claim_confidence(claim.id, db_session)
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/app/memory/confidence_scorer.py:53: in calculate_claim_confidence
-    source_quality_score = _get_source_quality_score(claim_id, db)
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/app/memory/confidence_scorer.py:111: in _get_source_quality_score
-    if snapshot and snapshot.source_quality:
-                    ^^^^^^^^^^^^^^^^^^^^^^^
-E   AttributeError: 'SourceSnapshot' object has no attribute 'source_quality'
+________________ TestQueueMetrics.test_get_queue_metrics_empty _________________
+backend/app/tests/test_dashboard_metrics.py:59: in test_get_queue_metrics_empty
+    assert metrics["total_pending"] == 0
+E   assert 42 == 0
 =============================== warnings summary ===============================
 backend/app/tests/test_contract_validation.py:21
   /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_contract_validation.py:21: PytestCollectionWarning: cannot collect test class 'TestInputSchema' because it has a __init__ constructor (from: app/tests/test_contract_validation.py)
@@ -62,6 +58,6 @@ app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 =========================== short test summary info ============================
-FAILED backend/app/tests/test_confidence_scorer.py::TestConfidenceCalculation::test_source_quality_score
+FAILED backend/app/tests/test_dashboard_metrics.py::TestQueueMetrics::test_get_queue_metrics_empty
 !!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
-1 failed, 567 passed, 17 warnings in 22.85s
+1 failed, 727 passed, 17 warnings in 22.50s

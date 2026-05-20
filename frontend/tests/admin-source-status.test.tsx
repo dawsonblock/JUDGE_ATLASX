@@ -1,9 +1,11 @@
 /** Frontend tests for admin source status logic (Phase 9). */
 
+import React from "react";
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { SourceControlCard } from "@/components/SourceControlCard";
 import { authorityColour, lifecycleStateColour, sourceClassColour } from "@/lib/sourceContracts";
+import type { AdminSourceItem } from "@/lib/api";
 
 describe("Source Status Logic", () => {
   describe("authorityColour", () => {
@@ -62,32 +64,42 @@ describe("Source Status Logic", () => {
 });
 
 describe("SourceControlCard Status Display", () => {
-  const mockSource = {
+  const mockSource: AdminSourceItem = {
     id: 1,
     source_key: "test_source",
     source_name: "Test Source",
     source_type: "court_record",
+    source_tier: "official",
     category: "court_decisions",
     public_record_authority: "official_court_record",
     source_class: "machine_ingest",
     lifecycle_state: "runnable",
     automation_status: "machine_ready",
     is_active: true,
+    enabled_default: false,
+    auto_publish_enabled: false,
+    public_publish_default: false,
+    rate_limit_rpm: 30,
     runnable_now: true,
     enable_ready: true,
     enable_blockers: [],
     health_score: 0.95,
+    last_successful_fetch: null,
     last_ingested_at: "2024-01-01T00:00:00Z",
     parser: "test_parser",
     parser_version: "1.0",
     priority: 1,
     requires_manual_review: false,
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
     creates: '["ReviewItem"]',
     jurisdiction: "Canada",
     country: "Canada",
     province_state: "Ontario",
     city: "Toronto",
     base_url: "https://example.com",
+    allowed_domains: "example.com",
+    refresh_interval_minutes: 60,
     terms_url: "https://example.com/terms",
     admin_notes: "Test notes",
     status_reason: null,
@@ -145,7 +157,7 @@ describe("SourceControlCard Status Display", () => {
       canonical_replacement_key: "new_source",
     };
     render(<SourceControlCard source={deprecatedSource} />);
-    expect(screen.getByText(/deprecated/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/deprecated/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/new_source/i)).toBeInTheDocument();
   });
 

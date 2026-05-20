@@ -1,7 +1,7 @@
 # REPAIR_REPORT
 
-- generated_at_utc: 2026-05-20T01:43:35.184379+00:00
-- commit_hash: cac765bdf5964314a063c2486c7819ae8152a5cf
+- generated_at_utc: 2026-05-20T08:16:44.285999+00:00
+- commit_hash: 8bdef40ec9777aa9dc89a5f5102c2e5e9b9e6b07
 - alpha_gate_passed: false
 
 ## Phase Results
@@ -15,8 +15,8 @@
 - 7. Evidence Store Integrity: PASS (artifacts/proof/current/verify_evidence_store.log)
 - 8. Audit Chain Integrity: PASS (artifacts/proof/current/verify_audit_chain.log)
 - 9. Justice XML Proof Coverage: FAIL (artifacts/proof/current/backend_pytest.log)
-- 10. Public Review Gate Coverage: FAIL (artifacts/proof/current/public_api_boundary.log)
-- 11. Derivative Memory Boundary Coverage: FAIL (artifacts/proof/current/public_api_boundary.log)
+- 10. Public Review Gate Coverage: PASS (artifacts/proof/current/public_api_boundary.log)
+- 11. Derivative Memory Boundary Coverage: PASS (artifacts/proof/current/public_api_boundary.log)
 - 12. Frontend Node 20 Gate: PASS (artifacts/proof/current/frontend_node_gate.log)
 - 13. CI/Local Gate Parity Baseline: PASS (artifacts/proof/current/release_readiness.md)
 - 14. Repair Report Generated: PASS (artifacts/proof/current/REPAIR_REPORT.md)
@@ -24,11 +24,4 @@
 ## Remaining Blockers
 
 - backend_pytest
-- check_migrations
-- postgis_proof
-- demo_proof
-- validate_sources
-- prepare_proof_db
-- frontend_typecheck
-- public_api_boundary
 - archive_validation

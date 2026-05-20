@@ -18,6 +18,7 @@ import pathlib
 import yaml
 from app.models.entities import SourceRegistry
 from sqlalchemy import select
+from sqlalchemy.inspection import inspect as sa_inspect
 from sqlalchemy.orm import Session
 
 # All sources are now defined in canada_saskatchewan_sources.yaml.
@@ -73,6 +74,12 @@ def _merged_sources() -> list[dict]:
     yaml_keys = {s["source_key"] for s in yaml_sources}
     base = [s for s in _SOURCES if s["source_key"] not in yaml_keys]
     return base + yaml_sources
+
+
+def _source_registry_payload(spec: dict) -> dict:
+    """Return only ORM-mapped SourceRegistry fields from a source spec."""
+    valid_columns = {column.key for column in sa_inspect(SourceRegistry).columns}
+    return {key: value for key, value in spec.items() if key in valid_columns}
 
 
 # Required fields for machine_ingest sources that cannot be None/empty.
@@ -229,7 +236,7 @@ def seed_source_registry(db: Session) -> None:
         )
         if existing is not None:
             continue
-        db.add(SourceRegistry(**spec))
+        db.add(SourceRegistry(**_source_registry_payload(spec)))
     db.commit()
 
 

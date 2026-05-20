@@ -5,6 +5,7 @@ contradiction penalty, and extraction model reliability.
 """
 
 import pytest
+from uuid import uuid4
 
 from app.models.entities import MemoryClaim, MemoryEvidenceLink, SourceSnapshot
 from app.memory.confidence_scorer import (
@@ -25,8 +26,9 @@ class TestConfidenceCalculation:
             pytest.skip("No existing claim found")
 
         # Test with primary source
+        suffix = uuid4().hex[:8]
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{suffix}",
             claim_type="test",
             entity_id=1,
             claim_value="Test value",
@@ -36,8 +38,8 @@ class TestConfidenceCalculation:
         db_session.commit()
 
         snapshot = SourceSnapshot(
-            source_id="test_source",
-            snapshot_hash="test_hash",
+            source_id=f"test_source_{suffix}",
+            snapshot_hash=f"test_hash_{suffix}",
             content="Test content",
             source_quality="primary",
         )
@@ -64,7 +66,7 @@ class TestConfidenceCalculation:
             pytest.skip("No existing claim found")
 
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=1,
             claim_value="Test value",
@@ -75,9 +77,10 @@ class TestConfidenceCalculation:
 
         # Add multiple supporting sources
         for i in range(3):
+            suffix = uuid4().hex[:8]
             snapshot = SourceSnapshot(
-                source_id=f"test_source_{i}",
-                snapshot_hash=f"hash_{i}",
+                source_id=f"test_source_{i}_{suffix}",
+                snapshot_hash=f"hash_{i}_{suffix}",
                 content=f"Test content {i}",
                 source_quality="verified",
             )
@@ -105,7 +108,7 @@ class TestConfidenceCalculation:
             pytest.skip("No existing claim found")
 
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=1,
             claim_value="Test value",
@@ -127,7 +130,7 @@ class TestConfidenceCalculation:
 
         # Test with high reliability model
         claim1 = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=1,
             claim_value="Test value",
@@ -140,7 +143,7 @@ class TestConfidenceCalculation:
 
         # Test with low reliability model
         claim2 = MemoryClaim(
-            claim_key="test_claim_2",
+            claim_key=f"test_claim_2_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=1,
             claim_value="Test value",
@@ -165,7 +168,7 @@ class TestConfidenceRecalculation:
             pytest.skip("No existing claim found")
 
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=1,
             claim_value="Test value",
@@ -190,7 +193,7 @@ class TestConfidenceRecalculation:
         # Create multiple claims
         for i in range(3):
             claim = MemoryClaim(
-                claim_key=f"test_claim_{i}",
+                claim_key=f"test_claim_{i}_{uuid4().hex[:8]}",
                 claim_type="test",
                 entity_id=1,
                 claim_value=f"Test value {i}",

@@ -9,6 +9,9 @@ This module provides admin endpoints for:
 - Viewing source health
 - Viewing created events and claims
 - Viewing review queue
+
+Experimental route module.
+Not mounted in the runtime API until authorization and public-boundary tests pass.
 """
 import logging
 from datetime import datetime, timezone

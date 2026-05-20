@@ -181,9 +181,17 @@ def assert_memory_claim_publication_ready(claim: MemoryClaim, db: Session) -> No
                 SourceSnapshot.id == claim.source_snapshot_id
             ).first()
             if snapshot:
-                source = db.query(LegalSource).filter(
-                    LegalSource.id == snapshot.source_id
-                ).first()
+                source = None
+                snapshot_source_id = getattr(snapshot, "source_id", None)
+                snapshot_source_key = getattr(snapshot, "source_key", None)
+                if snapshot_source_id is not None:
+                    source = db.query(LegalSource).filter(
+                        LegalSource.id == snapshot_source_id
+                    ).first()
+                elif snapshot_source_key:
+                    source = db.query(LegalSource).filter(
+                        LegalSource.source_id == str(snapshot_source_key)
+                    ).first()
                 if source and source.lifecycle_state not in ["active", "official"]:
                     raise PublicationBlockedError(
                         f"MemoryClaim {claim.id} evidence source '{source.source_id}' is not official/public record — requires elevated approval source"
@@ -197,9 +205,17 @@ def assert_memory_claim_publication_ready(claim: MemoryClaim, db: Session) -> No
                 SourceSnapshot.id == claim.source_snapshot_id
             ).first()
             if snapshot:
-                source = db.query(LegalSource).filter(
-                    LegalSource.id == snapshot.source_id
-                ).first()
+                source = None
+                snapshot_source_id = getattr(snapshot, "source_id", None)
+                snapshot_source_key = getattr(snapshot, "source_key", None)
+                if snapshot_source_id is not None:
+                    source = db.query(LegalSource).filter(
+                        LegalSource.id == snapshot_source_id
+                    ).first()
+                elif snapshot_source_key:
+                    source = db.query(LegalSource).filter(
+                        LegalSource.source_id == str(snapshot_source_key)
+                    ).first()
                 if source and source.lifecycle_state == "media":
                     raise PublicationBlockedError(
                         f"MemoryClaim {claim.id} is a named-person criminal allegation from media source — media-only allegations are blocked"
@@ -222,12 +238,21 @@ def assert_memory_claim_publication_ready(claim: MemoryClaim, db: Session) -> No
             IngestionRun.id == claim.extraction_run_id
         ).first()
         if ingestion_run:
-            source = db.query(LegalSource).filter(
-                LegalSource.id == ingestion_run.source_id
-            ).first()
-            if source and source.lifecycle_state in ["deprecated", "quarantined"]:
+            source = None
+            run_source_id = getattr(ingestion_run, "source_id", None)
+            run_source_name = getattr(ingestion_run, "source_name", None)
+            if run_source_id is not None:
+                source = db.query(LegalSource).filter(
+                    LegalSource.id == run_source_id
+                ).first()
+            elif run_source_name:
+                source = db.query(LegalSource).filter(
+                    LegalSource.source_id == str(run_source_name)
+                ).first()
+            lifecycle_state = getattr(source, "lifecycle_state", None) if source else None
+            if lifecycle_state in ["deprecated", "quarantined"]:
                 raise PublicationBlockedError(
-                    f"MemoryClaim {claim.id} source '{source.source_id}' is {source.lifecycle_state} — cannot publish"
+                    f"MemoryClaim {claim.id} source '{source.source_id}' is {lifecycle_state} — cannot publish"
                 )
 
 

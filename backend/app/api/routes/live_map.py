@@ -3,6 +3,9 @@
 Provides endpoints for querying normalized map events, layers, feed status,
 and source health. Supports both public and admin access patterns with
 appropriate filtering and redaction.
+
+Experimental route module.
+Not mounted in the runtime API until authorization and public-boundary tests pass.
 """
 from datetime import datetime
 from typing import Any

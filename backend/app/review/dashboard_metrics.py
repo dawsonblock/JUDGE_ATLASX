@@ -61,7 +61,7 @@ def get_reviewer_metrics(
     ) or 0
 
     # Get average time to review
-    review_logs = db.scalars(action_query.all()).all()
+    review_logs = db.scalars(action_query).all()
     avg_review_time = _calculate_avg_review_time(review_logs)
 
     return {

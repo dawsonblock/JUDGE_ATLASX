@@ -12,7 +12,8 @@ from app.memory.contradiction_engine import (
     update_contradiction_counts,
     resolve_contradiction,
 )
-from app.db.session import SessionLocal
+from app.db.session import engine
+from sqlalchemy.orm import Session
 
 
 class TestContradictionDetection:
@@ -296,10 +297,13 @@ class TestContradictionCountUpdate:
 
 @pytest.fixture
 def db_session():
-    """Create a database session for testing."""
-    session = SessionLocal()
+    """Create an isolated database session for testing."""
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = Session(bind=connection)
     try:
         yield session
     finally:
-        session.rollback()
         session.close()
+        transaction.rollback()
+        connection.close()

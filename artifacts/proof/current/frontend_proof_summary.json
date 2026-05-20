@@ -1,6 +1,6 @@
 {
   "group": "frontend_proof",
-  "status": "FAIL",
+  "status": "PASS",
   "checks": [
     {
       "name": "frontend_node_gate",
@@ -22,9 +22,9 @@
     },
     {
       "name": "frontend_typecheck",
-      "status": "FAIL",
+      "status": "PASS",
       "log": "artifacts/proof/current/frontend_typecheck.log",
-      "exit_code": 1
+      "exit_code": 0
     },
     {
       "name": "frontend_contracts",
@@ -52,9 +52,9 @@
     },
     {
       "name": "public_api_boundary",
-      "status": "FAIL",
+      "status": "PASS",
       "log": "artifacts/proof/current/public_api_boundary.log",
-      "exit_code": 1
+      "exit_code": 0
     }
   ]
 }

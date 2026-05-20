@@ -4,6 +4,7 @@ Implements confidence scoring based on source quality, evidence corroboration,
 contradiction penalty, and extraction model reliability.
 """
 
+import json
 import logging
 from typing import Optional
 from sqlalchemy.orm import Session
@@ -83,6 +84,18 @@ def _get_snapshot_source_quality(
         or getattr(snapshot, "meta", None)
         or {}
     )
+
+    # 3a. Legacy compatibility: some snapshots persist quality in headers_json.
+    if not metadata:
+        headers_json = getattr(snapshot, "headers_json", None)
+        if isinstance(headers_json, str) and headers_json.strip().startswith("{"):
+            try:
+                parsed = json.loads(headers_json)
+                if isinstance(parsed, dict):
+                    metadata = parsed
+            except json.JSONDecodeError:
+                metadata = {}
+
     if isinstance(metadata, dict):
         value = (
             metadata.get("source_quality")
@@ -123,7 +136,7 @@ def calculate_claim_confidence(claim_id: int, db: Session) -> float:
     model_reliability = _get_model_reliability(claim.extraction_model)
 
     # Calculate weighted score
-    base_score = (source_quality_score * 0.4) + (model_reliability * 0.3)
+    base_score = (source_quality_score * 0.7) + (model_reliability * 0.3)
     adjusted_score = base_score + corroboration_bonus - contradiction_penalty
 
     # Clamp to valid range
@@ -169,9 +182,15 @@ def _get_source_quality_score(claim_id: int, db: Session) -> float:
             .filter(SourceSnapshot.id == link.snapshot_id)
             .first()
         )
+        quality_score = 0.5
         if snapshot:
             quality = _get_snapshot_source_quality(snapshot, db)
-            total_score += SOURCE_QUALITY_WEIGHTS.get(quality, 0.5)
+            quality_score = SOURCE_QUALITY_WEIGHTS.get(quality, 0.5)
+
+        # Blend source quality with per-link evidence confidence so high-quality
+        # evidence can meaningfully increase claim confidence.
+        evidence_score = link.confidence if link.confidence is not None else 0.5
+        total_score += (quality_score * 0.3) + (evidence_score * 0.7)
 
     # Average score from all evidence
     avg_score = total_score / len(evidence_links) if evidence_links else 0.5

@@ -163,7 +163,7 @@ Server:
 [proof_postgis] Stage: container start
 [proof_postgis] Starting PostGIS container...
 WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
-2ecebcd86e476c71626cceeb10f1d2bf81a4d3d8cfe6aea8215956c0cab41653
+de2aa7be97f63f76bc8c3e538a9fcacd6edb444aef3817bc00972450607817b8
 [proof_postgis] PASS: container start requested
 [proof_postgis] Stage: pg_isready wait loop
 [proof_postgis] Waiting for Postgres to be ready...
@@ -243,48 +243,55 @@ INFO  [alembic.runtime.migration] Running upgrade 20260516_0004 -> 20260517_0001
 INFO  [alembic.runtime.migration] Running upgrade 20260517_0001 -> 20260517_0002, Claim evidence links - Phase 4
 INFO  [alembic.runtime.migration] Running upgrade 20260517_0002 -> 20260518_0001, Durable contradiction system - Phase 3
 INFO  [alembic.runtime.migration] Running upgrade 20260518_0001 -> 20260519_0001, Ingestion queue jobs table - Phase 6
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/__main__.py", line 4, in <module>
-    main(prog="alembic")
-  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/config.py", line 1047, in main
-    CommandLine(prog=prog).main(argv=argv)
-  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/config.py", line 1037, in main
-    self.run_cmd(cfg, options)
-  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/config.py", line 971, in run_cmd
-    fn(
-  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/command.py", line 483, in upgrade
-    script.run_env()
-  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/script/base.py", line 545, in run_env
-    util.load_python_file(self.dir, "env.py")
-  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
-    module = load_module_py(module_id, path)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
-    spec.loader.exec_module(module)  # type: ignore
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
-  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
-  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/alembic/env.py", line 62, in <module>
-    run_migrations_online()
-  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/alembic/env.py", line 56, in run_migrations_online
-    context.run_migrations()
-  File "<string>", line 8, in run_migrations
-  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/runtime/environment.py", line 969, in run_migrations
-    self.get_context().run_migrations(**kw)
-  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/alembic/runtime/migration.py", line 626, in run_migrations
-    step.migration_fn(**kw)
-  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/alembic/versions/20260519_0001_add_ingestion_queue_jobs.py", line 52, in upgrade
-    sa.Column('raw_snapshot_preserved', sa.Boolean(), nullable=False, server_default=False),
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/schema.py", line 2152, in __init__
-    server_default = DefaultClause(server_default)
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/schema.py", line 4076, in __init__
-    util.assert_arg_type(arg, (str, ClauseElement, TextClause), "arg")
-  File "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 1459, in assert_arg_type
-    raise exc.ArgumentError(
-sqlalchemy.exc.ArgumentError: Argument 'arg' is expected to be one of type '<class 'str'>' or '<class 'sqlalchemy.sql.elements.ClauseElement'>' or '<class 'sqlalchemy.sql.elements.TextClause'>', got '<class 'bool'>'
+INFO  [alembic.runtime.migration] Running upgrade 20260519_0001 -> 20260519_0002, Add production-grade fields to ingestion queue.
+INFO  [alembic.runtime.migration] Running upgrade 20260519_0002 -> 20260519_0003, Add source_authority_weight to memory_contradictions - Phase 14
+INFO  [alembic.runtime.migration] Running upgrade 20260519_0003 -> 20260519_0004, Update queue fields for Phase 3 hardening - Phase 14
+INFO  [alembic.runtime.migration] Running upgrade 20260519_0004 -> 20260519_0005, Add claim sensitivity and elevated approval fields for Phase 4
+INFO  [alembic.runtime.migration] Running upgrade 20260519_0005 -> 20260520_0001, Add geo_legal_events table for normalized map-facing event layer
+INFO  [alembic.runtime.migration] Running upgrade 20260520_0001 -> 20260520_0002, Add geocode_cache table for geocoding results.
+INFO  [alembic.runtime.migration] Running upgrade 20260520_0002 -> 20260520_0003, Add geocode_cache_id foreign key to locations table.
+INFO  [alembic.runtime.migration] Running upgrade 20260520_0003 -> 20260520_0004, Add workflow execution tables.
+INFO  [alembic.runtime.migration] Running upgrade 20260520_0004 -> 20260520_0005, Add legal_correlations table.
+[proof_postgis] PASS: alembic upgrade head
+[proof_postgis] Stage: source registry seed
+[proof_postgis] PASS: source registry seed (covered by app startup/seed path)
+[proof_postgis] Stage: spatial smoke test
+[proof_postgis] Running spatial smoke tests...
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-9.0.3, pluggy-1.6.0 -- /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend
+configfile: pyproject.toml
+plugins: mock-3.15.1, asyncio-1.3.0, anyio-4.13.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 11 items
+
+app/tests/test_map_bbox.py::test_bbox_returns_seeded_events PASSED       [  9%]
+app/tests/test_map_bbox.py::test_newly_inserted_event_returned_by_bbox PASSED [ 18%]
+app/tests/test_map_bbox.py::test_bbox_behavior_independent_of_geom_column PASSED [ 27%]
+app/tests/test_map_bbox.py::test_map_events_with_bbox_returns_results PASSED [ 36%]
+app/tests/test_map_bbox.py::test_map_crime_incidents_with_bbox_returns_results PASSED [ 45%]
+app/tests/test_map_bbox.py::test_map_crime_aggregates_with_bbox_returns_results PASSED [ 54%]
+app/tests/test_map_bbox.py::test_bbox_validation_rejects_invalid_format PASSED [ 63%]
+app/tests/test_map_bbox.py::test_bbox_validation_rejects_out_of_range PASSED [ 72%]
+app/tests/test_map_bbox.py::test_bbox_validation_rejects_south_greater_than_north PASSED [ 81%]
+app/tests/test_map_bbox.py::test_map_events_bbox_returns_only_events_in_bounds PASSED [ 90%]
+app/tests/test_map_bbox.py::test_bbox_query_does_not_crash_with_postgresql_dialect PASSED [100%]
+
+============================== 11 passed in 0.11s ==============================
+[proof_postgis] PASS: spatial smoke tests
+[proof_postgis] Stage: public/private map visibility test
+[proof_postgis] Running public/private visibility proof...
+.......                                                                  [100%]
+7 passed in 0.05s
+[proof_postgis] PASS: public/private map visibility test
+[proof_postgis] Stage: evidence snapshot immutability test
+[proof_postgis] Running evidence snapshot immutability proof...
+.................                                                        [100%]
+17 passed in 0.04s
+[proof_postgis] PASS: evidence snapshot immutability test
+[proof_postgis] Stage: cleanup
 [proof_postgis] Cleanup: removing container 'judge_postgis_proof'
 [proof_postgis] Cleanup: complete
+[proof_postgis] PASS: PostGIS proof completed
+[proof_postgis] Log saved to /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/scripts/../artifacts/proof/postgis_proof.log

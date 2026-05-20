@@ -1,3 +1,4 @@
+import hashlib
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
@@ -269,8 +270,22 @@ class LegalSource(Base, TimestampMixin):
         kwargs.pop("is_active", None)
         # Set defaults for required fields if not provided
         kwargs.setdefault("title", "Test Legal Source")
-        kwargs.setdefault("url", "http://example.com")
-        kwargs.setdefault("url_hash", "")
+
+        source_id = kwargs.get("source_id")
+        if "url" not in kwargs:
+            if source_id:
+                kwargs["url"] = f"manual://{source_id}"
+            else:
+                kwargs["url"] = f"manual://autogen-{uuid4().hex}"
+
+        url_value = str(kwargs.get("url") or "").strip()
+        if not url_value:
+            raise ValueError("url_hash requires a non-empty URL")
+
+        kwargs.setdefault(
+            "url_hash",
+            hashlib.sha256(url_value.encode("utf-8")).hexdigest(),
+        )
         kwargs.setdefault("source_quality", "unknown")
 
         kwargs.pop("source_name", None)  # Legacy field, use source_id instead
@@ -635,6 +650,14 @@ class Outcome(Base, TimestampMixin):
 
 class IngestionRun(Base, TimestampMixin):
     __tablename__ = "ingestion_runs"
+
+    def __init__(self, **kwargs):
+        """Back-compat initializer for legacy ingestion run fixtures."""
+        source_id = kwargs.pop("source_id", None)
+        if source_id is not None and "source_name" not in kwargs:
+            kwargs["source_name"] = str(source_id)
+        kwargs.setdefault("source_name", "unknown")
+        super().__init__(**kwargs)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     source_name: Mapped[str] = mapped_column(String(120), nullable=False)
@@ -1002,11 +1025,18 @@ class SourceSnapshot(Base):
         # Legacy callers may pass parser metadata that is no longer persisted here.
         kwargs.pop("parser_version", None)
 
-        kwargs.pop("source_quality", None)  # Legacy field, no longer persisted  # Legacy field, no longer persisted
+        legacy_source_quality = kwargs.pop("source_quality", None)
+
+        run_id = kwargs.pop("run_id", None)
+        if run_id is not None and "ingestion_run_id" not in kwargs:
+            kwargs["ingestion_run_id"] = run_id
+
+        kwargs.pop("snapshot_id", None)
+        kwargs.pop("preserved", None)
 
         source_id = kwargs.pop("source_id", None)
         if source_id is not None and "source_key" not in kwargs:
-            kwargs["source_key"] = source_id
+            kwargs["source_key"] = str(source_id)
 
         snapshot_hash = kwargs.pop("snapshot_hash", None)
         if snapshot_hash is not None and "content_hash" not in kwargs:
@@ -1019,6 +1049,19 @@ class SourceSnapshot(Base):
         snapshot_at = kwargs.pop("snapshot_at", None)
         if snapshot_at is not None and "fetched_at" not in kwargs:
             kwargs["fetched_at"] = snapshot_at
+
+        snapshot_timestamp = kwargs.pop("snapshot_timestamp", None)
+        if snapshot_timestamp is not None and "fetched_at" not in kwargs:
+            kwargs["fetched_at"] = snapshot_timestamp
+
+        raw_content = kwargs.get("raw_content")
+        if isinstance(raw_content, bytes):
+            kwargs["raw_content"] = raw_content.decode("utf-8", errors="replace")
+
+        if legacy_source_quality and not kwargs.get("headers_json"):
+            kwargs["headers_json"] = (
+                '{"source_quality": "' + str(legacy_source_quality).lower() + '"}'
+            )
 
         kwargs.setdefault("source_url", "about:blank")
         kwargs.setdefault("fetched_at", datetime.now(timezone.utc))

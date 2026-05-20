@@ -82,7 +82,10 @@ def upgrade():
     if bind.dialect.name != 'sqlite':
         op.create_foreign_key('fk_memory_claims_extraction_run_id', 'memory_claims', 'ingestion_runs', ['extraction_run_id'], ['id'])
     
-    op.add_column('memory_claims', sa.Column('derived_from_ai', sa.Boolean(), nullable=False, server_default='false'))
+    op.add_column(
+        'memory_claims',
+        sa.Column('derived_from_ai', sa.Boolean(), nullable=False, server_default=sa.text('false')),
+    )
     
     op.add_column('memory_claims', sa.Column('review_status', sa.String(20), nullable=False, server_default='pending_review'))
     op.create_index(op.f('ix_memory_claims_review_status'), 'memory_claims', ['review_status'])
@@ -103,8 +106,14 @@ def upgrade():
     
     op.add_column('memory_claims', sa.Column('source_quality', sa.String(80), nullable=True))
     
-    op.add_column('memory_claims', sa.Column('corroboration_count', sa.Integer(), nullable=False, server_default='0'))
-    op.add_column('memory_claims', sa.Column('contradiction_count', sa.Integer(), nullable=False, server_default='0'))
+    op.add_column(
+        'memory_claims',
+        sa.Column('corroboration_count', sa.Integer(), nullable=False, server_default=sa.text('0')),
+    )
+    op.add_column(
+        'memory_claims',
+        sa.Column('contradiction_count', sa.Integer(), nullable=False, server_default=sa.text('0')),
+    )
     
     # Add CHECK constraints (PostgreSQL only; SQLite doesn't support ALTER TABLE ADD CONSTRAINT)
     bind = op.get_bind()
