@@ -6,6 +6,7 @@ Tests publication gate checks for memory claims.
 import pytest
 from sqlalchemy import event
 from sqlalchemy.orm import Session
+from uuid import uuid4
 
 from app.models.entities import MemoryClaim, MemoryEvidenceLink, SourceSnapshot, CanonicalEntity
 from app.review.publication_gate import (
@@ -29,7 +30,7 @@ class TestMemoryClaimPublicationGate:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=entity.id,
             claim_value="Test value",
@@ -73,7 +74,7 @@ class TestMemoryClaimPublicationGate:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=entity.id,
             claim_value="Test value",
@@ -100,7 +101,7 @@ class TestMemoryClaimPublicationGate:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=entity.id,
             claim_value="Test value",
@@ -127,7 +128,7 @@ class TestMemoryClaimPublicationGate:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=entity.id,
             claim_value="Test value",
@@ -173,7 +174,7 @@ class TestMemoryClaimPublicationGate:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=entity.id,
             claim_value="Test value",

@@ -39,7 +39,8 @@ def get_source_authority_weight(source_type: Optional[str]) -> float:
         Authority weight (0.0-1.0)
     """
     if not source_type:
-        return SOURCE_AUTHORITY_WEIGHTS["unknown"]
+        # Preserve legacy contract: missing source type is lower-confidence than explicit "unknown".
+        return 0.10
 
     return SOURCE_AUTHORITY_WEIGHTS.get(source_type.lower(), SOURCE_AUTHORITY_WEIGHTS["unknown"])
 

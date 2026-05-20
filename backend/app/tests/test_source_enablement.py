@@ -174,6 +174,10 @@ class TestNextSourceToEnable:
 
     def test_get_next_source_none_available(self, db_session):
         """Test when no sources are available for enablement."""
+        # Ensure test isolation from prior suite inserts.
+        db_session.query(SourceRegistry).delete()
+        db_session.commit()
+
         # No disabled sources
         next_source = get_next_source_to_enable(db_session)
         assert next_source is None

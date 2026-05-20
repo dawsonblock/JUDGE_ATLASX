@@ -6,6 +6,7 @@ Tests review-priority tier calculation and review requirements.
 import pytest
 from sqlalchemy import event
 from sqlalchemy.orm import Session
+from uuid import uuid4
 
 from app.models.entities import MemoryClaim, CanonicalEntity
 from app.review.review_priority import (
@@ -32,7 +33,7 @@ class TestReviewPriorityCalculation:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=entity.id,
             claim_value="Test value",
@@ -57,7 +58,7 @@ class TestReviewPriorityCalculation:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=entity.id,
             claim_value="Test value",
@@ -82,7 +83,7 @@ class TestReviewPriorityCalculation:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=entity.id,
             claim_value="Test value",
@@ -107,7 +108,7 @@ class TestReviewPriorityCalculation:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=entity.id,
             claim_value="Test value",
@@ -168,7 +169,7 @@ class TestAutoApproval:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=entity.id,
             claim_value="Test value",
@@ -192,7 +193,7 @@ class TestAutoApproval:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=entity.id,
             claim_value="Test value",
@@ -221,7 +222,7 @@ class TestEntityReviewPriorityTier:
 
         # Add low risk claim
         claim1 = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=entity.id,
             claim_value="Test value",
@@ -247,7 +248,7 @@ class TestEntityReviewPriorityTier:
 
         # Add high risk claim
         claim1 = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="test",
             entity_id=entity.id,
             claim_value="Test value",

@@ -146,13 +146,27 @@ def test_review_decision_serialization_includes_policy_block_reasons():
     """Phase 9: Verify review decision serialization includes policy block reasons."""
     from app.api.routes.admin_review import _serialize_review_item
     from app.db.session import SessionLocal
-    from app.models.entities import Event
+    from app.models.entities import Event, Court, Case
 
     db = SessionLocal()
     try:
+        court = Court(name="Test Court")
+        db.add(court)
+        db.commit()
+
+        case = Case(court_id=court.id, case_number="TEST-CASE-1")
+        db.add(case)
+        db.commit()
+
         # Create a test event
         event = Event(
             event_id="test-event",
+            court_id=court.id,
+            case_id=case.id,
+            primary_location_id=court.location_id,
+            event_type="hearing",
+            title="Test Event",
+            summary="Test summary",
             incident_type="test",
             source_quality="official",
             review_status="pending",

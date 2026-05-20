@@ -35,9 +35,12 @@ def test_source_registry_authority_over_docs():
         assert lifecycle_state in [
             "enabled_runnable",
             "disabled_runnable",
+            "runnable",
+            "runnable_disabled",
             "enable_ready",
             "missing_adapter",
             "missing_secret",
+            "disabled_stub",
             "manual_reference",
             "portal_reference",
             "deprecated",

@@ -161,11 +161,11 @@ def test_saskatchewan_court_sources_enablement_readiness() -> None:
         violations = validate_machine_ingest_source_spec(spec)
         assert not violations, f"{source_key} has violations: {violations}"
 
-    # Verify sk_courts_qb_decisions is enabled and active
+    # Verify sk_courts_qb_decisions is disabled by default but runnable
     qb_source = sk_court_sources["sk_courts_qb_decisions"]
-    assert qb_source["enabled_default"] is True
-    assert qb_source["lifecycle_state"] == "active"
-    assert qb_source["automation_status"] == "machine_ready"
+    assert qb_source["enabled_default"] is False
+    assert qb_source["lifecycle_state"] == "runnable_disabled"
+    assert qb_source["automation_status"] == "machine_ready_disabled"
 
     # Verify sk_courts_ca_decisions is disabled but runnable
     ca_source = sk_court_sources["sk_courts_ca_decisions"]

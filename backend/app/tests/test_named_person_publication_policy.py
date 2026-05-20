@@ -30,6 +30,23 @@ def test_named_person_criminal_allegation_requires_elevated_approval():
             elevated_review_status="pending_review",  # Not approved
         )
         db.add(claim)
+
+        source = LegalSource(source_key=f"named-person-src-a-{uuid4().hex[:8]}", source_type="official_court", lifecycle_state="active", is_active=True)
+        db.add(source)
+        db.commit()
+
+        snapshot = SourceSnapshot(source_id=source.id, source_key=source.source_id, content_hash=uuid4().hex, fetched_at=datetime.now(timezone.utc), parser_version="1.0")
+        db.add(snapshot)
+        db.flush()
+
+        from app.models.entities import MemoryEvidenceLink
+        evidence = MemoryEvidenceLink(
+            claim_id=claim.id,
+            snapshot_id=snapshot.id,
+            evidence_checksum="abc123",
+            support_type="supports",
+        )
+        db.add(evidence)
         db.commit()
 
         # Should raise PublicationBlockedError
@@ -74,6 +91,7 @@ def test_named_person_criminal_allegation_with_elevated_approval_passes():
             elevated_reviewed_at=datetime.now(timezone.utc),
         )
         db.add(claim)
+        db.flush()
 
         # Create supporting evidence
         from app.models.entities import MemoryEvidenceLink
@@ -128,6 +146,7 @@ def test_public_record_criminal_allegation_does_not_require_elevated_approval():
             claim_sensitivity="public_record",  # Not named-person
         )
         db.add(claim)
+        db.flush()
 
         # Create supporting evidence
         from app.models.entities import MemoryEvidenceLink
@@ -180,6 +199,7 @@ def test_non_criminal_allegation_does_not_require_elevated_approval():
             claim_sensitivity="statistical_aggregate",
         )
         db.add(claim)
+        db.flush()
 
         # Create supporting evidence
         from app.models.entities import MemoryEvidenceLink

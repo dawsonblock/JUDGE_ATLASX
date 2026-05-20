@@ -506,7 +506,7 @@ class AzureBlobStorageClient(StorageClient):
             return LocalStorageClient().get_url(key, expires_in)
 
         from azure.storage.blob import generate_blob_sas, BlobSasPermissions
-        from datetime import datetime, timedelta
+        from datetime import datetime, timedelta, timezone
 
         blob_client = self._client.get_blob_client(
             self._container_name, key
@@ -517,7 +517,7 @@ class AzureBlobStorageClient(StorageClient):
             blob_name=key,
             account_key=self._client.credential.account_key,
             permission=BlobSasPermissions(read=True),
-            expiry=datetime.utcnow() + timedelta(
+            expiry=datetime.now(timezone.utc) + timedelta(
                 seconds=expires_in
             ),
         )

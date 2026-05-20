@@ -6,6 +6,7 @@ Tests review-priority tier calculation with correct thresholds and rules.
 import pytest
 from sqlalchemy import event
 from sqlalchemy.orm import Session
+from uuid import uuid4
 
 from app.models.entities import MemoryClaim, CanonicalEntity
 from app.review.review_priority import (
@@ -30,7 +31,7 @@ class TestReviewPriorityThresholds:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_1",
+            claim_key=f"test_claim_1_{uuid4().hex[:8]}",
             claim_type="statute_text",
             entity_id=entity.id,
             claim_value="Section 123 text",
@@ -56,7 +57,7 @@ class TestReviewPriorityThresholds:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_2",
+            claim_key=f"test_claim_2_{uuid4().hex[:8]}",
             claim_type="case_outcome",
             entity_id=entity.id,
             claim_value="Convicted",
@@ -82,7 +83,7 @@ class TestReviewPriorityThresholds:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_3",
+            claim_key=f"test_claim_3_{uuid4().hex[:8]}",
             claim_type="role",
             entity_id=entity.id,
             claim_value="Judge",
@@ -108,7 +109,7 @@ class TestReviewPriorityThresholds:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_4",
+            claim_key=f"test_claim_4_{uuid4().hex[:8]}",
             claim_type="criminal_allegation",
             entity_id=entity.id,
             claim_value="Charged with assault",
@@ -134,7 +135,7 @@ class TestReviewPriorityThresholds:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_5",
+            claim_key=f"test_claim_5_{uuid4().hex[:8]}",
             claim_type="role",
             entity_id=entity.id,
             claim_value="Prosecutor",
@@ -196,7 +197,7 @@ class TestAutoApproval:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_6",
+            claim_key=f"test_claim_6_{uuid4().hex[:8]}",
             claim_type="statute_text",
             entity_id=entity.id,
             claim_value="Text",
@@ -222,7 +223,7 @@ class TestAutoApproval:
         db_session.commit()
 
         claim = MemoryClaim(
-            claim_key="test_claim_7",
+            claim_key=f"test_claim_7_{uuid4().hex[:8]}",
             claim_type="criminal_allegation",
             entity_id=entity.id,
             claim_value="Allegation",
@@ -253,7 +254,7 @@ class TestEntityReviewPriorityTier:
 
         # Low risk claim
         claim1 = MemoryClaim(
-            claim_key="test_claim_8",
+            claim_key=f"test_claim_8_{uuid4().hex[:8]}",
             claim_type="alias",
             entity_id=entity.id,
             claim_value="Alias",
@@ -265,7 +266,7 @@ class TestEntityReviewPriorityTier:
         )
         # Critical risk claim
         claim2 = MemoryClaim(
-            claim_key="test_claim_9",
+            claim_key=f"test_claim_9_{uuid4().hex[:8]}",
             claim_type="criminal_allegation",
             entity_id=entity.id,
             claim_value="Allegation",
