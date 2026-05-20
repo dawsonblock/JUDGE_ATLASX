@@ -73,7 +73,7 @@ def upgrade():
         sa.Column('artifact_path', sa.String(512), nullable=False),
         sa.Column('artifact_type', sa.String(100), nullable=False),
         sa.Column('size_bytes', sa.Integer(), nullable=True),
-        sa.Column('preserve', sa.Boolean(), nullable=False, server_default=True),
+        sa.Column('preserve', sa.Boolean(), nullable=False, server_default=sa.text('true')),
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
         sa.PrimaryKeyConstraint('id'),
         sa.ForeignKeyConstraint(['run_id'], ['workflow_runs.id'])
@@ -85,7 +85,7 @@ def upgrade():
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('workflow_name', sa.String(255), nullable=False),
         sa.Column('schedule', sa.String(100), nullable=False),
-        sa.Column('enabled', sa.Boolean(), nullable=False, server_default=True),
+        sa.Column('enabled', sa.Boolean(), nullable=False, server_default=sa.text('true')),
         sa.Column('last_run_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('next_run_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),

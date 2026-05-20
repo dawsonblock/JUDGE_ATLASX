@@ -60,17 +60,22 @@ def upgrade():
     op.create_index(op.f('ix_memory_contradictions_status'), 'memory_contradictions', ['status'])
     op.create_index(op.f('ix_memory_contradictions_severity'), 'memory_contradictions', ['severity'])
     
-    # Add unique constraint to prevent duplicate contradictions
-    op.create_unique_constraint(
-        'uq_memory_contradictions_claims',
-        'memory_contradictions',
-        ['claim_a_id', 'claim_b_id', 'conflict_type']
-    )
+    # Add unique constraint (PostgreSQL only; SQLite doesn't support ALTER TABLE ADD CONSTRAINT)
+    bind = op.get_bind()
+    if bind.dialect.name != 'sqlite':
+        op.create_unique_constraint(
+            'uq_memory_contradictions_claims',
+            'memory_contradictions',
+            ['claim_a_id', 'claim_b_id', 'conflict_type']
+        )
 
 
 def downgrade():
-    # Drop unique constraint
-    op.drop_constraint('uq_memory_contradictions_claims', 'memory_contradictions', type_='unique')
+    bind = op.get_bind()
+    
+    # Drop unique constraint (PostgreSQL only)
+    if bind.dialect.name != 'sqlite':
+        op.drop_constraint('uq_memory_contradictions_claims', 'memory_contradictions', type_='unique')
     
     # Drop indexes
     op.drop_index(op.f('ix_memory_contradictions_severity'), table_name='memory_contradictions')

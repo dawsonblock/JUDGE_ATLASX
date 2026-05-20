@@ -8,7 +8,12 @@ import logging
 from typing import Optional
 from sqlalchemy.orm import Session
 
-from app.models.entities import MemoryClaim, MemoryEvidenceLink, SourceSnapshot
+from app.models.entities import (
+    MemoryClaim,
+    MemoryEvidenceLink,
+    SourceSnapshot,
+    SourceRegistry,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +37,62 @@ EXTRACTION_MODEL_WEIGHTS = {
     "legacy": 0.5,
     "unknown": 0.5,
 }
+
+
+def _get_snapshot_source_quality(
+    snapshot: SourceSnapshot | None, db: Session, default: str = "unknown"
+) -> str:
+    """Safely retrieve source quality from snapshot with multiple fallbacks.
+    
+    Args:
+        snapshot: The SourceSnapshot object
+        db: Database session
+        default: Default quality if none found
+        
+    Returns:
+        Source quality string (e.g., "primary", "official", "verified", etc.)
+    """
+    if snapshot is None:
+        return default
+    
+    # 1. Optional backward compatibility for old objects/tests with source_quality
+    value = getattr(snapshot, "source_quality", None)
+    if value:
+        return str(value).lower()
+    
+    # 2. Try linked source registry via source_key
+    if snapshot.source_key:
+        source = (
+            db.query(SourceRegistry)
+            .filter(SourceRegistry.source_key == snapshot.source_key)
+            .first()
+        )
+        if source is not None:
+            # Check source_tier which is the new canonical field
+            value = (
+                getattr(source, "source_tier", None)
+                or getattr(source, "source_quality", None)
+                or getattr(source, "reliability_score", None)
+            )
+            if value:
+                return str(value).lower()
+    
+    # 3. Check metadata fields if they exist
+    metadata = (
+        getattr(snapshot, "metadata", None)
+        or getattr(snapshot, "meta", None)
+        or {}
+    )
+    if isinstance(metadata, dict):
+        value = (
+            metadata.get("source_quality")
+            or metadata.get("source_tier")
+            or metadata.get("authority_score")
+        )
+        if value:
+            return str(value).lower()
+    
+    return default
 
 
 def calculate_claim_confidence(claim_id: int, db: Session) -> float:
@@ -108,8 +169,8 @@ def _get_source_quality_score(claim_id: int, db: Session) -> float:
             .filter(SourceSnapshot.id == link.snapshot_id)
             .first()
         )
-        if snapshot and snapshot.source_quality:
-            quality = snapshot.source_quality.lower()
+        if snapshot:
+            quality = _get_snapshot_source_quality(snapshot, db)
             total_score += SOURCE_QUALITY_WEIGHTS.get(quality, 0.5)
 
     # Average score from all evidence

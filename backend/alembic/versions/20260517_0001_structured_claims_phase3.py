@@ -69,14 +69,18 @@ def upgrade():
     
     op.add_column('memory_claims', sa.Column('object_entity_id', sa.Integer(), nullable=True))
     op.create_index(op.f('ix_memory_claims_object_entity_id'), 'memory_claims', ['object_entity_id'])
-    op.create_foreign_key('fk_memory_claims_object_entity_id', 'memory_claims', 'canonical_entities', ['object_entity_id'], ['id'])
+    bind = op.get_bind()
+    if bind.dialect.name != 'sqlite':
+        op.create_foreign_key('fk_memory_claims_object_entity_id', 'memory_claims', 'canonical_entities', ['object_entity_id'], ['id'])
     
     op.add_column('memory_claims', sa.Column('object_value', sa.Text(), nullable=True))
     op.add_column('memory_claims', sa.Column('object_value_type', sa.String(20), nullable=True))
     op.add_column('memory_claims', sa.Column('normalized_value', sa.Text(), nullable=True))
     
     op.add_column('memory_claims', sa.Column('extraction_run_id', sa.Integer(), nullable=True))
-    op.create_foreign_key('fk_memory_claims_extraction_run_id', 'memory_claims', 'ingestion_runs', ['extraction_run_id'], ['id'])
+    bind = op.get_bind()
+    if bind.dialect.name != 'sqlite':
+        op.create_foreign_key('fk_memory_claims_extraction_run_id', 'memory_claims', 'ingestion_runs', ['extraction_run_id'], ['id'])
     
     op.add_column('memory_claims', sa.Column('derived_from_ai', sa.Boolean(), nullable=False, server_default='false'))
     
@@ -84,7 +88,9 @@ def upgrade():
     op.create_index(op.f('ix_memory_claims_review_status'), 'memory_claims', ['review_status'])
     
     op.add_column('memory_claims', sa.Column('superseded_by_claim_id', sa.Integer(), nullable=True))
-    op.create_foreign_key('fk_memory_claims_superseded_by_claim_id', 'memory_claims', 'memory_claims', ['superseded_by_claim_id'], ['id'])
+    bind = op.get_bind()
+    if bind.dialect.name != 'sqlite':
+        op.create_foreign_key('fk_memory_claims_superseded_by_claim_id', 'memory_claims', 'memory_claims', ['superseded_by_claim_id'], ['id'])
     
     op.add_column('memory_claims', sa.Column('superseded_at', sa.DateTime(timezone=True), nullable=True))
     
@@ -100,17 +106,21 @@ def upgrade():
     op.add_column('memory_claims', sa.Column('corroboration_count', sa.Integer(), nullable=False, server_default='0'))
     op.add_column('memory_claims', sa.Column('contradiction_count', sa.Integer(), nullable=False, server_default='0'))
     
-    # Add CHECK constraints
-    op.execute("ALTER TABLE memory_claims ADD CONSTRAINT chk_memory_claims_confidence_range CHECK (confidence >= 0.0 AND confidence <= 1.0)")
-    op.execute("ALTER TABLE memory_claims ADD CONSTRAINT chk_memory_claims_valid_to_after_valid_from CHECK (valid_to IS NULL OR valid_from IS NULL OR valid_to >= valid_from)")
-    op.execute("ALTER TABLE memory_claims ADD CONSTRAINT chk_memory_claims_object_value_type CHECK (object_value_type IN ('entity', 'literal', 'date', 'number', 'boolean', NULL))")
+    # Add CHECK constraints (PostgreSQL only; SQLite doesn't support ALTER TABLE ADD CONSTRAINT)
+    bind = op.get_bind()
+    if bind.dialect.name != 'sqlite':
+        op.execute("ALTER TABLE memory_claims ADD CONSTRAINT chk_memory_claims_confidence_range CHECK (confidence >= 0.0 AND confidence <= 1.0)")
+        op.execute("ALTER TABLE memory_claims ADD CONSTRAINT chk_memory_claims_valid_to_after_valid_from CHECK (valid_to IS NULL OR valid_from IS NULL OR valid_to >= valid_from)")
+        op.execute("ALTER TABLE memory_claims ADD CONSTRAINT chk_memory_claims_object_value_type CHECK (object_value_type IN ('entity', 'literal', 'date', 'number', 'boolean', NULL))")
 
 
 def downgrade():
-    # Remove CHECK constraints
-    op.execute("ALTER TABLE memory_claims DROP CONSTRAINT IF EXISTS chk_memory_claims_object_value_type")
-    op.execute("ALTER TABLE memory_claims DROP CONSTRAINT IF EXISTS chk_memory_claims_valid_to_after_valid_from")
-    op.execute("ALTER TABLE memory_claims DROP CONSTRAINT IF EXISTS chk_memory_claims_confidence_range")
+    # Remove CHECK constraints (PostgreSQL only)
+    bind = op.get_bind()
+    if bind.dialect.name != 'sqlite':
+        op.execute("ALTER TABLE memory_claims DROP CONSTRAINT IF EXISTS chk_memory_claims_object_value_type")
+        op.execute("ALTER TABLE memory_claims DROP CONSTRAINT IF EXISTS chk_memory_claims_valid_to_after_valid_from")
+        op.execute("ALTER TABLE memory_claims DROP CONSTRAINT IF EXISTS chk_memory_claims_confidence_range")
     
     # Remove columns
     op.drop_column('memory_claims', 'contradiction_count')
@@ -121,18 +131,24 @@ def downgrade():
     op.drop_column('memory_claims', 'valid_from')
     op.drop_index(op.f('ix_memory_claims_jurisdiction'), table_name='memory_claims')
     op.drop_column('memory_claims', 'jurisdiction')
-    op.drop_constraint('fk_memory_claims_superseded_by_claim_id', 'memory_claims', type_='foreignkey')
+    bind = op.get_bind()
+    if bind.dialect.name != 'sqlite':
+        op.drop_constraint('fk_memory_claims_superseded_by_claim_id', 'memory_claims', type_='foreignkey')
     op.drop_column('memory_claims', 'superseded_by_claim_id')
     op.drop_column('memory_claims', 'superseded_at')
     op.drop_index(op.f('ix_memory_claims_review_status'), table_name='memory_claims')
     op.drop_column('memory_claims', 'review_status')
     op.drop_column('memory_claims', 'derived_from_ai')
-    op.drop_constraint('fk_memory_claims_extraction_run_id', 'memory_claims', type_='foreignkey')
+    bind = op.get_bind()
+    if bind.dialect.name != 'sqlite':
+        op.drop_constraint('fk_memory_claims_extraction_run_id', 'memory_claims', type_='foreignkey')
     op.drop_column('memory_claims', 'extraction_run_id')
     op.drop_column('memory_claims', 'normalized_value')
     op.drop_column('memory_claims', 'object_value_type')
     op.drop_column('memory_claims', 'object_value')
-    op.drop_constraint('fk_memory_claims_object_entity_id', 'memory_claims', type_='foreignkey')
+    bind = op.get_bind()
+    if bind.dialect.name != 'sqlite':
+        op.drop_constraint('fk_memory_claims_object_entity_id', 'memory_claims', type_='foreignkey')
     op.drop_index(op.f('ix_memory_claims_object_entity_id'), table_name='memory_claims')
     op.drop_column('memory_claims', 'object_entity_id')
     op.drop_index(op.f('ix_memory_claims_predicate'), table_name='memory_claims')

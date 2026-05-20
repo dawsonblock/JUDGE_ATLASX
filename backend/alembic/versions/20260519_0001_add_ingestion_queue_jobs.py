@@ -49,14 +49,14 @@ def upgrade():
         sa.Column('records_fetched', sa.Integer(), nullable=False, server_default='0'),
         sa.Column('review_items', sa.Integer(), nullable=False, server_default='0'),
         sa.Column('created_records', sa.Integer(), nullable=False, server_default='0'),
-        sa.Column('raw_snapshot_preserved', sa.Boolean(), nullable=False, server_default=False),
+        sa.Column('raw_snapshot_preserved', sa.Boolean(), nullable=False, server_default=sa.text('false')),
         sa.Column('error', sa.Text(), nullable=True),
         sa.Column('result', postgresql.JSON(), nullable=True),
         sa.Column('retry_count', sa.Integer(), nullable=True, server_default='0'),
         sa.Column('retry_after', sa.Float(), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.text('NOW()')),
         sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.text('NOW()')),
-        sa.ForeignKeyConstraint(['run_id'], ['ingestion_runs'], ),
+        sa.ForeignKeyConstraint(['run_id'], ['ingestion_runs.id'], ),
         sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_ingestion_queue_jobs_job_id'), 'ingestion_queue_jobs', ['job_id'], unique=True)

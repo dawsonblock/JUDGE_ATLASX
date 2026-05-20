@@ -19,39 +19,65 @@ depends_on = None
 
 
 def upgrade():
-    # Add geocode_cache_id column to locations table
-    op.add_column(
-        'locations',
-        sa.Column('geocode_cache_id', sa.Integer(), nullable=True)
-    )
+    bind = op.get_bind()
     
-    # Create foreign key constraint
-    op.create_foreign_key(
-        'fk_locations_geocode_cache_id',
-        'locations',
-        'geocode_cache',
-        ['geocode_cache_id'],
-        ['id']
-    )
-    
-    # Create index for faster lookups
-    op.create_index(
-        'idx_locations_geocode_cache_id',
-        'locations',
-        ['geocode_cache_id']
-    )
+    # SQLite requires batch mode for altering tables with foreign keys
+    if bind.dialect.name == 'sqlite':
+        with op.batch_alter_table('locations') as batch_op:
+            batch_op.add_column(
+                sa.Column('geocode_cache_id', sa.Integer(), nullable=True)
+            )
+            batch_op.create_foreign_key(
+                'fk_locations_geocode_cache_id',
+                'geocode_cache',
+                ['geocode_cache_id'],
+                ['id']
+            )
+            batch_op.create_index(
+                'idx_locations_geocode_cache_id',
+                ['geocode_cache_id']
+            )
+    else:
+        # PostgreSQL can handle direct operations
+        op.add_column(
+            'locations',
+            sa.Column('geocode_cache_id', sa.Integer(), nullable=True)
+        )
+        
+        op.create_foreign_key(
+            'fk_locations_geocode_cache_id',
+            'locations',
+            'geocode_cache',
+            ['geocode_cache_id'],
+            ['id']
+        )
+        
+        op.create_index(
+            'idx_locations_geocode_cache_id',
+            'locations',
+            ['geocode_cache_id']
+        )
 
 
 def downgrade():
-    # Drop index
-    op.drop_index('idx_locations_geocode_cache_id', table_name='locations')
+    bind = op.get_bind()
     
-    # Drop foreign key constraint
-    op.drop_constraint(
-        'fk_locations_geocode_cache_id',
-        'locations',
-        type_='foreignkey'
-    )
-    
-    # Drop column
-    op.drop_column('locations', 'geocode_cache_id')
+    if bind.dialect.name == 'sqlite':
+        with op.batch_alter_table('locations') as batch_op:
+            batch_op.drop_index('idx_locations_geocode_cache_id')
+            batch_op.drop_constraint(
+                'fk_locations_geocode_cache_id',
+                type_='foreignkey'
+            )
+            batch_op.drop_column('geocode_cache_id')
+    else:
+        # PostgreSQL
+        op.drop_index('idx_locations_geocode_cache_id', table_name='locations')
+        
+        op.drop_constraint(
+            'fk_locations_geocode_cache_id',
+            'locations',
+            type_='foreignkey'
+        )
+        
+        op.drop_column('locations', 'geocode_cache_id')

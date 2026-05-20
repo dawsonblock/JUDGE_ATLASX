@@ -3,7 +3,9 @@ import path from "node:path";
 
 export default defineConfig({
   test: {
-    environment: "node",
+    environment: "jsdom",
+    globals: true,
+    // setupFiles: ["./tests/setup.ts"], // Disabled: Vite path resolution issue with folder name containing space
     include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
   },
   resolve: {

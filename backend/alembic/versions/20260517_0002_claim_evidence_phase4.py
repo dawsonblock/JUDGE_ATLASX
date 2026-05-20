@@ -32,25 +32,29 @@ def upgrade():
     op.add_column('memory_evidence_links', sa.Column('page_number', sa.Integer(), nullable=True))
     op.add_column('memory_evidence_links', sa.Column('confidence', sa.Float(), nullable=False, server_default='0.0'))
     
-    # Add CHECK constraint for support_type enum
-    op.execute(
-        "ALTER TABLE memory_evidence_links "
-        "ADD CONSTRAINT chk_memory_evidence_links_support_type "
-        "CHECK (support_type IN ('supports', 'contradicts', 'mentions', 'context', 'supersedes', NULL))"
-    )
-    
-    # Add CHECK constraint for confidence range
-    op.execute(
-        "ALTER TABLE memory_evidence_links "
-        "ADD CONSTRAINT chk_memory_evidence_links_confidence_range "
-        "CHECK (confidence >= 0.0 AND confidence <= 1.0)"
-    )
+    # Add CHECK constraints (PostgreSQL only; SQLite doesn't support ALTER TABLE ADD CONSTRAINT)
+    bind = op.get_bind()
+    if bind.dialect.name != 'sqlite':
+        op.execute(
+            "ALTER TABLE memory_evidence_links "
+            "ADD CONSTRAINT chk_memory_evidence_links_support_type "
+            "CHECK (support_type IN ('supports', 'contradicts', 'mentions', 'context', 'supersedes', NULL))"
+        )
+        
+        # Add CHECK constraint for confidence range
+        op.execute(
+            "ALTER TABLE memory_evidence_links "
+            "ADD CONSTRAINT chk_memory_evidence_links_confidence_range "
+            "CHECK (confidence >= 0.0 AND confidence <= 1.0)"
+        )
 
 
 def downgrade():
-    # Remove CHECK constraints
-    op.execute("ALTER TABLE memory_evidence_links DROP CONSTRAINT IF EXISTS chk_memory_evidence_links_confidence_range")
-    op.execute("ALTER TABLE memory_evidence_links DROP CONSTRAINT IF EXISTS chk_memory_evidence_links_support_type")
+    # Remove CHECK constraints (PostgreSQL only)
+    bind = op.get_bind()
+    if bind.dialect.name != 'sqlite':
+        op.execute("ALTER TABLE memory_evidence_links DROP CONSTRAINT IF EXISTS chk_memory_evidence_links_confidence_range")
+        op.execute("ALTER TABLE memory_evidence_links DROP CONSTRAINT IF EXISTS chk_memory_evidence_links_support_type")
     
     # Remove columns
     op.drop_column('memory_evidence_links', 'confidence')

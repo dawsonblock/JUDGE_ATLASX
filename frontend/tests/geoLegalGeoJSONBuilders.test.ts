@@ -393,7 +393,7 @@ describe("GeoLegalEvent GeoJSON Builders", () => {
       const result = buildGeoLegalEventsGeoJSON(sampleEvents);
 
       const eventWithDate = result.features.find((f) => f.properties.id === "event-1");
-      expect(eventWithTags?.properties.occurred_at).toBe("2024-01-01T00:00:00Z");
+      expect(eventWithDate?.properties.occurred_at).toBe("2024-01-01T00:00:00Z");
     });
 
     it("calculates correct counts", () => {
