@@ -1,4 +1,4 @@
-.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup release-zip build-clean-release validate-release-zip proof-static
+.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup release-zip build-clean-release validate-release-zip proof-static validate-archive-freshness
 
 backend-install:
 	cd backend && python -m pip install -e ".[test]"
@@ -97,7 +97,11 @@ proof:
 	@python3 scripts/check_single_proof_authority.py
 	@python3 scripts/check_proof_consistency.py
 	@python3 scripts/check_proof_freshness.py
+	@python3 scripts/check_required_proof_logs.py
 	@echo "Canonical proof: artifacts/proof/current/release_gate.json"
+
+validate-archive-freshness:
+	@python3 scripts/verify_archive_proof_freshness.py --archive $(ARCHIVE)
 
 build-clean-release:
 	@python3 scripts/build_clean_release.py

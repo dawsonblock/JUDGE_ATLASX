@@ -2124,6 +2124,20 @@ def main() -> int:
     current_alpha_status_rel = _write_current_alpha_status_md(repo_root, out_dir, payload)
     payload["logs"]["current_proof"] = current_proof_rel
     payload["logs"]["current_alpha_status"] = current_alpha_status_rel
+
+    # Regenerate release_readiness.md with the fully-final state so that
+    # proof_consistency_pytest and single_proof_authority outcomes are
+    # reflected and the document never contradicts release_gate.json.
+    final_manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
+    _, readiness_rel = _generate_release_readiness_from_manifest(
+        repo_root,
+        out_dir,
+        final_manifest,
+    )
+    manifest_path.write_text(json.dumps(final_manifest, indent=2) + "\n", encoding="utf-8")
+    payload["logs"]["release_readiness"] = readiness_rel
+    payload["logs"]["proof_manifest"] = str(manifest_path.relative_to(repo_root))
+
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
     if ok:

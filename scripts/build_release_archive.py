@@ -64,6 +64,7 @@ EXCLUDED_PREFIXES = (
     "backend/.venv/",
     "venv/",
     ".git/",
+    ".trunk/",
     "artifacts/proof/archive/",
     "artifacts/proof/history/",
     "artifacts/proof/latest/",
@@ -105,6 +106,7 @@ EXCLUDED_FILE_NAMES = {
     "id_ed25519",
     "archive_validation.md",
     "archive_validation.log",
+    ".coverage",
 }
 TEXT_REDACT_SUFFIXES = {".md", ".json", ".txt", ".yml", ".yaml", ".toml"}
 LOCAL_PATH_PATTERNS = (

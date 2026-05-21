@@ -73,6 +73,80 @@ def _run_version_command(command: list[str]) -> str:
     return proc.stdout.strip()
 
 
+def _validate_stored_metadata(repo_root: Path, nvmrc_major: str) -> list[str]:
+    """Check that stored proof metadata node version agrees with .nvmrc policy.
+
+    Reads ``release_gate.json`` and ``proof_manifest.json`` in
+    ``artifacts/proof/current/`` for a ``node_version`` field, then compares
+    the major version against the declared ``.nvmrc`` major.  Also checks
+    ``CURRENT_PROOF.md`` for a ``node_version:`` line.
+
+    Args:
+        repo_root: Repository root directory.
+        nvmrc_major: Major version string declared in ``.nvmrc`` (e.g. ``"20"``).
+
+    Returns:
+        List of error strings.  Empty means all stored metadata agrees.
+    """
+    errors: list[str] = []
+
+    proof_json_files = {
+        "release_gate.json": repo_root / "artifacts" / "proof" / "current" / "release_gate.json",
+        "proof_manifest.json": repo_root / "artifacts" / "proof" / "current" / "proof_manifest.json",
+    }
+    for label, path in proof_json_files.items():
+        if not path.exists():
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        stored_node = data.get("node_version") or data.get("gate_runner_node_version")
+        if not stored_node or stored_node == "unknown":
+            continue
+        parsed_stored = _parse_version(stored_node)
+        if parsed_stored is None:
+            errors.append(
+                f"{label}: unable to parse stored node_version '{stored_node}'"
+            )
+            continue
+        try:
+            declared_major = int(nvmrc_major)
+        except ValueError:
+            continue
+        if parsed_stored[0] != declared_major:
+            errors.append(
+                f"{label}: stored node_version '{stored_node}' (major={parsed_stored[0]}) "
+                f"disagrees with .nvmrc declared major={nvmrc_major}"
+            )
+
+    # Check doc files for node_version: lines
+    doc_files = ["CURRENT_PROOF.md", "PROOF_STATUS.md", "STATUS.md"]
+    for doc_name in doc_files:
+        doc_path = repo_root / doc_name
+        if not doc_path.exists():
+            continue
+        text = doc_path.read_text(encoding="utf-8", errors="ignore")
+        match = re.search(r"-\s*node_version:\s*(v?\d+[\.\d]*)", text)
+        if not match:
+            continue
+        doc_ver = match.group(1).strip()
+        parsed_doc = _parse_version(doc_ver)
+        if parsed_doc is None:
+            continue
+        try:
+            declared_major = int(nvmrc_major)
+        except ValueError:
+            continue
+        if parsed_doc[0] != declared_major:
+            errors.append(
+                f"{doc_name}: node_version '{doc_ver}' (major={parsed_doc[0]}) "
+                f"disagrees with .nvmrc declared major={nvmrc_major}"
+            )
+
+    return errors
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default=str(REPO_ROOT), help="Repository root")
@@ -113,6 +187,10 @@ def main() -> int:
         errors.append(
             f"npm runtime {npm_version} does not satisfy frontend/package.json engines.npm '{npm_range}'"
         )
+
+    # Validate stored proof metadata for node version drift
+    metadata_errors = _validate_stored_metadata(repo_root, root_major)
+    errors.extend(metadata_errors)
 
     print(f"NODE_VERSION: {node_version}")
     print(f"NPM_VERSION: {npm_version}")
