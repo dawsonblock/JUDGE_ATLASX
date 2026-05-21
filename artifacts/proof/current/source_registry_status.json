@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-05-21T21:53:34.718713+00:00",
+  "generated_at_utc": "2026-05-21T22:10:05.105165+00:00",
   "total_sources": 26,
   "summary": {
     "total_sources": 26,
-    "machine_ingest_sources": 7,
+    "machine_ingest_sources": 8,
     "runnable_now": 1,
-    "enable_ready": 5,
+    "enable_ready": 6,
     "deprecated": 3
   },
   "sources": [
@@ -168,13 +168,13 @@
       "source_key": "saskatoon_open_data_public_safety",
       "source_name": "City of Saskatoon Open Data \u2013 Public Safety",
       "jurisdiction": "CA-SK-Saskatoon",
-      "source_class": "portal_reference",
+      "source_class": "machine_ingest",
       "source_type": "aggregate_stats",
-      "lifecycle_state": "portal_reference",
+      "lifecycle_state": "runnable_disabled",
       "canonical_replacement_key": null,
-      "status_reason": "Saskatoon Open Data portal \u2014 public safety datasets require portal download.",
-      "operator_next_step": "Check data.saskatoon.ca for CSV/JSON endpoint; write adapter if machine-readable.",
-      "automation_status": "adapter_missing",
+      "status_reason": "Saskatoon public safety CKAN adapter staged and validated in fixture mode; source remains disabled pending operator review.",
+      "operator_next_step": "Run fixture proof target, confirm review-only payloads, then enable only after legal and data-quality verification.",
+      "automation_status": "machine_ready_disabled",
       "adapter_key": "ckan_api",
       "adapter_exists": true,
       "adapter_state": "found",
@@ -182,11 +182,10 @@
       "requires_manual_review": true,
       "runnable_now": false,
       "canonical_now": true,
-      "enable_ready": false,
+      "enable_ready": true,
       "blockers": [
-        "non_machine_ingest_source",
-        "lifecycle_state=portal_reference",
-        "automation_status=adapter_missing"
+        "lifecycle_state=runnable_disabled",
+        "automation_status=machine_ready_disabled"
       ],
       "alpha_status": "configured"
     },

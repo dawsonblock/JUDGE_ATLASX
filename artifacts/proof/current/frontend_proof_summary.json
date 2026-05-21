@@ -1,6 +1,6 @@
 {
   "group": "frontend_proof",
-  "status": "PASS",
+  "status": "FAIL",
   "checks": [
     {
       "name": "frontend_node_gate",
@@ -52,9 +52,9 @@
     },
     {
       "name": "public_api_boundary",
-      "status": "PASS",
+      "status": "FAIL",
       "log": "artifacts/proof/current/public_api_boundary.log",
-      "exit_code": 0
+      "exit_code": 2
     },
     {
       "name": "check_node_policy",

@@ -149,6 +149,11 @@ jobs:
           source ./backend/.venv/bin/activate
           python scripts/check_statuses.py --root backend/app
 
+      - name: Guard — mutation route-count vs RBAC matrix coverage
+        run: |
+          source ./backend/.venv/bin/activate
+          python scripts/check_mutation_matrix_coverage.py
+
       - name: Guard — source registry docs drift
         run: |
           source ./backend/.venv/bin/activate

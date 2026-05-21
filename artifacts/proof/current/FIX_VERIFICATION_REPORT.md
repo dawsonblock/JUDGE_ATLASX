@@ -1,17 +1,17 @@
 # FIX_VERIFICATION_REPORT
 
-- generated_at_utc: 2026-05-21T21:54:39.633008+00:00
-- commit_hash: c557444ea5afbbf17d61777f5db7fafb0219bb92
+- generated_at_utc: 2026-05-21T22:11:19.858232+00:00
+- commit_hash: 67120be689664fce74dabfedcf92384c97741f80
 - alpha_gate_passed: false
 
 ## Required Gate Signals
 
 - backend_compile: PASS
 - backend_import: PASS
-- backend_pytest: PASS
+- backend_pytest: FAIL
 - verify_evidence_store: PASS
 - verify_audit_chain: PASS
-- public_api_boundary: PASS
+- public_api_boundary: FAIL
 - frontend_node_gate: PASS
 - frontend_contracts: PASS
 - archive_validation: MISSING
@@ -19,6 +19,9 @@
 
 ## Release Blockers
 
+- backend_pytest
+- validate_sources
+- public_api_boundary
 - archive_validation
 - proof_consistency_pytest
 - required_proof_logs

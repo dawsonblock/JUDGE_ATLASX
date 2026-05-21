@@ -31,8 +31,8 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from app.auth.jwt_handler import create_access_token
 from app.models.entities import AuditLog
+from app.tests.helpers.auth_matrix import AuthMatrixCase, assert_auth_matrix, make_jwt_for_role
 
 
 # ---------------------------------------------------------------------------
@@ -42,8 +42,7 @@ from app.models.entities import AuditLog
 
 def _jwt_bearer(email: str, role: str) -> dict[str, str]:
     """Return Authorization header dict for a JWT with the given role."""
-    token = create_access_token(email=email, role=role)
-    return {"Authorization": f"Bearer {token}"}
+    return make_jwt_for_role(email=email, role=role)
 
 
 def _fake_settings_with_jwt(**overrides):
@@ -66,16 +65,26 @@ def _fake_settings_with_jwt(**overrides):
 
 
 def _assert_denied(response, role: str, endpoint: str) -> None:
-    assert response.status_code in (401, 403), (
-        f"Role '{role}' should be DENIED on {endpoint}, "
-        f"got HTTP {response.status_code}: {response.text[:200]}"
+    assert_auth_matrix(
+        response,
+        AuthMatrixCase(
+            role=role,
+            method=endpoint.split(" ", 1)[0],
+            path=endpoint.split(" ", 1)[1],
+            expected_allowed=False,
+        ),
     )
 
 
 def _assert_not_forbidden(response, role: str, endpoint: str) -> None:
-    assert response.status_code not in (401, 403), (
-        f"Role '{role}' should be ALLOWED on {endpoint}, "
-        f"got HTTP {response.status_code}: {response.text[:200]}"
+    assert_auth_matrix(
+        response,
+        AuthMatrixCase(
+            role=role,
+            method=endpoint.split(" ", 1)[0],
+            path=endpoint.split(" ", 1)[1],
+            expected_allowed=True,
+        ),
     )
 
 

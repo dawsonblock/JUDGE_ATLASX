@@ -1,11 +1,11 @@
 # SOURCE_REGISTRY_STATUS
 
-- generated_at_utc: 2026-05-21T21:54:39.633008+00:00
-- commit_hash: c557444ea5afbbf17d61777f5db7fafb0219bb92
+- generated_at_utc: 2026-05-21T22:11:19.858232+00:00
+- commit_hash: 67120be689664fce74dabfedcf92384c97741f80
 - total_sources: 26
-- machine_ingest_sources: 7
+- machine_ingest_sources: 8
 - runnable_now: 1
-- enable_ready: 5
+- enable_ready: 6
 - deprecated: 3
 
 | source key | source name | jurisdiction | source class/type | lifecycle state | automation status | adapter state | parser key | adapter exists | runnable now | enable ready | blockers | review required before public visibility | current alpha status |
@@ -24,7 +24,7 @@
 | saskatchewan_legislation | Saskatchewan Legislation – Acts and Regulations | CA-SK | portal_reference/legislation | portal_reference | adapter_missing | missing_parser | None | no | no | no | non_machine_ingest_source, lifecycle_state=portal_reference, automation_status=adapter_missing, adapter_missing | yes | limited-alpha-source |
 | saskatoon_open_data_crime | City of Saskatoon Open Data – Crime Incidents | Saskatoon, Saskatchewan, Canada | portal_reference/crime_incident | portal_reference | adapter_missing | found | saskatoon_csv | yes | no | no | non_machine_ingest_source, lifecycle_state=portal_reference, automation_status=adapter_missing | yes | limited-alpha-source |
 | saskatoon_open_data_portal | City of Saskatoon – Open Data Portal | Saskatoon, Saskatchewan, Canada | portal_reference/aggregate_stats | portal_reference | adapter_missing | found | ckan_api | yes | no | no | non_machine_ingest_source, lifecycle_state=portal_reference, automation_status=adapter_missing | yes | limited-alpha-source |
-| saskatoon_open_data_public_safety | City of Saskatoon Open Data – Public Safety | CA-SK-Saskatoon | portal_reference/aggregate_stats | portal_reference | adapter_missing | found | ckan_api | yes | no | no | non_machine_ingest_source, lifecycle_state=portal_reference, automation_status=adapter_missing | yes | limited-alpha-source |
+| saskatoon_open_data_public_safety | City of Saskatoon Open Data – Public Safety | CA-SK-Saskatoon | machine_ingest/aggregate_stats | runnable_disabled | machine_ready_disabled | found | ckan_api | yes | no | yes | lifecycle_state=runnable_disabled, automation_status=machine_ready_disabled | yes | limited-alpha-source |
 | saskatoon_police_open_data | Saskatoon Police Service – Open Data Portal | Saskatoon, Saskatchewan, Canada | portal_reference/crime_incident | portal_reference | adapter_missing | found | saskatoon_police_csv | yes | no | no | non_machine_ingest_source, lifecycle_state=portal_reference, automation_status=adapter_missing | yes | limited-alpha-source |
 | scc_decisions | Supreme Court of Canada – Decisions | Canada | machine_ingest/court_record | runnable_disabled | machine_ready_disabled | found | scc_lexum_api | yes | no | yes | lifecycle_state=runnable_disabled, automation_status=machine_ready_disabled | yes | limited-alpha-source |
 | scc_judgments | Supreme Court of Canada – Judgments | Canada | machine_ingest/court_record | deprecated | deprecated | found | scc_lexum_api | yes | no | no | lifecycle_state=deprecated, automation_status=deprecated, deprecated_source_noncanonical | yes | limited-alpha-source |
