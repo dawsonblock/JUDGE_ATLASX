@@ -495,7 +495,7 @@ class PostgresIngestionQueue:
             db.close()
 
     def cancel_job(self, job_id: str, error: str = "Canceled by admin") -> Optional[IngestionJobRecord]:
-        """Cancel a pending/running job by marking it failed."""
+        """Cancel a pending/running job by marking it cancelled."""
         db = SessionLocal()
 
         try:
@@ -504,12 +504,12 @@ class PostgresIngestionQueue:
             job = db.query(IngestionQueueJob).filter_by(job_id=job_id).first()
             if not job:
                 return None
-            if job.state in (JobState.COMPLETED.value, JobState.FAILED.value):
+            if job.state in (JobState.COMPLETED.value, JobState.FAILED.value, JobState.CANCELLED.value):
                 raise ValueError(
                     f"Job '{job_id}' is already {job.state} and cannot be canceled."
                 )
 
-            job.state = JobState.FAILED.value
+            job.state = JobState.CANCELLED.value
             job.error = error
             job.finished_at = datetime.now(timezone.utc)
             job.locked_by = None

@@ -128,7 +128,7 @@ class InProcessIngestionQueue:
                 )
             if job_id in self._pending:
                 self._pending.remove(job_id)
-            record.state = JobState.FAILED
+                record.state = JobState.CANCELLED
             record.error = error
             record.finished_at = time.time()
             return record

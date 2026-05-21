@@ -1,6 +1,0 @@
-NPM AUDIT TRIAGE
-vulnerabilities=11
-triage_doc=docs/security/FRONTEND_SECURITY_TRIAGE.md
-triaged_packages_in_doc=29
-vulnerable_packages=11
-RESULT: PASS all_packages_triaged

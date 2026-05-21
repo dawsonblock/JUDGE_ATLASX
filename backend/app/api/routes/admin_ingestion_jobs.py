@@ -79,7 +79,7 @@ def cancel_ingestion_job(
     if not job:
         raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
 
-    if job.state in (JobState.COMPLETED, JobState.FAILED):
+    if job.state in (JobState.COMPLETED, JobState.FAILED, JobState.CANCELLED):
         raise HTTPException(
             status_code=409,
             detail=f"Job '{job_id}' is already {job.state.value} and cannot be canceled.",
@@ -122,7 +122,7 @@ def retry_ingestion_job(
     if not old_job:
         raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
 
-    if old_job.state not in (JobState.FAILED, JobState.COMPLETED):
+    if old_job.state not in (JobState.FAILED, JobState.COMPLETED, JobState.CANCELLED):
         raise HTTPException(
             status_code=409,
             detail=f"Job '{job_id}' must be completed or failed before retry.",

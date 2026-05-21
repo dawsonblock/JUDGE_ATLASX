@@ -31,7 +31,7 @@ def test_inprocess_cancel_marks_failed_and_removes_pending() -> None:
     canceled = queue.cancel_job(job_id)
 
     assert canceled is not None
-    assert canceled.state == JobState.FAILED
+    assert canceled.state == JobState.CANCELLED
     assert canceled.error == "Canceled by admin"
     assert queue.pending_count() == 0
 
@@ -67,14 +67,14 @@ def test_postgres_cancel_marks_failed_and_clears_lease_fields() -> None:
     canceled = queue.cancel_job(job_id)
 
     assert canceled is not None
-    assert canceled.state == JobState.FAILED
+    assert canceled.state == JobState.CANCELLED
     assert canceled.error == "Canceled by admin"
 
     db = SessionLocal()
     try:
         row = db.query(IngestionQueueJob).filter_by(job_id=job_id).first()
         assert row is not None
-        assert row.state == JobState.FAILED.value
+        assert row.state == JobState.CANCELLED.value
         assert row.locked_by is None
         assert row.locked_at is None
         assert row.lease_expires_at is None

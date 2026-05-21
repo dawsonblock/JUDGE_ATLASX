@@ -209,16 +209,16 @@ def _archive_legacy_sidecars(repo_root: Path, out_dir: Path) -> list[str]:
     return archived
 
 
-def _extract_pytest_counts(log_path: Path) -> tuple[int | None, int | None]:
+def _extract_pytest_counts(log_path: Path) -> tuple[int | None, int | None, int | None]:
     if not log_path.exists():
-        return (None, None)
+        return (None, None, None)
     text = log_path.read_text(encoding="utf-8", errors="ignore")
-    match = re.search(r"(\d+) passed(?:,\s*(\d+) skipped)?", text)
-    if not match:
-        return (None, None)
-    passed = int(match.group(1))
-    skipped = int(match.group(2)) if match.group(2) else 0
-    return (passed, skipped)
+    passed_match = re.search(r"(\d+) passed(?:,\s*(\d+) skipped)?", text)
+    failed_match = re.search(r"(\d+) failed", text)
+    passed = int(passed_match.group(1)) if passed_match else None
+    skipped = int(passed_match.group(2)) if passed_match and passed_match.group(2) else 0
+    failed = int(failed_match.group(1)) if failed_match else 0
+    return (passed, skipped, failed)
 
 
 def _extract_vitest_tests_passed(log_path: Path) -> int | None:
@@ -1316,7 +1316,7 @@ def main() -> int:
                 "-lc",
                 (
                     f'JTA_DATABASE_URL="{proof_db_url}" "{python_exe}" '
-                    "-m pytest backend/app/tests -x --tb=short -q"
+                    "-m pytest backend/app/tests -x --tb=short -q --ignore=backend/app/tests/test_release_gate_consistency.py"
                 ),
             ],
             timeout_seconds=900,
@@ -1701,13 +1701,13 @@ def main() -> int:
                 gate_log.write(f"- {log}\n")
 
     checks_map = {r.name: r for r in results}
-    backend_pytest_passed, backend_pytest_skipped = _extract_pytest_counts(
+    backend_pytest_passed, backend_pytest_skipped, backend_pytest_failed = _extract_pytest_counts(
         out_dir / "backend_pytest.log"
     )
     frontend_contracts_passed = _extract_vitest_tests_passed(
         out_dir / "frontend_contracts.log"
     )
-    public_api_boundary_passed, _public_api_boundary_skipped = _extract_pytest_counts(
+    public_api_boundary_passed, _public_api_boundary_skipped, _public_api_boundary_failed = _extract_pytest_counts(
         out_dir / "public_api_boundary.log"
     )
     backend_import_route_count = _extract_backend_import_route_count(
@@ -1815,6 +1815,7 @@ def main() -> int:
         ),
         "backend_pytest_passed": backend_pytest_passed,
         "backend_pytest_skipped": backend_pytest_skipped,
+        "backend_pytest_failed": backend_pytest_failed,
         "backend_import_route_count": backend_import_route_count,
         "frontend_contracts_passed": frontend_contracts_passed,
         "public_api_boundary_passed": public_api_boundary_passed,
@@ -1855,9 +1856,8 @@ def main() -> int:
     # -----------------------------------------------------------------------
     # Phase 2a: write preliminary release_gate.json with the final proof hash
     # so check_proof_freshness.py can validate the stored manifest against the
-    # live tree. check_count includes the upcoming proof_freshness step (+1).
-    # -----------------------------------------------------------------------
-    payload["check_count"] = len(results) + 1
+    # live tree. check_count includes the upcoming proof_freshness and proof_consistency_pytest steps (+2).
+    payload["check_count"] = len(results) + 2
     out_path = out_dir / "release_gate.json"
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
@@ -1871,6 +1871,21 @@ def main() -> int:
         timeout_seconds=120,
     )
     results.append(pf_step)
+
+    # Phase 2b.1: run proof_consistency_pytest (only test_release_gate_consistency.py)
+    proof_consistency_pytest_step = _run(
+        repo_root,
+        out_dir,
+        "proof_consistency_pytest",
+        "proof_consistency_pytest.log",
+        [
+            "bash",
+            "-lc",
+            f'JTA_DATABASE_URL="{proof_db_url}" "{python_exe}" -m pytest backend/app/tests/test_release_gate_consistency.py -x --tb=short -q',
+        ],
+        timeout_seconds=120,
+    )
+    results.append(proof_consistency_pytest_step)
 
     # Phase 2c: update payload with the real proof_freshness result and recompute
     # ok, failed_checks, release_blockers_remaining, alpha_gate_passed.
