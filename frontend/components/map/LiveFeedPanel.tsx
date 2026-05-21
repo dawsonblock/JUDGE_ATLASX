@@ -173,6 +173,12 @@ export function LiveFeedPanel({
             {feedStatus.needs_review} need review
           </div>
         )}
+
+        {!adminMode && (
+          <div className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+            Live feed polling is available in admin mode only.
+          </div>
+        )}
       </div>
 
       {/* Error state */}

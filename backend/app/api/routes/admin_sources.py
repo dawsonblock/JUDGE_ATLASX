@@ -6,8 +6,9 @@ view health status, and control trust tiers.
 
 from __future__ import annotations
 
+import threading
 from datetime import datetime, timezone, timedelta
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
@@ -54,6 +55,7 @@ from app.ingestion.source_registry_ctl import (
     update_source_health,
 )
 from app.security.import_authority import require_source_admin_actor
+from app.workers.ingestion_queue import get_ingestion_queue
 
 router = APIRouter(prefix="/api/admin/sources", tags=["admin"])
 
@@ -678,7 +680,7 @@ class RunResult(BaseModel):
 
     run_id: int | None  # database ID of the IngestionRun record
     job_id: str | None = None  # always None — no async job queue
-    run_mode: str = "synchronous"
+    run_mode: str = "queued"
     source_key: str
     status: str  # completed / completed_with_warnings / quarantined / failed
     records_fetched: int = 0
@@ -697,6 +699,21 @@ class RunResult(BaseModel):
     warnings: list[str] = []
     errors: list[str] = []
     success: bool = False
+
+
+def _kick_inprocess_job(queue: Any, job_id: str) -> None:
+    """Best-effort async runner for in-process queue backend.
+
+    This preserves queued semantics at the API boundary while still allowing
+    alpha/dev environments to make forward progress without an external worker.
+    """
+
+    runner = getattr(queue, "run_job", None)
+    if not callable(runner):
+        return
+
+    thread = threading.Thread(target=runner, args=(job_id,), daemon=True)
+    thread.start()
 
 
 _SOURCE_CLASS_NEXT_ACTION: dict[str | None, str] = {
@@ -731,6 +748,14 @@ def _secret_gate_detail(source: SourceRegistry, missing_secret: str) -> dict[str
 def run_source_now(
     source_key: str,
     request: Request,
+    run_mode: Literal["synchronous", "queued"] = Query("queued"),
+    idempotency_key: str | None = Query(
+        default=None,
+        description=(
+            "Optional idempotency key for queued runs. "
+            "Ignored for synchronous runs."
+        ),
+    ),
     db: Session = Depends(get_db),
     actor: AdminActor = Depends(require_source_admin_actor),
 ) -> dict[str, Any]:
@@ -862,6 +887,58 @@ def run_source_now(
                 "failed_run_id": failed_run.id,
             },
         )
+
+    if run_mode == "queued":
+        queue = get_ingestion_queue()
+        if idempotency_key and hasattr(queue, "enqueue_job"):
+            job_id = queue.enqueue_job(source_key, idempotency_key=idempotency_key)
+        else:
+            job_id = queue.enqueue(source_key)
+
+        backend_name = getattr(getattr(queue, "_capabilities", None), "name", "")
+        if backend_name == "inprocess":
+            _kick_inprocess_job(queue, job_id)
+
+        log_mutation(
+            action="source.run.queued",
+            entity_type="source_registry",
+            entity_id=source.source_key,
+            payload={
+                "job_id": job_id,
+                "source_key": source_key,
+                "run_mode": run_mode,
+                "idempotency_key": idempotency_key,
+            },
+            request=request,
+            actor=actor,
+            db=db,
+            fail_closed=True,
+        )
+        db.commit()
+
+        return {
+            "run_id": None,
+            "job_id": job_id,
+            "run_mode": "queued",
+            "source_key": source_key,
+            "status": "queued",
+            "records_fetched": 0,
+            "records_skipped": 0,
+            "adapter_records": 0,
+            "created_records": 0,
+            "duplicates_skipped": 0,
+            "persisted_incidents": 0,
+            "persisted_review_items": 0,
+            "quarantined_count": 0,
+            "failed_records": 0,
+            "review_items_skipped": 0,
+            "snapshots_written": 0,
+            "pipeline_stage": "queued",
+            "contract_violations": [],
+            "warnings": [],
+            "errors": [],
+            "success": False,
+        }
 
     run_record = IngestionRun(
         source_name=source_key,

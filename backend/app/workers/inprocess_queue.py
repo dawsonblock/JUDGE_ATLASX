@@ -117,6 +117,37 @@ class InProcessIngestionQueue:
         with self._lock:
             return len(self._pending)
 
+    def cancel_job(self, job_id: str, error: str = "Canceled by admin") -> IngestionJobRecord | None:
+        with self._lock:
+            record = self._records.get(job_id)
+            if record is None:
+                return None
+            if record.state in (JobState.COMPLETED, JobState.FAILED):
+                raise ValueError(
+                    f"Job '{job_id}' is already {record.state.value} and cannot be canceled."
+                )
+            if job_id in self._pending:
+                self._pending.remove(job_id)
+            record.state = JobState.FAILED
+            record.error = error
+            record.finished_at = time.time()
+            return record
+
+    def retry_job(self, job_id: str) -> str | None:
+        with self._lock:
+            record = self._records.get(job_id)
+            if record is None:
+                return None
+            if record.state not in (JobState.COMPLETED, JobState.FAILED):
+                raise ValueError(
+                    f"Job '{job_id}' must be completed or failed before retry."
+                )
+            new_job_id = str(uuid.uuid4())
+            new_record = IngestionJobRecord(job_id=new_job_id, source_key=record.source_key)
+            self._records[new_job_id] = new_record
+            self._pending.append(new_job_id)
+            return new_job_id
+
     def _evict_old_records(self) -> None:
         with self._lock:
             finished = [

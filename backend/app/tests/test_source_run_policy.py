@@ -105,6 +105,7 @@ def _run(source: object | None, adapter=None, adapter_error: Exception | None = 
         return run_source_now(
             source_key=source.source_key if source else "missing",
             request=request,
+            run_mode="synchronous",
             db=db,
             actor=actor,
         )
@@ -217,6 +218,7 @@ class TestRunSourceNoAdapter:
                 run_source_now(
                     source_key=src.source_key,
                     request=MagicMock(),
+                    run_mode="synchronous",
                     db=db,
                     actor=MagicMock(auth_method="jwt"),
                 )
@@ -271,6 +273,7 @@ class TestRunSourceAdapterError:
                 run_source_now(
                     source_key=src.source_key,
                     request=MagicMock(),
+                    run_mode="synchronous",
                     db=db,
                     actor=MagicMock(auth_method="jwt"),
                 )

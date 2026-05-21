@@ -213,27 +213,37 @@ class TestAdapterFetcherInjection:
     """Smoke tests that adapters honour the injected fetcher callable."""
 
     def test_sk_courts_adapter_uses_injected_fetcher(self) -> None:
-        from app.ingestion.source_adapters.sk_courts_html import SKCourtsHtmlAdapter
+        from app.ingestion.source_adapters.canlii_api import CanLIIApiAdapter
 
-        fetcher = _make_ok_fetcher(b"<html><body><a href='https://canlii.org/x'>X</a></body></html>")
-        adapter = SKCourtsHtmlAdapter(
-            source_key="sk_courts_test",
-            base_url="https://sasklawcourts.ca/test/",
-            allowed_domains_json='["sasklawcourts.ca"]',
+        fetcher = _make_ok_fetcher(
+            b'{"cases": [{"title": "T", "url": "https://www.canlii.org/en/sk/skkb/doc/2026/x/x.html", "caseId": {"en": "x"}}]}',
+            content_type="application/json",
+        )
+        adapter = CanLIIApiAdapter(
+            source_key="sk_courts_qb_decisions",
+            base_url="https://api.canlii.org/v1",
+            api_key="fake-api-key",
+            databases=["skkb"],
+            result_count=10,
+            allowed_domains_json='["api.canlii.org", "canlii.org", "www.canlii.org"]',
             public_record_authority="official_court_record",
             fetcher=fetcher,
         )
         raw = adapter.fetch()
         # Fetcher was called — no network error raised
         assert isinstance(raw, list)
+        assert len(raw) == 1
 
     def test_sk_courts_adapter_returns_empty_on_fetch_error(self) -> None:
-        from app.ingestion.source_adapters.sk_courts_html import SKCourtsHtmlAdapter
+        from app.ingestion.source_adapters.canlii_api import CanLIIApiAdapter
 
-        adapter = SKCourtsHtmlAdapter(
-            source_key="sk_courts_test",
-            base_url="https://sasklawcourts.ca/test/",
-            allowed_domains_json='["sasklawcourts.ca"]',
+        adapter = CanLIIApiAdapter(
+            source_key="sk_courts_qb_decisions",
+            base_url="https://api.canlii.org/v1",
+            api_key="fake-api-key",
+            databases=["skkb"],
+            result_count=10,
+            allowed_domains_json='["api.canlii.org", "canlii.org", "www.canlii.org"]',
             public_record_authority="official_court_record",
             fetcher=_make_error_fetcher(),
         )

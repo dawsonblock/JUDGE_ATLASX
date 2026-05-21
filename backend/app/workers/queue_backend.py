@@ -78,3 +78,9 @@ class IngestionQueueBackend(Protocol):
 
     def pending_count(self) -> int:
         ...
+
+    def cancel_job(self, job_id: str, error: str = "Canceled by admin") -> IngestionJobRecord | None:
+        ...
+
+    def retry_job(self, job_id: str) -> str | None:
+        ...

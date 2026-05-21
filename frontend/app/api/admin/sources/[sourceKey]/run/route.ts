@@ -25,7 +25,7 @@ export async function POST(
     );
   }
   const upstream = await fetch(
-    `${backendBase}/api/admin/sources/${params.sourceKey}/run`,
+    `${backendBase}/api/admin/sources/${params.sourceKey}/run?run_mode=queued`,
     {
       method: "POST",
       headers,

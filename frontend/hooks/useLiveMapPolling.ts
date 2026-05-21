@@ -1,9 +1,8 @@
 /**
- * Live polling hook for map data.
+ * Live polling hook for admin live-map data.
  *
- * This hook provides polling functionality for live map events, feed status,
- * and source health. It adapts the Shadowbroker polling pattern but narrows
- * it for the legal domain, with the frontend only talking to the Judge API.
+ * This hook polls admin live-map events only. Public live-map routes were
+ * intentionally unmounted during boundary hardening.
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -96,8 +95,6 @@ export interface PollingState {
 
 const DEFAULT_INTERVALS = {
   events: 45000, // 45 seconds
-  feedStatus: 90000, // 90 seconds
-  sourceHealth: 300000, // 5 minutes
 };
 
 const STALE_THRESHOLD = 120000; // 2 minutes without update = stale
@@ -130,6 +127,8 @@ export function useLiveMapPolling(options: PollingOptions = {}) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const backoffRef = useRef(0);
 
+  const isAdminPollingEnabled = enabled && adminMode;
+
   // Build query string from options
   const buildQueryString = useCallback(() => {
     const params = new URLSearchParams();
@@ -147,7 +146,16 @@ export function useLiveMapPolling(options: PollingOptions = {}) {
 
   // Fetch map events
   const fetchEvents = useCallback(async () => {
-    if (!enabled) return;
+    if (!isAdminPollingEnabled) {
+      setState((prev) => ({
+        ...prev,
+        events: [],
+        feedStatus: null,
+        sourceHealth: null,
+        isLoading: false,
+      }));
+      return;
+    }
 
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
@@ -159,9 +167,10 @@ export function useLiveMapPolling(options: PollingOptions = {}) {
 
       abortControllerRef.current = new AbortController();
       const queryString = buildQueryString();
+      const endpoint = `/api/admin/live-map/events${queryString ? `?${queryString}` : ""}`;
 
       const response = await fetch(
-        `/api/live-map/events?${queryString}`,
+        endpoint,
         {
           signal: abortControllerRef.current.signal,
           headers: {
@@ -203,55 +212,44 @@ export function useLiveMapPolling(options: PollingOptions = {}) {
       // Exponential backoff on error
       backoffRef.current = Math.min(backoffRef.current * 2 + 1000, 60000);
     }
-  }, [enabled, buildQueryString]);
+  }, [isAdminPollingEnabled, buildQueryString]);
 
-  // Fetch feed status
+  // Feed status is derived from the current events snapshot.
   const fetchFeedStatus = useCallback(async () => {
-    if (!enabled) return;
-
-    try {
-      const response = await fetch("/api/live-map/feed-status", {
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: FeedStatusResponse = await response.json();
-
-      setState((prev) => ({
-        ...prev,
-        feedStatus: data,
-      }));
-    } catch (error) {
-      console.error("Failed to fetch feed status:", error);
+    if (!isAdminPollingEnabled) {
+      setState((prev) => ({ ...prev, feedStatus: null }));
+      return;
     }
-  }, [enabled]);
 
-  // Fetch source health
+    setState((prev) => {
+      const total = prev.events.length;
+      const approved = prev.events.filter((event) => event.review_status === "approved").length;
+      const needsReview = prev.events.filter((event) => event.review_status === "needs_review").length;
+      const contradicted = prev.events.filter((event) => event.event_type === "contradiction_event").length;
+      const high = prev.events.filter((event) => event.confidence >= 0.8).length;
+      const medium = prev.events.filter((event) => event.confidence >= 0.5 && event.confidence < 0.8).length;
+      const low = prev.events.filter((event) => event.confidence < 0.5).length;
+
+      const derived: FeedStatusResponse = {
+        feed_status: "active",
+        total_events: total,
+        public_events: approved,
+        approved_events: approved,
+        needs_review: needsReview,
+        contradicted,
+        confidence_distribution: { high, medium, low },
+        last_updated: new Date().toISOString(),
+        disclaimer: "Admin-only live map metrics derived from current event snapshot.",
+      };
+
+      return { ...prev, feedStatus: derived };
+    });
+  }, [isAdminPollingEnabled]);
+
+  // Source health endpoint is not mounted for the hardened boundary.
   const fetchSourceHealth = useCallback(async () => {
-    if (!enabled) return;
-
-    try {
-      const response = await fetch("/api/live-map/source-health", {
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: SourceHealthResponse = await response.json();
-
-      setState((prev) => ({
-        ...prev,
-        sourceHealth: data,
-      }));
-    } catch (error) {
-      console.error("Failed to fetch source health:", error);
-    }
-  }, [enabled]);
+    setState((prev) => ({ ...prev, sourceHealth: null }));
+  }, []);
 
   // Manual refresh
   const refresh = useCallback(() => {
@@ -270,10 +268,10 @@ export function useLiveMapPolling(options: PollingOptions = {}) {
 
   // Resume polling
   const resume = useCallback(() => {
-    if (!timeoutRef.current && enabled) {
+    if (!timeoutRef.current && isAdminPollingEnabled) {
       fetchEvents();
     }
-  }, [enabled, fetchEvents]);
+  }, [isAdminPollingEnabled, fetchEvents]);
 
   // Check for stale data
   useEffect(() => {
@@ -293,9 +291,14 @@ export function useLiveMapPolling(options: PollingOptions = {}) {
     return () => clearInterval(staleCheckInterval);
   }, [state.lastUpdate]);
 
+  useEffect(() => {
+    if (!isAdminPollingEnabled) return;
+    fetchFeedStatus();
+  }, [isAdminPollingEnabled, state.events, fetchFeedStatus]);
+
   // Main polling effect
   useEffect(() => {
-    if (!enabled) {
+    if (!isAdminPollingEnabled) {
       pause();
       return;
     }
@@ -323,7 +326,7 @@ export function useLiveMapPolling(options: PollingOptions = {}) {
         abortControllerRef.current.abort();
       }
     };
-  }, [enabled, interval, fetchEvents, fetchFeedStatus, fetchSourceHealth, pause]);
+  }, [isAdminPollingEnabled, interval, fetchEvents, fetchFeedStatus, fetchSourceHealth, pause]);
 
   return {
     ...state,

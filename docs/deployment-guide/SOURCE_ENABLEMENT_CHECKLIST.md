@@ -49,30 +49,38 @@ This checklist documents the concrete test files, proof artifacts, and acceptanc
   - Source registry truth table entry
 
 ### sk_courts_qb_decisions
-- **Test File**: `app/tests/test_crawlee_import.py` (general court adapter tests)
-- **Adapter**: `app/ingestion/source_adapters/sk_courts_html.py`
-- **Config Flags**: None (uses web monitor defaults)
-- **Source Registry**: Must be active in `canada_saskatchewan_sources.yaml`
-- **Acceptance Criteria**:
-  - Court decision HTML is parsed correctly
-  - Case metadata is extracted (case name, date, citation)
-  - Relationships to entities are created
-- **Proof Artifacts**:
-  - Ingestion run record
-  - Entity records for cases
-  - Source registry truth table entry
-
-### sk_courts_ca_decisions
-- **Test File**: `app/tests/test_crawlee_import.py` (general court adapter tests)
-- **Adapter**: `app/ingestion/source_adapters/sk_courts_html.py` (same as QB)
+- **Test Files**:
+  - `app/tests/test_canlii_sk_ingest.py`
+  - `app/tests/test_adapter_evidence_contract.py` (TestCanLIIApiAdapterSKContract)
+  - `app/tests/test_ingestion_safe_fetch_boundary.py` (test_sk_courts_adapter_uses_injected_fetcher)
+- **Adapter**: `app/ingestion/source_adapters/canlii_api.py`
+- **Fixture**: `app/tests/fixtures/sources/sk_courts_qb_decisions/sample.json`
 - **Config Flags**: None
 - **Source Registry**: Must be active in `canada_saskatchewan_sources.yaml`
 - **Acceptance Criteria**:
-  - Court of Appeal decisions are parsed
-  - Hierarchical court relationships are preserved
+  - CanLII `skkb` decisions are fetched and parsed correctly
+  - Evidence snapshot bytes and fetch metadata are preserved
+  - Output remains review-gated (no auto-publish)
 - **Proof Artifacts**:
   - Ingestion run record
-  - Entity records with court hierarchy
+  - ReviewItem records for QB decisions
+  - Source registry truth table entry
+
+### sk_courts_ca_decisions
+- **Test Files**:
+  - `app/tests/test_canlii_sk_ingest.py`
+  - `app/tests/test_adapter_evidence_contract.py` (TestCanLIIApiAdapterSKContract)
+- **Adapter**: `app/ingestion/source_adapters/canlii_api.py` (same adapter; `skca` database)
+- **Fixture**: `app/tests/fixtures/sources/sk_courts_ca_decisions/sample.json`
+- **Config Flags**: None
+- **Source Registry**: Must be active in `canada_saskatchewan_sources.yaml`
+- **Acceptance Criteria**:
+  - CanLII `skca` decisions are fetched and parsed correctly
+  - Evidence snapshot bytes and fetch metadata are preserved
+  - Output remains review-gated (no auto-publish)
+- **Proof Artifacts**:
+  - Ingestion run record
+  - ReviewItem records for CA decisions
   - Source registry truth table entry
 
 ### statscan_ccjs_crime_sk

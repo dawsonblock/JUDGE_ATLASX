@@ -50,25 +50,29 @@ def _make_mock_fetcher(
     return _fetcher
 
 
-# ── SKCourtsHtmlAdapter ───────────────────────────────────────────────────────
+# ── CanLIIApiAdapter (SK courts) ─────────────────────────────────────────────
 
 
-class TestSKCourtsHtmlAdapterContract:
+class TestCanLIIApiAdapterSKContract:
     def _make_adapter(self, fetcher: FetchCallable | None = None) -> object:
-        from app.ingestion.source_adapters.sk_courts_html import SKCourtsHtmlAdapter
+        from app.ingestion.source_adapters.canlii_api import CanLIIApiAdapter
 
-        return SKCourtsHtmlAdapter(
+        return CanLIIApiAdapter(
             source_key="sk_courts_qb_decisions",
-            base_url="https://sasklawcourts.ca/saskatchewan-court-decisions/",
-            allowed_domains_json='["sasklawcourts.ca", "www.sasklawcourts.ca", "canlii.org", "www.canlii.org"]',
+            base_url="https://api.canlii.org/v1",
+            api_key="fake-api-key",
+            databases=["skkb"],
+            result_count=10,
+            allowed_domains_json='["api.canlii.org", "canlii.org", "www.canlii.org"]',
             public_record_authority="official_court_record",
             fetcher=fetcher,
         )
 
     def test_run_with_fixture_returns_raw_snapshot_bytes(self) -> None:
         mock_fetcher = _make_mock_fetcher(
-            "sk_courts_index.html",
-            url="https://sasklawcourts.ca/saskatchewan-court-decisions/",
+            "sk_courts_qb_decisions/sample.json",
+            content_type="application/json",
+            url="https://api.canlii.org/v1/caseBrowse/en/skkb/",
         )
         adapter = self._make_adapter(fetcher=mock_fetcher)
         result = adapter.run()
@@ -77,8 +81,9 @@ class TestSKCourtsHtmlAdapterContract:
 
     def test_run_with_fixture_sets_fetch_metadata(self) -> None:
         mock_fetcher = _make_mock_fetcher(
-            "sk_courts_index.html",
-            url="https://sasklawcourts.ca/saskatchewan-court-decisions/",
+            "sk_courts_qb_decisions/sample.json",
+            content_type="application/json",
+            url="https://api.canlii.org/v1/caseBrowse/en/skkb/",
         )
         adapter = self._make_adapter(fetcher=mock_fetcher)
         result = adapter.run()
@@ -88,44 +93,56 @@ class TestSKCourtsHtmlAdapterContract:
 
     def test_run_with_fixture_extracts_canlii_links(self) -> None:
         mock_fetcher = _make_mock_fetcher(
-            "sk_courts_index.html",
-            url="https://sasklawcourts.ca/saskatchewan-court-decisions/",
+            "sk_courts_qb_decisions/sample.json",
+            content_type="application/json",
+            url="https://api.canlii.org/v1/caseBrowse/en/skkb/",
         )
         adapter = self._make_adapter(fetcher=mock_fetcher)
         result = adapter.run()
-        # Fixture has 3 CanLII links
-        assert result.records_fetched >= 3
+        assert result.records_fetched == 2
 
     def test_parse_fixture_items_have_source_url(self) -> None:
-        from app.ingestion.source_adapters.sk_courts_html import SKCourtsHtmlAdapter
+        from app.ingestion.source_adapters.canlii_api import CanLIIApiAdapter
 
-        adapter = SKCourtsHtmlAdapter(
+        adapter = CanLIIApiAdapter(
             source_key="sk_courts_qb_decisions",
-            base_url="https://sasklawcourts.ca/saskatchewan-court-decisions/",
-            allowed_domains_json='["sasklawcourts.ca", "www.sasklawcourts.ca", "canlii.org", "www.canlii.org"]',
+            base_url="https://api.canlii.org/v1",
+            api_key="fake-api-key",
+            databases=["skkb"],
+            result_count=10,
+            allowed_domains_json='["api.canlii.org", "canlii.org", "www.canlii.org"]',
             public_record_authority="official_court_record",
         )
-        html = (_FIXTURES / "sk_courts_index.html").read_text()
-        raw = adapter._parse_index_page(html)
-        assert len(raw) >= 3
-        for item in raw:
-            assert item.get("url"), "Every item must have a url"
-            assert item.get("headline"), "Every item must have a headline"
+        import json as _json
+
+        raw_payload = _json.loads((_FIXTURES / "sk_courts_qb_decisions/sample.json").read_text())
+        raw = raw_payload["cases"]
+        parsed = adapter.parse(raw)
+        assert len(parsed) == 2
+        for item in parsed:
+            assert item.source_url, "Every parsed record must have source_url"
+            assert item.payload.get("headline"), "Every parsed record must have headline"
 
     def test_parse_fixture_items_have_allowed_host(self) -> None:
-        from app.ingestion.source_adapters.sk_courts_html import SKCourtsHtmlAdapter
+        from app.ingestion.source_adapters.canlii_api import CanLIIApiAdapter
 
-        adapter = SKCourtsHtmlAdapter(
+        adapter = CanLIIApiAdapter(
             source_key="sk_courts_qb_decisions",
-            base_url="https://sasklawcourts.ca/saskatchewan-court-decisions/",
-            allowed_domains_json='["sasklawcourts.ca", "www.sasklawcourts.ca", "canlii.org", "www.canlii.org"]',
+            base_url="https://api.canlii.org/v1",
+            api_key="fake-api-key",
+            databases=["skkb"],
+            result_count=10,
+            allowed_domains_json='["api.canlii.org", "canlii.org", "www.canlii.org"]',
             public_record_authority="official_court_record",
         )
-        html = (_FIXTURES / "sk_courts_index.html").read_text()
-        raw = adapter._parse_index_page(html)
+        import json as _json
+
+        raw_payload = _json.loads((_FIXTURES / "sk_courts_qb_decisions/sample.json").read_text())
+        raw = raw_payload["cases"]
         parsed = adapter.parse(raw)
         for record in parsed:
             assert record.source_url, "source_url must be non-empty"
+            assert "canlii.org" in record.source_url, "source_url must resolve to CanLII"
 
 
 # ── FederalCourtHtmlAdapter ───────────────────────────────────────────────────

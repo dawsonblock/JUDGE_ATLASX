@@ -494,6 +494,59 @@ class PostgresIngestionQueue:
         finally:
             db.close()
 
+    def cancel_job(self, job_id: str, error: str = "Canceled by admin") -> Optional[IngestionJobRecord]:
+        """Cancel a pending/running job by marking it failed."""
+        db = SessionLocal()
+
+        try:
+            from app.models.entities import IngestionQueueJob
+
+            job = db.query(IngestionQueueJob).filter_by(job_id=job_id).first()
+            if not job:
+                return None
+            if job.state in (JobState.COMPLETED.value, JobState.FAILED.value):
+                raise ValueError(
+                    f"Job '{job_id}' is already {job.state} and cannot be canceled."
+                )
+
+            job.state = JobState.FAILED.value
+            job.error = error
+            job.finished_at = datetime.now(timezone.utc)
+            job.locked_by = None
+            job.locked_at = None
+            job.lease_expires_at = None
+            job.retry_after = None
+            db.commit()
+            return self._job_to_record(job)
+        except ValueError:
+            db.rollback()
+            raise
+        except Exception as exc:
+            logger.error("Failed to cancel job %s: %s", job_id, exc)
+            db.rollback()
+            return None
+        finally:
+            db.close()
+
+    def retry_job(self, job_id: str) -> Optional[str]:
+        """Retry a completed/failed job by enqueueing a new job for the same source."""
+        db = SessionLocal()
+
+        try:
+            from app.models.entities import IngestionQueueJob
+
+            job = db.query(IngestionQueueJob).filter_by(job_id=job_id).first()
+            if not job:
+                return None
+            if job.state not in (JobState.COMPLETED.value, JobState.FAILED.value):
+                raise ValueError(f"Job '{job_id}' must be completed or failed before retry.")
+
+            source_key = job.source_key
+        finally:
+            db.close()
+
+        return self.enqueue_job(source_key)
+
     def get_health_status(self) -> dict[str, any]:
         """Get queue health status."""
         db = SessionLocal()

@@ -63,11 +63,12 @@ All five sources below are intentionally disabled in alpha and require explicit 
 - [ ] Governance approval documented for alpha scope expansion.
 
 **Implementation Details:**
-- Adapter: `backend/app/ingestion/source_adapters/sk_courts_html.py`
+- Adapter: `backend/app/ingestion/source_adapters/canlii_api.py`
 - Test files:
   - `backend/app/tests/test_canlii_sk_ingest.py`
   - `backend/app/tests/test_ingestion_safe_fetch_boundary.py` (test_sk_courts_adapter_uses_injected_fetcher)
-- Fixture: `backend/app/tests/fixtures/sources/sk_courts_index.html`
+  - `backend/app/tests/test_adapter_evidence_contract.py` (TestCanLIIApiAdapterSKContract)
+- Fixture: `backend/app/tests/fixtures/sources/sk_courts_qb_decisions/sample.json`
 - Config flags: None (uses source registry enablement)
 
 ### `sk_courts_ca_decisions`
@@ -79,11 +80,11 @@ All five sources below are intentionally disabled in alpha and require explicit 
 - [ ] Governance approval documented for alpha scope expansion.
 
 **Implementation Details:**
-- Adapter: `backend/app/ingestion/source_adapters/sk_courts_html.py`
+- Adapter: `backend/app/ingestion/source_adapters/canlii_api.py`
 - Test files:
   - `backend/app/tests/test_canlii_sk_ingest.py`
-  - `backend/app/tests/test_ingestion_safe_fetch_boundary.py` (test_sk_courts_adapter_uses_injected_fetcher)
-- Fixture: `backend/app/tests/fixtures/sources/sk_courts_index.html`
+  - `backend/app/tests/test_adapter_evidence_contract.py` (TestCanLIIApiAdapterSKContract)
+- Fixture: `backend/app/tests/fixtures/sources/sk_courts_ca_decisions/sample.json`
 - Config flags: None (uses source registry enablement)
 
 ### `sk_legislature_hansard`

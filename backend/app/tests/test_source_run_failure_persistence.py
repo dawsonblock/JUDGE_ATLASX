@@ -39,6 +39,7 @@ def test_failed_run_is_persisted_after_adapter_exception() -> None:
             run_source_now(
                 source_key=src.source_key,
                 request=MagicMock(),
+                run_mode="synchronous",
                 db=db,
                 actor=MagicMock(auth_method="jwt"),
             )

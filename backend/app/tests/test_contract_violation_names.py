@@ -86,6 +86,7 @@ def test_admin_run_response_uses_canonical_violation_names() -> None:
                     response = run_source_now(
                         source_key="test_source",
                         request=MagicMock(),
+                        run_mode="synchronous",
                         db=db,
                         actor=MagicMock(auth_method="jwt"),
                     )

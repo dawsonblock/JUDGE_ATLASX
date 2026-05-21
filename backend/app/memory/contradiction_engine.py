@@ -5,7 +5,9 @@ Persist contradictions to database for durable tracking and review.
 """
 
 import logging
+from collections import defaultdict
 from typing import List, Dict, Optional
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone
@@ -504,33 +506,47 @@ def _check_temporal_contradiction(
     Returns:
         Contradiction dict if found, None otherwise
     """
-    # Skip if either claim lacks temporal validity
+    # Skip if either claim lacks valid_from — no temporal window to compare.
     if not claim1.valid_from or not claim2.valid_from:
         return None
 
-    # Check if validity periods don't overlap but should
-    if claim1.valid_to and claim2.valid_from:
-        if claim1.valid_to < claim2.valid_from:
-            return None  # No overlap, not a contradiction
+    # Skip if values are the same — overlapping windows with identical values aren't contradictions.
+    if claim1.normalized_value == claim2.normalized_value:
+        return None
 
-    # Check if claims have conflicting validity for the same time period
-    if claim1.valid_from == claim2.valid_from:
-        if claim1.normalized_value != claim2.normalized_value:
-            severity = _calculate_severity(
-                "temporal_contradiction", claim1, claim2, db, source_authority_cache
-            )
-            return {
-                "type": "temporal_contradiction",
-                "claim1_id": claim1.id,
-                "claim2_id": claim2.id,
-                "predicate": claim1.predicate,
-                "valid_from": str(claim1.valid_from),
-                "value1": claim1.normalized_value,
-                "value2": claim2.normalized_value,
-                "severity": severity,
-            }
+    # Determine window endpoints; use far-future sentinel for open-ended windows.
+    FAR_FUTURE = datetime(9999, 12, 31, tzinfo=timezone.utc)
 
-    return None
+    def _as_utc(dt: datetime) -> datetime:
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=timezone.utc)
+        return dt
+
+    start1 = _as_utc(claim1.valid_from)
+    start2 = _as_utc(claim2.valid_from)
+    end1 = _as_utc(claim1.valid_to) if claim1.valid_to else FAR_FUTURE
+    end2 = _as_utc(claim2.valid_to) if claim2.valid_to else FAR_FUTURE
+
+    # Windows overlap when max(start) < min(end).
+    overlap_start = max(start1, start2)
+    overlap_end = min(end1, end2)
+
+    if overlap_start >= overlap_end:
+        return None  # Non-overlapping windows — not a temporal contradiction.
+
+    severity = _calculate_severity(
+        "temporal_contradiction", claim1, claim2, db, source_authority_cache
+    )
+    return {
+        "type": "temporal_contradiction",
+        "claim1_id": claim1.id,
+        "claim2_id": claim2.id,
+        "predicate": claim1.predicate,
+        "valid_from": str(claim1.valid_from),
+        "value1": claim1.normalized_value,
+        "value2": claim2.normalized_value,
+        "severity": severity,
+    }
 
 
 def _check_case_status_conflict(
@@ -1205,3 +1221,195 @@ def resolve_contradiction_record(
     )
 
     return True
+
+
+# ---------------------------------------------------------------------------
+# Contradiction-priority dedupe helpers
+# ---------------------------------------------------------------------------
+
+# Severity rank — higher value = higher priority.
+_SEVERITY_RANK: Dict[str, int] = {
+    "critical": 4,
+    "high": 3,
+    "medium": 2,
+    "low": 1,
+}
+
+
+def get_contradictions_for_claim_pair(
+    claim_a_id: int, claim_b_id: int, db: Session
+) -> List[MemoryContradiction]:
+    """Return all contradiction records for a claim pair regardless of direction or type.
+
+    Args:
+        claim_a_id: One claim in the pair.
+        claim_b_id: The other claim in the pair.
+        db: Database session.
+
+    Returns:
+        All MemoryContradiction records that involve both claims.
+    """
+    return (
+        db.query(MemoryContradiction)
+        .filter(
+            (
+                (MemoryContradiction.claim_a_id == claim_a_id)
+                & (MemoryContradiction.claim_b_id == claim_b_id)
+            )
+            | (
+                (MemoryContradiction.claim_a_id == claim_b_id)
+                & (MemoryContradiction.claim_b_id == claim_a_id)
+            )
+        )
+        .all()
+    )
+
+
+def select_canonical_contradiction(
+    contradictions: List[MemoryContradiction],
+) -> Optional[MemoryContradiction]:
+    """Pick the highest-priority contradiction from a list.
+
+    Priority order (descending):
+      1. Severity rank  (critical > high > medium > low)
+      2. Source authority weight (higher is better)
+      3. Detected-at timestamp  (most recent wins)
+
+    Args:
+        contradictions: Non-empty list of contradiction records for the same pair.
+
+    Returns:
+        The canonical MemoryContradiction, or None if the list is empty.
+    """
+    if not contradictions:
+        return None
+
+    def _sort_key(c: MemoryContradiction):
+        return (
+            _SEVERITY_RANK.get(c.severity or "low", 1),
+            c.source_authority_weight or 0.0,
+            c.detected_at or datetime.min.replace(tzinfo=timezone.utc),
+        )
+
+    return max(contradictions, key=_sort_key)
+
+
+def dedupe_contradictions_for_entity(entity_id: int, db: Session) -> int:
+    """Consolidate duplicate contradiction records for all claim pairs on an entity.
+
+    For every (claim_a, claim_b) pair that has more than one open contradiction
+    record, selects the canonical record (highest severity → authority → recency)
+    and marks the rest as ``false_positive`` with a ``superseded_by_canonical``
+    resolution note.
+
+    Already-closed records (resolved / false_positive / ignored) are left untouched.
+
+    Args:
+        entity_id: Entity whose claim-pair contradictions should be deduped.
+        db: Database session.
+
+    Returns:
+        Number of non-canonical contradiction records that were demoted.
+    """
+    claim_ids = [
+        cid
+        for (cid,) in db.query(MemoryClaim.id)
+        .filter(MemoryClaim.entity_id == entity_id)
+        .all()
+    ]
+    if not claim_ids:
+        return 0
+
+    all_contradictions: List[MemoryContradiction] = (
+        db.query(MemoryContradiction)
+        .filter(
+            or_(
+                MemoryContradiction.claim_a_id.in_(claim_ids),
+                MemoryContradiction.claim_b_id.in_(claim_ids),
+            )
+        )
+        .all()
+    )
+
+    # Group by normalised pair key so direction does not matter.
+    pairs: Dict[tuple, List[MemoryContradiction]] = defaultdict(list)
+    for c in all_contradictions:
+        key = (min(c.claim_a_id, c.claim_b_id), max(c.claim_a_id, c.claim_b_id))
+        pairs[key].append(c)
+
+    demoted_count = 0
+    now = datetime.now(timezone.utc)
+
+    for pair_contradictions in pairs.values():
+        if len(pair_contradictions) <= 1:
+            continue
+
+        canonical = select_canonical_contradiction(pair_contradictions)
+        if canonical is None:
+            continue
+
+        for c in pair_contradictions:
+            if c.id == canonical.id:
+                continue
+            if c.status in ("resolved", "false_positive", "ignored"):
+                continue  # Already closed — leave it.
+            c.status = "false_positive"
+            c.resolution_note = f"superseded_by_canonical:{canonical.id}"
+            c.resolved_at = now
+            demoted_count += 1
+
+    if demoted_count:
+        db.commit()
+
+    logger.info(
+        "dedupe_contradictions_for_entity(entity_id=%d): demoted %d records",
+        entity_id,
+        demoted_count,
+    )
+    return demoted_count
+
+
+# ---------------------------------------------------------------------------
+# Temporal as-of query
+# ---------------------------------------------------------------------------
+
+
+def query_claims_as_of(
+    entity_id: int,
+    as_of: datetime,
+    db: Session,
+    predicate: Optional[str] = None,
+) -> List[MemoryClaim]:
+    """Return a point-in-time snapshot of active claims for an entity.
+
+    A claim is considered valid *as of* ``as_of`` when:
+
+    * ``valid_from`` is NULL  **or**  ``valid_from <= as_of``   (claim has started)
+    * ``valid_to``   is NULL  **or**  ``valid_to  >  as_of``    (claim has not yet ended)
+    * ``is_active`` is True
+
+    Claims with status other than ``active`` are excluded by default so the
+    snapshot reflects only the currently-trusted knowledge state.
+
+    Args:
+        entity_id: Entity to query.
+        as_of: Point-in-time reference (timezone-aware recommended).
+        db: Database session.
+        predicate: Optional predicate filter (e.g. ``"case_status"``).
+
+    Returns:
+        List of MemoryClaim records valid at ``as_of``.
+    """
+    q = (
+        db.query(MemoryClaim)
+        .filter(
+            MemoryClaim.entity_id == entity_id,
+            MemoryClaim.is_active.is_(True),
+            MemoryClaim.status == "active",
+            or_(MemoryClaim.valid_from.is_(None), MemoryClaim.valid_from <= as_of),
+            or_(MemoryClaim.valid_to.is_(None), MemoryClaim.valid_to > as_of),
+        )
+    )
+    if predicate is not None:
+        q = q.filter(MemoryClaim.predicate == predicate)
+    return q.all()
