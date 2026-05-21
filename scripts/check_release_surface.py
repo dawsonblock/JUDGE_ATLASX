@@ -75,6 +75,8 @@ def inspect_surface(archive: Path) -> dict:
                 if rel_name in FORBIDDEN_FILE_NAMES:
                     report["forbidden_paths"].append(info.filename)
                     continue
+                if rel_name.endswith(".log") and rel_path.startswith("artifacts/proof/current/"):
+                    continue
                 if rel_name.endswith(FORBIDDEN_SUFFIXES):
                     report["forbidden_paths"].append(info.filename)
                     continue

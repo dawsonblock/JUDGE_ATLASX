@@ -3,6 +3,7 @@
 
 This gate executes the required alpha checks, writes canonical logs under
 ``artifacts/proof/current``, and fails if any referenced log file is missing.
+It does not emit active proof artifacts under legacy mirror directories.
 """
 
 from __future__ import annotations
@@ -67,6 +68,7 @@ REQUIRED_GATE_NAMES = {
     "frontend_build",
     "archive_validation",
     "release_readiness_generation",
+    "single_proof_authority",
 }
 
 
@@ -255,6 +257,16 @@ def _extract_backend_import_route_count(log_path: Path) -> int | None:
         return None
     return int(match.group(1))
 
+def _extract_prefixed_value(log_path: Path, prefix: str) -> str | None:
+    if not log_path.exists():
+        return None
+    text = log_path.read_text(encoding="utf-8", errors="ignore")
+    pattern = re.compile(rf"^{re.escape(prefix)}\s*(.+)$", re.MULTILINE)
+    match = pattern.search(text)
+    if not match:
+        return None
+    return match.group(1).strip()
+
 
 def _check_status_map(payload: dict) -> dict[str, dict]:
     return {check["name"]: check for check in payload.get("checks", [])}
@@ -346,6 +358,7 @@ def _write_grouped_proof_artifacts(repo_root: Path, out_dir: Path, payload: dict
         "check_api_contracts",
         "map_route_check",
         "public_api_boundary",
+        "check_node_policy",
     ]
     for name in frontend_names:
         check = checks.get(name)
@@ -380,65 +393,6 @@ def _write_grouped_proof_artifacts(repo_root: Path, out_dir: Path, payload: dict
         (out_dir / "source_registry_status.json").relative_to(repo_root)
     )
     return artifacts
-
-
-def _sync_artifacts_current(
-    repo_root: Path,
-    payload: dict,
-    manifest: dict,
-) -> dict[str, str]:
-    out_dir = repo_root / "artifacts" / "current"
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    proof_manifest_payload = {
-        "generated_at": payload.get("timestamp_utc"),
-        "alpha_gate_passed": payload.get("alpha_gate_passed"),
-        "archive_validation_result": payload.get("archive_validation_result"),
-        "check_count": payload.get("check_count"),
-        "commit_hash": payload.get("commit_hash"),
-        "source_release_gate": "artifacts/proof/current/release_gate.json",
-        "source_proof_manifest": "artifacts/proof/current/proof_manifest.json",
-        "proof_manifest": manifest,
-    }
-    proof_manifest_path = out_dir / "PROOF_MANIFEST.json"
-    proof_manifest_path.write_text(
-        json.dumps(proof_manifest_payload, indent=2) + "\n",
-        encoding="utf-8",
-    )
-
-    proof_report_lines = [
-        "# PROOF_REPORT",
-        "",
-        f"- generated_at_utc: {payload.get('timestamp_utc', 'unknown')}",
-        f"- alpha_gate_passed: {str(payload.get('alpha_gate_passed', False)).lower()}",
-        f"- archive_validation_result: {payload.get('archive_validation_result', 'UNKNOWN')}",
-        f"- check_count: {payload.get('check_count', 0)}",
-        f"- commit_hash: {payload.get('commit_hash', 'unknown')}",
-        "",
-        "Derived from artifacts/proof/current/release_gate.json and proof_manifest.json.",
-    ]
-    proof_report_path = out_dir / "PROOF_REPORT.md"
-    proof_report_path.write_text("\n".join(proof_report_lines) + "\n", encoding="utf-8")
-
-    release_manifest_payload = {
-        "generated_at": payload.get("timestamp_utc"),
-        "alpha_gate_passed": payload.get("alpha_gate_passed"),
-        "archive_validation_result": payload.get("archive_validation_result"),
-        "commit_hash": payload.get("commit_hash"),
-        "release_mode": "alpha",
-        "source_release_gate": "artifacts/proof/current/release_gate.json",
-    }
-    release_manifest_path = out_dir / "RELEASE_MANIFEST.json"
-    release_manifest_path.write_text(
-        json.dumps(release_manifest_payload, indent=2) + "\n",
-        encoding="utf-8",
-    )
-
-    return {
-        "artifacts_current_proof_manifest": str(proof_manifest_path.relative_to(repo_root)),
-        "artifacts_current_proof_report": str(proof_report_path.relative_to(repo_root)),
-        "artifacts_current_release_manifest": str(release_manifest_path.relative_to(repo_root)),
-    }
 
 
 def _write_static_guards_log(repo_root: Path, out_dir: Path, steps: list[GateStep]) -> str:
@@ -1507,6 +1461,19 @@ def main() -> int:
             ],
         ),
         GateStepSpec(
+            "check_node_policy",
+            "check_node_policy.log",
+            [
+                "bash", "-lc",
+                (
+                    'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
+                    " nvm use 20 >/dev/null 2>&1"
+                    " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
+                    f' "{python_exe}" scripts/check_node_policy.py --root "{repo_root}"'
+                ),
+            ],
+        ),
+        GateStepSpec(
             "frontend_node_gate",
             "frontend_node_gate.log",
             [
@@ -1813,14 +1780,8 @@ def main() -> int:
         "backend_test_python_version": backend_python_version,
         "backend_test_python_executable": python_exe,
         "backend_required_python": ">=3.11",
-        "node_version": subprocess.run(
-            ["node", "--version"], capture_output=True, text=True
-        ).stdout.strip()
-        or "unknown",
-        "npm_version": subprocess.run(
-            ["npm", "--version"], capture_output=True, text=True
-        ).stdout.strip()
-        or "unknown",
+        "node_version": "unknown",
+        "npm_version": "unknown",
         "test_database_backend": db_backend,
         "test_database_url_type": "sqlite_file",
         "platform": platform.platform(),
@@ -1917,6 +1878,17 @@ def main() -> int:
         ],
         "release_blockers_remaining": [],  # updated after proof_freshness step
     }
+
+    check_node_policy_log = out_dir / "check_node_policy.log"
+    frontend_node_gate_log = out_dir / "frontend_node_gate.log"
+    gated_node_version = _extract_prefixed_value(check_node_policy_log, "NODE_VERSION:")
+    gated_npm_version = _extract_prefixed_value(check_node_policy_log, "NPM_VERSION:")
+    frontend_node_gate_version = _extract_prefixed_value(frontend_node_gate_log, "NODE_VERSION:")
+    frontend_npm_version = _extract_prefixed_value(frontend_node_gate_log, "NPM_VERSION:")
+    payload["node_version"] = gated_node_version or frontend_node_gate_version or "unknown"
+    payload["gate_runner_node_version"] = payload["node_version"]
+    payload["frontend_node_gate_version"] = frontend_node_gate_version or gated_node_version
+    payload["npm_version"] = gated_npm_version or frontend_npm_version or "unknown"
 
     # -----------------------------------------------------------------------
     # Phase 2a: write preliminary release_gate.json with the final proof hash
@@ -2113,6 +2085,16 @@ def main() -> int:
     )
     results.append(proof_consistency_pytest_step)
 
+    single_proof_authority_step = _run(
+        repo_root,
+        out_dir,
+        "single_proof_authority",
+        "single_proof_authority.log",
+        [python_exe, "scripts/check_single_proof_authority.py", "--root", str(repo_root)],
+        timeout_seconds=60,
+    )
+    results.append(single_proof_authority_step)
+
     missing_logs = _missing_logs(repo_root, results)
     ok = all(r.exit_code == 0 for r in results) and not missing_logs
     payload["alpha_gate_passed"] = ok
@@ -2142,7 +2124,6 @@ def main() -> int:
     current_alpha_status_rel = _write_current_alpha_status_md(repo_root, out_dir, payload)
     payload["logs"]["current_proof"] = current_proof_rel
     payload["logs"]["current_alpha_status"] = current_alpha_status_rel
-    payload["logs"] |= _sync_artifacts_current(repo_root, payload, manifest)
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
     if ok:

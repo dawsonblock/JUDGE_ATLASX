@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate artifacts/current proof artifacts from release gate output."""
+"""Generate canonical proof sidecars from release gate output."""
 
 from __future__ import annotations
 
@@ -11,9 +11,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 GATE_JSON = REPO_ROOT / "artifacts" / "proof" / "current" / "release_gate.json"
 GATE_MANIFEST = REPO_ROOT / "artifacts" / "proof" / "current" / "proof_manifest.json"
-OUT_DIR = REPO_ROOT / "artifacts" / "current"
+OUT_DIR = REPO_ROOT / "artifacts" / "proof" / "current"
 OUT_REPORT = OUT_DIR / "PROOF_REPORT.md"
-OUT_MANIFEST = OUT_DIR / "PROOF_MANIFEST.json"
+OUT_MANIFEST = OUT_DIR / "RELEASE_MANIFEST.json"
 
 
 def _hash_bytes(data: bytes) -> str:

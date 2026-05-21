@@ -92,6 +92,7 @@ EXCLUDED_SUFFIXES = (
     ".swp",
     ".pem",
     ".key",
+    ".tsbuildinfo",
 )
 EXCLUDED_FILE_NAMES = {
     ".env",
@@ -191,7 +192,35 @@ def _is_excluded(rel_path: str, include_external: bool, include_proof_archive: b
     return False
 
 
-def _collect_files(repo_root: Path, include_external: bool, include_proof_archive: bool) -> tuple[list[Path], set[str], set[str]]:
+def _load_packaged_proof_paths(repo_root: Path) -> set[str]:
+    release_gate_path = repo_root / "artifacts" / "proof" / "current" / "release_gate.json"
+    packaged: set[str] = set()
+    if not release_gate_path.exists():
+        return packaged
+    try:
+        payload = json.loads(release_gate_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return packaged
+
+    logs = payload.get("logs", {})
+    if not isinstance(logs, dict):
+        return packaged
+
+    for path in logs.values():
+        if not isinstance(path, str):
+            continue
+        normalized = path.replace("\\", "/")
+        if normalized.startswith("artifacts/proof/current/"):
+            packaged.add(normalized)
+    return packaged
+
+
+def _collect_files(
+    repo_root: Path,
+    include_external: bool,
+    include_proof_archive: bool,
+    packaged_proof_paths: set[str],
+) -> tuple[list[Path], set[str], set[str]]:
     included: set[Path] = set()
     included_top_level: set[str] = set()
     excluded_top_level: set[str] = set()
@@ -229,6 +258,13 @@ def _collect_files(repo_root: Path, include_external: bool, include_proof_archiv
             if _is_excluded(rel_path, include_external, include_proof_archive):
                 excluded_top_level.add(rel_path.split("/", 1)[0])
                 continue
+            included.add(path)
+            included_top_level.add(rel_path.split("/", 1)[0])
+
+    for rel in sorted(packaged_proof_paths):
+        path = repo_root / rel
+        if path.is_file():
+            rel_path = _normalize(path.relative_to(repo_root))
             included.add(path)
             included_top_level.add(rel_path.split("/", 1)[0])
 
@@ -330,11 +366,21 @@ def build_archive(output: Path, root_name: str, include_external: bool, include_
         else output.name
     )
 
+    packaged_proof_paths = _load_packaged_proof_paths(REPO_ROOT)
     files, included_top_level, excluded_top_level = _collect_files(
         REPO_ROOT,
         include_external=include_external,
         include_proof_archive=include_proof_archive,
+        packaged_proof_paths=packaged_proof_paths,
     )
+
+    included_rel_paths = {_normalize(path.relative_to(REPO_ROOT)) for path in files}
+    missing_packaged_proof = sorted(packaged_proof_paths - included_rel_paths)
+    if missing_packaged_proof:
+        raise SystemExit(
+            "Missing packaged proof files required by release_gate.json: "
+            + ", ".join(missing_packaged_proof)
+        )
 
     command_parts = [
         "python3",
@@ -380,6 +426,7 @@ def build_archive(output: Path, root_name: str, include_external: bool, include_
         "file_count": len(files) + 1,
         "included_top_level_paths": sorted(included_top_level),
         "excluded_top_level_paths": sorted(excluded_top_level),
+        "packaged_proof_path_count": len(packaged_proof_paths),
     }
 
 
@@ -406,6 +453,7 @@ def main() -> int:
             REPO_ROOT,
             include_external=args.include_external,
             include_proof_archive=args.include_proof_archive,
+            packaged_proof_paths=_load_packaged_proof_paths(REPO_ROOT),
         )
         result = {
             "dry_run": True,
