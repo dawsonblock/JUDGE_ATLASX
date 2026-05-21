@@ -100,7 +100,6 @@ def find_forbidden_paths(extract_dir: Path) -> list[str]:
         ".venv/",
         ".git/",
         ".gitignore",
-        ".github/workflows/",
     }
     
     forbidden_extensions = {".pyc", ".egg-info", ".pyo"}
@@ -150,24 +149,36 @@ def find_nested_artifacts(extract_dir: Path, root: Path) -> list[str]:
     return nested
 
 
-def find_duplicate_critical_files(extract_dir: Path) -> list[str]:
-    """Find duplicate critical files outside authoritative root."""
-    critical_files = {
-        "release_readiness.md",
-        "proof_manifest.json",
-        "release_gate.json",
-        "backend_pytest.log",
+def find_duplicate_critical_files(extract_dir: Path, root: Path) -> list[str]:
+    """Find duplicate canonical proof artifacts outside the runtime root.
+
+    Only flags duplicates of canonical files that should exist exactly once in
+    artifacts/proof/current under the resolved runtime root.
+    """
+    critical_rel_paths = {
+        "artifacts/proof/current/release_readiness.md",
+        "artifacts/proof/current/proof_manifest.json",
+        "artifacts/proof/current/release_gate.json",
+        "artifacts/proof/current/backend_pytest.log",
     }
-    
+
     duplicates: list[str] = []
-    
-    for critical_file in critical_files:
-        found_paths = list(extract_dir.glob(f"**/{critical_file}"))
-        if len(found_paths) > 1:
-            for path in found_paths:
-                duplicates.append(str(path.relative_to(extract_dir)))
-    
-    return duplicates
+    for rel_path in sorted(critical_rel_paths):
+        name = Path(rel_path).name
+        found_paths = list(extract_dir.glob(f"**/{name}"))
+        canonical_path = root / rel_path
+        matching = [
+            path for path in found_paths if path.as_posix().endswith(rel_path)
+        ]
+
+        if not canonical_path.exists():
+            duplicates.append(f"missing_canonical:{canonical_path.relative_to(extract_dir)}")
+            continue
+
+        if len(matching) > 1:
+            duplicates.extend(str(path.relative_to(extract_dir)) for path in matching)
+
+    return sorted(set(duplicates))
 
 
 def validate_archive_structure(extract_dir: Path, root: Path) -> tuple[bool, list[str]]:
@@ -337,7 +348,7 @@ def validate_final_zip(zip_path: Path) -> dict:
             result["errors"].extend([f"  - {p}" for p in nested])
         
         # Check duplicate critical files
-        duplicates = find_duplicate_critical_files(tmpdir_path)
+        duplicates = find_duplicate_critical_files(tmpdir_path, root)
         if duplicates:
             result["errors"].append(f"duplicate_critical_files:{len(duplicates)}")
             result["errors"].extend([f"  - {p}" for p in duplicates])

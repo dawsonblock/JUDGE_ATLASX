@@ -184,6 +184,8 @@ def _is_excluded(rel_path: str, include_external: bool, include_proof_archive: b
     parts = Path(rel_path).parts
     if any(part in EXCLUDED_SEGMENTS for part in parts):
         return True
+    if any(part.lower().endswith(".egg-info") for part in parts):
+        return True
 
     name = Path(rel_path).name
     lower_name = name.lower()
