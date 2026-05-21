@@ -187,6 +187,12 @@ jobs:
           source ./backend/.venv/bin/activate
           python scripts/release_gate.py
 
+      - name: Check canonical proof consistency
+        if: always()
+        run: |
+          source ./backend/.venv/bin/activate
+          python scripts/check_proof_consistency.py
+
       - name: Verify canonical proof artifacts
         if: always()
         run: |

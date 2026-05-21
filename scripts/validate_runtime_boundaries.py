@@ -48,6 +48,14 @@ FORBIDDEN_PROOF_PATH_MARKERS = (
     "cache",
 )
 
+_STRICT_CACHE_SEGMENTS = {
+    "cache",
+    ".cache",
+    "__pycache__",
+    ".mypy_cache",
+    ".pytest_cache",
+}
+
 _MANIFEST_EXCLUSION_FIELDS = {
     "excluded_directories",
     "excluded_paths",
@@ -102,9 +110,39 @@ def _scan_frontend_imports(base: Path) -> list[str]:
         for idx, line in enumerate(text.splitlines(), start=1):
             matches = import_re.findall(line) + require_re.findall(line)
             for value in matches:
-                if any(marker in value for marker in FORBIDDEN_IMPORT_PREFIXES):
+                if _contains_forbidden_import_segment(value):
                     violations.append(f"{rel}:{idx}: forbidden import '{value}'")
     return violations
+
+
+def _normalized_path_parts(value: str) -> tuple[str, ...]:
+    normalized = value.replace("\\", "/")
+    return tuple(part for part in normalized.split("/") if part and part != ".")
+
+
+def _contains_forbidden_import_segment(value: str) -> bool:
+    parts = _normalized_path_parts(value)
+    return any(part in FORBIDDEN_IMPORT_PREFIXES for part in parts)
+
+
+def _matches_marker(value: str, marker: str) -> bool:
+    parts = _normalized_path_parts(value)
+    if not parts:
+        return False
+
+    if marker == "cache":
+        return any(part in _STRICT_CACHE_SEGMENTS for part in parts)
+
+    if "/" in marker:
+        marker_parts = tuple(part for part in marker.split("/") if part)
+        if len(parts) < len(marker_parts):
+            return False
+        for idx in range(len(parts) - len(marker_parts) + 1):
+            if parts[idx : idx + len(marker_parts)] == marker_parts:
+                return True
+        return False
+
+    return marker in parts
 
 
 def _docker_context_violations() -> list[str]:
@@ -152,7 +190,7 @@ def _proof_manifest_violations() -> list[str]:
         if isinstance(obj, str):
             if current_key in _MANIFEST_EXCLUSION_FIELDS:
                 return False
-            return marker in obj
+            return _matches_marker(obj, marker)
         return False
 
     for manifest in manifests:

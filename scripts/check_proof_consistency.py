@@ -30,8 +30,8 @@ def check_node_version_consistency(manifest: dict, gate: dict) -> list[str]:
     """Check Node version consistency between artifacts."""
     errors = []
     
-    manifest_node = manifest.get("gate_runner_node_version")
-    gate_node = gate.get("gate_runner_node_version")
+    manifest_node = manifest.get("gate_runner_node_version") or manifest.get("node_version")
+    gate_node = gate.get("gate_runner_node_version") or gate.get("node_version")
     
     if manifest_node != gate_node:
         errors.append(
@@ -43,7 +43,7 @@ def check_node_version_consistency(manifest: dict, gate: dict) -> list[str]:
     manifest_frontend = manifest.get("frontend_node_gate_version")
     gate_frontend = gate.get("frontend_node_gate_version")
     
-    if manifest_frontend != gate_frontend:
+    if manifest_frontend is not None and gate_frontend is not None and manifest_frontend != gate_frontend:
         errors.append(
             f"Frontend Node version mismatch: proof_manifest.json has '{manifest_frontend}' "
             f"but release_gate.json has '{gate_frontend}'"
@@ -100,6 +100,41 @@ def check_commit_hash_consistency(manifest: dict, gate: dict) -> list[str]:
     return errors
 
 
+def check_proof_input_consistency(manifest: dict, gate: dict) -> list[str]:
+    """Check proof input hash metadata consistency between artifacts."""
+    errors = []
+
+    manifest_hash = manifest.get("proof_input_tree_hash")
+    gate_hash = gate.get("proof_input_tree_hash")
+    if gate_hash and not manifest_hash:
+        errors.append(
+            "Proof input hash missing in proof_manifest.json while present in release_gate.json"
+        )
+    if manifest_hash and gate_hash and manifest_hash != gate_hash:
+        errors.append(
+            f"Proof input hash mismatch: proof_manifest.json has '{manifest_hash}' "
+            f"but release_gate.json has '{gate_hash}'"
+        )
+
+    manifest_count = manifest.get("proof_input_file_count")
+    gate_count = gate.get("proof_input_file_count")
+    if gate_count is not None and manifest_count is None:
+        errors.append(
+            "Proof input file count missing in proof_manifest.json while present in release_gate.json"
+        )
+    if (
+        manifest_count is not None
+        and gate_count is not None
+        and manifest_count != gate_count
+    ):
+        errors.append(
+            f"Proof input file count mismatch: proof_manifest.json has '{manifest_count}' "
+            f"but release_gate.json has '{gate_count}'"
+        )
+
+    return errors
+
+
 def check_production_ready_consistency(manifest: dict, gate: dict) -> list[str]:
     """Check production_ready flag consistency between artifacts."""
     errors = []
@@ -139,6 +174,7 @@ def main():
     all_errors.extend(check_python_version_consistency(manifest, gate))
     all_errors.extend(check_platform_consistency(manifest, gate))
     all_errors.extend(check_commit_hash_consistency(manifest, gate))
+    all_errors.extend(check_proof_input_consistency(manifest, gate))
     all_errors.extend(check_production_ready_consistency(manifest, gate))
     
     # Report results

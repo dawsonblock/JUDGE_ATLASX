@@ -5,13 +5,14 @@ Provides visibility and control for queued ingestion runs.
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from app.auth.admin import enforce_jwt_mutation_authority, log_mutation, require_admin_token
 from app.auth.actor import AdminActor
+from app.db.session import get_db
 from app.security.import_authority import require_source_admin_actor
 from app.workers.ingestion_queue import get_ingestion_queue
 from app.workers.queue_backend import JobState
@@ -38,7 +39,7 @@ class RetryJobResponse(BaseModel):
     old_job_id: str
     new_job_id: str
     source_key: str
-    state: str = "pending"
+    state: JobState = JobState.PENDING
 
 
 def _serialize_job(record: Any) -> IngestionJobResponse:
@@ -47,13 +48,12 @@ def _serialize_job(record: Any) -> IngestionJobResponse:
 
 @router.get("", response_model=list[IngestionJobResponse])
 def list_ingestion_jobs(
-    state: Literal["pending", "running", "completed", "failed"] | None = Query(default=None),
+    state: JobState | None = Query(default=None),
     limit: int = Query(100, ge=1, le=500),
     _: AdminActor = Depends(require_admin_token),
 ) -> list[IngestionJobResponse]:
     queue = get_ingestion_queue()
-    state_filter = JobState(state) if state else None
-    jobs = queue.list_jobs(state_filter)
+    jobs = queue.list_jobs(state)
     return [_serialize_job(job) for job in jobs[:limit]]
 
 
@@ -70,6 +70,7 @@ def get_ingestion_job(job_id: str, _: AdminActor = Depends(require_admin_token))
 def cancel_ingestion_job(
     job_id: str,
     request: Request,
+    db = Depends(get_db),
     actor: AdminActor = Depends(require_source_admin_actor),
 ) -> IngestionJobResponse:
     enforce_jwt_mutation_authority(actor)
@@ -101,8 +102,8 @@ def cancel_ingestion_job(
         payload={"job_id": job_id, "source_key": refreshed.source_key},
         request=request,
         actor=actor,
-        db=None,
-        fail_closed=False,
+        db=db,
+        fail_closed=True,
     )
 
     return _serialize_job(refreshed)
@@ -112,6 +113,7 @@ def cancel_ingestion_job(
 def retry_ingestion_job(
     job_id: str,
     request: Request,
+    db = Depends(get_db),
     actor: AdminActor = Depends(require_source_admin_actor),
 ) -> RetryJobResponse:
     enforce_jwt_mutation_authority(actor)
@@ -145,13 +147,13 @@ def retry_ingestion_job(
         },
         request=request,
         actor=actor,
-        db=None,
-        fail_closed=False,
+        db=db,
+        fail_closed=True,
     )
 
     return RetryJobResponse(
         old_job_id=job_id,
         new_job_id=new_job_id,
         source_key=old_job.source_key,
-        state="pending",
+        state=JobState.PENDING,
     )

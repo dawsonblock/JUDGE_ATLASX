@@ -491,7 +491,10 @@ def map_crime_aggregates(
 _ARC_COORD_TYPES = ("court", "judge")
 
 
-@router.get("/api/map/relationship-arcs")
+@router.get(
+    "/api/map/relationship-arcs",
+    dependencies=[Depends(rate_limit_map)],
+)
 def map_relationship_arcs(
     predicate: str | None = None,
     limit: int = Query(200, ge=1, le=250),

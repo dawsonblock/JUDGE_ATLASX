@@ -13,4 +13,4 @@ backend/app/tests/test_gate.py:14
     class TestGate:
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-55 passed, 3258 deselected, 3 warnings in 1.74s
+55 passed, 3296 deselected, 3 warnings in 1.79s

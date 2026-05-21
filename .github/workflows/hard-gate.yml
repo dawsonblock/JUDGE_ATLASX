@@ -49,6 +49,11 @@ jobs:
           source ./backend/.venv/bin/activate
           python scripts/check_proof_freshness.py
 
+      - name: Check proof consistency
+        run: |
+          source ./backend/.venv/bin/activate
+          python scripts/check_proof_consistency.py
+
       - name: Validate source registry
         run: |
           source ./backend/.venv/bin/activate

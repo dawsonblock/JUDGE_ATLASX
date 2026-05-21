@@ -91,7 +91,7 @@ Server:
   Running: 6
   Paused: 0
   Stopped: 69
- Images: 59
+ Images: 60
  Server Version: 29.4.3
  Storage Driver: overlayfs
   driver-type: io.containerd.snapshotter.v1

@@ -1,7 +1,7 @@
 # REPAIR_REPORT
 
-- generated_at_utc: 2026-05-21T00:57:56.680404+00:00
-- commit_hash: 3dec9cbcd6cb69b47c3b613e1d6fee794fa3d07b
+- generated_at_utc: 2026-05-21T02:28:32.346830+00:00
+- commit_hash: caf6531edaf1a1e9f723290a05ef06c05539046c
 - alpha_gate_passed: true
 
 ## Phase Results
@@ -17,7 +17,7 @@
 - 9. Justice XML Proof Coverage: PASS (artifacts/proof/current/backend_pytest.log)
 - 10. Public Review Gate Coverage: PASS (artifacts/proof/current/public_api_boundary.log)
 - 11. Derivative Memory Boundary Coverage: PASS (artifacts/proof/current/public_api_boundary.log)
-- 12. Frontend Node 25.9 Gate: PASS (artifacts/proof/current/frontend_node_gate.log)
+- 12. Frontend Node 20 Gate: PASS (artifacts/proof/current/frontend_node_gate.log)
 - 13. CI/Local Gate Parity Baseline: PASS (artifacts/proof/current/release_readiness.md)
 - 14. Repair Report Generated: PASS (artifacts/proof/current/REPAIR_REPORT.md)
 

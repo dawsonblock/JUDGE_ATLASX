@@ -24,26 +24,24 @@ if [[ -s "${HOME}/.nvm/nvm.sh" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 1. Require Node 25.9.x
+# 1. Require Node 20.x
 # ---------------------------------------------------------------------------
 echo ""
 echo "1. Checking Node version ..."
 NODE_VERSION="$(node --version 2>/dev/null || echo "not-found")"
 if [[ "${NODE_VERSION}" == "not-found" ]]; then
-    echo "ERROR: Node.js not found. Please install Node 25.9.x."
+    echo "ERROR: Node.js not found. Please install Node 20.x."
     exit 1
 fi
-# Extract major/minor version (handles v25.9.x)
+# Extract major version (handles v20.x.x)
 NODE_MAJOR="${NODE_VERSION%%.*}"
 NODE_MAJOR="${NODE_MAJOR#v}"
-NODE_REST="${NODE_VERSION#v${NODE_MAJOR}.}"
-NODE_MINOR="${NODE_REST%%.*}"
-if [[ "${NODE_MAJOR}" -ne 25 || "${NODE_MINOR}" -ne 9 ]]; then
-    echo "ERROR: Node 25.9.x is required. Found: ${NODE_VERSION}"
-    echo "Install Node 25.9.0 (e.g. via nvm: nvm install 25.9.0 && nvm use 25.9.0) and re-run."
+if [[ "${NODE_MAJOR}" -ne 20 ]]; then
+    echo "ERROR: Node 20.x is required. Found: ${NODE_VERSION}"
+    echo "Install Node 20 (e.g. via nvm: nvm install 20 && nvm use 20) and re-run."
     exit 1
 fi
-echo "   Node: ${NODE_VERSION} — OK (Node 25.9.x supported)"
+echo "   Node: ${NODE_VERSION} — OK (Node 20.x supported)"
 echo "   npm:  $(npm --version)"
 
 # ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-21T00:57:56.680404+00:00
-- commit_hash: 3dec9cbcd6cb69b47c3b613e1d6fee794fa3d07b
+- generated_at_utc: 2026-05-21T02:28:32.346830+00:00
+- commit_hash: caf6531edaf1a1e9f723290a05ef06c05539046c
 - alpha_gate_status: PASS
 - alpha_gate_passed: true
 - release_gate_check_count: 38
@@ -11,8 +11,8 @@
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
 - archive_validation_result: PASS
-- proof_input_tree_hash: 499b965dc74307b315b7c4413e9e1f967d1bf1653681e971c567677240a44d16
-- proof_input_file_count: 986
+- proof_input_tree_hash: 5733be1218bc6eae8b661e1f8125ed22411a9a6f0ec452576a44b6be2fecaf44
+- proof_input_file_count: 993
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
@@ -23,7 +23,7 @@
 - backend_test_python_version: 3.11.7
 - backend_test_python_executable: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/bin/python
 - backend_required_python: >=3.11
-- node_version: v25.9.0
+- node_version: v24.15.0
 - npm_version: 11.12.1
 - platform: macOS-26.2-arm64-arm-64bit
 - test_database_backend: sqlite
@@ -59,8 +59,8 @@
 
 ## Current Proof Facts
 
-- backend pytest: 3273 passed, 40 skipped
-- backend import proof: PASS (101 routes)
+- backend pytest: 3311 passed, 40 skipped
+- backend import proof: PASS (105 routes)
 - frontend contracts: 48 passed
 - public API boundary: 55 passed
 - Docker runtime preflight: PASS
