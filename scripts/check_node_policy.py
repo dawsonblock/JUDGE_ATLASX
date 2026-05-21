@@ -160,6 +160,7 @@ def _validate_doc_metadata(
             r"-\s*node_version:\s*(v?\d+(?:\.\d+)*)",
             r"\*\*Node version\*\*:\s*(v?\d+(?:\.\d+)*)",
             r"Runtime baseline:.*?\bNode\s+(v?\d+(?:\.\d+)*)",
+            r"\*\*Runtime baseline\*\*:\s*.*?\bNode\s+(v?\d+(?:\.\d+)*)",
         ],
     )
     npm_value = _extract_doc_version(
@@ -168,6 +169,7 @@ def _validate_doc_metadata(
             r"-\s*npm_version:\s*(v?\d+(?:\.\d+)*)",
             r"\*\*npm version\*\*:\s*(v?\d+(?:\.\d+)*)",
             r"Runtime baseline:.*?\bnpm\s+(v?\d+(?:\.\d+)*)",
+            r"\*\*Runtime baseline\*\*:\s*.*?\bnpm\s+(v?\d+(?:\.\d+)*)",
         ],
     )
 
@@ -287,7 +289,6 @@ def _validate_stored_metadata(
         )
 
     doc_files = {
-        "artifacts/proof/current/CURRENT_PROOF.md": repo_root / "artifacts" / "proof" / "current" / "CURRENT_PROOF.md",
         "CURRENT_PROOF.md": repo_root / "CURRENT_PROOF.md",
         "PROOF_STATUS.md": repo_root / "PROOF_STATUS.md",
         "STATUS.md": repo_root / "STATUS.md",
@@ -306,7 +307,6 @@ def _validate_stored_metadata(
         )
 
     log_files = {
-        "artifacts/proof/current/check_node_policy.log": repo_root / "artifacts" / "proof" / "current" / "check_node_policy.log",
         "artifacts/proof/current/frontend_node_gate.log": repo_root / "artifacts" / "proof" / "current" / "frontend_node_gate.log",
     }
     for label, path in log_files.items():

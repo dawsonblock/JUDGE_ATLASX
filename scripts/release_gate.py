@@ -1956,7 +1956,16 @@ def main() -> int:
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
     missing_logs = _missing_logs(repo_root, results)
-    ok = all(r.exit_code == 0 for r in results) and not missing_logs
+    remaining_required_steps = {
+        "proof_consistency_pytest",
+        "required_proof_logs",
+        "archive_validation",
+    }
+    ok = (
+        all(r.exit_code == 0 for r in results)
+        and not missing_logs
+        and not remaining_required_steps
+    )
     payload["alpha_gate_passed"] = ok
     payload["check_count"] = len(results)
     payload["proof_freshness_result"] = pf_step.status
@@ -1973,6 +1982,7 @@ def main() -> int:
     payload["logs"]["static_guards"] = static_guards_rel
     payload["release_blockers_remaining"] = (
         [r.name for r in results if r.exit_code != 0]
+        + sorted(remaining_required_steps)
         + (["missing_logs"] if missing_logs else [])
         if not ok
         else []
@@ -2027,22 +2037,6 @@ def main() -> int:
     payload["logs"]["repair_report"] = repair_report_rel
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
-    # Run proof consistency only after the final release_gate.json and
-    # CURRENT_PROOF.md artifacts have been written.
-    proof_consistency_pytest_step = _run(
-        repo_root,
-        out_dir,
-        "proof_consistency_pytest",
-        "proof_consistency_pytest.log",
-        [
-            "bash",
-            "-lc",
-            f'JTA_DATABASE_URL="{proof_db_url}" "{python_exe}" -m pytest backend/app/tests/test_release_gate_consistency.py -x --tb=short -q',
-        ],
-        timeout_seconds=120,
-    )
-    results.append(proof_consistency_pytest_step)
-
     single_proof_authority_step = _run(
         repo_root,
         out_dir,
@@ -2075,7 +2069,15 @@ def main() -> int:
     results.append(readiness_step)
 
     missing_logs = _missing_logs(repo_root, results)
-    ok = all(r.exit_code == 0 for r in results) and not missing_logs
+    remaining_required_steps = {
+        "required_proof_logs",
+        "archive_validation",
+    }
+    ok = (
+        all(r.exit_code == 0 for r in results)
+        and not missing_logs
+        and not remaining_required_steps
+    )
     payload["alpha_gate_passed"] = ok
     payload["check_count"] = len(results)
     payload["checks"] = [asdict(r) for r in results]
@@ -2083,6 +2085,64 @@ def main() -> int:
     payload["logs"]["release_gate"] = str(gate_log_path.relative_to(repo_root))
     payload["logs"]["proof_manifest"] = str(manifest_path.relative_to(repo_root))
     payload["logs"]["release_readiness"] = readiness_rel
+    payload["logs"]["static_guards"] = static_guards_rel
+    payload["failed_checks"] = [r.name for r in results if r.exit_code != 0] + (
+        ["missing_logs"] if missing_logs else []
+    )
+    payload["release_blockers_remaining"] = (
+        [r.name for r in results if r.exit_code != 0]
+        + sorted(remaining_required_steps)
+        + (["missing_logs"] if missing_logs else [])
+        if not ok
+        else []
+    )
+
+    current_proof_rel = _write_current_proof_md(
+        repo_root,
+        out_dir,
+        payload,
+        check_count=len(results),
+    )
+    current_alpha_status_rel = _write_current_alpha_status_md(repo_root, out_dir, payload)
+    payload["logs"]["current_proof"] = current_proof_rel
+    payload["logs"]["current_alpha_status"] = current_alpha_status_rel
+
+    final_manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
+    _, readiness_rel = _generate_release_readiness_from_manifest(
+        repo_root,
+        out_dir,
+        final_manifest,
+    )
+    manifest_path.write_text(json.dumps(final_manifest, indent=2) + "\n", encoding="utf-8")
+    payload["logs"]["release_readiness"] = readiness_rel
+    payload["logs"]["proof_manifest"] = str(manifest_path.relative_to(repo_root))
+
+    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    # Run proof consistency only after release_gate.json, CURRENT_PROOF.md,
+    # and release_readiness.md have been written.
+    proof_consistency_pytest_step = _run(
+        repo_root,
+        out_dir,
+        "proof_consistency_pytest",
+        "proof_consistency_pytest.log",
+        [
+            "bash",
+            "-lc",
+            f'JTA_DATABASE_URL="{proof_db_url}" "{python_exe}" -m pytest backend/app/tests/test_release_gate_consistency.py -x --tb=short -q',
+        ],
+        timeout_seconds=120,
+    )
+    results.append(proof_consistency_pytest_step)
+
+    missing_logs = _missing_logs(repo_root, results)
+    ok = all(r.exit_code == 0 for r in results) and not missing_logs
+    payload["alpha_gate_passed"] = ok
+    payload["check_count"] = len(results)
+    payload["checks"] = [asdict(r) for r in results]
+    payload["logs"] = {r.name: r.log_path for r in results}
+    payload["logs"]["release_gate"] = str(gate_log_path.relative_to(repo_root))
+    payload["logs"]["proof_manifest"] = str(manifest_path.relative_to(repo_root))
     payload["logs"]["static_guards"] = static_guards_rel
     payload["failed_checks"] = [r.name for r in results if r.exit_code != 0] + (
         ["missing_logs"] if missing_logs else []

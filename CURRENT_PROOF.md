@@ -1,18 +1,18 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-21T06:29:08.716136+00:00
-- commit_hash: ec0d0253ec855bfec9cda945fbee8c2f3a144cc4
+- generated_at_utc: 2026-05-21T07:52:07.948806+00:00
+- commit_hash: 3fe754aa3679657426a2a58302ef35ae0ca5b002
 - alpha_gate_status: PASS
 - alpha_gate_passed: true
-- release_gate_check_count: 41
+- release_gate_check_count: 42
 - docker_available: true
 - postgis_proof_result: PASS
 - egress_proxy_proof_result: PASS
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
 - archive_validation_result: PASS
-- proof_input_tree_hash: c7ea75eef91a3cd607cfb0dddb13f8f721bb297e583f470ecd30138a931c1ab6
-- proof_input_file_count: 995
+- proof_input_tree_hash: 48660f1786d24aac86a8c1156d3f8dbf85f6c5cd5ea567614f9e9d1700bd3a41
+- proof_input_file_count: 997
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
@@ -93,6 +93,7 @@
 - artifacts/proof/current/backend_proof_summary.json
 - artifacts/proof/current/frontend_proof_summary.json
 - artifacts/proof/current/frontend_node_gate.log
+- artifacts/proof/current/check_node_policy.log
 - artifacts/proof/current/frontend_install.log
 - artifacts/proof/current/frontend_lint.log
 - artifacts/proof/current/frontend_typecheck.log
@@ -103,6 +104,9 @@
 - artifacts/proof/current/map_route_check.log
 - artifacts/proof/current/public_api_boundary.log
 - artifacts/proof/current/mutation_fail_closed_coverage.log
+- artifacts/proof/current/proof_consistency_pytest.log
+- artifacts/proof/current/single_proof_authority.log
+- artifacts/proof/current/required_proof_logs.log
 - artifacts/proof/current/source_registry_status.json
 - artifacts/proof/current/release_readiness.md
 - artifacts/proof/current/CURRENT_ALPHA_STATUS.md
