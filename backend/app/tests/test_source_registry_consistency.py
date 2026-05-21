@@ -153,3 +153,17 @@ def test_machine_ingest_sources_have_parser_version() -> None:
     assert not bad, (
         f"machine_ingest sources missing parser_version: {bad}"
     )
+
+
+def test_statscan_sources_remain_portal_reference_aggregate_only() -> None:
+    """StatsCan entries must remain non-runnable portal references in this phase."""
+    sources = _by_key(_load_sources())
+    for key in ("statscan_ccjs_crime_sk", "statscan_ucr_national"):
+        entry = sources.get(key)
+        assert entry is not None, f"missing source entry: {key}"
+        assert entry.get("source_type") == "aggregate_stats"
+        assert entry.get("source_class") == "portal_reference"
+        assert entry.get("automation_status") == "adapter_missing"
+        assert entry.get("enabled_default") is False
+        assert entry.get("requires_manual_review") is True
+        assert entry.get("public_publish_default") is True

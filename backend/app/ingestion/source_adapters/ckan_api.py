@@ -21,6 +21,10 @@ from app.ingestion.adapters import (
     IngestionResult,
     ParsedRecord,
 )
+from app.ingestion.schemas.ckan_crime_record import (
+    build_ckan_review_payload,
+    validate_ckan_row,
+)
 from app.ingestion.source_keys import CANADA_OPEN_DATA_CRIME, SASKATOON_OPEN_DATA_PORTAL
 from app.ingestion.fetcher import FetchCallable, fetch_for_ingestion, parse_allowed_domains
 from app.ingestion.source_rules import check_record_type_allowed
@@ -108,9 +112,7 @@ class CKANApiAdapter(CanadianSourceAdapter):
         return "fetch_error"
 
     def _validate_row_schema(self, row: Any) -> bool:
-        # Non-empty object rows are acceptable; parse() assigns a stable
-        # synthetic external_id when explicit identifiers are absent.
-        return isinstance(row, dict) and bool(row)
+        return validate_ckan_row(row)
 
     def _stable_external_id(self, row: dict[str, Any]) -> str:
         explicit = row.get("_id") or row.get("id") or row.get("record_id") or row.get("uuid")
@@ -210,19 +212,23 @@ class CKANApiAdapter(CanadianSourceAdapter):
                 continue
             external_id = self._stable_external_id(row)
             coord_precision = self._classify_coordinate_precision(row)
+            payload = build_ckan_review_payload(
+                source_key=self._source_key,
+                candidate_record_type=self._record_type,
+                external_id=external_id,
+                coordinate_precision=coord_precision,
+                raw=dict(row),
+                parser_version=_PARSER_VERSION,
+                public_record_authority=self._public_record_authority,
+                source_url=self._base_url,
+            )
             records.append(
                 ParsedRecord(
                     source_name=self._source_key,
                     source_key=self._source_key,
                     record_type="ReviewItem",
                     external_id=external_id,
-                    payload={
-                        "source_key": self._source_key,
-                        "candidate_record_type": self._record_type,
-                        "external_id": external_id,
-                        "coordinate_precision": coord_precision,
-                        "raw": dict(row),
-                    },
+                    payload=payload,
                     source_url=self._base_url,
                 )
             )

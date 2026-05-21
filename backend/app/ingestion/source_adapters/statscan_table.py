@@ -2,7 +2,7 @@
 
 Handles source keys: ``statscan_ccjs_crime_sk``, ``statscan_ucr_national``
 Parser key: ``statscan_table``
-Creates: ``CrimeIncident`` records
+Creates: ``ReviewItem`` records only
 Authority: ``official_statistics``
 
 Data source: https://www150.statcan.gc.ca/ (CANSIM / NDM tables)
@@ -26,6 +26,7 @@ from app.ingestion.source_rules import check_record_type_allowed
 logger = logging.getLogger(__name__)
 
 _RECORD_TYPE = "ReviewItem"
+_PARSER_VERSION = "statscan_table_v1"
 
 # Statistics Canada JSON API base for CANSIM table data
 _STATSCAN_API_BASE = (
@@ -34,13 +35,12 @@ _STATSCAN_API_BASE = (
 
 
 class StatscanTableAdapter(CanadianSourceAdapter):
-    """Fetch Statistics Canada CANSIM table data and produce CrimeIncident records.
+    """Fetch Statistics Canada CANSIM table data and produce review-only records.
 
     Statistics Canada publishes crime statistics through its CANSIM table
-    service.  This adapter fetches data as JSON or CSV (depending on the
-    table's available formats) and maps aggregate rows to ``CrimeIncident``
-    records with appropriate metadata indicating they are aggregate statistics,
-    not individual incident records.
+    service. This adapter fetches data as JSON or CSV (depending on the
+    table's available formats) and maps aggregate rows to review-only payloads
+    that are explicitly marked as aggregate statistics.
 
     .. note::
         Skeleton implementation.  The exact API endpoint and response schema
@@ -137,6 +137,8 @@ class StatscanTableAdapter(CanadianSourceAdapter):
                     external_id=external_id,
                     payload={
                         "aggregate": True,
+                        "record_scope": "aggregate_statistics_only",
+                        "ingestion_mode": "review_only",
                         "source_key": self._source_key,
                         "raw": dict(row),
                     },
@@ -147,6 +149,7 @@ class StatscanTableAdapter(CanadianSourceAdapter):
 
     def run(self) -> IngestionResult:
         result = IngestionResult(source_key=self._source_key)
+        result.parser_version = _PARSER_VERSION
         try:
             raw = self.fetch()
             result.records_fetched = len(raw)

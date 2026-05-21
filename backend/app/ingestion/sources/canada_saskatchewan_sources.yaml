@@ -385,17 +385,18 @@ sources:
   public_publish_default: false
   precision_level: city_block
   priority: 4
-  source_class: portal_reference
-  automation_status: adapter_missing
-  parser_version: null
-  config_json: '{}'
-  admin_notes: Municipal open data portal. Currently no crime/public safety datasets
-    exposed. Portal-reference until stable dataset ID and schema are identified.
-  lifecycle_state: portal_reference
-  status_reason: "Saskatoon Open Data portal \u2014 public safety datasets require\
-    \ portal download."
-  operator_next_step: Check data.saskatoon.ca for CSV/JSON endpoint; write adapter
-    if machine-readable.
+  source_class: machine_ingest
+  automation_status: machine_ready_disabled
+  parser_version: ckan_api_v1
+  config_json: '{"resource_id":"saskatoon-public-safety-fixture","page_limit":100,"max_pages":2,"offset":0}'
+  admin_notes: Staged CKAN machine-ingest source in disabled mode. Fixture-backed
+    proof path is available for CI without live network dependency. All outputs remain
+    review-only pending manual review.
+  lifecycle_state: runnable_disabled
+  status_reason: "Saskatoon public safety CKAN adapter staged and validated in fixture mode;\
+    \ source remains disabled pending operator review."
+  operator_next_step: Run fixture proof target, confirm review-only payloads, then
+    enable only after legal and data-quality verification.
   confidence_class: primary_official
   retention_policy: 7_years
   canonical_url: https://opendata.saskatoon.ca
@@ -404,9 +405,9 @@ sources:
   authentication_required: false
   rate_limit_policy: polite_1rps
   test_fixtures:
-  - type: reference_only
-    path: null
-    expected_min_records: 0
+  - type: json
+    path: backend/app/tests/fixtures/saskatoon_open_data_crime_sample.json
+    expected_min_records: 1
 - source_key: saskatoon_open_data_crime
   source_name: "City of Saskatoon Open Data \u2013 Crime Incidents"
   jurisdiction: Saskatoon, Saskatchewan, Canada

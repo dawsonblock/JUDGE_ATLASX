@@ -120,3 +120,9 @@ class TestJsonPath:
         # (this is a smoke test; actual rules are exercised via check_record_type_allowed)
         assert isinstance(result.review_items, list)
         assert result.errors == []
+        assert result.parser_version == "statscan_table_v1"
+        if result.review_items:
+            payload = result.review_items[0].payload
+            assert payload["aggregate"] is True
+            assert payload["record_scope"] == "aggregate_statistics_only"
+            assert payload["ingestion_mode"] == "review_only"

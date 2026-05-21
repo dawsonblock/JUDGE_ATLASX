@@ -1,4 +1,4 @@
-.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup release-zip build-clean-release validate-release-zip proof-static validate-archive-freshness
+.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup release-zip build-clean-release validate-release-zip proof-static validate-archive-freshness saskatoon-staging-proof
 
 backend-install:
 	cd backend && python -m pip install -e ".[test]"
@@ -102,6 +102,9 @@ proof:
 
 validate-archive-freshness:
 	@python3 scripts/verify_archive_proof_freshness.py --archive $(ARCHIVE)
+
+saskatoon-staging-proof:
+	@backend/.venv/bin/python -m pytest backend/app/tests/test_saskatoon_open_data_staging.py -q
 
 build-clean-release:
 	@python3 scripts/build_clean_release.py
