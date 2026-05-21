@@ -1,4 +1,4 @@
-.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup release-zip build-clean-release validate-release-zip proof-static validate-archive-freshness saskatoon-staging-proof canlii-staging-contract statscan-boundary-proof
+.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup release-zip build-clean-release validate-release-zip proof-static validate-archive-freshness saskatoon-staging-proof canlii-staging-contract statscan-boundary-proof validate-smoke-workspace validate-full-workspace validate-docker-workspace
 
 backend-install:
 	cd backend && python -m pip install -e ".[test]"
@@ -118,6 +118,15 @@ build-clean-release:
 validate-release-zip:
 	@python3 scripts/validate_release_zip.py
 
+validate-smoke-workspace:
+	@TOOLATHLON_PROFILE=smoke bash scripts/validate_smoke_workspace.sh
+
+validate-full-workspace:
+	@TOOLATHLON_PROFILE=full bash scripts/validate_full_workspace.sh
+
+validate-docker-workspace:
+	@TOOLATHLON_PROFILE=smoke RUN_DOCKER=1 bash scripts/validate_smoke_workspace.sh
+
 # proof-static: dependency-free boundary checks (no backend install required)
 proof-static:
 	@python3 scripts/validate_runtime_boundaries.py --static-only
@@ -128,16 +137,5 @@ proof-static:
 release-zip:
 	@VERSION=$$(date +%Y%m%d-%H%M%S); \
 	OUTFILE="judge_atlas_$${VERSION}.zip"; \
-	zip -r "$${OUTFILE}" . \
-	  --exclude "*.pyc" \
-	  --exclude "*/__pycache__/*" \
-	  --exclude "*/.venv/*" \
-	  --exclude "*.egg-info/*" \
-	  --exclude ".git/*" \
-	  --exclude ".git" \
-	  --exclude "node_modules/*" \
-	  --exclude "frontend/.next/*" \
-	  --exclude "artifacts/proof/*" \
-	  --exclude "*.log" \
-	  --exclude "*.zip"; \
+	bash scripts/create_release_zip.sh --output "$${OUTFILE}"; \
 	echo "Release archive: $${OUTFILE}"

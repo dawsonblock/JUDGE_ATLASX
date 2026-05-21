@@ -21,6 +21,7 @@ DEFAULT_INCLUDE_TOP_LEVEL = (
     "backend",
     "frontend",
     "demo",
+    "deploy",
     "docs",
     "scripts",
     "infra",
@@ -55,9 +56,11 @@ DEFAULT_INCLUDE_FILES = (
 )
 
 EXCLUDED_PREFIXES = (
+    "__MACOSX/",
     "research/",
     "external/",
     "external_reference/",
+    "docs/archive/",
     "node_modules/",
     "frontend/node_modules/",
     "frontend/.next/",
@@ -116,6 +119,10 @@ LOCAL_PATH_PATTERNS = (
     re.compile(r"/private/[^\s\"'`]+"),
     re.compile(r"[A-Za-z]:\\[^\s\"'`]+"),
 )
+
+
+def _is_macos_sidecar(name: str) -> bool:
+    return name.startswith("._")
 
 
 def _redact_local_paths_in_string(text: str) -> str:
@@ -183,13 +190,19 @@ def _is_excluded(rel_path: str, include_external: bool, include_proof_archive: b
         return True
 
     parts = Path(rel_path).parts
+    if "__MACOSX" in parts:
+        return True
     if any(part in EXCLUDED_SEGMENTS for part in parts):
+        return True
+    if any(_is_macos_sidecar(part) for part in parts):
         return True
     if any(part.lower().endswith(".egg-info") for part in parts):
         return True
 
     name = Path(rel_path).name
     lower_name = name.lower()
+    if _is_macos_sidecar(name):
+        return True
     if lower_name in EXCLUDED_FILE_NAMES:
         return True
     if lower_name.endswith(EXCLUDED_SUFFIXES):
@@ -236,10 +249,17 @@ def _collect_files(
             included.add(path)
             included_top_level.add(rel.split("/", 1)[0])
         elif path.is_dir():
-            for file_path in path.rglob("*"):
-                if not file_path.is_file():
+            try:
+                iterator = path.rglob("*")
+            except FileNotFoundError:
+                continue
+            for file_path in iterator:
+                try:
+                    if not file_path.is_file():
+                        continue
+                    rel_path = _normalize(file_path.relative_to(repo_root))
+                except FileNotFoundError:
                     continue
-                rel_path = _normalize(file_path.relative_to(repo_root))
                 if _is_excluded(rel_path, include_external, include_proof_archive):
                     excluded_top_level.add(rel_path.split("/", 1)[0])
                     continue

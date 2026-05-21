@@ -33,6 +33,7 @@ INCLUDED_DIRS = [
 ]
 
 EXCLUDED_DIR_MARKERS = {
+    "__MACOSX",
     "external_reference",
     "artifacts/old",
     "artifacts/archive",
@@ -67,6 +68,10 @@ EXCLUDED_FILE_SUFFIXES = {
 }
 
 
+def _is_macos_sidecar(path: Path) -> bool:
+    return path.name.startswith("._")
+
+
 def _git_commit() -> str:
     try:
         out = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO_ROOT)
@@ -84,6 +89,9 @@ def _is_excluded(path: Path) -> bool:
             return True
 
     if any(part in EXCLUDED_DIR_MARKERS for part in rel.parts):
+        return True
+
+    if _is_macos_sidecar(path) or any(part.startswith("._") for part in rel.parts):
         return True
 
     if path.suffix.lower() in EXCLUDED_FILE_SUFFIXES:

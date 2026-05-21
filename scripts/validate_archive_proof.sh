@@ -159,6 +159,8 @@ if ! run_check "forbid_repo_venv" forbid_path .venv; then overall_rc=1; fi
 if ! run_check "forbid_frontend_node_modules" forbid_path frontend/node_modules; then overall_rc=1; fi
 if ! run_check "forbid_repo_node_modules" forbid_path node_modules; then overall_rc=1; fi
 if ! run_check "forbid_git_dir" forbid_path .git; then overall_rc=1; fi
+if ! run_check "forbid_macosx_dir" forbid_path __MACOSX; then overall_rc=1; fi
+if ! run_check "forbid_macos_sidecars" bash -lc '! find . -name "._*" | grep -q .'; then overall_rc=1; fi
 
 PROOF_FRESHNESS_ACTUAL_HASH="$(grep -m1 '^proof_input_tree_hash=' "${LOG_PATH}" | tail -1 | cut -d= -f2-)"
 if [[ -n "${PROOF_FRESHNESS_ACTUAL_HASH}" ]]; then

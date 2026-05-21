@@ -1,0 +1,17 @@
+{
+  "profile": "smoke",
+  "status": "passed",
+  "missing_count": 0,
+  "checks": [
+    {
+      "name": "docker_runtime_preflight",
+      "status": "passed",
+      "exit_code": 0,
+      "error": null,
+      "log_path": ".validation_logs/docker_runtime_preflight.log",
+      "started_at": "2026-05-21T22:52:15.581774+00:00",
+      "finished_at": "2026-05-21T22:52:16.410968+00:00"
+    }
+  ],
+  "generated_at": "2026-05-21T22:52:16.410996+00:00"
+}

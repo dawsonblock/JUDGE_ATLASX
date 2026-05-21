@@ -1,0 +1,38 @@
+{
+  "profile": "smoke",
+  "overall_status": "passed",
+  "expected_package_count": 3,
+  "package_count": 3,
+  "passed_count": 3,
+  "failed_count": 0,
+  "checks": [
+    {
+      "name": "backend_compile",
+      "status": "passed",
+      "exit_code": 0,
+      "error": null,
+      "log_path": ".validation_logs/artifact_backend_compile.log",
+      "started_at": "2026-05-21T22:52:07.209696+00:00",
+      "finished_at": "2026-05-21T22:52:07.395542+00:00"
+    },
+    {
+      "name": "validate_workflows",
+      "status": "passed",
+      "exit_code": 0,
+      "error": null,
+      "log_path": ".validation_logs/artifact_validate_workflows.log",
+      "started_at": "2026-05-21T22:52:07.395578+00:00",
+      "finished_at": "2026-05-21T22:52:08.423201+00:00"
+    },
+    {
+      "name": "check_false_claims",
+      "status": "passed",
+      "exit_code": 0,
+      "error": null,
+      "log_path": ".validation_logs/artifact_check_false_claims.log",
+      "started_at": "2026-05-21T22:52:08.423276+00:00",
+      "finished_at": "2026-05-21T22:52:14.827992+00:00"
+    }
+  ],
+  "generated_at": "2026-05-21T22:52:15.581379+00:00"
+}

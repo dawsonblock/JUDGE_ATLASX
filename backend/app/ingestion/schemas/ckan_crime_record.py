@@ -27,8 +27,25 @@ class CKANCrimeReviewPayload(BaseModel):
 
 
 def validate_ckan_row(row: Any) -> bool:
-    """Return True when row is a non-empty object suitable for normalization."""
-    return isinstance(row, dict) and bool(row)
+    """Return True when row is a strict, non-empty object suitable for normalization."""
+    if not isinstance(row, dict) or not row:
+        return False
+
+    if len(row) > 256:
+        return False
+
+    if not all(isinstance(key, str) and key.strip() for key in row):
+        return False
+
+    for value in row.values():
+        if isinstance(value, (dict, list, set, tuple)):
+            return False
+
+    has_scalar_value = any(
+        value not in (None, "") and isinstance(value, (str, int, float, bool))
+        for value in row.values()
+    )
+    return has_scalar_value
 
 
 def build_ckan_review_payload(

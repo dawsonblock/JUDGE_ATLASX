@@ -182,6 +182,21 @@ class _SSRFRedirectHandler(urllib.request.HTTPRedirectHandler):
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         """Override to validate redirect URL before following."""
+        old_scheme = urllib.parse.urlparse(req.full_url).scheme.lower()
+        new_scheme = urllib.parse.urlparse(newurl).scheme.lower()
+        if old_scheme == "https" and new_scheme == "http":
+            log.warning(
+                "source_fetcher: blocked redirect downgrade from https to http: %s",
+                newurl,
+            )
+            raise urllib.request.HTTPError(
+                newurl,
+                code,
+                "Redirect blocked: https to http downgrade",
+                headers,
+                fp,
+            )
+
         # Validate the new URL
         is_safe, reason = _is_safe_url(newurl, check_dns=True)
         if not is_safe:

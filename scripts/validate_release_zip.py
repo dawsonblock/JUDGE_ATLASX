@@ -20,6 +20,7 @@ REQUIRED_PREFIXES = [
 ]
 
 FORBIDDEN_MARKERS = [
+    "__MACOSX/",
     "external_reference/",
     "artifacts/old/",
     "artifacts/archive/",
@@ -51,9 +52,30 @@ def _path_has_marker(path: str, marker: str) -> bool:
     if len(marker_parts) == 1:
         return marker_parts[0] in path_parts
     for i in range(0, len(path_parts) - len(marker_parts) + 1):
-        if path_parts[i : i + len(marker_parts)] == marker_parts:
+        if path_parts[i:i + len(marker_parts)] == marker_parts:
             return True
     return False
+
+
+def _strip_common_root(names: list[str]) -> list[str]:
+    """Strip a single top-level container directory when present."""
+    top_levels = {
+        n.split("/", 1)[0]
+        for n in names
+        if n and "/" in n and not n.startswith("/")
+    }
+    if len(top_levels) != 1:
+        return names
+
+    root = next(iter(top_levels))
+    prefix = f"{root}/"
+    stripped: list[str] = []
+    for name in names:
+        if name.startswith(prefix):
+            stripped.append(name[len(prefix):])
+        else:
+            stripped.append(name)
+    return stripped
 
 
 def main() -> int:
@@ -69,9 +91,15 @@ def main() -> int:
     with ZipFile(zip_path, "r") as zf:
         names = zf.namelist()
 
+    names = _strip_common_root(names)
+
     missing = [p for p in REQUIRED_PREFIXES if not any(n.startswith(p) for n in names)]
     forbidden = []
     for n in names:
+        path_parts = [p for p in n.strip("/").split("/") if p]
+        if any(part.startswith("._") for part in path_parts):
+            forbidden.append(n)
+            continue
         for marker in FORBIDDEN_MARKERS:
             if _path_has_marker(n, marker):
                 forbidden.append(n)

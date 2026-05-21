@@ -53,9 +53,8 @@ class CKANApiAdapter(CanadianSourceAdapter):
     For general civic datasets the records are mapped to ``ReviewItem``.
 
     .. note::
-        Skeleton implementation.  The ``resource_id`` must be extracted from
-        the ``base_url`` or ``SourceRegistry`` metadata before production use.
-        Pagination via ``offset`` / ``limit`` is not yet implemented.
+        The ``resource_id`` must be extracted from the ``base_url`` or
+        ``SourceRegistry`` metadata before production use.
     """
 
     def __init__(
@@ -82,6 +81,7 @@ class CKANApiAdapter(CanadianSourceAdapter):
         self._record_type = _RECORD_TYPE_MAP.get(source_key, "ReviewItem")
         self._fetcher = fetcher or fetch_for_ingestion
         self._raw_bytes: bytes | None = None
+        self._raw_pages: list[dict[str, Any]] = []
         self._fetch_http_status: int | None = None
         self._fetch_content_type: str | None = None
         self._fetch_url: str | None = None
@@ -123,12 +123,42 @@ class CKANApiAdapter(CanadianSourceAdapter):
         return f"ckan-{digest[:20]}"
 
     def _classify_coordinate_precision(self, row: dict[str, Any]) -> str:
+        def _as_float(value: Any) -> float | None:
+            if value in (None, ""):
+                return None
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                return None
+
+        def _decimal_places(value: Any) -> int:
+            text = str(value)
+            if "." not in text:
+                return 0
+            return len(text.rsplit(".", 1)[-1])
+
         lat_keys = ("latitude", "lat", "y")
         lon_keys = ("longitude", "lon", "lng", "x")
-        has_lat = any(row.get(key) not in (None, "") for key in lat_keys)
-        has_lon = any(row.get(key) not in (None, "") for key in lon_keys)
-        if has_lat and has_lon:
+        lat_raw = next((row.get(key) for key in lat_keys if row.get(key) not in (None, "")), None)
+        lon_raw = next((row.get(key) for key in lon_keys if row.get(key) not in (None, "")), None)
+
+        lat = _as_float(lat_raw)
+        lon = _as_float(lon_raw)
+        if lat is None or lon is None:
+            return "unknown"
+
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+            return "unknown"
+
+        precision = min(_decimal_places(lat_raw), _decimal_places(lon_raw))
+        if precision >= 4:
+            return "exact"
+        if precision >= 2:
             return "city_block"
+        if precision >= 1:
+            return "district"
+        if precision == 0:
+            return "city_wide"
         return "unknown"
 
     def fetch(self) -> list[dict[str, Any]]:
@@ -158,9 +188,6 @@ class CKANApiAdapter(CanadianSourceAdapter):
             self._fetch_http_status = fetch_result.http_status
             self._fetch_content_type = fetch_result.content_type or "application/json"
             self._fetch_url = fetch_result.final_url or api_url
-            if self._raw_bytes is None and fetch_result.raw_content:
-                self._raw_bytes = fetch_result.raw_content
-
             if not fetch_result.raw_content:
                 break
 
@@ -188,6 +215,15 @@ class CKANApiAdapter(CanadianSourceAdapter):
                 logger.warning("CKAN response has invalid records for %s", self._source_key)
                 return []
 
+            self._raw_pages.append(
+                {
+                    "offset": offset,
+                    "limit": self._page_limit,
+                    "record_count": len(page_records),
+                    "payload": payload,
+                }
+            )
+
             validated = [row for row in page_records if self._validate_row_schema(row)]
             rows.extend(validated)
 
@@ -197,6 +233,16 @@ class CKANApiAdapter(CanadianSourceAdapter):
             if isinstance(total, int) and total <= offset + len(page_records):
                 break
             offset += len(page_records)
+
+        if self._raw_pages:
+            snapshot = {
+                "schema_version": "ckan_raw_snapshot_v1",
+                "source_key": self._source_key,
+                "parser_version": _PARSER_VERSION,
+                "page_count": len(self._raw_pages),
+                "pages": self._raw_pages,
+            }
+            self._raw_bytes = _json.dumps(snapshot, ensure_ascii=False).encode("utf-8")
 
         return rows
 

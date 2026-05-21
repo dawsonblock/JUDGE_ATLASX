@@ -1,0 +1,20 @@
+{
+  "profile": "smoke",
+  "status": "passed",
+  "required_commands": [
+    "python3",
+    "node",
+    "npm",
+    "docker"
+  ],
+  "found": [
+    "python3",
+    "node",
+    "npm",
+    "docker"
+  ],
+  "missing": [],
+  "found_count": 4,
+  "missing_count": 0,
+  "generated_at": "2026-05-21T22:52:07.209163+00:00"
+}

@@ -1,0 +1,18 @@
+{
+  "overall_status": "failed",
+  "failed_phase_count": 2,
+  "phases": {
+    "preflight": "passed",
+    "artifact_build": "passed",
+    "runtime_smoke": "failed",
+    "docker_preflight": "passed",
+    "docker_smoke": "failed"
+  },
+  "capabilities": {
+    "toolathlon_profile": "smoke",
+    "run_docker": true,
+    "python_version": "3.11.7",
+    "is_experimental_full": false
+  },
+  "generated_at": "2026-05-21T22:52:46.425316+00:00"
+}

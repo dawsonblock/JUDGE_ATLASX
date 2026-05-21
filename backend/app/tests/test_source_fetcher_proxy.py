@@ -163,3 +163,24 @@ def test_redirect_to_cloud_metadata_fails() -> None:
         )
 
     assert "Redirect blocked" in str(exc.value)
+
+
+def test_redirect_https_to_http_downgrade_fails() -> None:
+    req = urllib.request.Request("https://allowed.example/start")
+    handler = _SSRFRedirectHandler(allowed_domains=frozenset({"allowed.example"}))
+
+    with pytest.raises(urllib.request.HTTPError) as exc:
+        handler.redirect_request(
+            req,
+            None,
+            302,
+            "Found",
+            {},
+            "http://allowed.example/next",
+        )
+
+    assert "downgrade" in str(exc.value).lower()
+
+
+def test_redirect_handler_limits_redirect_depth() -> None:
+    assert _SSRFRedirectHandler.max_redirections == 5

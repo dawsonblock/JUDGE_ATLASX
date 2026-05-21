@@ -10,6 +10,7 @@ from pathlib import Path
 
 FORBIDDEN_SEGMENTS = {
     "external",
+    "__MACOSX",
     "node_modules",
     ".venv",
     "venv",
@@ -34,6 +35,7 @@ FORBIDDEN_FILE_NAMES = {
     ".env.local",
     ".env.production",
     ".env.development",
+    ".ds_store",
     "id_rsa",
     "id_ed25519",
 }
@@ -65,6 +67,10 @@ def inspect_surface(archive: Path) -> dict:
                 parts = Path(info.filename).parts
                 rel_path = "/".join(parts[1:]) if len(parts) > 1 else info.filename
                 rel_name = Path(rel_path).name.lower()
+
+                if any(Path(part).name.startswith("._") for part in parts):
+                    report["forbidden_paths"].append(info.filename)
+                    continue
 
                 if any(part in FORBIDDEN_SEGMENTS for part in parts):
                     report["forbidden_paths"].append(info.filename)
