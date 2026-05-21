@@ -400,10 +400,17 @@ sources:
   confidence_class: primary_official
   retention_policy: 7_years
   canonical_url: https://opendata.saskatoon.ca
-  evidence_required: false
-  terms_verified: false
+  evidence_required: true
+  terms_verified: '2026-05-21'
   authentication_required: false
   rate_limit_policy: polite_1rps
+  adapter:
+    parser: ckan_api
+    mode: api
+    machine_ingest_enabled: false
+    requires_secret: false
+    rate_limit_rpm: 30
+    timeout_seconds: 30
   test_fixtures:
   - type: json
     path: backend/app/tests/fixtures/saskatoon_open_data_crime_sample.json
