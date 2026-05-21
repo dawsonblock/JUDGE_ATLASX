@@ -23,18 +23,27 @@ from pathlib import Path
 from shutil import move
 
 PROOF_INPUT_PATTERNS = [
+    "README.md",
     "CURRENT_STATUS.md",
     "PROOF_STATUS.md",
     "RELEASE_BLOCKERS.md",
     "STUBS_AND_PLACEHOLDERS.md",
     "REPO_REALITY.md",
     "COMPLETION_CHECKLIST.md",
+    "Makefile",
+    "Dockerfile.proof",
     ".github/workflows/**/*",
     "backend/app/**/*",
     "backend/alembic/**/*",
     "backend/pyproject.toml",
+    "backend/alembic.ini",
+    "backend/uv.lock",
     "demo/**/*",
     "frontend/**/*",
+    "frontend/package.json",
+    "frontend/package-lock.json",
+    "package.json",
+    "package-lock.json",
     "scripts/**/*",
     "docs/CURRENT_STATUS.md",
     "docs/DB_PROOF.md",
@@ -42,8 +51,13 @@ PROOF_INPUT_PATTERNS = [
     "docs/deployment-guide/DEPENDENCY_REMEDIATION_PLAN.md",
     "docs/security/FRONTEND_SECURITY_TRIAGE.md",
     "docs/schema_audit.md",
-    "README.md",
-    "Makefile",
+    "docs/REPAIR_PROOF.md",
+    "docs/REPAIR_BASELINE.md",
+    "docs/SECURITY.md",
+    "docs/PROOF.md",
+    "docs/SOURCES.md",
+    "docs/AI_PIPELINE.md",
+    "artifacts/proof/CURRENT_PROOF.md",
 ]
 
 REQUIRED_GATE_NAMES = {

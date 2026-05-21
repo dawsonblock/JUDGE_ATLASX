@@ -13,8 +13,13 @@ RUN apt-get update && apt-get install -y \
 # Copy entire workspace (needed for proof generation)
 COPY . /workspace
 
-# Install backend dependencies from the canonical pyproject metadata.
-RUN pip install --no-cache-dir "/workspace/backend[test]"
+# Install backend dependencies from the canonical lockfile.
+RUN pip install --no-cache-dir uv \
+    && cd /workspace/backend \
+    && uv sync --frozen --extra test
+
+# Ensure proof entrypoint uses the lockfile-resolved backend environment.
+ENV PATH="/workspace/backend/.venv/bin:${PATH}"
 
 # Set environment variables for proof generation
 ENV PYTHONUNBUFFERED=1

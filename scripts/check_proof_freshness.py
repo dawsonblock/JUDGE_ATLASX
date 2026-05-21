@@ -26,6 +26,7 @@ PROOF_INPUT_PATTERNS = [
     "REPO_REALITY.md",
     "COMPLETION_CHECKLIST.md",
     "Makefile",
+    "Dockerfile.proof",
     ".github/workflows/**/*",
     "backend/app/**/*",
     "backend/alembic/**/*",

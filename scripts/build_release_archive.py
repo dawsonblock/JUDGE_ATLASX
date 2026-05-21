@@ -49,6 +49,7 @@ DEFAULT_INCLUDE_FILES = (
     "pyproject.toml",
     "package.json",
     "package-lock.json",
+    "Dockerfile.proof",
     "docker-compose.yml",
     "docker-compose.yaml",
 )
