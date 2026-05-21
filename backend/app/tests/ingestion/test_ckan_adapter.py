@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from app.ingestion.schemas.ckan_public_safety import SCHEMA_VERSION as PUBLIC_SAFETY_SCHEMA_VERSION
 from app.ingestion.source_adapters.ckan_api import CKANApiAdapter
 
 
@@ -49,4 +50,5 @@ def test_ckan_pagination_fixture_pages_preserved() -> None:
     assert result.records_fetched == 3
     assert result.created_records == []
     assert len(result.review_items) == 3
+    assert result.review_items[0].payload["schema_version"] == PUBLIC_SAFETY_SCHEMA_VERSION
     assert result.raw_snapshot_bytes is not None

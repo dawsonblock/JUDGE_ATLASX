@@ -25,6 +25,7 @@ from app.ingestion.schemas.ckan_crime_record import (
     build_ckan_review_payload,
     validate_ckan_row,
 )
+from app.ingestion.schemas.ckan_public_safety import build_ckan_public_safety_payload
 from app.ingestion.source_keys import CANADA_OPEN_DATA_CRIME, SASKATOON_OPEN_DATA_PORTAL
 from app.ingestion.fetcher import FetchCallable, fetch_for_ingestion, parse_allowed_domains
 from app.ingestion.source_rules import check_record_type_allowed
@@ -39,6 +40,12 @@ _RECORD_TYPE_MAP: dict[str, str] = {
 }
 
 _PARSER_VERSION = "ckan_api_v1"
+
+_PUBLIC_SAFETY_SOURCE_KEYS: frozenset[str] = frozenset(
+    {
+        "saskatoon_open_data_public_safety",
+    }
+)
 
 
 class CKANApiAdapter(CanadianSourceAdapter):
@@ -248,6 +255,7 @@ class CKANApiAdapter(CanadianSourceAdapter):
 
     def parse(self, raw: list[dict[str, Any]]) -> list[ParsedRecord]:
         records: list[ParsedRecord] = []
+        use_public_safety_schema = self._source_key in _PUBLIC_SAFETY_SOURCE_KEYS
         for row in raw:
             violation = check_record_type_allowed(
                 self._record_type,
@@ -258,16 +266,28 @@ class CKANApiAdapter(CanadianSourceAdapter):
                 continue
             external_id = self._stable_external_id(row)
             coord_precision = self._classify_coordinate_precision(row)
-            payload = build_ckan_review_payload(
-                source_key=self._source_key,
-                candidate_record_type=self._record_type,
-                external_id=external_id,
-                coordinate_precision=coord_precision,
-                raw=dict(row),
-                parser_version=_PARSER_VERSION,
-                public_record_authority=self._public_record_authority,
-                source_url=self._base_url,
-            )
+            if use_public_safety_schema:
+                payload = build_ckan_public_safety_payload(
+                    source_key=self._source_key,
+                    candidate_record_type=self._record_type,
+                    external_id=external_id,
+                    coordinate_precision=coord_precision,
+                    raw=dict(row),
+                    parser_version=_PARSER_VERSION,
+                    public_record_authority=self._public_record_authority,
+                    source_url=self._base_url,
+                )
+            else:
+                payload = build_ckan_review_payload(
+                    source_key=self._source_key,
+                    candidate_record_type=self._record_type,
+                    external_id=external_id,
+                    coordinate_precision=coord_precision,
+                    raw=dict(row),
+                    parser_version=_PARSER_VERSION,
+                    public_record_authority=self._public_record_authority,
+                    source_url=self._base_url,
+                )
             records.append(
                 ParsedRecord(
                     source_name=self._source_key,
