@@ -529,7 +529,7 @@ class PostgresIngestionQueue:
             db.close()
 
     def retry_job(self, job_id: str) -> Optional[str]:
-        """Retry a completed/failed job by enqueueing a new job for the same source."""
+        """Retry a completed/failed/cancelled job by enqueueing a new job."""
         db = SessionLocal()
 
         try:
@@ -538,8 +538,14 @@ class PostgresIngestionQueue:
             job = db.query(IngestionQueueJob).filter_by(job_id=job_id).first()
             if not job:
                 return None
-            if job.state not in (JobState.COMPLETED.value, JobState.FAILED.value):
-                raise ValueError(f"Job '{job_id}' must be completed or failed before retry.")
+            if job.state not in (
+                JobState.COMPLETED.value,
+                JobState.FAILED.value,
+                JobState.CANCELLED.value,
+            ):
+                raise ValueError(
+                    f"Job '{job_id}' must be completed, failed, or cancelled before retry."
+                )
 
             source_key = job.source_key
         finally:

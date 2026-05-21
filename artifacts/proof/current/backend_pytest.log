@@ -16,15 +16,35 @@
 ........................................................................ [ 34%]
 ........................................................................ [ 36%]
 ........................................................................ [ 38%]
-........................F
-=================================== FAILURES ===================================
-___________ test_inprocess_retry_creates_new_pending_job_from_failed ___________
-backend/app/tests/test_ingestion_queue_cancel_retry_semantics.py:52: in test_inprocess_retry_creates_new_pending_job_from_failed
-    retried_job_id = queue.retry_job(failed_job_id)
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/app/workers/inprocess_queue.py:142: in retry_job
-    raise ValueError(
-E   ValueError: Job 'be8ee9e6-8087-448e-be62-98901aa809e6' must be completed or failed before retry.
+........................................................................ [ 40%]
+........................................................................ [ 43%]
+........................................................................ [ 45%]
+........................................................................ [ 47%]
+...sssssssssssssssss.................................................... [ 49%]
+........................................................................ [ 51%]
+........................................................................ [ 53%]
+........................................................................ [ 55%]
+........................................................................ [ 58%]
+.............sssss...................................................... [ 60%]
+........................................................................ [ 62%]
+...sssss................................................................ [ 64%]
+........................................................................ [ 66%]
+........................................................................ [ 68%]
+........................................................................ [ 71%]
+........................................................................ [ 73%]
+..............................................s......................... [ 75%]
+........................................................................ [ 77%]
+..................................ssss.................................. [ 79%]
+........................................................................ [ 81%]
+........................................................................ [ 83%]
+........................................................................ [ 86%]
+........................................................................ [ 88%]
+...............................ss....................................... [ 90%]
+........................................................................ [ 92%]
+........................................................................ [ 94%]
+........................................................................ [ 96%]
+........................................................................ [ 99%]
+...............................                                          [100%]
 =============================== warnings summary ===============================
 backend/app/tests/test_contract_validation.py:21
   /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_contract_validation.py:21: PytestCollectionWarning: cannot collect test class 'TestInputSchema' because it has a __init__ constructor (from: app/tests/test_contract_validation.py)
@@ -38,15 +58,10 @@ backend/app/tests/test_gate.py:14
   /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_gate.py:14: PytestCollectionWarning: cannot collect test class 'TestGate' because it has a __init__ constructor (from: app/tests/test_test_gate.py)
     class TestGate:
 
-app/tests/test_admin_security.py::TestAuditLogging::test_review_actions_need_audit_log
-app/tests/test_admin_security.py::TestAuditLogging::test_admin_api_calls_need_audit_log
-app/tests/test_ai_pipeline.py::test_approved_review_item_can_publish_safe_event
-app/tests/test_ai_pipeline.py::test_blocked_review_item_cannot_publish
-app/tests/test_ai_pipeline.py::test_ai_review_items_use_database_pagination
-app/tests/test_api.py::test_invalid_post_event_foreign_keys_return_422_with_admin_token
-app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
-app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
-app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
+app/tests/test_admin_security.py: 2 warnings
+app/tests/test_ai_pipeline.py: 3 warnings
+app/tests/test_api.py: 4 warnings
+app/tests/test_outcomes_and_ingestion.py: 3 warnings
   /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/auth/admin.py:241: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
     actor = require_admin_token(x_jta_admin_token, authorization)
 
@@ -67,8 +82,9 @@ app/tests/test_api.py::test_admin_routes_accept_valid_token_and_use_pagination
   /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/security/import_authority.py:51: DeprecationWarning: Shared-token admin authentication is deprecated and will be removed. Migrate to JWT authentication.
     actor = require_admin_token(
 
+app/tests/test_legacy_shared_token_requires_opt_in.py::TestLegacySharedTokenRequiresOptIn::test_shared_token_allowed_only_with_local_opt_in
+  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_legacy_shared_token_requires_opt_in.py:44: DeprecationWarning: Shared-token import authentication is deprecated and will be removed. Migrate to JWT authentication.
+    actor = require_admin_imports(x_jta_admin_token="test-token", authorization=None)
+
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-=========================== short test summary info ============================
-FAILED backend/app/tests/test_ingestion_queue_cancel_retry_semantics.py::test_inprocess_retry_creates_new_pending_job_from_failed
-!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
-1 failed, 1320 passed, 17 warnings in 34.62s
+3309 passed, 34 skipped, 21 warnings in 69.61s (0:01:09)

@@ -382,6 +382,65 @@ def _write_grouped_proof_artifacts(repo_root: Path, out_dir: Path, payload: dict
     return artifacts
 
 
+def _sync_artifacts_current(
+    repo_root: Path,
+    payload: dict,
+    manifest: dict,
+) -> dict[str, str]:
+    out_dir = repo_root / "artifacts" / "current"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    proof_manifest_payload = {
+        "generated_at": payload.get("timestamp_utc"),
+        "alpha_gate_passed": payload.get("alpha_gate_passed"),
+        "archive_validation_result": payload.get("archive_validation_result"),
+        "check_count": payload.get("check_count"),
+        "commit_hash": payload.get("commit_hash"),
+        "source_release_gate": "artifacts/proof/current/release_gate.json",
+        "source_proof_manifest": "artifacts/proof/current/proof_manifest.json",
+        "proof_manifest": manifest,
+    }
+    proof_manifest_path = out_dir / "PROOF_MANIFEST.json"
+    proof_manifest_path.write_text(
+        json.dumps(proof_manifest_payload, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    proof_report_lines = [
+        "# PROOF_REPORT",
+        "",
+        f"- generated_at_utc: {payload.get('timestamp_utc', 'unknown')}",
+        f"- alpha_gate_passed: {str(payload.get('alpha_gate_passed', False)).lower()}",
+        f"- archive_validation_result: {payload.get('archive_validation_result', 'UNKNOWN')}",
+        f"- check_count: {payload.get('check_count', 0)}",
+        f"- commit_hash: {payload.get('commit_hash', 'unknown')}",
+        "",
+        "Derived from artifacts/proof/current/release_gate.json and proof_manifest.json.",
+    ]
+    proof_report_path = out_dir / "PROOF_REPORT.md"
+    proof_report_path.write_text("\n".join(proof_report_lines) + "\n", encoding="utf-8")
+
+    release_manifest_payload = {
+        "generated_at": payload.get("timestamp_utc"),
+        "alpha_gate_passed": payload.get("alpha_gate_passed"),
+        "archive_validation_result": payload.get("archive_validation_result"),
+        "commit_hash": payload.get("commit_hash"),
+        "release_mode": "alpha",
+        "source_release_gate": "artifacts/proof/current/release_gate.json",
+    }
+    release_manifest_path = out_dir / "RELEASE_MANIFEST.json"
+    release_manifest_path.write_text(
+        json.dumps(release_manifest_payload, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    return {
+        "artifacts_current_proof_manifest": str(proof_manifest_path.relative_to(repo_root)),
+        "artifacts_current_proof_report": str(proof_report_path.relative_to(repo_root)),
+        "artifacts_current_release_manifest": str(release_manifest_path.relative_to(repo_root)),
+    }
+
+
 def _write_static_guards_log(repo_root: Path, out_dir: Path, steps: list[GateStep]) -> str:
     guard_names = [
         "check_false_claims",
@@ -1221,8 +1280,13 @@ def _write_current_proof_md(
         ]
     )
 
+    current_proof_text = "\n".join(lines)
     current_proof_path = out_dir / "CURRENT_PROOF.md"
-    current_proof_path.write_text("\n".join(lines), encoding="utf-8")
+    current_proof_path.write_text(current_proof_text, encoding="utf-8")
+    (repo_root / "CURRENT_PROOF.md").write_text(
+        current_proof_text,
+        encoding="utf-8",
+    )
     return str(current_proof_path.relative_to(repo_root))
 
 
@@ -1583,6 +1647,7 @@ def main() -> int:
     # self-contained.
     stale_outputs = [spec.log_name for spec in gate_steps] + [
         _proof_freshness_spec.log_name,
+        "proof_consistency_pytest.log",
         "release_gate.log",
         "release_gate.json",
         "proof_manifest.json",
@@ -1872,21 +1937,6 @@ def main() -> int:
     )
     results.append(pf_step)
 
-    # Phase 2b.1: run proof_consistency_pytest (only test_release_gate_consistency.py)
-    proof_consistency_pytest_step = _run(
-        repo_root,
-        out_dir,
-        "proof_consistency_pytest",
-        "proof_consistency_pytest.log",
-        [
-            "bash",
-            "-lc",
-            f'JTA_DATABASE_URL="{proof_db_url}" "{python_exe}" -m pytest backend/app/tests/test_release_gate_consistency.py -x --tb=short -q',
-        ],
-        timeout_seconds=120,
-    )
-    results.append(proof_consistency_pytest_step)
-
     # Phase 2c: update payload with the real proof_freshness result and recompute
     # ok, failed_checks, release_blockers_remaining, alpha_gate_passed.
     manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
@@ -2045,6 +2095,54 @@ def main() -> int:
     payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
     payload["logs"]["proof_policy"] = proof_policy_rel
     payload["logs"]["repair_report"] = repair_report_rel
+    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    # Run proof consistency only after the final release_gate.json and
+    # CURRENT_PROOF.md artifacts have been written.
+    proof_consistency_pytest_step = _run(
+        repo_root,
+        out_dir,
+        "proof_consistency_pytest",
+        "proof_consistency_pytest.log",
+        [
+            "bash",
+            "-lc",
+            f'JTA_DATABASE_URL="{proof_db_url}" "{python_exe}" -m pytest backend/app/tests/test_release_gate_consistency.py -x --tb=short -q',
+        ],
+        timeout_seconds=120,
+    )
+    results.append(proof_consistency_pytest_step)
+
+    missing_logs = _missing_logs(repo_root, results)
+    ok = all(r.exit_code == 0 for r in results) and not missing_logs
+    payload["alpha_gate_passed"] = ok
+    payload["check_count"] = len(results)
+    payload["checks"] = [asdict(r) for r in results]
+    payload["logs"] = {r.name: r.log_path for r in results}
+    payload["logs"]["release_gate"] = str(gate_log_path.relative_to(repo_root))
+    payload["logs"]["proof_manifest"] = str(manifest_path.relative_to(repo_root))
+    payload["logs"]["release_readiness"] = readiness_rel
+    payload["logs"]["static_guards"] = static_guards_rel
+    payload["failed_checks"] = [r.name for r in results if r.exit_code != 0] + (
+        ["missing_logs"] if missing_logs else []
+    )
+    payload["release_blockers_remaining"] = (
+        [r.name for r in results if r.exit_code != 0]
+        + (["missing_logs"] if missing_logs else [])
+        if not ok
+        else []
+    )
+
+    current_proof_rel = _write_current_proof_md(
+        repo_root,
+        out_dir,
+        payload,
+        check_count=len(results),
+    )
+    current_alpha_status_rel = _write_current_alpha_status_md(repo_root, out_dir, payload)
+    payload["logs"]["current_proof"] = current_proof_rel
+    payload["logs"]["current_alpha_status"] = current_alpha_status_rel
+    payload["logs"] |= _sync_artifacts_current(repo_root, payload, manifest)
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
     if ok:

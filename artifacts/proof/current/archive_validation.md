@@ -1,15 +1,15 @@
 # Archive Validation
 
-- validated_at_utc: 2026-05-21T04:18:36.460284+00:00
-- archive: /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.sv794L0jQm/judge_atlas_archive.zip
-- archive_sha256: 4b6ce8339376c5c5d3eafcb77a7f75b63c132a3aab13d8cbc1274a4313efd918
+- validated_at_utc: 2026-05-21T04:51:01.406376+00:00
+- archive: /private/var/folders/xt/jh84t2kj6hl26tk5qx3m_28h0000gn/T/tmp.kk2Uj5oXfP/judge_atlas_archive.zip
+- archive_sha256: 21bbf543a9944bdea0042daa131d275d30660efe9b5423662df01bba7b8438ce
 - expected_root: JUDGE_ATLAS-main
 - actual_root: JUDGE_ATLAS-main
 - top_level_roots: JUDGE_ATLAS-main
 - root_match: yes
 - valid: PASS
-- compressed_size_bytes: 2074242
-- uncompressed_size_bytes: 7758519
+- compressed_size_bytes: 2074494
+- uncompressed_size_bytes: 7761960
 
 ## Errors
 
@@ -23,8 +23,8 @@
 | JUDGE_ATLAS-main/frontend/package-lock.json | 393441 | 85052 |
 | JUDGE_ATLAS-main/frontend/tsconfig.tsbuildinfo | 194762 | 59809 |
 | JUDGE_ATLAS-main/backend/app/models/entities.py | 100309 | 16535 |
-| JUDGE_ATLAS-main/scripts/release_gate.py | 76676 | 14608 |
-| JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 76176 | 11776 |
+| JUDGE_ATLAS-main/scripts/release_gate.py | 80858 | 15030 |
+| JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 76168 | 11778 |
 | JUDGE_ATLAS-main/backend/app/memory/contradiction_engine.py | 48640 | 8977 |
 | JUDGE_ATLAS-main/backend/app/ingestion/sources/canada_saskatchewan_sources.yaml | 48034 | 6676 |
 | JUDGE_ATLAS-main/backend/app/tests/test_api.py | 43068 | 7429 |
@@ -35,20 +35,20 @@
 | JUDGE_ATLAS-main/backend/app/ingestion/courtlistener_bulk_normalizer.py | 29758 | 5588 |
 | JUDGE_ATLAS-main/backend/app/tests/test_admin_ingestion.py | 29153 | 4559 |
 | JUDGE_ATLAS-main/backend/app/tests/test_graph_layer.py | 28216 | 4765 |
-| JUDGE_ATLAS-main/artifacts/proof/current/source_registry_status.json | 27724 | 3223 |
-| JUDGE_ATLAS-main/artifacts/proof/current/proof_manifest.json | 25406 | 4224 |
+| JUDGE_ATLAS-main/artifacts/proof/current/source_registry_status.json | 27724 | 3225 |
 | JUDGE_ATLAS-main/backend/app/seed/sample_data.py | 25376 | 4657 |
 | JUDGE_ATLAS-main/backend/app/tests/test_memory_runtime.py | 24708 | 4490 |
+| JUDGE_ATLAS-main/artifacts/proof/current/proof_manifest.json | 24606 | 4114 |
 
 ## Largest Top-Level Directories
 
 | path | uncompressed |
 |---|---:|
-| backend | 5377529 |
+| backend | 5377852 |
 | frontend | 1035540 |
 | docs | 606706 |
-| scripts | 478477 |
-| artifacts | 151075 |
+| scripts | 482659 |
+| artifacts | 150011 |
 | .github | 37537 |
 | demo | 26537 |
 | infra | 17264 |

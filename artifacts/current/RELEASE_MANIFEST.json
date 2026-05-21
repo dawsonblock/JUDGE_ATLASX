@@ -1,0 +1,8 @@
+{
+  "generated_at": "2026-05-21T04:50:54.337310+00:00",
+  "alpha_gate_passed": true,
+  "archive_validation_result": "PASS",
+  "commit_hash": "f76cdf11d5ecf0c097e692602d4088c12aad3b12",
+  "release_mode": "alpha",
+  "source_release_gate": "artifacts/proof/current/release_gate.json"
+}

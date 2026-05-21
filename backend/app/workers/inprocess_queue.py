@@ -138,9 +138,13 @@ class InProcessIngestionQueue:
             record = self._records.get(job_id)
             if record is None:
                 return None
-            if record.state not in (JobState.COMPLETED, JobState.FAILED):
+            if record.state not in (
+                JobState.COMPLETED,
+                JobState.FAILED,
+                JobState.CANCELLED,
+            ):
                 raise ValueError(
-                    f"Job '{job_id}' must be completed or failed before retry."
+                    f"Job '{job_id}' must be completed, failed, or cancelled before retry."
                 )
             new_job_id = str(uuid.uuid4())
             new_record = IngestionJobRecord(job_id=new_job_id, source_key=record.source_key)
@@ -153,7 +157,11 @@ class InProcessIngestionQueue:
             finished = [
                 r
                 for r in self._records.values()
-                if r.state in (JobState.COMPLETED, JobState.FAILED)
+                if r.state in (
+                    JobState.COMPLETED,
+                    JobState.FAILED,
+                    JobState.CANCELLED,
+                )
             ]
             if len(finished) > self._max_history:
                 finished.sort(key=lambda r: r.finished_at or 0)
