@@ -1,7 +1,7 @@
 # REPAIR_REPORT
 
-- generated_at_utc: 2026-05-21T22:59:47.848803+00:00
-- commit_hash: 3a6fda0a24e5dbd52937792764d747dc4ecca485
+- generated_at_utc: 2026-05-21T23:11:08.657484+00:00
+- commit_hash: 1641b438ca77a3cc975e88e013c554b2a46d90c2
 - alpha_gate_passed: false
 
 ## Phase Results
@@ -18,11 +18,9 @@
 - 10. Public Review Gate Coverage: PASS (artifacts/proof/current/public_api_boundary.log)
 - 11. Derivative Memory Boundary Coverage: PASS (artifacts/proof/current/public_api_boundary.log)
 - 12. Frontend Node 20 Gate: PASS (artifacts/proof/current/frontend_node_gate.log)
-- 13. CI/Local Gate Parity Baseline: FAIL (artifacts/proof/current/release_readiness.md)
+- 13. CI/Local Gate Parity Baseline: PASS (artifacts/proof/current/release_readiness.md)
 - 14. Repair Report Generated: PASS (artifacts/proof/current/REPAIR_REPORT.md)
 
 ## Remaining Blockers
 
-- archive_validation
-- proof_consistency_pytest
-- required_proof_logs
+- check_node_policy
