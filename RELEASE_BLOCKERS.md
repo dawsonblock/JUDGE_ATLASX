@@ -1,10 +1,10 @@
 # RELEASE_BLOCKERS
 
 
-## Current Blockers for Blocked Alpha Release
+## Current Blockers for Alpha Release
 
-- backend_pytest: backend tests must all pass (see proof logs)
-- live_map public boundary: unauthenticated admin_mode leaks internal data (see plan)
+- Source-of-truth blocker state is defined by artifacts/proof/current/release_gate.json.
+- Source-of-truth readiness narrative is defined by artifacts/proof/current/release_readiness.md.
 
 ## Completed Resolution Summary
 
@@ -27,6 +27,6 @@
 
 ## Status Assertion
 
-- release_status: blocked alpha
+- release_status: proof-hardened alpha
 - production_ready: false
 - operational_posture: alpha

@@ -98,7 +98,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: authoritative-proof-bundle
-          path: proof/latest/**
+          path: artifacts/proof/current/**
           retention-days: 90
 
       - name: Upload backend test results
@@ -140,6 +140,21 @@ jobs:
         run: |
           source backend/.venv/bin/activate
           python scripts/check_proof_consistency.py
+
+      - name: Check single proof authority
+        run: |
+          source backend/.venv/bin/activate
+          python scripts/check_single_proof_authority.py
+
+      - name: Verify status consistency
+        run: |
+          source backend/.venv/bin/activate
+          python scripts/verify_status_consistency.py
+
+      - name: Check duplicate docs
+        run: |
+          source backend/.venv/bin/activate
+          python scripts/check_duplicate_docs.py
 
       - name: Upload release gate artifacts
         if: always()

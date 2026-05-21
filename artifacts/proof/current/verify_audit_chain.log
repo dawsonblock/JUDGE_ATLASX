@@ -1,5 +1,5 @@
 AUDIT CHAIN VERIFICATION
-entries_checked=3
-chain_head=b29698b0e48c2ae127175d774c82ff8ab802c3bb3cdb895c2a18b240340df5e3
+entries_checked=0
+chain_head=EMPTY
 violations=0
-RESULT: PASS
+RESULT: PASS allow_empty

@@ -1,6 +1,6 @@
 EVIDENCE STORE VERIFICATION
-snapshots_checked=3
-verified_snapshots=3
+snapshots_checked=0
+verified_snapshots=0
 integrity_failures=0
 corrupt_snapshots=0
 duplicate_hashes=0

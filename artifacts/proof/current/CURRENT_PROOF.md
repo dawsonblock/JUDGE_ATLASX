@@ -1,9 +1,9 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-21T02:28:32.346830+00:00
-- commit_hash: caf6531edaf1a1e9f723290a05ef06c05539046c
-- alpha_gate_status: PASS
-- alpha_gate_passed: true
+- generated_at_utc: 2026-05-21T03:02:47.447031+00:00
+- commit_hash: f52e5a08758e41da613f4af98207544ad51fac93
+- alpha_gate_status: BLOCKED
+- alpha_gate_passed: false
 - release_gate_check_count: 38
 - docker_available: true
 - postgis_proof_result: PASS
@@ -11,8 +11,8 @@
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
 - archive_validation_result: PASS
-- proof_input_tree_hash: 5733be1218bc6eae8b661e1f8125ed22411a9a6f0ec452576a44b6be2fecaf44
-- proof_input_file_count: 993
+- proof_input_tree_hash: 4ab8eb8ac85a357919af617779be48fb7ed024151c006ce3d24944996ef07f63
+- proof_input_file_count: 994
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
@@ -59,7 +59,6 @@
 
 ## Current Proof Facts
 
-- backend pytest: 3311 passed, 40 skipped
 - backend import proof: PASS (105 routes)
 - frontend contracts: 48 passed
 - public API boundary: 55 passed
@@ -69,6 +68,11 @@
 - demo proof: PASS
 - mutation fail-closed coverage: PASS
 - Alembic migrations: 69
+
+## Failed Checks
+
+- prepare_proof_db
+- missing_logs
 
 ## Egress Proxy Coverage
 

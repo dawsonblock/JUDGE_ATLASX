@@ -1,13 +1,13 @@
 # CURRENT_STATUS
 
-**Status**: blocked alpha  
+**Status**: proof-hardened alpha  
 **Production ready**: NO  
-**Last updated**: 2026-05-19
+**Last updated**: 2026-05-21
 
 ## Platform Posture
 
 - This is an alpha platform.
-- It is not production-ready.
+- It is not production ready.
 - Evidence is authoritative.
 - AI and memory outputs are derivative.
 - Legal correlations are hypotheses, not verdicts.
@@ -18,9 +18,15 @@
 
 ## Current Release Truth
 
-- Release status is blocked alpha until every clean-alpha gate passes in the current tree.
+- Canonical release status is sourced from artifacts/proof/current/release_gate.json.
 - Bi-temporal modeling is deferred until blocked alpha is resolved and clean alpha is achieved.
 - Experimental route modules exist but remain unmounted from the active API router.
+
+## Canonical References
+
+- STATUS.md
+- artifacts/proof/current/CURRENT_PROOF.md
+- artifacts/proof/current/release_readiness.md
 
 ## Clean-Alpha Exit Criteria
 

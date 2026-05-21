@@ -193,6 +193,24 @@ jobs:
           source ./backend/.venv/bin/activate
           python scripts/check_proof_consistency.py
 
+      - name: Check single proof authority
+        if: always()
+        run: |
+          source ./backend/.venv/bin/activate
+          python scripts/check_single_proof_authority.py
+
+      - name: Verify status consistency
+        if: always()
+        run: |
+          source ./backend/.venv/bin/activate
+          python scripts/verify_status_consistency.py
+
+      - name: Check duplicate docs
+        if: always()
+        run: |
+          source ./backend/.venv/bin/activate
+          python scripts/check_duplicate_docs.py
+
       - name: Verify canonical proof artifacts
         if: always()
         run: |

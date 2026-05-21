@@ -1,6 +1,6 @@
 {
   "group": "backend_proof",
-  "status": "PASS",
+  "status": "FAIL",
   "checks": [
     {
       "name": "backend_compile",
@@ -28,9 +28,9 @@
     },
     {
       "name": "prepare_proof_db",
-      "status": "PASS",
+      "status": "FAIL",
       "log": "artifacts/proof/current/prepare_proof_db.log",
-      "exit_code": 0
+      "exit_code": 1
     },
     {
       "name": "verify_evidence_store",
@@ -64,11 +64,7 @@
     }
   ],
   "route_count": 105,
-  "pytest_passed": 3311,
-  "pytest_skipped": 40,
-  "proof_db_counts": {
-    "audit_logs": 3,
-    "source_snapshots": 3,
-    "source_registry": 0
-  }
+  "pytest_passed": null,
+  "pytest_skipped": null,
+  "proof_db_counts": {}
 }

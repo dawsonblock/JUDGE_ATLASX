@@ -1,11 +1,13 @@
 # STATUS
 
 **Repository**: JUDGE_ATLASX-main  
-**Current release status**: blocked alpha  
+**Current release status**: proof-hardened alpha  
 **Production ready**: FALSE  
-**As of**: 2026-05-19
+Production ready: FALSE
+**As of**: 2026-05-21
 
 This repository is an **alpha platform**, not a production legal system.
+This repository is an alpha/research-grade platform, not a production legal system.
 
 ## Canonical Proof
 

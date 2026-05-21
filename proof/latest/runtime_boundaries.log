@@ -1,3 +1,0 @@
-runtime boundary validation: FAIL
- - artifacts/current/PROOF_MANIFEST.json references excluded path marker 'external_reference'
- - artifacts/current/PROOF_MANIFEST.json references excluded path marker 'cache'

@@ -4,7 +4,7 @@
 
 | Check | Status | Log | Notes |
 |-------|--------|-----|-------|
-| Alpha gate (main 8) | ✓ PASS | artifacts/proof/current/release_gate.json | All checks passed as of 2026-05-19 |
+| Alpha gate | source-of-truth | artifacts/proof/current/release_gate.json | Canonical machine-readable gate output |
 | Docker proof | ✓ PASS | artifacts/proof/current/docker_proof.log | Container runtime verified |
 | PostGIS proof | ✓ PASS | artifacts/proof/current/postgis_proof.log | Database integration verified |
 | Egress proxy proof | ✓ PASS | artifacts/proof/current/egress_proxy_proof.log | Network boundaries validated |

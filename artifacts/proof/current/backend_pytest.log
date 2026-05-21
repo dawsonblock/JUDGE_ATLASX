@@ -32,19 +32,13 @@
 ........................................................................ [ 68%]
 ........................................................................ [ 70%]
 ........................................................................ [ 73%]
-................................................sssssss................. [ 75%]
-........................................................................ [ 77%]
-..........................................ssss.......................... [ 79%]
-........................................................................ [ 81%]
-........................................................................ [ 83%]
-........................................................................ [ 85%]
-........................................................................ [ 88%]
-.......................................ss............................... [ 90%]
-........................................................................ [ 92%]
-........................................................................ [ 94%]
-........................................................................ [ 96%]
-........................................................................ [ 98%]
-.......................................                                  [100%]
+..................................................F
+=================================== FAILURES ===================================
+___________ test_release_gate_json_check_count_matches_current_proof ___________
+backend/app/tests/test_release_gate_consistency.py:125: in test_release_gate_json_check_count_matches_current_proof
+    assert expected_line in current_proof_md, \
+E   AssertionError: CURRENT_PROOF.md release_gate_check_count does not match release_gate.json (expected - release_gate_check_count: 36)
+E   assert '- release_gate_check_count: 36' in '# CURRENT_PROOF\n\n- generated_at_utc: 2026-05-21T03:02:47.447031+00:00\n- commit_hash: f52e5a08758e41da613f4af982075...ent/SOURCE_REGISTRY_STATUS.md\n- artifacts/proof/current/PROOF_POLICY.md\n- artifacts/proof/current/REPAIR_REPORT.md\n'
 =============================== warnings summary ===============================
 backend/app/tests/test_contract_validation.py:21
   /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_contract_validation.py:21: PytestCollectionWarning: cannot collect test class 'TestInputSchema' because it has a __init__ constructor (from: app/tests/test_contract_validation.py)
@@ -87,4 +81,7 @@ app/tests/test_legacy_shared_token_requires_opt_in.py::TestLegacySharedTokenRequ
     actor = require_admin_imports(x_jta_admin_token="test-token", authorization=None)
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-3311 passed, 40 skipped, 21 warnings in 55.10s
+=========================== short test summary info ============================
+FAILED backend/app/tests/test_release_gate_consistency.py::test_release_gate_json_check_count_matches_current_proof
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 2471 passed, 27 skipped, 21 warnings in 60.27s (0:01:00)
