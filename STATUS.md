@@ -2,39 +2,33 @@
 
 **Repository**: JUDGE_ATLASX-main  
 **Current release status**: proof-hardened alpha  
-**Production ready**: FALSE  
-Production ready: FALSE
-**As of**: 2026-05-21
+**Production ready**: false
 
-This repository is an **alpha platform**, not a production legal system.
-This repository is an alpha/research-grade platform, not a production legal system.
+This repository is an alpha platform and not approved for production deployment.
 
 ## Canonical Proof
 
 - **Proof location**: `artifacts/proof/current/CURRENT_PROOF.md`
 - **Release readiness**: `artifacts/proof/current/release_readiness.md`
-- **Latest proof run**: 2026-05-19 22:54:59 UTC
-- **Proof status**: PASS
-- **Commit hash**: 6cf8570cff222c932dfb960dca31837d3a9d1c0d
-- **Runtime baseline**: Python 3.11.7, Node v20.20.2, npm 10.8.2
-- **production_ready flag**: false
+- **Machine truth**: `artifacts/proof/current/release_gate.json`
+- **Alpha posture summary**: `artifacts/proof/current/CURRENT_ALPHA_STATUS.md`
 
 ## Current State
 
-- Evidence storage is authoritative; memory and AI outputs are derivative
-- Legal correlations are hypotheses, not verdicts
-- Source ingestion is disabled by default
-- Manual review is required before public publication
-- Source coverage is incomplete
+- Evidence storage is authoritative; memory and AI outputs are derivative.
+- Legal correlations are hypotheses, not verdicts.
+- Source ingestion is disabled by default.
+- Manual review is required before public publication.
+- Source coverage is incomplete.
 
 ## What's Tested
 
-✓ Backend import proof and pytest suite  
-✓ Frontend install, lint, typecheck, and build  
-✓ Public API boundaries  
-✓ Docker runtime and PostGIS proof  
-✓ Source registry validation  
-✓ Release archive validation  
+- Backend import proof and pytest suite
+- Frontend install, lint, typecheck, and build
+- Public API boundaries
+- Docker runtime and PostGIS proof
+- Source registry validation
+- Release archive validation
 
 ## What's Not Ready for Production
 
