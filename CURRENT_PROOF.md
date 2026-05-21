@@ -1,17 +1,17 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-21T06:23:10.298560+00:00
-- commit_hash: bb16dd0cd7ec8868c6f18dc050d7ce562da0de8d
-- alpha_gate_status: BLOCKED
-- alpha_gate_passed: false
+- generated_at_utc: 2026-05-21T06:29:08.716136+00:00
+- commit_hash: ec0d0253ec855bfec9cda945fbee8c2f3a144cc4
+- alpha_gate_status: PASS
+- alpha_gate_passed: true
 - release_gate_check_count: 41
 - docker_available: true
 - postgis_proof_result: PASS
 - egress_proxy_proof_result: PASS
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
-- archive_validation_result: FAIL
-- proof_input_tree_hash: 2e288707f7b8a47c19c182f017e024b0f49ab24279c169b236a246ccfd35cacc
+- archive_validation_result: PASS
+- proof_input_tree_hash: c7ea75eef91a3cd607cfb0dddb13f8f721bb297e583f470ecd30138a931c1ab6
 - proof_input_file_count: 995
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
@@ -46,7 +46,7 @@
 - Dedicated egress proxy proof passed in the current release gate.
 - Dedicated synthetic demo proof passed in the current release gate.
 - Proof freshness passed against the stored proof-input file list and tree hash.
-- Archive validation has not yet been recorded for this run.
+- Archive validation passed against the final distributable archive shape.
 - archive_validation_log: artifacts/proof/current/archive_validation.log
 - archive_validation_supported_shapes:
   - JUDGE-main/
@@ -59,7 +59,7 @@
 
 ## Current Proof Facts
 
-- backend pytest: 2467 passed, 27 skipped
+- backend pytest: 3309 passed, 34 skipped
 - backend import proof: PASS (105 routes)
 - frontend contracts: 48 passed
 - public API boundary: 55 passed
@@ -69,11 +69,6 @@
 - demo proof: PASS
 - mutation fail-closed coverage: PASS
 - Alembic migrations: 69
-
-## Failed Checks
-
-- backend_pytest
-- archive_validation
 
 ## Egress Proxy Coverage
 
