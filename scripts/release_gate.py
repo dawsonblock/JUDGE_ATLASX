@@ -312,6 +312,61 @@ def _check_status_map(payload: dict) -> dict[str, dict]:
     return {check["name"]: check for check in payload.get("checks", [])}
 
 
+def _normalize_gate_status(step: GateStep | None) -> str:
+    if step is None:
+        return "not_run"
+    status = (step.status or "").strip().upper()
+    if status in {"PASS", "PASSED"}:
+        return "pass"
+    if status in {"SKIP", "SKIPPED", "UNKNOWN", "NOT_RUN"}:
+        return "not_run"
+    if step.exit_code == 0:
+        return "pass"
+    return "fail"
+
+
+def _combine_gate_status(*statuses: str) -> str:
+    if any(status == "fail" for status in statuses):
+        return "fail"
+    if any(status == "pass" for status in statuses):
+        return "pass"
+    return "not_run"
+
+
+def _canonical_checks_summary(results: list[GateStep]) -> dict[str, str]:
+    by_name = {result.name: result for result in results}
+    backend_tests = _normalize_gate_status(by_name.get("backend_pytest"))
+    frontend_tests = _normalize_gate_status(by_name.get("frontend_contracts"))
+    frontend_build = _normalize_gate_status(by_name.get("frontend_build"))
+    docker_proof = _combine_gate_status(
+        _normalize_gate_status(by_name.get("docker_runtime_preflight")),
+        _normalize_gate_status(by_name.get("postgis_proof")),
+    )
+    archive_validation = _normalize_gate_status(by_name.get("archive_validation"))
+    source_registry = _combine_gate_status(
+        _normalize_gate_status(by_name.get("verify_source_registry")),
+        _normalize_gate_status(by_name.get("source_registry_status")),
+    )
+    proof_freshness = _normalize_gate_status(by_name.get("proof_freshness"))
+    public_boundary = _normalize_gate_status(by_name.get("public_api_boundary"))
+    return {
+        "backend_tests": backend_tests,
+        "frontend_tests": frontend_tests,
+        "frontend_build": frontend_build,
+        "docker_proof": docker_proof,
+        "archive_validation": archive_validation,
+        "source_registry": source_registry,
+        "proof_freshness": proof_freshness,
+        "public_boundary": public_boundary,
+    }
+
+
+def _refresh_release_payload_schema(payload: dict, results: list[GateStep]) -> None:
+    payload["schema_version"] = "1.1.0"
+    payload["release_candidate"] = bool(payload.get("alpha_gate_passed", False))
+    payload["checks_summary"] = _canonical_checks_summary(results)
+
+
 def _write_json(repo_root: Path, path: Path, data: dict) -> str:
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     return str(path.relative_to(repo_root))
@@ -1840,9 +1895,11 @@ def main() -> int:
     ).exists()
 
     payload = {
+        "schema_version": "1.1.0",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "alpha_gate_passed": False,  # updated after proof_freshness step
+        "release_candidate": False,
         # production_ready is intentionally ALWAYS False during alpha phase.
         # It is DISTINCT from alpha_gate_passed: alpha_gate_passed=True means
         # hardening gates pass; production_ready=True would require Postgres
@@ -1931,6 +1988,7 @@ def main() -> int:
         "public_api_boundary_passed": public_api_boundary_passed,
         "alembic_migration_count": alembic_migration_count,
         "checks": [asdict(r) for r in results],
+        "checks_summary": _canonical_checks_summary(results),
         "failed_checks": [r.name for r in results if r.exit_code != 0]
         + (["missing_logs"] if missing_logs else []),
         "blocked_checks": blocked_checks,
@@ -1973,6 +2031,7 @@ def main() -> int:
     payload["gate_runner_node_version"] = payload["node_version"]
     payload["frontend_node_gate_version"] = frontend_node_gate_version or gated_node_version
     payload["npm_version"] = gated_npm_version or frontend_npm_version or "unknown"
+    _refresh_release_payload_schema(payload, results)
 
     # -----------------------------------------------------------------------
     # Phase 2a: write preliminary release_gate.json with the final proof hash
@@ -2054,6 +2113,7 @@ def main() -> int:
         if not ok
         else []
     )
+    _refresh_release_payload_schema(payload, results)
 
     # Phase 3: write final release_gate.json and CURRENT_PROOF.md.
     with gate_log_path.open("a", encoding="utf-8") as gate_log:
@@ -2163,6 +2223,7 @@ def main() -> int:
         if not ok
         else []
     )
+    _refresh_release_payload_schema(payload, results)
 
     current_proof_rel = _write_current_proof_md(
         repo_root,
@@ -2242,6 +2303,7 @@ def main() -> int:
         if not ok
         else []
     )
+    _refresh_release_payload_schema(payload, results)
 
     current_proof_rel = _write_current_proof_md(
         repo_root,
@@ -2330,6 +2392,7 @@ def main() -> int:
         if not ok
         else []
     )
+    _refresh_release_payload_schema(payload, results)
 
     current_proof_rel = _write_current_proof_md(
         repo_root,
