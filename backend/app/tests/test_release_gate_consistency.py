@@ -1,6 +1,7 @@
 """Test consistency between canonical proof artifacts derived from release_gate.json."""
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -190,3 +191,75 @@ def test_proof_manifest_exists_in_canonical_proof_tree(repo_root, release_gate_j
     manifest_alpha_gate = proof_manifest.get("release_gate", {}).get("alpha_gate_passed")
     if manifest_alpha_gate is not None:
         assert manifest_alpha_gate == release_gate_json.get("alpha_gate_passed")
+
+
+def test_release_readiness_matches_release_gate(repo_root, release_gate_json):
+    """release_readiness.md must reflect the final alpha gate state."""
+    readiness_path = repo_root / "artifacts" / "proof" / "current" / "release_readiness.md"
+    if not readiness_path.exists():
+        pytest.skip(f"release_readiness.md not found at {readiness_path}")
+
+    readiness_text = readiness_path.read_text(encoding="utf-8")
+    alpha_gate_passed = release_gate_json.get("alpha_gate_passed")
+    assert alpha_gate_passed is not None, "release_gate.json missing alpha_gate_passed"
+
+    overall_status_match = re.search(r"^- overall_status: (.+)$", readiness_text, re.MULTILINE)
+    recommendation_match = re.search(
+        r"^- release_recommendation: (.+)$",
+        readiness_text,
+        re.MULTILINE,
+    )
+    assert overall_status_match, "release_readiness.md missing overall_status"
+    assert recommendation_match, "release_readiness.md missing release_recommendation"
+
+    if alpha_gate_passed:
+        assert overall_status_match.group(1).strip() == "alpha-proof-pass"
+        assert recommendation_match.group(1).strip() == "alpha-proof-pass"
+        assert "missing_required_gate:single_proof_authority" not in readiness_text
+    else:
+        assert overall_status_match.group(1).strip() == "blocked"
+
+
+def test_node_metadata_matches_canonical_logs(
+    repo_root,
+    release_gate_json,
+    current_proof_md,
+):
+    """Canonical proof metadata should agree with the Node gate logs."""
+    proof_manifest_path = repo_root / "artifacts" / "proof" / "current" / "proof_manifest.json"
+    if not proof_manifest_path.exists():
+        pytest.skip(f"proof_manifest.json not found at {proof_manifest_path}")
+
+    check_node_policy_log = repo_root / "artifacts" / "proof" / "current" / "check_node_policy.log"
+    frontend_node_gate_log = repo_root / "artifacts" / "proof" / "current" / "frontend_node_gate.log"
+    if not check_node_policy_log.exists() or not frontend_node_gate_log.exists():
+        pytest.skip("canonical Node proof logs are not present")
+
+    proof_manifest = json.loads(proof_manifest_path.read_text(encoding="utf-8"))
+    node_log_text = check_node_policy_log.read_text(encoding="utf-8")
+    frontend_log_text = frontend_node_gate_log.read_text(encoding="utf-8")
+
+    def extract_prefixed_value(text: str, prefix: str) -> str:
+        match = re.search(rf"^{re.escape(prefix)}\s*(.+)$", text, re.MULTILINE)
+        assert match, f"missing {prefix} in canonical proof log"
+        return match.group(1).strip()
+
+    def extract_current_proof_value(key: str) -> str:
+        match = re.search(rf"^- {re.escape(key)}: (.+)$", current_proof_md, re.MULTILINE)
+        assert match, f"CURRENT_PROOF.md missing {key}"
+        return match.group(1).strip()
+
+    logged_node_version = extract_prefixed_value(node_log_text, "NODE_VERSION:")
+    logged_npm_version = extract_prefixed_value(node_log_text, "NPM_VERSION:")
+    frontend_logged_node = extract_prefixed_value(frontend_log_text, "NODE_VERSION:")
+    frontend_logged_npm = extract_prefixed_value(frontend_log_text, "NPM_VERSION:")
+
+    assert release_gate_json.get("node_version") == logged_node_version
+    assert release_gate_json.get("npm_version") == logged_npm_version
+    assert release_gate_json.get("frontend_node_gate_version") == frontend_logged_node
+    assert proof_manifest.get("node_version") == logged_node_version
+    assert proof_manifest.get("npm_version") == logged_npm_version
+    assert extract_current_proof_value("node_version") == logged_node_version
+    assert extract_current_proof_value("npm_version") == logged_npm_version
+    assert frontend_logged_node == logged_node_version
+    assert frontend_logged_npm == logged_npm_version

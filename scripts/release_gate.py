@@ -60,14 +60,17 @@ REQUIRED_GATE_NAMES = {
     "check_no_direct_ingestion_network_clients",
     "verify_evidence_store",
     "verify_audit_chain",
+    "check_node_policy",
     "frontend_node_gate",
     "frontend_install",
     "frontend_lint",
     "frontend_typecheck",
     "frontend_contracts",
     "frontend_build",
-    "archive_validation",
+    "proof_consistency_pytest",
     "release_readiness_generation",
+    "required_proof_logs",
+    "archive_validation",
     "single_proof_authority",
 }
 
@@ -1214,6 +1217,7 @@ def _write_current_proof_md(
             "- artifacts/proof/current/backend_proof_summary.json",
             "- artifacts/proof/current/frontend_proof_summary.json",
             "- artifacts/proof/current/frontend_node_gate.log",
+            "- artifacts/proof/current/check_node_policy.log",
             "- artifacts/proof/current/frontend_install.log",
             "- artifacts/proof/current/frontend_lint.log",
             "- artifacts/proof/current/frontend_typecheck.log",
@@ -1224,6 +1228,9 @@ def _write_current_proof_md(
             "- artifacts/proof/current/map_route_check.log",
             "- artifacts/proof/current/public_api_boundary.log",
             "- artifacts/proof/current/mutation_fail_closed_coverage.log",
+            "- artifacts/proof/current/proof_consistency_pytest.log",
+            "- artifacts/proof/current/single_proof_authority.log",
+            "- artifacts/proof/current/required_proof_logs.log",
             "- artifacts/proof/current/source_registry_status.json",
             "- artifacts/proof/current/release_readiness.md",
             "- artifacts/proof/current/CURRENT_ALPHA_STATUS.md",
@@ -1607,6 +1614,11 @@ def main() -> int:
         ["bash", "scripts/validate_archive_proof.sh"],
         timeout_seconds=900,
     )
+    _required_proof_logs_spec = GateStepSpec(
+        "required_proof_logs",
+        "required_proof_logs.log",
+        [python_exe, "scripts/check_required_proof_logs.py", "--root", str(repo_root)],
+    )
 
     archived_current_proof = _archive_current_proof(repo_root, out_dir)
 
@@ -1614,10 +1626,13 @@ def main() -> int:
     # self-contained.
     stale_outputs = [spec.log_name for spec in gate_steps] + [
         _proof_freshness_spec.log_name,
+        _required_proof_logs_spec.log_name,
         "proof_consistency_pytest.log",
         "release_gate.log",
         "release_gate.json",
         "proof_manifest.json",
+        "release_readiness.md",
+        "archive_validation.md",
         "proof.db",
         "SOURCE_REGISTRY_STATUS.json",
         "source_registry_status.json",
@@ -1716,6 +1731,8 @@ def main() -> int:
     # read the stored manifest. Nothing between here and the freshness step
     # modifies proof-input source files.
     # -----------------------------------------------------------------------
+    readiness_rel = str((out_dir / "release_readiness.md").relative_to(repo_root))
+
     missing_logs = _missing_logs(repo_root, results)
     proof_input_metadata = _collect_proof_input_metadata(repo_root, python_exe)
 
@@ -1915,27 +1932,6 @@ def main() -> int:
     manifest_path = out_dir / "proof_manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
-    readiness_payload, readiness_rel = _generate_release_readiness_from_manifest(
-        repo_root,
-        out_dir,
-        manifest,
-    )
-
-    readiness_step = GateStep(
-        name="release_readiness_generation",
-        command="generate from proof_manifest.json",
-        status="PASS",
-        exit_code=0,
-        duration_seconds=0.0,
-        log_path=readiness_rel,
-        started_at_utc=datetime.now(timezone.utc).isoformat(),
-        finished_at_utc=datetime.now(timezone.utc).isoformat(),
-        required=True,
-        cwd=str(repo_root),
-        failure_reason=None,
-    )
-    results.append(readiness_step)
-
     # Generate required policy/status artifacts before archive validation so
     # the packaged proof tree can be validated as a complete release candidate.
     source_registry_summary = _read_source_registry_summary(out_dir)
@@ -1954,42 +1950,6 @@ def main() -> int:
         check_count=len(results),
     )
 
-    archive_step = _run(
-        repo_root,
-        out_dir,
-        _archive_validation_spec.name,
-        _archive_validation_spec.log_name,
-        list(_archive_validation_spec.command),
-        timeout_seconds=_archive_validation_spec.timeout_seconds,
-        required=_archive_validation_spec.required,
-    )
-    results.append(archive_step)
-
-    manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
-    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
-
-    readiness_payload, readiness_rel = _generate_release_readiness_from_manifest(
-        repo_root,
-        out_dir,
-        manifest,
-    )
-    for idx, step in enumerate(results):
-        if step.name == "release_readiness_generation":
-            results[idx] = GateStep(
-                name=step.name,
-                command=step.command,
-                status="PASS",
-                exit_code=0,
-                duration_seconds=step.duration_seconds,
-                log_path=readiness_rel,
-                started_at_utc=step.started_at_utc,
-                finished_at_utc=step.finished_at_utc,
-                required=step.required,
-                cwd=step.cwd,
-                failure_reason=None,
-            )
-            break
-
     static_guards_rel = _write_static_guards_log(repo_root, out_dir, results)
 
     manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
@@ -2000,9 +1960,7 @@ def main() -> int:
     payload["alpha_gate_passed"] = ok
     payload["check_count"] = len(results)
     payload["proof_freshness_result"] = pf_step.status
-    payload["archive_validation_result"] = (
-        "PASS" if archive_step.exit_code == 0 else "FAIL"
-    )
+    payload["archive_validation_result"] = "UNKNOWN"
     payload["checks"] = [asdict(r) for r in results]
     payload["logs"] = {r.name: r.log_path for r in results}
     payload["failed_checks"] = [r.name for r in results if r.exit_code != 0] + (
@@ -2095,6 +2053,27 @@ def main() -> int:
     )
     results.append(single_proof_authority_step)
 
+    final_manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
+    _, readiness_rel = _generate_release_readiness_from_manifest(
+        repo_root,
+        out_dir,
+        final_manifest,
+    )
+    readiness_step = GateStep(
+        name="release_readiness_generation",
+        command="generate from proof_manifest.json",
+        status="PASS",
+        exit_code=0,
+        duration_seconds=0.0,
+        log_path=readiness_rel,
+        started_at_utc=datetime.now(timezone.utc).isoformat(),
+        finished_at_utc=datetime.now(timezone.utc).isoformat(),
+        required=True,
+        cwd=str(repo_root),
+        failure_reason=None,
+    )
+    results.append(readiness_step)
+
     missing_logs = _missing_logs(repo_root, results)
     ok = all(r.exit_code == 0 for r in results) and not missing_logs
     payload["alpha_gate_passed"] = ok
@@ -2125,9 +2104,72 @@ def main() -> int:
     payload["logs"]["current_proof"] = current_proof_rel
     payload["logs"]["current_alpha_status"] = current_alpha_status_rel
 
-    # Regenerate release_readiness.md with the fully-final state so that
-    # proof_consistency_pytest and single_proof_authority outcomes are
-    # reflected and the document never contradicts release_gate.json.
+    final_manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
+    _, readiness_rel = _generate_release_readiness_from_manifest(
+        repo_root,
+        out_dir,
+        final_manifest,
+    )
+    manifest_path.write_text(json.dumps(final_manifest, indent=2) + "\n", encoding="utf-8")
+    payload["logs"]["release_readiness"] = readiness_rel
+    payload["logs"]["proof_manifest"] = str(manifest_path.relative_to(repo_root))
+
+    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    required_proof_logs_step = _run(
+        repo_root,
+        out_dir,
+        _required_proof_logs_spec.name,
+        _required_proof_logs_spec.log_name,
+        list(_required_proof_logs_spec.command),
+        timeout_seconds=_required_proof_logs_spec.timeout_seconds,
+        required=_required_proof_logs_spec.required,
+    )
+    results.append(required_proof_logs_step)
+
+    archive_step = _run(
+        repo_root,
+        out_dir,
+        _archive_validation_spec.name,
+        _archive_validation_spec.log_name,
+        list(_archive_validation_spec.command),
+        timeout_seconds=_archive_validation_spec.timeout_seconds,
+        required=_archive_validation_spec.required,
+    )
+    results.append(archive_step)
+
+    missing_logs = _missing_logs(repo_root, results)
+    ok = all(r.exit_code == 0 for r in results) and not missing_logs
+    payload["alpha_gate_passed"] = ok
+    payload["check_count"] = len(results)
+    payload["archive_validation_result"] = (
+        "PASS" if archive_step.exit_code == 0 else "FAIL"
+    )
+    payload["checks"] = [asdict(r) for r in results]
+    payload["logs"] = {r.name: r.log_path for r in results}
+    payload["logs"]["release_gate"] = str(gate_log_path.relative_to(repo_root))
+    payload["logs"]["proof_manifest"] = str(manifest_path.relative_to(repo_root))
+    payload["logs"]["static_guards"] = static_guards_rel
+    payload["failed_checks"] = [r.name for r in results if r.exit_code != 0] + (
+        ["missing_logs"] if missing_logs else []
+    )
+    payload["release_blockers_remaining"] = (
+        [r.name for r in results if r.exit_code != 0]
+        + (["missing_logs"] if missing_logs else [])
+        if not ok
+        else []
+    )
+
+    current_proof_rel = _write_current_proof_md(
+        repo_root,
+        out_dir,
+        payload,
+        check_count=len(results),
+    )
+    current_alpha_status_rel = _write_current_alpha_status_md(repo_root, out_dir, payload)
+    payload["logs"]["current_proof"] = current_proof_rel
+    payload["logs"]["current_alpha_status"] = current_alpha_status_rel
+
     final_manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
     _, readiness_rel = _generate_release_readiness_from_manifest(
         repo_root,

@@ -73,7 +73,171 @@ def _run_version_command(command: list[str]) -> str:
     return proc.stdout.strip()
 
 
-def _validate_stored_metadata(repo_root: Path, nvmrc_major: str) -> list[str]:
+def _validate_node_value(
+    label: str,
+    value: str | None,
+    nvmrc_major: str,
+    node_range: str | None,
+    runtime_node_version: str,
+) -> list[str]:
+    errors: list[str] = []
+    if not value or value == "unknown":
+        return [f"{label}: missing stored node_version"]
+
+    parsed_value = _parse_version(value)
+    if parsed_value is None:
+        return [f"{label}: unable to parse stored node_version '{value}'"]
+
+    declared_major = int(nvmrc_major)
+    if parsed_value[0] != declared_major:
+        errors.append(
+            f"{label}: stored node_version '{value}' disagrees with .nvmrc major={nvmrc_major}"
+        )
+    if not isinstance(node_range, str) or not _satisfies_range(value, node_range):
+        errors.append(
+            f"{label}: stored node_version '{value}' does not satisfy engines.node '{node_range}'"
+        )
+
+    runtime_parsed = _parse_version(runtime_node_version)
+    if runtime_parsed is not None and parsed_value != runtime_parsed:
+        errors.append(
+            f"{label}: stored node_version '{value}' does not match runtime {runtime_node_version}"
+        )
+    return errors
+
+
+def _validate_npm_value(
+    label: str,
+    value: str | None,
+    npm_range: str | None,
+    runtime_npm_version: str,
+) -> list[str]:
+    errors: list[str] = []
+    if not value or value == "unknown":
+        return [f"{label}: missing stored npm_version"]
+
+    parsed_value = _parse_version(value)
+    if parsed_value is None:
+        return [f"{label}: unable to parse stored npm_version '{value}'"]
+
+    if not isinstance(npm_range, str) or not _satisfies_range(value, npm_range):
+        errors.append(
+            f"{label}: stored npm_version '{value}' does not satisfy engines.npm '{npm_range}'"
+        )
+
+    runtime_parsed = _parse_version(runtime_npm_version)
+    if runtime_parsed is not None and parsed_value != runtime_parsed:
+        errors.append(
+            f"{label}: stored npm_version '{value}' does not match runtime {runtime_npm_version}"
+        )
+    return errors
+
+
+def _extract_doc_version(text: str, patterns: list[str]) -> str | None:
+    for pattern in patterns:
+        match = re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE)
+        if match:
+            return match.group(1).strip()
+    return None
+
+
+def _validate_doc_metadata(
+    label: str,
+    path: Path,
+    nvmrc_major: str,
+    node_range: str | None,
+    npm_range: str | None,
+    runtime_node_version: str,
+    runtime_npm_version: str,
+) -> list[str]:
+    if not path.exists():
+        return []
+
+    text = path.read_text(encoding="utf-8", errors="ignore")
+    node_value = _extract_doc_version(
+        text,
+        [
+            r"-\s*node_version:\s*(v?\d+(?:\.\d+)*)",
+            r"\*\*Node version\*\*:\s*(v?\d+(?:\.\d+)*)",
+            r"Runtime baseline:.*?\bNode\s+(v?\d+(?:\.\d+)*)",
+        ],
+    )
+    npm_value = _extract_doc_version(
+        text,
+        [
+            r"-\s*npm_version:\s*(v?\d+(?:\.\d+)*)",
+            r"\*\*npm version\*\*:\s*(v?\d+(?:\.\d+)*)",
+            r"Runtime baseline:.*?\bnpm\s+(v?\d+(?:\.\d+)*)",
+        ],
+    )
+
+    errors = _validate_node_value(
+        f"{label}:node_version",
+        node_value,
+        nvmrc_major,
+        node_range,
+        runtime_node_version,
+    )
+    errors.extend(
+        _validate_npm_value(
+            f"{label}:npm_version",
+            npm_value,
+            npm_range,
+            runtime_npm_version,
+        )
+    )
+    return errors
+
+
+def _extract_log_value(text: str, prefix: str) -> str | None:
+    match = re.search(rf"^{re.escape(prefix)}\s*(.+)$", text, flags=re.MULTILINE)
+    if not match:
+        return None
+    return match.group(1).strip()
+
+
+def _validate_log_metadata(
+    label: str,
+    path: Path,
+    nvmrc_major: str,
+    node_range: str | None,
+    npm_range: str | None,
+    runtime_node_version: str,
+    runtime_npm_version: str,
+) -> list[str]:
+    if not path.exists():
+        return []
+
+    text = path.read_text(encoding="utf-8", errors="ignore")
+    node_value = _extract_log_value(text, "NODE_VERSION:")
+    npm_value = _extract_log_value(text, "NPM_VERSION:")
+
+    errors = _validate_node_value(
+        f"{label}:NODE_VERSION",
+        node_value,
+        nvmrc_major,
+        node_range,
+        runtime_node_version,
+    )
+    errors.extend(
+        _validate_npm_value(
+            f"{label}:NPM_VERSION",
+            npm_value,
+            npm_range,
+            runtime_npm_version,
+        )
+    )
+    return errors
+
+
+def _validate_stored_metadata(
+    repo_root: Path,
+    nvmrc_major: str,
+    node_range: str | None,
+    npm_range: str | None,
+    runtime_node_version: str,
+    runtime_npm_version: str,
+) -> list[str]:
     """Check that stored proof metadata node version agrees with .nvmrc policy.
 
     Reads ``release_gate.json`` and ``proof_manifest.json`` in
@@ -99,50 +263,64 @@ def _validate_stored_metadata(repo_root: Path, nvmrc_major: str) -> list[str]:
             continue
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except (OSError, json.JSONDecodeError) as exc:
+            errors.append(f"{label}: failed to parse JSON: {exc}")
             continue
         stored_node = data.get("node_version") or data.get("gate_runner_node_version")
-        if not stored_node or stored_node == "unknown":
-            continue
-        parsed_stored = _parse_version(stored_node)
-        if parsed_stored is None:
-            errors.append(
-                f"{label}: unable to parse stored node_version '{stored_node}'"
+        stored_npm = data.get("npm_version")
+        errors.extend(
+            _validate_node_value(
+                f"{label}:node_version",
+                stored_node,
+                nvmrc_major,
+                node_range,
+                runtime_node_version,
             )
-            continue
-        try:
-            declared_major = int(nvmrc_major)
-        except ValueError:
-            continue
-        if parsed_stored[0] != declared_major:
-            errors.append(
-                f"{label}: stored node_version '{stored_node}' (major={parsed_stored[0]}) "
-                f"disagrees with .nvmrc declared major={nvmrc_major}"
+        )
+        errors.extend(
+            _validate_npm_value(
+                f"{label}:npm_version",
+                stored_npm,
+                npm_range,
+                runtime_npm_version,
             )
+        )
 
-    # Check doc files for node_version: lines
-    doc_files = ["CURRENT_PROOF.md", "PROOF_STATUS.md", "STATUS.md"]
-    for doc_name in doc_files:
-        doc_path = repo_root / doc_name
-        if not doc_path.exists():
-            continue
-        text = doc_path.read_text(encoding="utf-8", errors="ignore")
-        match = re.search(r"-\s*node_version:\s*(v?\d+[\.\d]*)", text)
-        if not match:
-            continue
-        doc_ver = match.group(1).strip()
-        parsed_doc = _parse_version(doc_ver)
-        if parsed_doc is None:
-            continue
-        try:
-            declared_major = int(nvmrc_major)
-        except ValueError:
-            continue
-        if parsed_doc[0] != declared_major:
-            errors.append(
-                f"{doc_name}: node_version '{doc_ver}' (major={parsed_doc[0]}) "
-                f"disagrees with .nvmrc declared major={nvmrc_major}"
+    doc_files = {
+        "artifacts/proof/current/CURRENT_PROOF.md": repo_root / "artifacts" / "proof" / "current" / "CURRENT_PROOF.md",
+        "CURRENT_PROOF.md": repo_root / "CURRENT_PROOF.md",
+        "PROOF_STATUS.md": repo_root / "PROOF_STATUS.md",
+        "STATUS.md": repo_root / "STATUS.md",
+    }
+    for label, path in doc_files.items():
+        errors.extend(
+            _validate_doc_metadata(
+                label,
+                path,
+                nvmrc_major,
+                node_range,
+                npm_range,
+                runtime_node_version,
+                runtime_npm_version,
             )
+        )
+
+    log_files = {
+        "artifacts/proof/current/check_node_policy.log": repo_root / "artifacts" / "proof" / "current" / "check_node_policy.log",
+        "artifacts/proof/current/frontend_node_gate.log": repo_root / "artifacts" / "proof" / "current" / "frontend_node_gate.log",
+    }
+    for label, path in log_files.items():
+        errors.extend(
+            _validate_log_metadata(
+                label,
+                path,
+                nvmrc_major,
+                node_range,
+                npm_range,
+                runtime_node_version,
+                runtime_npm_version,
+            )
+        )
 
     return errors
 
@@ -189,7 +367,14 @@ def main() -> int:
         )
 
     # Validate stored proof metadata for node version drift
-    metadata_errors = _validate_stored_metadata(repo_root, root_major)
+    metadata_errors = _validate_stored_metadata(
+        repo_root,
+        root_major,
+        node_range,
+        npm_range,
+        node_version,
+        npm_version,
+    )
     errors.extend(metadata_errors)
 
     print(f"NODE_VERSION: {node_version}")
@@ -198,6 +383,7 @@ def main() -> int:
     print(f"FRONTEND_NVMRC: {frontend_major}")
     print(f"NODE_RANGE: {node_range}")
     print(f"NPM_RANGE: {npm_range}")
+    print(f"DECLARED_NODE_MAJOR: {root_major}")
 
     if errors:
         print("NODE_POLICY: FAIL")

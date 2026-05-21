@@ -69,6 +69,7 @@ python scripts/validate_release_archive.py \
   --output "${ROOT_DIR}/artifacts/proof/current/archive_validation.md"
 
 python scripts/check_release_surface.py --archive "${ARCHIVE_PATH}"
+python scripts/validate_final_zip.py "${ARCHIVE_PATH}"
 
 EXTRACT_DIR="${TMP_DIR}/extracted"
 mkdir -p "${EXTRACT_DIR}"
@@ -136,3 +137,6 @@ print(f"PASS: synchronized proof_input_tree_hash={release_hash}")
 PY
 
 log "PASS: release package and proof validation complete"
+log "AUTHORITATIVE_RELEASE_ARCHIVE=${ARCHIVE_PATH}"
+log "AUTHORITATIVE_RELEASE_ARCHIVE_SHA256=${ARCHIVE_SHA256}"
+log "Ship the validated archive at ${ARCHIVE_PATH} exactly; do not re-zip the working tree."
