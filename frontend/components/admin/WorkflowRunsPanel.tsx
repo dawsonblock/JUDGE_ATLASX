@@ -8,7 +8,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 
 interface WorkflowRun {
@@ -66,11 +66,7 @@ export function WorkflowRunsPanel({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchRuns();
-  }, [workflowName]);
-
-  const fetchRuns = async () => {
+  const fetchRuns = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -91,7 +87,11 @@ export function WorkflowRunsPanel({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [workflowName]);
+
+  useEffect(() => {
+    fetchRuns();
+  }, [fetchRuns]);
 
   const fetchSteps = async (runId: string) => {
     try {

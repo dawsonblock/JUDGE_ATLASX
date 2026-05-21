@@ -1,8 +1,8 @@
 # FIX_VERIFICATION_REPORT
 
-- generated_at_utc: 2026-05-21T00:39:37.718159+00:00
-- commit_hash: 33b4ef99302778dddb0afd079f90beab9bfeef35
-- alpha_gate_passed: false
+- generated_at_utc: 2026-05-21T00:57:56.680404+00:00
+- commit_hash: 3dec9cbcd6cb69b47c3b613e1d6fee794fa3d07b
+- alpha_gate_passed: true
 
 ## Required Gate Signals
 
@@ -19,8 +19,7 @@
 
 ## Release Blockers
 
-- frontend_typecheck
-- frontend_build
+- none
 
 ## Canonical Artifacts
 

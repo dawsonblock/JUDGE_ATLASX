@@ -98,7 +98,7 @@ Server:
   Running: 6
   Paused: 0
   Stopped: 69
- Images: 58
+ Images: 59
  Server Version: 29.4.3
  Storage Driver: overlayfs
   driver-type: io.containerd.snapshotter.v1
@@ -115,7 +115,7 @@ Server:
  Discovered Devices:
   cdi: docker.com/gpu=webgpu
  Swarm: inactive
- Runtimes: runc io.containerd.runc.v2
+ Runtimes: io.containerd.runc.v2 runc
  Default Runtime: runc
  Init Binary: docker-init
  containerd version: 77c84241c7cbdd9b4eca2591793e3d4f4317c590
@@ -163,14 +163,14 @@ Server:
 [proof_postgis] Stage: container start
 [proof_postgis] Starting PostGIS container...
 WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
-2b5fa00de95f3d5e542d1c531ca6106d8e9b5c5702074f594be13965886e8254
+05c95b47261cc1423eefbdb0d1edd2624e8c6db8176e5473136506db107fd481
 [proof_postgis] PASS: container start requested
 [proof_postgis] Stage: pg_isready wait loop
 [proof_postgis] Waiting for Postgres to be ready...
 [proof_postgis] Postgres ready after 4s
 [proof_postgis] PASS: pg_isready
 [proof_postgis] Stage: host connectivity wait loop
-[proof_postgis] PASS: host connectivity ready after 10s
+[proof_postgis] PASS: host connectivity ready after 12s
 [proof_postgis] Stage: ensure proof database exists
 [proof_postgis] PASS: proof database exists
 [proof_postgis] Stage: PostGIS extension check
@@ -288,7 +288,7 @@ app/tests/test_map_bbox.py::test_bbox_query_does_not_crash_with_postgresql_diale
 [proof_postgis] Stage: evidence snapshot immutability test
 [proof_postgis] Running evidence snapshot immutability proof...
 .................                                                        [100%]
-17 passed in 0.05s
+17 passed in 0.04s
 [proof_postgis] PASS: evidence snapshot immutability test
 [proof_postgis] Stage: cleanup
 [proof_postgis] Cleanup: removing container 'judge_postgis_proof'

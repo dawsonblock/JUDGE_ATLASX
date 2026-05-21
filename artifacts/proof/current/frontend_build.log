@@ -9,21 +9,54 @@
    Creating an optimized production build ...
  ✓ Compiled successfully
    Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/23) ...
+   Generating static pages (5/23) 
+   Generating static pages (11/23) 
+   Generating static pages (17/23) 
+ ✓ Generating static pages (23/23)
+   Finalizing page optimization ...
+   Collecting build traces ...
 
-./components/admin/WorkflowRunsPanel.tsx
-71:6  Warning: React Hook useEffect has a missing dependency: 'fetchRuns'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+Route (app)                                  Size     First Load JS
+┌ ƒ /                                        186 B          96.2 kB
+├ ○ /_not-found                              873 B          88.2 kB
+├ ƒ /admin/ai-checks                         950 B          97.1 kB
+├ ƒ /admin/review                            160 B          87.5 kB
+├ ƒ /admin/review/claims                     160 B          87.5 kB
+├ ƒ /admin/review/contradictions             160 B          87.5 kB
+├ ƒ /admin/review/entities                   160 B          87.5 kB
+├ ƒ /admin/sources                           5.92 kB         102 kB
+├ ○ /api/admin/csrf                          0 B                0 B
+├ ƒ /api/admin/ingestion-runs                0 B                0 B
+├ ƒ /api/admin/ingestion-runs/[runId]        0 B                0 B
+├ ƒ /api/admin/ingestion-runs/[runId]/retry  0 B                0 B
+├ ƒ /api/admin/sources                       0 B                0 B
+├ ƒ /api/admin/sources/[sourceKey]/disable   0 B                0 B
+├ ƒ /api/admin/sources/[sourceKey]/enable    0 B                0 B
+├ ƒ /api/admin/sources/[sourceKey]/run       0 B                0 B
+├ ƒ /api/auth/login                          0 B                0 B
+├ ƒ /api/auth/logout                         0 B                0 B
+├ ƒ /api/auth/refresh                        0 B                0 B
+├ ƒ /cases                                   1.87 kB         107 kB
+├ ƒ /cases/[id]                              186 B          96.2 kB
+├ ƒ /dashboard                               186 B          96.2 kB
+├ ○ /defendants                              160 B          87.5 kB
+├ ƒ /defendants/[id]                         186 B          96.2 kB
+├ ƒ /judges                                  1.86 kB         107 kB
+├ ƒ /judges/[id]                             186 B          96.2 kB
+├ ○ /login                                   1.21 kB        88.6 kB
+├ ○ /map                                     221 kB          308 kB
+├ ƒ /records/[id]                            160 B          87.5 kB
+└ ƒ /sources                                 160 B          87.5 kB
++ First Load JS shared by all                87.3 kB
+  ├ chunks/117-607fd91aade7dcf6.js           31.7 kB
+  ├ chunks/fd9d1056-9e191f0896c1d560.js      53.6 kB
+  └ other shared chunks (total)              1.97 kB
 
-info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
-Failed to compile.
 
-./components/admin/WorkflowRunsPanel.tsx:12:24
-Type error: Cannot find module 'date-fns' or its corresponding type declarations.
+ƒ Middleware                                 26.5 kB
 
-[0m [90m 10 |[39m[0m
-[0m [90m 11 |[39m [36mimport[39m { useState[33m,[39m useEffect } [36mfrom[39m [32m"react"[39m[33m;[39m[0m
-[0m[31m[1m>[22m[39m[90m 12 |[39m [36mimport[39m { format } [36mfrom[39m [32m"date-fns"[39m[33m;[39m[0m
-[0m [90m    |[39m                        [31m[1m^[22m[39m[0m
-[0m [90m 13 |[39m[0m
-[0m [90m 14 |[39m [36minterface[39m [33mWorkflowRun[39m {[0m
-[0m [90m 15 |[39m   id[33m:[39m number[33m;[39m[0m
-Next.js build worker exited with code: 1 and signal: null
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

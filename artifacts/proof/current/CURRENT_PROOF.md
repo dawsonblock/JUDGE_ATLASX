@@ -1,9 +1,9 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-21T00:39:37.718159+00:00
-- commit_hash: 33b4ef99302778dddb0afd079f90beab9bfeef35
-- alpha_gate_status: BLOCKED
-- alpha_gate_passed: false
+- generated_at_utc: 2026-05-21T00:57:56.680404+00:00
+- commit_hash: 3dec9cbcd6cb69b47c3b613e1d6fee794fa3d07b
+- alpha_gate_status: PASS
+- alpha_gate_passed: true
 - release_gate_check_count: 38
 - docker_available: true
 - postgis_proof_result: PASS
@@ -11,7 +11,7 @@
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
 - archive_validation_result: PASS
-- proof_input_tree_hash: 7820818ae8e7bb097da5feb7a585a2dc1c2e1f3aee5ef21f43861088fb230af4
+- proof_input_tree_hash: 499b965dc74307b315b7c4413e9e1f967d1bf1653681e971c567677240a44d16
 - proof_input_file_count: 986
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
@@ -69,11 +69,6 @@
 - demo proof: PASS
 - mutation fail-closed coverage: PASS
 - Alembic migrations: 69
-
-## Failed Checks
-
-- frontend_typecheck
-- frontend_build
 
 ## Egress Proxy Coverage
 
