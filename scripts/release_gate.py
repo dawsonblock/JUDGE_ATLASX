@@ -2171,8 +2171,30 @@ def main() -> int:
         check_count=len(results),
     )
     current_alpha_status_rel = _write_current_alpha_status_md(repo_root, out_dir, payload)
+    source_registry_status_md_rel = _write_source_registry_status_md(
+        repo_root,
+        out_dir,
+        payload,
+        source_registry_summary,
+    )
+    proof_policy_rel = _write_proof_policy_md(repo_root, out_dir, payload)
+    repair_report_rel = _write_repair_report_md(
+        repo_root,
+        out_dir,
+        payload,
+        source_registry_summary,
+    )
+    fix_verification_report_rel = _write_fix_verification_report_md(
+        repo_root,
+        out_dir,
+        payload,
+    )
     payload["logs"]["current_proof"] = current_proof_rel
     payload["logs"]["current_alpha_status"] = current_alpha_status_rel
+    payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
+    payload["logs"]["proof_policy"] = proof_policy_rel
+    payload["logs"]["repair_report"] = repair_report_rel
+    payload["logs"]["fix_verification_report"] = fix_verification_report_rel
 
     final_manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
     _, readiness_rel = _generate_release_readiness_from_manifest(
