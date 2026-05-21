@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 
+from app.ingestion.schemas.statscan_aggregate_record import SCHEMA_VERSION
 from app.ingestion.source_adapters.statscan_table import StatscanTableAdapter
 
 
@@ -47,3 +48,5 @@ def test_statscan_json_rows_produce_review_items_only() -> None:
     assert payload["aggregate"] is True
     assert payload["record_scope"] == "aggregate_statistics_only"
     assert payload["ingestion_mode"] == "review_only"
+    assert payload["schema_version"] == SCHEMA_VERSION
+    assert payload["aggregate_key"] == "2025_Saskatchewan_Crime rate_rate per 100,000"

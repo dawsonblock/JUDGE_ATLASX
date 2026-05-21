@@ -20,6 +20,7 @@ from app.ingestion.adapters import (
     IngestionResult,
     ParsedRecord,
 )
+from app.ingestion.schemas.statscan_aggregate_record import build_statscan_aggregate_payload
 from app.ingestion.fetcher import FetchCallable, fetch_for_ingestion, parse_allowed_domains
 from app.ingestion.source_rules import check_record_type_allowed
 
@@ -135,13 +136,10 @@ class StatscanTableAdapter(CanadianSourceAdapter):
                     source_key=self._source_key,
                     record_type=_RECORD_TYPE,
                     external_id=external_id,
-                    payload={
-                        "aggregate": True,
-                        "record_scope": "aggregate_statistics_only",
-                        "ingestion_mode": "review_only",
-                        "source_key": self._source_key,
-                        "raw": dict(row),
-                    },
+                    payload=build_statscan_aggregate_payload(
+                        source_key=self._source_key,
+                        raw=dict(row),
+                    ),
                     source_url=self._base_url,
                 )
             )

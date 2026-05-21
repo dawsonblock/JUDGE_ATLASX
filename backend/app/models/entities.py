@@ -455,6 +455,37 @@ class CrimeIncident(Base, TimestampMixin):
     )
 
 
+class CrimeAggregateStatistic(Base, TimestampMixin):
+    __tablename__ = "crime_aggregate_statistics"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_key",
+            "aggregate_key",
+            name="uq_crime_aggregate_source_key",
+        ),
+        Index("ix_crime_aggregate_period", "period"),
+        Index("ix_crime_aggregate_geography", "geography"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source_key: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    aggregate_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    period: Mapped[str | None] = mapped_column(String(64), index=True)
+    geography: Mapped[str | None] = mapped_column(String(255), index=True)
+    statistic_name: Mapped[str | None] = mapped_column(String(255))
+    unit: Mapped[str | None] = mapped_column(String(120))
+    value_numeric: Mapped[float | None] = mapped_column(Float)
+    metadata_json: Mapped[dict | None] = mapped_column(JSON)
+    source_url: Mapped[str | None] = mapped_column(Text)
+    source_snapshot_id: Mapped[int | None] = mapped_column(
+        ForeignKey("source_snapshots.id"), nullable=True, index=True
+    )
+
+    source_snapshot: Mapped["SourceSnapshot"] = relationship(
+        "SourceSnapshot", foreign_keys=[source_snapshot_id]
+    )
+
+
 class EvidenceReview(Base):
     __tablename__ = "evidence_reviews"
 
