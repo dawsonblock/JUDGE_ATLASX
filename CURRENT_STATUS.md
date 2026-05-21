@@ -16,7 +16,7 @@
 - Machine ingestion does not imply auto-publication.
 - production_ready: false
 - Public relationship arcs remain disabled by default.
-- Saskatchewan CanLII staging proof is fail-closed: standalone proof reports SKIPPED without API key, and release_gate blocks the required check in that state.
+- Saskatchewan CanLII staging proof now supports no-key execution: it attempts CanLII RSS first and falls back to Saskatchewan Courts CanLII references when RSS is bot-protected.
 
 ## Current Release Truth
 
