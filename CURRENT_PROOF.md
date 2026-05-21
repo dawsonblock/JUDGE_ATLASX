@@ -1,9 +1,9 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-21T23:11:08.657484+00:00
-- commit_hash: 1641b438ca77a3cc975e88e013c554b2a46d90c2
-- alpha_gate_status: BLOCKED
-- alpha_gate_passed: false
+- generated_at_utc: 2026-05-21T23:15:30.776786+00:00
+- commit_hash: f8625ac0c6e874fc1d83fbcf151147842775252d
+- alpha_gate_status: PASS
+- alpha_gate_passed: true
 - release_gate_check_count: 45
 - docker_available: true
 - postgis_proof_result: PASS
@@ -70,10 +70,6 @@
 - CanLII staging proof: PASS
 - mutation fail-closed coverage: PASS
 - Alembic migrations: 70
-
-## Failed Checks
-
-- check_node_policy
 
 ## Egress Proxy Coverage
 

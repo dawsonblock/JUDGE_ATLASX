@@ -3,8 +3,10 @@
 **Repository**: JUDGE_ATLASX-main  
 **Current release status**: proof-hardened alpha  
 **Production ready**: false
+Production ready: FALSE
 
 This repository is an alpha platform and not approved for production deployment.
+This repository is an alpha/research-grade platform, not a production legal system.
 
 ## Canonical Proof
 

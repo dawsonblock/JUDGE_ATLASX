@@ -1,12 +1,12 @@
 # REPAIR_REPORT
 
-- generated_at_utc: 2026-05-21T23:11:08.657484+00:00
-- commit_hash: 1641b438ca77a3cc975e88e013c554b2a46d90c2
-- alpha_gate_passed: false
+- generated_at_utc: 2026-05-21T23:15:30.776786+00:00
+- commit_hash: f8625ac0c6e874fc1d83fbcf151147842775252d
+- alpha_gate_passed: true
 
 ## Phase Results
 
-- 1. Alpha Gate Truthfulness: FAIL (artifacts/proof/current/release_gate.json)
+- 1. Alpha Gate Truthfulness: PASS (artifacts/proof/current/release_gate.json)
 - 2. Canonical Proof Artifacts: PASS (artifacts/proof/current/CURRENT_PROOF.md)
 - 3. Generated Alpha Status: PASS (artifacts/proof/current/CURRENT_ALPHA_STATUS.md)
 - 4. Source Registry Governance: PASS (artifacts/proof/current/source_registry_status.json)
@@ -23,4 +23,4 @@
 
 ## Remaining Blockers
 
-- check_node_policy
+- none
