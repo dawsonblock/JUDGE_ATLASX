@@ -21,6 +21,9 @@ REQUIRED_PREFIXES = [
 
 FORBIDDEN_MARKERS = [
     "__MACOSX/",
+    ".coverage",
+    ".DS_Store",
+    "thumbs.db",
     "external_reference/",
     "artifacts/old/",
     "artifacts/archive/",

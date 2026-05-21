@@ -1451,7 +1451,7 @@ def main() -> int:
                 "-lc",
                 (
                     f'JTA_DATABASE_URL="{proof_db_url}" "{python_exe}" '
-                    "-m pytest backend/app/tests -x --tb=short -q --ignore=backend/app/tests/test_release_gate_consistency.py"
+                    "-m pytest backend/app/tests --import-mode=importlib -x --tb=short -q --ignore=backend/app/tests/test_release_gate_consistency.py"
                 ),
             ],
             timeout_seconds=900,
@@ -1703,6 +1703,7 @@ def main() -> int:
                 "-m",
                 "pytest",
                 "backend/app/tests",
+                "--import-mode=importlib",
                 "-k",
                 "public_api",
                 "-q",

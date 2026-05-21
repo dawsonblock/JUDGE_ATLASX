@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -71,6 +72,42 @@ def _run_version_command(command: list[str]) -> str:
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr.strip() or proc.stdout.strip() or f"command failed: {' '.join(command)}")
     return proc.stdout.strip()
+
+
+def _resolve_runtime_versions(required_major: str, node_range: str | None) -> tuple[str, str, str]:
+    """Resolve node/npm versions, preferring policy-compliant runtime.
+
+    Uses the current shell runtime first. If it does not satisfy the declared
+    major/range and nvm is available, it attempts ``nvm use <required_major>``
+    and returns that runtime instead.
+    """
+    node_version = _run_version_command(["node", "--version"])
+    npm_version = _run_version_command(["npm", "--version"])
+
+    parsed = _parse_version(node_version)
+    major_ok = parsed is not None and parsed[0] == int(required_major)
+    range_ok = isinstance(node_range, str) and _satisfies_range(node_version, node_range)
+    if major_ok and range_ok:
+        return node_version, npm_version, "shell"
+
+    nvm_dir = os.environ.get("NVM_DIR", str(Path.home() / ".nvm"))
+    nvm_sh = Path(nvm_dir) / "nvm.sh"
+    if not nvm_sh.exists():
+        return node_version, npm_version, "shell"
+
+    cmd = (
+        f'NVM_DIR="{nvm_dir}"; '
+        f'[ -s "{nvm_sh}" ] && . "{nvm_sh}"; '
+        f'nvm use {required_major} >/dev/null 2>&1 && node --version && npm --version'
+    )
+    proc = subprocess.run(["bash", "-lc", cmd], capture_output=True, text=True, check=False)
+    if proc.returncode != 0:
+        return node_version, npm_version, "shell"
+
+    lines = [line.strip() for line in proc.stdout.splitlines() if line.strip()]
+    if len(lines) < 2:
+        return node_version, npm_version, "shell"
+    return lines[-2], lines[-1], "nvm"
 
 
 def _validate_node_value(
@@ -345,8 +382,7 @@ def main() -> int:
     if root_major != frontend_major:
         errors.append(f".nvmrc mismatch: root={root_major} frontend={frontend_major}")
 
-    node_version = _run_version_command(["node", "--version"])
-    npm_version = _run_version_command(["npm", "--version"])
+    node_version, npm_version, runtime_source = _resolve_runtime_versions(root_major, node_range)
 
     parsed_node = _parse_version(node_version)
     if parsed_node is None:
@@ -379,6 +415,7 @@ def main() -> int:
 
     print(f"NODE_VERSION: {node_version}")
     print(f"NPM_VERSION: {npm_version}")
+    print(f"RUNTIME_SOURCE: {runtime_source}")
     print(f"ROOT_NVMRC: {root_major}")
     print(f"FRONTEND_NVMRC: {frontend_major}")
     print(f"NODE_RANGE: {node_range}")

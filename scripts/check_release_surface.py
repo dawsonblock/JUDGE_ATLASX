@@ -35,7 +35,9 @@ FORBIDDEN_FILE_NAMES = {
     ".env.local",
     ".env.production",
     ".env.development",
+    ".coverage",
     ".ds_store",
+    "thumbs.db",
     "id_rsa",
     "id_ed25519",
 }

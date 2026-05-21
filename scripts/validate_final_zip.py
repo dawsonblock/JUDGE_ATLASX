@@ -103,7 +103,7 @@ def find_forbidden_paths(extract_dir: Path) -> list[str]:
     }
     
     forbidden_extensions = {".pyc", ".egg-info", ".pyo"}
-    forbidden_files = {".DS_Store", "thumbs.db", "Thumbs.db"}
+    forbidden_files = {".DS_Store", ".ds_store", ".coverage", "thumbs.db", "Thumbs.db"}
     
     found: list[str] = []
     
@@ -127,7 +127,7 @@ def find_forbidden_paths(extract_dir: Path) -> list[str]:
             found.append(path_str)
         
         # Check filenames
-        if path.name in forbidden_files:
+        if path.name in forbidden_files or path.name.lower() in forbidden_files:
             found.append(path_str)
     
     return sorted(set(found))
