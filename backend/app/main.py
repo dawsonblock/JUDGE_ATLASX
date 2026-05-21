@@ -347,6 +347,11 @@ def create_app() -> FastAPI:
     # Validate production safety before proceeding
     _validate_production_safety(settings)
 
+    if settings.enable_experimental_live_map:
+        raise RuntimeError(
+            "Experimental live_map cannot be mounted until public/admin boundary tests pass."
+        )
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         # Validate evidence store before initializing database

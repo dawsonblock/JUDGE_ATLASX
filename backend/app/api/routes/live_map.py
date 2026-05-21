@@ -42,6 +42,13 @@ PLATFORM_DISCLAIMER = (
 
 # Maximum bbox area (degrees² longitude × latitude) accepted per request
 _MAX_BBOX_AREA_SQ_DEG = 625.0  # 25° × 25° = 625 sq degrees
+_UNSAFE_PUBLIC_PRECISIONS = {
+    "exact_address",
+    "exact_residence",
+    "rooftop",
+    "parcel",
+    "exact",
+}
 
 
 def _parse_bbox(
@@ -105,6 +112,9 @@ def _apply_public_filters(
         # Only return events above confidence threshold
         if event.confidence < min_confidence:
             continue
+        precision = str((event.metadata or {}).get("precision", "")).strip().lower()
+        if precision in _UNSAFE_PUBLIC_PRECISIONS:
+            continue
         filtered.append(event)
     return filtered
 
@@ -138,12 +148,7 @@ def get_live_map_events(
     min_confidence: float | None = Query(
         None, ge=0.0, le=1.0, description="Minimum confidence threshold"
     ),
-    review_status: str | None = Query(None, description="Filter by review status"),
-    publish_status: str | None = Query(None, description="Filter by publish status"),
     source: str | None = Query(None, description="Filter by source"),
-    admin_mode: bool = Query(
-        False, description="Admin mode: bypasses public filters"
-    ),
     limit: int = Query(500, ge=1, le=2000),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
@@ -165,9 +170,8 @@ def get_live_map_events(
     # Materialize events from database
     events = _load_live_map_events(db)
 
-    # Apply admin/public mode filters
-    if not admin_mode:
-        events = _apply_public_filters(events, settings)
+    # Public endpoint always enforces public visibility boundaries.
+    events = _apply_public_filters(events, settings)
 
     # Apply bbox filter
     events = _apply_bbox_filter(events, bbox_parsed)
@@ -185,34 +189,29 @@ def get_live_map_events(
         events = [e for e in events if e.occurred_at and e.occurred_at <= to_date]
     if min_confidence is not None:
         events = [e for e in events if e.confidence >= min_confidence]
-    if review_status:
-        events = [e for e in events if e.review_status == review_status]
-    if publish_status:
-        events = [e for e in events if e.publish_status == publish_status]
     if source:
         events = [e for e in events if source in e.source_ids]
 
     # Apply pagination
     truncated = len(events) > limit
-    events = events[offset : offset + limit]
+    events = events[offset: offset + limit]
 
     # Redact sensitive fields in public mode
     response_events = []
     for event in events:
         event_dict = event.model_dump()
-        if not admin_mode:
-            # Redact raw evidence vault paths
-            event_dict["evidence_ids"] = [
-                f"evidence_{eid[:8]}..." for eid in event_dict.get("evidence_ids", [])
-            ]
-            # Redact source IDs in public mode
-            event_dict["source_ids"] = [
-                f"source_{sid[:8]}..." for sid in event_dict.get("source_ids", [])
-            ]
+        # Redact raw evidence vault paths
+        event_dict["evidence_ids"] = [
+            f"evidence_{eid[:8]}..." for eid in event_dict.get("evidence_ids", [])
+        ]
+        # Redact source IDs in public mode
+        event_dict["source_ids"] = [
+            f"source_{sid[:8]}..." for sid in event_dict.get("source_ids", [])
+        ]
         response_events.append(event_dict)
 
     filters_applied: dict[str, Any] = {
-        "admin_mode": admin_mode,
+        "public_only": True,
         "bbox": bbox,
         "event_type": event_type,
         "jurisdiction": jurisdiction,
@@ -220,16 +219,13 @@ def get_live_map_events(
         "from_date": from_date.isoformat() if from_date else None,
         "to_date": to_date.isoformat() if to_date else None,
         "min_confidence": min_confidence,
-        "review_status": review_status,
-        "publish_status": publish_status,
         "source": source,
-    }
-
-    if not admin_mode:
-        filters_applied["public_visibility"] = True
-        filters_applied["min_confidence_threshold"] = float(
+        "review_status": "approved",
+        "publish_statuses": ["public_safe", "public_redacted"],
+        "min_confidence_threshold": float(
             getattr(settings, "public_map_min_confidence", 0.7)
-        )
+        ),
+    }
 
     return {
         "returned_count": len(response_events),
@@ -243,7 +239,6 @@ def get_live_map_events(
 @router.get("/api/live-map/events/{event_id}")
 def get_live_map_event(
     event_id: str,
-    admin_mode: bool = Query(False, description="Admin mode: bypasses public filters"),
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
@@ -255,26 +250,25 @@ def get_live_map_event(
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
-    # Admin mode requires authentication check - this is a placeholder
-    # In production, this should verify the user has admin permissions
-    # admin_mode = request.query_params.get("admin_mode", "false").lower() == "true"
-    admin_mode = False  # Disabled until proper auth is implemented
-
-    # Apply public filters if not in admin mode
-    if not admin_mode:
-        filtered = _apply_public_filters([event], settings)
-        if not filtered:
-            raise HTTPException(
-                status_code=403, detail="Event not accessible in public mode"
-            )
-        event = filtered[0]
+    # Public endpoint always enforces public visibility boundaries.
+    filtered = _apply_public_filters([event], settings)
+    if not filtered:
+        raise HTTPException(
+            status_code=403, detail="Event not accessible in public mode"
+        )
+    event = filtered[0]
 
     event_dict = event.model_dump()
 
     # Redact sensitive fields in public mode
-    if not admin_mode:
-        event_dict["evidence_ids"] = [f"evidence_{eid[:8]}..." if len(eid) >= 8 else eid for eid in event_dict.get("evidence_ids", [])]
-        event_dict["source_ids"] = [f"source_{sid[:8]}..." if len(sid) >= 8 else sid for sid in event_dict.get("source_ids", [])]
+    event_dict["evidence_ids"] = [
+        f"evidence_{eid[:8]}..." if len(eid) >= 8 else eid
+        for eid in event_dict.get("evidence_ids", [])
+    ]
+    event_dict["source_ids"] = [
+        f"source_{sid[:8]}..." if len(sid) >= 8 else sid
+        for sid in event_dict.get("source_ids", [])
+    ]
 
     event_dict["disclaimer"] = PLATFORM_DISCLAIMER
     return event_dict

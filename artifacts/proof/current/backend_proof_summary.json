@@ -28,47 +28,43 @@
     },
     {
       "name": "prepare_proof_db",
-      "status": "PASS",
+      "status": "FAIL",
       "log": "artifacts/proof/current/prepare_proof_db.log",
-      "exit_code": 0
+      "exit_code": 1
     },
     {
       "name": "verify_evidence_store",
-      "status": "PASS",
+      "status": "FAIL",
       "log": "artifacts/proof/current/verify_evidence_store.log",
-      "exit_code": 0
+      "exit_code": 1
     },
     {
       "name": "verify_audit_chain",
-      "status": "PASS",
+      "status": "FAIL",
       "log": "artifacts/proof/current/verify_audit_chain.log",
-      "exit_code": 0
+      "exit_code": 1
     },
     {
       "name": "auth_mutation_route_coverage",
-      "status": "PASS",
+      "status": "FAIL",
       "log": "artifacts/proof/current/auth_mutation_route_coverage.log",
-      "exit_code": 0
+      "exit_code": 1
     },
     {
       "name": "mutation_fail_closed_coverage",
-      "status": "PASS",
+      "status": "FAIL",
       "log": "artifacts/proof/current/mutation_fail_closed_coverage.log",
-      "exit_code": 0
+      "exit_code": 1
     },
     {
       "name": "validate_sources",
-      "status": "PASS",
+      "status": "FAIL",
       "log": "artifacts/proof/current/validate_sources.log",
-      "exit_code": 0
+      "exit_code": 1
     }
   ],
-  "route_count": 104,
-  "pytest_passed": 595,
-  "pytest_skipped": 0,
-  "proof_db_counts": {
-    "audit_logs": 3,
-    "source_snapshots": 3,
-    "source_registry": 0
-  }
+  "route_count": 101,
+  "pytest_passed": 3176,
+  "pytest_skipped": 40,
+  "proof_db_counts": {}
 }

@@ -1,24 +1,55 @@
 # FIX_VERIFICATION_REPORT
 
-- generated_at_utc: 2026-05-20T10:42:54.773018+00:00
-- commit_hash: ba0b4c2b4f36f1761dff435c057666542dc31d77
-- status: blocked alpha
-- operational_posture: alpha
-- production_ready: false
-- alpha_gate_passed: False
+- generated_at_utc: 2026-05-21T00:19:41.923125+00:00
+- commit_hash: f7f430681d3ec98954fe86fb64414ececb00b641
+- alpha_gate_passed: false
 
-## Scope Statements
+## Required Gate Signals
 
-- This is an alpha platform.
-- It is not production-ready.
-- Evidence is authoritative.
-- AI and memory outputs are derivative.
-- Legal correlations are hypotheses, not verdicts.
-- Public outputs require review approval.
-- Source coverage is incomplete.
-- Machine ingestion does not imply auto-publication.
-- production_ready: false
+- backend_compile: PASS
+- backend_import: PASS
+- backend_pytest: FAIL
+- verify_evidence_store: FAIL
+- verify_audit_chain: FAIL
+- public_api_boundary: FAIL
+- frontend_node_gate: FAIL
+- frontend_contracts: BLOCKED
+- archive_validation: FAIL
+- proof_freshness: FAIL
 
-## Remaining Blockers
+## Release Blockers
 
-- Clean-alpha gates remain blocked; see release_gate.json failed_checks and blocked_checks.
+- backend_pytest
+- postgis_proof
+- egress_proxy_proof
+- demo_proof
+- validate_sources
+- check_yaml_duplicate_keys
+- verify_source_registry
+- source_registry_status
+- prepare_proof_db
+- verify_evidence_store
+- verify_audit_chain
+- auth_mutation_route_coverage
+- mutation_fail_closed_coverage
+- frontend_node_gate
+- frontend_install
+- frontend_lint
+- frontend_typecheck
+- frontend_contracts
+- frontend_build
+- check_api_contracts
+- repo_generated_files
+- check_npm_audit_triage
+- map_route_check
+- public_api_boundary
+- proof_freshness
+- archive_validation
+
+## Canonical Artifacts
+
+- artifacts/proof/current/release_gate.json
+- artifacts/proof/current/proof_manifest.json
+- artifacts/proof/current/CURRENT_PROOF.md
+- artifacts/proof/current/CURRENT_ALPHA_STATUS.md
+- artifacts/proof/current/REPAIR_REPORT.md

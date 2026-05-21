@@ -1,11 +1,6 @@
-EVIDENCE STORE VERIFICATION
-snapshots_checked=3
-verified_snapshots=3
-integrity_failures=0
-corrupt_snapshots=0
-duplicate_hashes=0
-missing_snapshot_files=0
-orphan_files=0
-orphan_snapshot_rows=0
-rejected_or_quarantined_count=0
-RESULT: PASS
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001fcd06c40 (most recent call first):
+  <no Python frame>

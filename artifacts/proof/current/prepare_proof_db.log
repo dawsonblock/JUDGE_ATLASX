@@ -1,5 +1,6 @@
-PROOF DB PREPARE
-migrations=PASS
-audit_entries_seeded=3
-evidence_snapshots_seeded=3
-RESULT: PASS
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001fcd06c40 (most recent call first):
+  <no Python frame>

@@ -1,16 +1,6 @@
-.......................................................                  [100%]
-=============================== warnings summary ===============================
-backend/app/tests/test_contract_validation.py:21
-  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_contract_validation.py:21: PytestCollectionWarning: cannot collect test class 'TestInputSchema' because it has a __init__ constructor (from: app/tests/test_contract_validation.py)
-    class TestInputSchema(BaseModel):
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
 
-backend/app/tests/test_gate.py:14
-  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_gate.py:14: PytestCollectionWarning: cannot collect test class 'TestGate' because it has a __init__ constructor (from: app/tests/test_gate.py)
-    class TestGate:
-
-backend/app/tests/test_gate.py:14
-  /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_gate.py:14: PytestCollectionWarning: cannot collect test class 'TestGate' because it has a __init__ constructor (from: app/tests/test_test_gate.py)
-    class TestGate:
-
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-55 passed, 3250 deselected, 3 warnings in 1.74s
+Current thread 0x00000001fcd06c40 (most recent call first):
+  <no Python frame>

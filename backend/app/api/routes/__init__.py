@@ -2,6 +2,7 @@ from app.api.routes import (
     admin_ingest,
     admin_ingestion,
     admin_legacy_ingest,
+    admin_live_map,
     admin_memory,
     admin_quarantine,
     admin_review,
@@ -15,7 +16,6 @@ from app.api.routes import (
     evidence_store,
     graph,
     ingestion,
-    live_map,
     map,
     map_record,
     public_events,
@@ -43,6 +43,7 @@ router.include_router(admin_ingestion.router)
 router.include_router(admin_quarantine.router)
 router.include_router(admin_sources.router)
 router.include_router(admin_memory.router)
+router.include_router(admin_live_map.router)
 router.include_router(chat.router)
 router.include_router(evidence_store.router)
 router.include_router(graph.router)

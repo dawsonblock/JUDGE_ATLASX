@@ -1,3 +1,3 @@
 proof_backend_import: importing app.main ...
-proof_backend_import: app has 104 routes
-PASS: backend import OK (104 routes)
+proof_backend_import: app has 101 routes
+PASS: backend import OK (101 routes)

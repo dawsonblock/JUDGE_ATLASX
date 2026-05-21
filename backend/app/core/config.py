@@ -100,6 +100,9 @@ class Settings(BaseSettings):
     # to mount admin_legacy_ingest router.
     enable_legacy_us_ingest_routes: bool = False
 
+    # Experimental live-map public router remains blocked by default.
+    enable_experimental_live_map: bool = False
+
     # Enforce JWT-only authority for mutation routes
     # (review decisions, source configuration updates,
     # enable/disable, and manual source runs).

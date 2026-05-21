@@ -71,14 +71,15 @@ def test_release_gate_json_alpha_gate_passed_matches_current_proof(
     assert alpha_gate_passed is not None, "release_gate.json missing alpha_gate_passed"
 
     # Extract alpha_gate_passed from CURRENT_PROOF.md
-    assert "- alpha_gate_passed: True" in current_proof_md or "- alpha_gate_passed: False" in current_proof_md, \
+    normalized = current_proof_md.lower()
+    assert "- alpha_gate_passed: true" in normalized or "- alpha_gate_passed: false" in normalized, \
         "CURRENT_PROOF.md missing alpha_gate_passed line"
-    
+
     if alpha_gate_passed:
-        assert "- alpha_gate_passed: True" in current_proof_md, \
+        assert "- alpha_gate_passed: true" in normalized, \
             "CURRENT_PROOF.md alpha_gate_passed does not match release_gate.json (expected True)"
     else:
-        assert "- alpha_gate_passed: False" in current_proof_md, \
+        assert "- alpha_gate_passed: false" in normalized, \
             "CURRENT_PROOF.md alpha_gate_passed does not match release_gate.json (expected False)"
 
 
@@ -90,13 +91,22 @@ def test_release_gate_json_archive_validation_result_matches_current_proof(
     archive_validation_result = release_gate_json.get("archive_validation_result")
     assert archive_validation_result is not None, "release_gate.json missing archive_validation_result"
 
-    # Extract archive_validation_result from CURRENT_PROOF.md
-    assert "- archive_validation_result:" in current_proof_md, \
-        "CURRENT_PROOF.md missing archive_validation_result line"
-    
-    expected_line = f"- archive_validation_result: {archive_validation_result}"
-    assert expected_line in current_proof_md, \
-        f"CURRENT_PROOF.md archive_validation_result does not match release_gate.json (expected {expected_line})"
+    normalized = current_proof_md.lower()
+
+    # Preferred explicit key in CURRENT_PROOF.md.
+    if "- archive_validation_result:" in normalized:
+        expected_line = f"- archive_validation_result: {archive_validation_result}".lower()
+        assert expected_line in normalized, \
+            f"CURRENT_PROOF.md archive_validation_result does not match release_gate.json (expected {expected_line})"
+        return
+
+    # Backward-compatible proof format fallback.
+    if archive_validation_result == "PASS":
+        assert "archive validation passed against the final distributable archive shape." in normalized, \
+            "CURRENT_PROOF.md archive validation prose does not match release_gate.json (expected PASS)"
+    else:
+        assert "archive validation has not yet been recorded for this run." in normalized, \
+            "CURRENT_PROOF.md archive validation prose does not match release_gate.json (expected non-PASS)"
 
 
 def test_release_gate_json_check_count_matches_current_proof(
