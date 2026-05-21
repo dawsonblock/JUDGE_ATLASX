@@ -1,6 +1,6 @@
-Fatal Python error: init_sys_streams: can't initialize sys standard streams
-Python runtime state: core initialized
-OSError: [Errno 9] Bad file descriptor
-
-Current thread 0x00000001fcd06c40 (most recent call first):
-  <no Python frame>
+NPM AUDIT TRIAGE
+vulnerabilities=11
+triage_doc=docs/security/FRONTEND_SECURITY_TRIAGE.md
+triaged_packages_in_doc=29
+vulnerable_packages=11
+RESULT: PASS all_packages_triaged

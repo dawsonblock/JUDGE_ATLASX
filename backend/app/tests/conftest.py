@@ -1,11 +1,12 @@
 import os
+import tempfile
 from pathlib import Path
 
 import pytest
 from sqlalchemy import event
 from sqlalchemy.orm import Session
 
-TEST_DB = Path(__file__).with_name("test.db")
+TEST_DB = Path(tempfile.gettempdir()) / f"jta_backend_tests_{os.getpid()}.db"
 if TEST_DB.exists():
     TEST_DB.unlink()
 os.environ["JTA_APP_ENV"] = "development"

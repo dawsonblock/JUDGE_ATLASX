@@ -1,13 +1,13 @@
 # RELEASE_READINESS
 
-- generated_at_utc: 2026-05-21T00:19:41.923125+00:00
+- generated_at_utc: 2026-05-21T00:39:37.718159+00:00
 - overall_status: blocked
 - production_ready: false
 - release_recommendation: blocked
-- archive_hash: f7f430681d3ec98954fe86fb64414ececb00b641
+- archive_hash: 33b4ef99302778dddb0afd079f90beab9bfeef35
 - platform: macOS-26.2-arm64-arm-64bit
 - python_version: 3.11.7
-- node_version: v24.15.0
+- node_version: v25.9.0
 - npm_version: 11.12.1
 
 ## Required Proof Gates
@@ -23,65 +23,40 @@
 | check_external_boundaries | PASS | 0 | artifacts/proof/current/check_external_boundaries.log | da039530a33bf730b0cc264637a3196b2212a42c42e24f50edcb6f1090c41b62 |
 | backend_compile | PASS | 0 | artifacts/proof/current/backend_compile.log | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 |
 | backend_import | PASS | 0 | artifacts/proof/current/backend_import.log | e429de281c0fa93c7a42d963c7d7fba554f4e1bcec89fe820486602337cd41dc |
-| backend_pytest | FAIL | 1 | artifacts/proof/current/backend_pytest.log | d46921ae161dd2f123dd387bfdb23e3b1f2b19d41c4b840372d8468cc051707b |
+| backend_pytest | PASS | 0 | artifacts/proof/current/backend_pytest.log | c06e4fa461ea71316a62d3413c6f561b7b34308c913e9b3fbb3842cbee3985cd |
 | check_migrations | PASS | 0 | artifacts/proof/current/check_migrations.log | b1a31ef1e482457fd1c47ac213cc98d199e78f8051acc81264a305cf629b66bf |
 | docker_runtime_preflight | PASS | 0 | artifacts/proof/current/docker_runtime_preflight.log | 2f00ed1e1f571e0ba077b41c90c45cbcab937aefa69b749faa62513d9228f2bd |
-| postgis_proof | FAIL | 1 | artifacts/proof/current/postgis_proof.log | 05074a907b727cd76e83b1d6d68c4f491d892f309c9c7efa225b90ae64e91f73 |
-| egress_proxy_proof | FAIL | 1 | artifacts/proof/current/egress_proxy_proof.log | cf914157f8930ddeb0d1ea7c7dda78191ab9ad77ce618a8cc90d0d9d8781dd78 |
-| demo_proof | FAIL | 1 | artifacts/proof/current/demo_proof.log | 26b02dae11e0d26cb5b1244b8009602bd6c3a097b3b20af2591c5c7745aff1e1 |
-| validate_sources | FAIL | 1 | artifacts/proof/current/validate_sources.log | d44df28e5dc80d80ffd30292a39250fe1bd369390c1797c6387ce947ed05d05b |
-| check_yaml_duplicate_keys | FAIL | 1 | artifacts/proof/current/check_yaml_duplicate_keys.log | d44df28e5dc80d80ffd30292a39250fe1bd369390c1797c6387ce947ed05d05b |
-| verify_source_registry | FAIL | 1 | artifacts/proof/current/verify_source_registry.log | d44df28e5dc80d80ffd30292a39250fe1bd369390c1797c6387ce947ed05d05b |
-| source_registry_status | FAIL | 1 | artifacts/proof/current/source_registry_status.log | d44df28e5dc80d80ffd30292a39250fe1bd369390c1797c6387ce947ed05d05b |
-| prepare_proof_db | FAIL | 1 | artifacts/proof/current/prepare_proof_db.log | d44df28e5dc80d80ffd30292a39250fe1bd369390c1797c6387ce947ed05d05b |
-| verify_evidence_store | FAIL | 1 | artifacts/proof/current/verify_evidence_store.log | d44df28e5dc80d80ffd30292a39250fe1bd369390c1797c6387ce947ed05d05b |
-| verify_audit_chain | FAIL | 1 | artifacts/proof/current/verify_audit_chain.log | d44df28e5dc80d80ffd30292a39250fe1bd369390c1797c6387ce947ed05d05b |
-| auth_mutation_route_coverage | FAIL | 1 | artifacts/proof/current/auth_mutation_route_coverage.log | d44df28e5dc80d80ffd30292a39250fe1bd369390c1797c6387ce947ed05d05b |
-| mutation_fail_closed_coverage | FAIL | 1 | artifacts/proof/current/mutation_fail_closed_coverage.log | d44df28e5dc80d80ffd30292a39250fe1bd369390c1797c6387ce947ed05d05b |
-| frontend_node_gate | FAIL | 1 | artifacts/proof/current/frontend_node_gate.log | d44df28e5dc80d80ffd30292a39250fe1bd369390c1797c6387ce947ed05d05b |
-| frontend_install | BLOCKED | 1 | artifacts/proof/current/frontend_install.log | 81e994d60d6eb291e23f2cbfcc54f0008a99563866c7214c6b862d5cb66decbc |
-| frontend_lint | BLOCKED | 1 | artifacts/proof/current/frontend_lint.log | 81e994d60d6eb291e23f2cbfcc54f0008a99563866c7214c6b862d5cb66decbc |
-| frontend_typecheck | BLOCKED | 1 | artifacts/proof/current/frontend_typecheck.log | 81e994d60d6eb291e23f2cbfcc54f0008a99563866c7214c6b862d5cb66decbc |
-| frontend_contracts | BLOCKED | 1 | artifacts/proof/current/frontend_contracts.log | 81e994d60d6eb291e23f2cbfcc54f0008a99563866c7214c6b862d5cb66decbc |
-| frontend_build | BLOCKED | 1 | artifacts/proof/current/frontend_build.log | 81e994d60d6eb291e23f2cbfcc54f0008a99563866c7214c6b862d5cb66decbc |
-| check_api_contracts | FAIL | 1 | artifacts/proof/current/check_api_contracts.log | d44df28e5dc80d80ffd30292a39250fe1bd369390c1797c6387ce947ed05d05b |
-| repo_generated_files | FAIL | 1 | artifacts/proof/current/repo_generated_files.log | d44df28e5dc80d80ffd30292a39250fe1bd369390c1797c6387ce947ed05d05b |
-| check_npm_audit_triage | FAIL | 1 | artifacts/proof/current/check_npm_audit_triage.log | d44df28e5dc80d80ffd30292a39250fe1bd369390c1797c6387ce947ed05d05b |
-| map_route_check | FAIL | 1 | artifacts/proof/current/map_route_check.log | d44df28e5dc80d80ffd30292a39250fe1bd369390c1797c6387ce947ed05d05b |
-| public_api_boundary | FAIL | 1 | artifacts/proof/current/public_api_boundary.log | d44df28e5dc80d80ffd30292a39250fe1bd369390c1797c6387ce947ed05d05b |
-| proof_freshness | FAIL | 1 | artifacts/proof/current/proof_freshness.log | d44df28e5dc80d80ffd30292a39250fe1bd369390c1797c6387ce947ed05d05b |
-| release_readiness_generation | PASS | 0 | artifacts/proof/current/release_readiness.md | 1a7820a48227acb06b95ebb70a5d5d004e5c2fe05db6ac775bc81be062f80ce6 |
-| archive_validation | FAIL | 1 | artifacts/proof/current/archive_validation.log | d44df28e5dc80d80ffd30292a39250fe1bd369390c1797c6387ce947ed05d05b |
+| postgis_proof | PASS | 0 | artifacts/proof/current/postgis_proof.log | a59ee2a298043c7bdcaf780ddffb65d867ec1a8dc2f9692ccf150ef82b7e7bf4 |
+| egress_proxy_proof | PASS | 0 | artifacts/proof/current/egress_proxy_proof.log | 343df55c50259d072f786bf3f35f110788d3b663e2aebfa2725a40081b893fc2 |
+| demo_proof | PASS | 0 | artifacts/proof/current/demo_proof.log | 55fb1635e826dce58385e8c42e2694146895631e5cb64b4fd600ca1ceae74797 |
+| validate_sources | PASS | 0 | artifacts/proof/current/validate_sources.log | 4d734d90bf04c25a04d4752d5067c94dc51e963876cfc4f61bbf698de63c27ba |
+| check_yaml_duplicate_keys | PASS | 0 | artifacts/proof/current/check_yaml_duplicate_keys.log | 88b52b46f87e415fc01b849aececd79f567ac8ea21f09f1d891a37eca7ddb06d |
+| verify_source_registry | PASS | 0 | artifacts/proof/current/verify_source_registry.log | 87ff32f707569db9b7bd2bbe68c4f701295831af775026eca71803e0273c577e |
+| source_registry_status | PASS | 0 | artifacts/proof/current/source_registry_status.log | 194970ce6494bacb9547233e7de0514c90912785c4df32ef959b72adb486e805 |
+| prepare_proof_db | PASS | 0 | artifacts/proof/current/prepare_proof_db.log | ef6779db88eeffa32551cb68ca12147f76837d1ef139b9e8d67f668940f260d5 |
+| verify_evidence_store | PASS | 0 | artifacts/proof/current/verify_evidence_store.log | 7b693f37394b451d76dd236d9668d34a5e48b67f48dee151954763083deca20f |
+| verify_audit_chain | PASS | 0 | artifacts/proof/current/verify_audit_chain.log | 9babd9dfaea20969f8fa10dfbf1635cb79aec0012037bde38618213b5cf027c1 |
+| auth_mutation_route_coverage | PASS | 0 | artifacts/proof/current/auth_mutation_route_coverage.log | f4c61c0ac8f55c6c9a2d6c593731bf5f8c4a6c5bebbe514284fd4f899818f9e0 |
+| mutation_fail_closed_coverage | PASS | 0 | artifacts/proof/current/mutation_fail_closed_coverage.log | ffe2a4a341462d569b35e1e292ac1aa0fb4d5f4f8c0cc6d1855131d67100244c |
+| frontend_node_gate | PASS | 0 | artifacts/proof/current/frontend_node_gate.log | d82414c1d9dc6d5a72459d42f65920186da05770c9e8c0dd70833906ec6813db |
+| frontend_install | PASS | 0 | artifacts/proof/current/frontend_install.log | 3c0f4db7820ebf1923d54f9b493763ae6386af0f310195b3b1ddcd07a891eb14 |
+| frontend_lint | PASS | 0 | artifacts/proof/current/frontend_lint.log | 4b456243d33d4f4a102ebe4d6785acf6f50894b664c463346cc21b84a4f9d4cd |
+| frontend_typecheck | FAIL | 1 | artifacts/proof/current/frontend_typecheck.log | f637dfb4366601120be67c00c76aff187c008eca53ebc74ad5babd78b66a323f |
+| frontend_contracts | PASS | 0 | artifacts/proof/current/frontend_contracts.log | 4faf5612a6c72ca5480644b23d1bb1572158d8e279215c6e73f2785486b4455d |
+| frontend_build | FAIL | 1 | artifacts/proof/current/frontend_build.log | 4068963a07b710d3328273027437834dbd45cd262ea6bf993e8139e3e569187a |
+| check_api_contracts | PASS | 0 | artifacts/proof/current/check_api_contracts.log | f6750f8d64797a660c9122c245fa0ae38eb689dd8023b7fef1d0481e4ab86216 |
+| repo_generated_files | PASS | 0 | artifacts/proof/current/repo_generated_files.log | 7e6ff97ad128bc573ab50f71262ff7561a2508747ada9b72abfa2fac77523dfd |
+| check_npm_audit_triage | PASS | 0 | artifacts/proof/current/check_npm_audit_triage.log | 09470ee10bceef4b5371da2106a690e33d7d563a18a5dd2ccabfc2af0a29a331 |
+| map_route_check | PASS | 0 | artifacts/proof/current/map_route_check.log | 3f2c0fb18144134952224494bc6690cde35213914ff5880a8eed0b5ca519e30f |
+| public_api_boundary | PASS | 0 | artifacts/proof/current/public_api_boundary.log | 08d740b77e2e85bd02a0e1c199f881bdfa49f829f414fe07fa49a592bf778486 |
+| proof_freshness | PASS | 0 | artifacts/proof/current/proof_freshness.log | 9932c4a0f9fe9072136af39c3c8b07827153428e627e7d4d2385931a472edf56 |
+| release_readiness_generation | PASS | 0 | artifacts/proof/current/release_readiness.md | 1c077f50ec89b8612c876709b34e1d6151076af2e1da6182d2533196451b3dd4 |
+| archive_validation | PASS | 0 | artifacts/proof/current/archive_validation.log | 1b6f73e2358996bfdd8896becd6b26deea2ccaed64ef3702c8395c728056cbc9 |
 
 ## Remaining Blockers
 
-- required_gate_failed:backend_pytest
-- required_gate_failed:postgis_proof
-- required_gate_failed:egress_proxy_proof
-- required_gate_failed:demo_proof
-- required_gate_failed:validate_sources
-- required_gate_failed:check_yaml_duplicate_keys
-- required_gate_failed:verify_source_registry
-- required_gate_failed:source_registry_status
-- required_gate_failed:prepare_proof_db
-- required_gate_failed:verify_evidence_store
-- required_gate_failed:verify_audit_chain
-- required_gate_failed:auth_mutation_route_coverage
-- required_gate_failed:mutation_fail_closed_coverage
-- required_gate_failed:frontend_node_gate
-- required_gate_failed:frontend_install
-- required_gate_failed:frontend_lint
 - required_gate_failed:frontend_typecheck
-- required_gate_failed:frontend_contracts
 - required_gate_failed:frontend_build
-- required_gate_failed:check_api_contracts
-- required_gate_failed:repo_generated_files
-- required_gate_failed:check_npm_audit_triage
-- required_gate_failed:map_route_check
-- required_gate_failed:public_api_boundary
-- required_gate_failed:proof_freshness
-- required_gate_failed:archive_validation
-- archive_validation_not_pass
 
 ## Stale Or Misreported Claims
 

@@ -1,6 +1,5 @@
-Fatal Python error: init_sys_streams: can't initialize sys standard streams
-Python runtime state: core initialized
-OSError: [Errno 9] Bad file descriptor
-
-Current thread 0x00000001fcd06c40 (most recent call first):
-  <no Python frame>
+AUDIT CHAIN VERIFICATION
+entries_checked=3
+chain_head=0c1a733d389fd2b0e880ba622944317063abd00b81bcc2d51040567afbb6a6c0
+violations=0
+RESULT: PASS

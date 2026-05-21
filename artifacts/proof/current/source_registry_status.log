@@ -1,6 +1,4 @@
-Fatal Python error: init_sys_streams: can't initialize sys standard streams
-Python runtime state: core initialized
-OSError: [Errno 9] Bad file descriptor
+✓ Generated /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/docs/SOURCE_REGISTRY_STATUS.md
+✓ Generated /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/artifacts/proof/current/source_registry_status.json
 
-Current thread 0x00000001fcd06c40 (most recent call first):
-  <no Python frame>
+✓ Truth table generation complete: 26 sources documented

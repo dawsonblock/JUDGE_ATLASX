@@ -42,58 +42,9 @@
 .ss..................................................................... [ 91%]
 ........................................................................ [ 93%]
 ........................................................................ [ 95%]
-................................................F
-=================================== FAILURES ===================================
-_________ TestWebMonitorSafetyPipeline.test_snapshot_stores_provenance _________
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
-    self.dialect.do_execute(
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
-    cursor.execute(statement, parameters)
-E   sqlite3.OperationalError: disk I/O error
-
-The above exception was the direct cause of the following exception:
-backend/app/tests/test_web_monitor_integration.py:98: in test_snapshot_stores_provenance
-    snapshot = runner._create_snapshot(
-backend/app/ingestion/web_monitor/crawlee_runner.py:133: in _create_snapshot
-    snapshot = write_snapshot(
-backend/app/services/snapshot_writer.py:200: in write_snapshot
-    db.flush()
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4331: in flush
-    self._flush(objects)
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4466: in _flush
-    with util.safe_reraise():
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:121: in __exit__
-    raise exc_value.with_traceback(exc_tb)
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4427: in _flush
-    flush_context.execute()
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
-    rec.execute(self)
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
-    util.preloaded.orm_persistence.save_obj(
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:93: in save_obj
-    _emit_insert_statements(
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1233: in _emit_insert_statements
-    result = connection.execute(
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1419: in execute
-    return meth(
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:527: in _execute_on_connection
-    return connection._execute_clauseelement(
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1641: in _execute_clauseelement
-    ret = self._execute_context(
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context
-    return self._exec_single_context(
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1986: in _exec_single_context
-    self._handle_dbapi_exception(
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2363: in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
-    self.dialect.do_execute(
-backend/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
-    cursor.execute(statement, parameters)
-E   sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) disk I/O error
-E   [SQL: INSERT INTO source_snapshots (source_key, source_url, fetched_at, content_hash, raw_content, extracted_text, http_status, content_type, headers_json, error_message, storage_backend, storage_path, retention_until, ingestion_run_id, original_content_hash, stored_content_hash, content_size_bytes, stored_size_bytes, is_truncated, extractor_name, extractor_version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created_at]
-E   [parameters: ('test_target', 'https://example.com/news/1', '2026-05-21 00:19:26.303983', '45c60ffaa8bfcbb81f2aeb4c60fd47757b6af24c370ebc1f9129a285765d186e', '<html><title>News</title><body>Content</body></html>', 'Content excerpt', 200, 'text/html', None, None, 'db', None, None, None, '45c60ffaa8bfcbb81f2aeb4c60fd47757b6af24c370ebc1f9129a285765d186e', '45c60ffaa8bfcbb81f2aeb4c60fd47757b6af24c370ebc1f9129a285765d186e', 52, 52, 0, 'Test Target', None)]
-E   (Background on this error at: https://sqlalche.me/e/20/e3q8)
+........................................................................ [ 97%]
+........................................................................ [ 99%]
+.                                                                        [100%]
 =============================== warnings summary ===============================
 backend/app/tests/test_contract_validation.py:21
   /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_contract_validation.py:21: PytestCollectionWarning: cannot collect test class 'TestInputSchema' because it has a __init__ constructor (from: app/tests/test_contract_validation.py)
@@ -136,7 +87,4 @@ app/tests/test_legacy_shared_token_requires_opt_in.py::TestLegacySharedTokenRequ
     actor = require_admin_imports(x_jta_admin_token="test-token", authorization=None)
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-=========================== short test summary info ============================
-FAILED backend/app/tests/test_web_monitor_integration.py::TestWebMonitorSafetyPipeline::test_snapshot_stores_provenance
-!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
-1 failed, 3176 passed, 40 skipped, 21 warnings in 62.27s (0:01:02)
+3273 passed, 40 skipped, 21 warnings in 59.10s

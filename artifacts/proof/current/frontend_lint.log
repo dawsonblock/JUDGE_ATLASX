@@ -1,1 +1,9 @@
-[release_gate] BLOCKED: frontend step skipped because frontend_node_gate failed.
+
+> judgetracker-atlas-frontend@0.1.0 lint
+> next lint
+
+
+./components/admin/WorkflowRunsPanel.tsx
+71:6  Warning: React Hook useEffect has a missing dependency: 'fetchRuns'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
