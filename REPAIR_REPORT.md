@@ -1,7 +1,7 @@
 # REPAIR_REPORT
 
-- generated_at_utc: 2026-05-21T20:59:11.234851+00:00
-- commit_hash: 8046eaf25db783d96747a08661e0e8b6a6fdec95
+- generated_at_utc: 2026-05-21T21:25:48.042970+00:00
+- commit_hash: 9770cd702bd85ed7d02cb8968a23c2ffd9fdde09
 - alpha_gate_passed: false
 
 ## Phase Results
@@ -23,7 +23,6 @@
 
 ## Remaining Blockers
 
-- canlii_staging_proof
 - archive_validation
 - proof_consistency_pytest
 - required_proof_logs
