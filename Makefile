@@ -1,4 +1,4 @@
-.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup release-zip build-clean-release validate-release-zip proof-static validate-archive-freshness saskatoon-staging-proof
+.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup release-zip build-clean-release validate-release-zip proof-static validate-archive-freshness saskatoon-staging-proof canlii-staging-contract statscan-boundary-proof
 
 backend-install:
 	cd backend && python -m pip install -e ".[test]"
@@ -105,6 +105,12 @@ validate-archive-freshness:
 
 saskatoon-staging-proof:
 	@backend/.venv/bin/python -m pytest backend/app/tests/test_saskatoon_open_data_staging.py -q
+
+canlii-staging-contract:
+	@backend/.venv/bin/python -m pytest backend/app/tests/test_saskatchewan_court_sources.py backend/app/tests/test_canlii_sk_ingest.py -q
+
+statscan-boundary-proof:
+	@backend/.venv/bin/python -m pytest backend/app/tests/test_statscan_table_adapter_boundary.py backend/app/tests/test_source_registry_consistency.py -q
 
 build-clean-release:
 	@python3 scripts/build_clean_release.py
