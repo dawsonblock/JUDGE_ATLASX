@@ -49,6 +49,7 @@ from app.ingestion.automation_statuses import (
     MACHINE_READY_DISABLED,
 )
 from app.ingestion.run_audit import record_failed_ingestion_attempt
+from app.ingestion.source_status import derive_source_status
 from app.ingestion.source_registry_ctl import (
     can_enable_source,
     check_ingestion_allowed,
@@ -130,6 +131,7 @@ class SourceResponse(BaseModel):
     public_publish_default: bool = False
     terms_url: str | None = None
     source_class: str | None = None
+    source_status: str = "unknown"
     parser_version: str | None = None
     automation_status: str | None = None
     lifecycle_state: str | None = None
@@ -524,8 +526,15 @@ def disable_source(
 def _to_source_response(source: SourceRegistry) -> SourceResponse:
     enable_blockers = _compute_enable_blockers(source)
     runnable_now = _is_source_runnable_now(source)
+    source_status = derive_source_status(
+        explicit_status=getattr(source, "source_status", None),
+        lifecycle_state=getattr(source, "lifecycle_state", None),
+        automation_status=getattr(source, "automation_status", None),
+        source_class=getattr(source, "source_class", None),
+    )
     try:
         payload = SourceResponse.model_validate(source).model_dump()
+        payload["source_status"] = source_status.value
         payload["runnable_now"] = runnable_now
         payload["enable_ready"] = len(enable_blockers) == 0
         payload["enable_blockers"] = enable_blockers
@@ -533,6 +542,7 @@ def _to_source_response(source: SourceRegistry) -> SourceResponse:
     except Exception:
         # Unit tests pass MagicMock-backed source objects into route functions.
         # Keep route behavior testable by attaching readiness hints directly.
+        setattr(source, "source_status", source_status.value)
         setattr(source, "runnable_now", runnable_now)
         setattr(source, "enable_ready", len(enable_blockers) == 0)
         setattr(source, "enable_blockers", enable_blockers)

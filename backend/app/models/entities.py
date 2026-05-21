@@ -1275,6 +1275,12 @@ class SourceRegistry(Base, TimestampMixin):
     source_class: Mapped[str | None] = mapped_column(
         String(40)
     )  # 'portal_reference' | 'machine_ingest' | None (legacy = machine_ingest)
+    source_status: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+        default="unknown",
+        server_default="unknown",
+    )
 
     # ── Lifecycle state fields (migration 0012) ───────────────────────────
     lifecycle_state: Mapped[str | None] = mapped_column(
