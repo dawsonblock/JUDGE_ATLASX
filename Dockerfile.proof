@@ -10,14 +10,11 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy backend requirements first (for layer caching)
-COPY backend/requirements.txt /tmp/backend-requirements.txt
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r /tmp/backend-requirements.txt
-
 # Copy entire workspace (needed for proof generation)
 COPY . /workspace
+
+# Install backend dependencies from the canonical pyproject metadata.
+RUN pip install --no-cache-dir "/workspace/backend[test]"
 
 # Set environment variables for proof generation
 ENV PYTHONUNBUFFERED=1

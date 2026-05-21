@@ -179,4 +179,5 @@ def safe_fetch(url: str, config: SafeFetchConfig | None = None) -> FetchResult:
         timeout=config.timeout_seconds,
         max_bytes=config.max_response_bytes,
         store_snapshot=config.store_snapshot,
+        allowed_domains=config.allowed_domains,
     )

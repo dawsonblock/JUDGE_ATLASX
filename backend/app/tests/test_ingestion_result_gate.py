@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import pytest
 
 from app.ingestion.adapters import (
@@ -158,6 +159,138 @@ class TestCKANApiAdapterUnit:
         )
         parsed = adapter.parse([])
         assert parsed == []
+
+    def test_parse_generates_stable_external_id_when_row_missing_identifier(self) -> None:
+        adapter = CKANApiAdapter(
+            source_key="test_ckan",
+            base_url="https://opendata.saskatoon.ca",
+            resource_id="rid",
+            allowed_domains_json='["opendata.saskatoon.ca"]',
+            public_record_authority="official_open_data",
+        )
+        parsed = adapter.parse([{"field": "value", "lat": 52.13, "lon": -106.67}])
+        assert len(parsed) == 1
+        assert parsed[0].external_id is not None
+        assert parsed[0].payload["coordinate_precision"] == "city_block"
+
+    def test_run_creates_review_items_only(self) -> None:
+        class _FetchResult:
+            error = None
+            raw_content = json.dumps(
+                {
+                    "success": True,
+                    "result": {
+                        "records": [{"_id": 1, "name": "row"}],
+                        "total": 1,
+                    },
+                }
+            ).encode("utf-8")
+            http_status = 200
+            content_type = "application/json"
+            final_url = "https://opendata.saskatoon.ca/api/3/action/datastore_search"
+
+        def _fetcher(url, allowed_domains, *, params=None, **kwargs):
+            return _FetchResult()
+
+        adapter = CKANApiAdapter(
+            source_key="test_ckan",
+            base_url="https://opendata.saskatoon.ca",
+            resource_id="rid",
+            allowed_domains_json='["opendata.saskatoon.ca"]',
+            public_record_authority="official_open_data",
+            fetcher=_fetcher,
+        )
+
+        result = adapter.run()
+        assert result.errors == []
+        assert result.parser_version == "ckan_api_v1"
+        assert result.created_records == []
+        assert len(result.review_items) == 1
+        assert result.raw_snapshot_bytes is not None
+        assert result.fetch_http_status == 200
+
+    def test_fetch_pages_results(self) -> None:
+        class _FetchResult:
+            def __init__(self, raw_content):
+                self.error = None
+                self.raw_content = raw_content
+                self.http_status = 200
+                self.content_type = "application/json"
+                self.final_url = "https://opendata.saskatoon.ca/api/3/action/datastore_search"
+
+        seen_offsets: list[int] = []
+
+        def _fetcher(url, allowed_domains, *, params=None, **kwargs):
+            offset = int((params or {}).get("offset", 0))
+            seen_offsets.append(offset)
+            if offset == 0:
+                payload = {
+                    "success": True,
+                    "result": {
+                        "records": [{"_id": 1}, {"_id": 2}],
+                        "total": 3,
+                    },
+                }
+            else:
+                payload = {
+                    "success": True,
+                    "result": {
+                        "records": [{"_id": 3}],
+                        "total": 3,
+                    },
+                }
+            return _FetchResult(json.dumps(payload).encode("utf-8"))
+
+        adapter = CKANApiAdapter(
+            source_key="test_ckan",
+            base_url="https://opendata.saskatoon.ca",
+            resource_id="rid",
+            page_limit=2,
+            max_pages=5,
+            allowed_domains_json='["opendata.saskatoon.ca"]',
+            public_record_authority="official_open_data",
+            fetcher=_fetcher,
+        )
+
+        raw = adapter.fetch()
+        assert len(raw) == 3
+        assert seen_offsets == [0, 2]
+
+    def test_run_preserves_rows_without_explicit_identifier(self) -> None:
+        class _FetchResult:
+            error = None
+            raw_content = json.dumps(
+                {
+                    "success": True,
+                    "result": {
+                        "records": [{"name": "idless-row"}],
+                        "total": 1,
+                    },
+                }
+            ).encode("utf-8")
+            http_status = 200
+            content_type = "application/json"
+            final_url = "https://opendata.saskatoon.ca/api/3/action/datastore_search"
+
+        def _fetcher(url, allowed_domains, *, params=None, **kwargs):
+            return _FetchResult()
+
+        adapter = CKANApiAdapter(
+            source_key="test_ckan",
+            base_url="https://opendata.saskatoon.ca",
+            resource_id="rid",
+            allowed_domains_json='["opendata.saskatoon.ca"]',
+            public_record_authority="official_open_data",
+            fetcher=_fetcher,
+        )
+
+        result = adapter.run()
+        assert result.errors == []
+        assert result.records_fetched == 1
+        assert len(result.review_items) == 1
+        external_id = result.review_items[0].payload.get("external_id")
+        assert isinstance(external_id, str)
+        assert external_id.startswith("ckan-")
 
 
 # ── SaskatoonCsvAdapter unit checks ─────────────────────────────────────────

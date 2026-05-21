@@ -50,6 +50,7 @@ _SK_PC_DB = "skpc"
 
 # Default databases to query when no specific database is configured
 _DEFAULT_SK_DATABASES = [_SK_QB_DB, _SK_CA_DB]
+_PARSER_VERSION = "1.0"
 
 
 class CanLIIApiAdapter(CanadianSourceAdapter):
@@ -221,6 +222,7 @@ class CanLIIApiAdapter(CanadianSourceAdapter):
 
     def run(self) -> IngestionResult:
         result = IngestionResult(source_key=self._source_key)
+        result.parser_version = _PARSER_VERSION
         try:
             if not self._api_key:
                 result.errors.append(

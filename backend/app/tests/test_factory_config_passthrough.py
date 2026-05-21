@@ -115,6 +115,28 @@ def test_ckan_api_url_includes_resource_id_when_set():
     assert f"resource_id={rid}" in url
 
 
+def test_ckan_pagination_settings_forwarded_from_config_json() -> None:
+    source = _make_source(
+        source_key="canada_open_data_crime",
+        parser="ckan_api",
+        config_json=json.dumps(
+            {
+                "resource_id": "rid-123",
+                "page_limit": 25,
+                "max_pages": 4,
+                "offset": 50,
+            }
+        ),
+    )
+
+    adapter = build_adapter(source, _make_settings())
+    assert isinstance(adapter, CKANApiAdapter)
+    assert adapter._resource_id == "rid-123"
+    assert adapter._page_limit == 25
+    assert adapter._max_pages == 4
+    assert adapter._offset == 50
+
+
 def test_canlii_adapter_uses_only_canlii_key() -> None:
     source = _make_source(
         source_key="sk_courts_qb_decisions",

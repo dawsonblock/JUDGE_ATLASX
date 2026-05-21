@@ -45,11 +45,9 @@ services:
       JTA_APP_ENV: development
       JTA_ENABLE_ADMIN_IMPORTS: ${JTA_ENABLE_ADMIN_IMPORTS:-false}
       JTA_ENABLE_ADMIN_REVIEW: ${JTA_ENABLE_ADMIN_REVIEW:-false}
-      JTA_ADMIN_TOKEN: "${JTA_ADMIN_TOKEN:?Error: JTA_ADMIN_TOKEN must be set in .env}"
+      JTA_ADMIN_TOKEN: ${JTA_ADMIN_TOKEN:-}
       JTA_ENABLE_LEGACY_ADMIN_TOKEN: "false" # Shared admin token auth disabled; use JWT authentication
-      JTA_ADMIN_REVIEW_TOKEN:
-        "${JTA_ADMIN_REVIEW_TOKEN:?Error: JTA_ADMIN_REVIEW_TOKEN
-        must be set in .env}"
+      JTA_ADMIN_REVIEW_TOKEN: ${JTA_ADMIN_REVIEW_TOKEN:-}
       JTA_RATE_LIMIT_BACKEND: redis
       JTA_REDIS_URL: redis://redis:6379/0
       JTA_STORAGE_BACKEND: minio

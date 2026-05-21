@@ -31,7 +31,7 @@ PROOF_INPUT_PATTERNS = [
     "backend/alembic/**/*",
     "backend/pyproject.toml",
     "backend/alembic.ini",
-    "backend/requirements*.txt",
+    "backend/uv.lock",
     "demo/**/*",
     "frontend/**/*",
     "frontend/package.json",

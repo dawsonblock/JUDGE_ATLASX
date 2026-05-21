@@ -50,6 +50,8 @@ REQUIRED_GATE_NAMES = {
     "backend_compile",
     "backend_import",
     "backend_pytest",
+    "check_dockerfile_copy_paths",
+    "check_compose_auth_defaults",
     "validate_sources",
     "check_yaml_duplicate_keys",
     "verify_source_registry",
@@ -67,6 +69,7 @@ REQUIRED_GATE_NAMES = {
     "frontend_typecheck",
     "frontend_contracts",
     "frontend_build",
+    "canlii_staging_proof",
     "proof_consistency_pytest",
     "release_readiness_generation",
     "required_proof_logs",
@@ -269,6 +272,26 @@ def _extract_prefixed_value(log_path: Path, prefix: str) -> str | None:
     if not match:
         return None
     return match.group(1).strip()
+
+
+def _enforce_canlii_staging_gate(
+    checks_map: dict[str, GateStep],
+    blocked_checks: dict[str, str],
+    canlii_staging_status: str | None,
+) -> None:
+    """Require explicit PASS when CanLII staging gate is configured as required."""
+    step = checks_map.get("canlii_staging_proof")
+    if step is None:
+        return
+
+    status = (canlii_staging_status or "").strip().upper()
+    if status.startswith("SKIPPED") and step.exit_code == 0:
+        step.status = "BLOCKED"
+        step.exit_code = 1
+        step.failure_reason = "missing_canlii_api_key"
+        blocked_checks["canlii_staging_proof"] = (
+            "CANLII_API_KEY missing; required staging proof cannot be skipped"
+        )
 
 
 def _check_status_map(payload: dict) -> dict[str, dict]:
@@ -1169,6 +1192,10 @@ def _write_current_proof_md(
             f"{payload.get('demo_proof_result', 'UNKNOWN')}"
         )
         lines.append(
+            "- CanLII staging proof: "
+            f"{payload.get('canlii_staging_status', 'UNKNOWN')}"
+        )
+        lines.append(
             "- mutation fail-closed coverage: "
             f"{payload.get('mutation_fail_closed_coverage_result', 'UNKNOWN')}"
         )
@@ -1210,6 +1237,7 @@ def _write_current_proof_md(
             "- artifacts/proof/current/postgis_proof.log",
             "- artifacts/proof/current/egress_proxy_proof.log",
             "- artifacts/proof/current/demo_proof.log",
+            "- artifacts/proof/current/canlii_staging_proof.log",
             "- artifacts/proof/current/proof_freshness.log",
             "- artifacts/proof/current/archive_validation.log",
             "- artifacts/proof/current/backend_import.log",
@@ -1248,7 +1276,10 @@ def _write_current_proof_md(
         current_proof_text,
         encoding="utf-8",
     )
-    return str(current_proof_path.relative_to(repo_root))
+    try:
+        return str(current_proof_path.relative_to(repo_root))
+    except ValueError:
+        return str(current_proof_path)
 
 
 def main() -> int:
@@ -1315,6 +1346,16 @@ def main() -> int:
             "check_external_boundaries",
             "check_external_boundaries.log",
             [python_exe, "scripts/check_external_boundaries.py"],
+        ),
+        GateStepSpec(
+            "check_dockerfile_copy_paths",
+            "check_dockerfile_copy_paths.log",
+            [python_exe, "scripts/check_dockerfile_copy_paths.py", "--root", str(repo_root)],
+        ),
+        GateStepSpec(
+            "check_compose_auth_defaults",
+            "check_compose_auth_defaults.log",
+            [python_exe, "scripts/check_compose_auth_defaults.py", "--compose", "docker-compose.yml"],
         ),
         GateStepSpec(
             "backend_compile",
@@ -1598,6 +1639,12 @@ def main() -> int:
                 "-q",
             ],
         ),
+        GateStepSpec(
+            "canlii_staging_proof",
+            "canlii_staging_proof.log",
+            [python_exe, "scripts/prove_canlii_staging.py"],
+            timeout_seconds=300,
+        ),
     ]
 
     # proof_freshness runs as a post-write step after the preliminary
@@ -1763,6 +1810,11 @@ def main() -> int:
         out_dir / "backend_import.log"
     )
     alembic_migration_count = _extract_migration_count(out_dir / "check_migrations.log")
+    canlii_staging_status = _extract_prefixed_value(
+        out_dir / "canlii_staging_proof.log",
+        "CANLII_STAGING_STATUS=",
+    )
+    _enforce_canlii_staging_gate(checks_map, blocked_checks, canlii_staging_status)
     if alembic_migration_count is None:
         alembic_migration_count = _count_alembic_version_files(repo_root)
 
@@ -1844,6 +1896,7 @@ def main() -> int:
         ).status
         if checks_map.get("mutation_fail_closed_coverage")
         else "UNKNOWN",
+        "canlii_staging_status": canlii_staging_status or "UNKNOWN",
         "proof_freshness_result": "UNKNOWN",
         "archive_validation_result": _archive_validation_result(out_dir),
         "legacy_shared_token_status": (

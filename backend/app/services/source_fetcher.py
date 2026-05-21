@@ -93,6 +93,14 @@ class FetchResult:
     snapshot_id: int | None = None
 
 
+def _host_in_allowlist(host: str, allowed_domains: frozenset[str]) -> bool:
+    """Return True when host matches configured allowlist entries."""
+    if not allowed_domains:
+        return True
+    bare = host.removeprefix("www.")
+    return host in allowed_domains or bare in allowed_domains
+
+
 def _is_safe_url(url: str, check_dns: bool = True) -> tuple[bool, str]:
     """Validate URL is safe to fetch (no SSRF).
 
@@ -168,6 +176,10 @@ class _SSRFRedirectHandler(urllib.request.HTTPRedirectHandler):
 
     max_redirections = 5
 
+    def __init__(self, allowed_domains: frozenset[str] | None = None):
+        super().__init__()
+        self._allowed_domains = allowed_domains or frozenset()
+
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         """Override to validate redirect URL before following."""
         # Validate the new URL
@@ -180,13 +192,31 @@ class _SSRFRedirectHandler(urllib.request.HTTPRedirectHandler):
                 newurl, code, f"Redirect blocked: {reason}", headers, fp
             )
 
+        host = urllib.parse.urlparse(newurl).hostname or ""
+        if self._allowed_domains and not _host_in_allowlist(
+            host, self._allowed_domains
+        ):
+            log.warning(
+                "source_fetcher: blocked redirect host %s not in allowlist", host
+            )
+            raise urllib.request.HTTPError(
+                newurl,
+                code,
+                f"Redirect blocked: domain not in allowlist ({host})",
+                headers,
+                fp,
+            )
+
         log.debug("source_fetcher: following redirect to %s", newurl)
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-def _build_fetch_opener(proxy_url: str | None) -> urllib.request.OpenerDirector:
+def _build_fetch_opener(
+    proxy_url: str | None,
+    allowed_domains: frozenset[str] | None = None,
+) -> urllib.request.OpenerDirector:
     """Build a redirect-safe opener with optional egress proxy routing."""
-    redirect_handler = _SSRFRedirectHandler()
+    redirect_handler = _SSRFRedirectHandler(allowed_domains=allowed_domains)
     if proxy_url:
         proxy_handler = urllib.request.ProxyHandler(
             {"http": proxy_url, "https": proxy_url}
@@ -244,6 +274,7 @@ def fetch_source(
     max_bytes: int = _DEFAULT_MAX_BYTES,
     store_snapshot: bool = True,
     source_key: str | None = None,
+    allowed_domains: frozenset[str] | None = None,
 ) -> FetchResult:
     """Fetch a source URL with SSRF protection and optional snapshot storage.
 
@@ -294,7 +325,10 @@ def fetch_source(
 
         # Route through optional egress proxy when configured.
         proxy_url = os.environ.get("JTA_FETCH_EGRESS_PROXY")
-        opener = _build_fetch_opener(proxy_url)
+        opener = _build_fetch_opener(
+            proxy_url,
+            allowed_domains=allowed_domains,
+        )
 
         with opener.open(req, timeout=timeout) as resp:
             result.http_status = resp.status

@@ -154,6 +154,15 @@ def build_adapter(
         resource_id = config.get("resource_id")
         if resource_id:
             common_kwargs["resource_id"] = resource_id
+        page_limit = config.get("page_limit")
+        if page_limit is not None:
+            common_kwargs["page_limit"] = int(page_limit)
+        max_pages = config.get("max_pages")
+        if max_pages is not None:
+            common_kwargs["max_pages"] = int(max_pages)
+        offset = config.get("offset")
+        if offset is not None:
+            common_kwargs["offset"] = int(offset)
 
     if parser_key == "canlii_api":
         databases = config.get("databases")

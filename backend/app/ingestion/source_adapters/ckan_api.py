@@ -10,13 +10,13 @@ CKAN API docs: https://docs.ckan.org/en/stable/api/
 
 from __future__ import annotations
 
+import hashlib
 import json as _json
 import logging
 from typing import Any
 
 from app.ingestion.adapters import (
     CanadianSourceAdapter,
-    CreatedRecord,
     CreatedReviewItem,
     IngestionResult,
     ParsedRecord,
@@ -33,6 +33,8 @@ _RECORD_TYPE_MAP: dict[str, str] = {
     CANADA_OPEN_DATA_CRIME: "CrimeIncident",
     SASKATOON_OPEN_DATA_PORTAL: "ReviewItem",
 }
+
+_PARSER_VERSION = "ckan_api_v1"
 
 
 class CKANApiAdapter(CanadianSourceAdapter):
@@ -57,6 +59,9 @@ class CKANApiAdapter(CanadianSourceAdapter):
         source_key: str,
         base_url: str,
         resource_id: str | None = None,
+        page_limit: int = 100,
+        max_pages: int = 10,
+        offset: int = 0,
         allowed_domains_json: str | None = None,
         public_record_authority: str = "official_statistics",
         fetcher: FetchCallable | None = None,
@@ -64,39 +69,134 @@ class CKANApiAdapter(CanadianSourceAdapter):
         self._source_key = source_key
         self._base_url = base_url.rstrip("/")
         self._resource_id = resource_id
+        self._page_limit = max(1, min(page_limit, 100))
+        self._max_pages = max(1, max_pages)
+        self._offset = max(0, offset)
         self._allowed_domains_json = allowed_domains_json or "[]"
         self._allowed_domains = parse_allowed_domains(self._allowed_domains_json)
         self._public_record_authority = public_record_authority
         self._record_type = _RECORD_TYPE_MAP.get(source_key, "ReviewItem")
         self._fetcher = fetcher or fetch_for_ingestion
+        self._raw_bytes: bytes | None = None
+        self._fetch_http_status: int | None = None
+        self._fetch_content_type: str | None = None
+        self._fetch_url: str | None = None
+        self._last_fetch_error: str | None = None
 
     def _ckan_api_url(self) -> str:
         """Construct CKAN datastore_search API URL."""
         if self._resource_id:
-            return f"{self._base_url}/api/3/action/datastore_search?resource_id={self._resource_id}&limit=100"
+            return (
+                f"{self._base_url}/api/3/action/datastore_search"
+                f"?resource_id={self._resource_id}&limit={self._page_limit}"
+            )
         return f"{self._base_url}/api/3/action/datastore_search"
 
+    def _build_params(self, offset: int) -> dict[str, Any]:
+        return {
+            "resource_id": self._resource_id,
+            "limit": self._page_limit,
+            "offset": offset,
+        }
+
+    def _classify_fetch_error(self, error: str) -> str:
+        lowered = error.lower()
+        if "allowlist" in lowered or "domain" in lowered:
+            return "domain_not_allowed"
+        if "ssrf" in lowered or "private" in lowered or "metadata" in lowered:
+            return "ssrf_blocked"
+        return "fetch_error"
+
+    def _validate_row_schema(self, row: Any) -> bool:
+        # Non-empty object rows are acceptable; parse() assigns a stable
+        # synthetic external_id when explicit identifiers are absent.
+        return isinstance(row, dict) and bool(row)
+
+    def _stable_external_id(self, row: dict[str, Any]) -> str:
+        explicit = row.get("_id") or row.get("id") or row.get("record_id") or row.get("uuid")
+        if explicit is not None:
+            return str(explicit)
+        payload = _json.dumps(row, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+        digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        return f"ckan-{digest[:20]}"
+
+    def _classify_coordinate_precision(self, row: dict[str, Any]) -> str:
+        lat_keys = ("latitude", "lat", "y")
+        lon_keys = ("longitude", "lon", "lng", "x")
+        has_lat = any(row.get(key) not in (None, "") for key in lat_keys)
+        has_lon = any(row.get(key) not in (None, "") for key in lon_keys)
+        if has_lat and has_lon:
+            return "city_block"
+        return "unknown"
+
     def fetch(self) -> list[dict[str, Any]]:
-        api_url = self._ckan_api_url()
         if not self._resource_id:
-            logger.warning(
-                "No resource_id configured for %s; cannot fetch data", self._source_key
-            )
+            self._last_fetch_error = "missing_resource_id"
+            logger.warning("No resource_id configured for %s; cannot fetch data", self._source_key)
             return []
-        try:
-            fetch_result = self._fetcher(api_url, self._allowed_domains)
+
+        api_url = self._ckan_api_url()
+        rows: list[dict[str, Any]] = []
+        offset = self._offset
+
+        for _ in range(self._max_pages):
+            params = self._build_params(offset)
+            fetch_result = self._fetcher(api_url, self._allowed_domains, params=params)
             if fetch_result.error:
+                reason = self._classify_fetch_error(fetch_result.error)
+                self._last_fetch_error = reason
                 logger.warning(
-                    "Domain check failed for %s: %s", self._source_key, fetch_result.error
+                    "CKAN fetch blocked for %s (%s): %s",
+                    self._source_key,
+                    reason,
+                    fetch_result.error,
                 )
                 return []
-            data = _json.loads(fetch_result.raw_content or b"{}")
-            if data.get("success") and "result" in data:
-                return data["result"].get("records", [])
-            return []
-        except Exception as exc:  # noqa: BLE001
-            logger.error("CKAN API fetch failed for %s: %s", self._source_key, exc)
-            return []
+
+            self._fetch_http_status = fetch_result.http_status
+            self._fetch_content_type = fetch_result.content_type or "application/json"
+            self._fetch_url = fetch_result.final_url or api_url
+            if self._raw_bytes is None and fetch_result.raw_content:
+                self._raw_bytes = fetch_result.raw_content
+
+            if not fetch_result.raw_content:
+                break
+
+            try:
+                payload = _json.loads(fetch_result.raw_content)
+            except _json.JSONDecodeError:
+                self._last_fetch_error = "invalid_json"
+                logger.warning("CKAN payload for %s is not valid JSON", self._source_key)
+                return []
+
+            if not payload.get("success"):
+                self._last_fetch_error = "ckan_unsuccessful_response"
+                logger.warning("CKAN response reported success=false for %s", self._source_key)
+                return []
+
+            result_block = payload.get("result")
+            if not isinstance(result_block, dict):
+                self._last_fetch_error = "missing_result_block"
+                logger.warning("CKAN response missing result block for %s", self._source_key)
+                return []
+
+            page_records = result_block.get("records")
+            if not isinstance(page_records, list):
+                self._last_fetch_error = "invalid_records_block"
+                logger.warning("CKAN response has invalid records for %s", self._source_key)
+                return []
+
+            validated = [row for row in page_records if self._validate_row_schema(row)]
+            rows.extend(validated)
+
+            total = result_block.get("total")
+            if len(page_records) < self._page_limit:
+                break
+            if isinstance(total, int) and total <= offset + len(page_records):
+                break
+            offset += len(page_records)
+
+        return rows
 
     def parse(self, raw: list[dict[str, Any]]) -> list[ParsedRecord]:
         records: list[ParsedRecord] = []
@@ -108,13 +208,21 @@ class CKANApiAdapter(CanadianSourceAdapter):
             )
             if violation:
                 continue
-            external_id = str(row.get("_id") or row.get("id") or "")
+            external_id = self._stable_external_id(row)
+            coord_precision = self._classify_coordinate_precision(row)
             records.append(
                 ParsedRecord(
+                    source_name=self._source_key,
                     source_key=self._source_key,
-                    record_type=self._record_type,
-                    external_id=external_id or None,
-                    payload={"source_key": self._source_key, "raw": dict(row)},
+                    record_type="ReviewItem",
+                    external_id=external_id,
+                    payload={
+                        "source_key": self._source_key,
+                        "candidate_record_type": self._record_type,
+                        "external_id": external_id,
+                        "coordinate_precision": coord_precision,
+                        "raw": dict(row),
+                    },
                     source_url=self._base_url,
                 )
             )
@@ -122,33 +230,33 @@ class CKANApiAdapter(CanadianSourceAdapter):
 
     def run(self) -> IngestionResult:
         result = IngestionResult(source_key=self._source_key)
+        result.parser_version = _PARSER_VERSION
         try:
+            if not self._resource_id:
+                result.errors.append("missing_resource_id")
+                return result
+
             raw = self.fetch()
             result.records_fetched = len(raw)
+            result.raw_snapshot_bytes = self._raw_bytes
+            result.fetch_http_status = self._fetch_http_status
+            result.fetch_content_type = self._fetch_content_type
+            result.fetch_url = self._fetch_url
+            if self._last_fetch_error and not raw:
+                result.errors.append(self._last_fetch_error)
             parsed = self.parse(raw)
             result.records_skipped = len(raw) - len(parsed)
             for p in parsed:
-                if p.record_type == "CrimeIncident":
-                    result.created_records.append(
-                        CreatedRecord(
-                            source_key=p.source_key,
-                            record_type=p.record_type,
-                            external_id=p.external_id,
-                            payload=p.payload,
-                            source_url=p.source_url,
-                        )
+                result.review_items.append(
+                    CreatedReviewItem(
+                        source_key=p.source_key,
+                        headline=None,
+                        url=p.source_url,
+                        extracted_text=None,
+                        confidence_score=0.0,
+                        payload=p.payload,
                     )
-                else:
-                    result.review_items.append(
-                        CreatedReviewItem(
-                            source_key=p.source_key,
-                            headline=None,
-                            url=p.source_url,
-                            extracted_text=None,
-                            confidence_score=0.0,
-                            payload=p.payload,
-                        )
-                    )
+                )
         except Exception as exc:  # noqa: BLE001
             logger.exception("Unhandled error in %s adapter", self._source_key)
             result.errors.append(str(exc))
