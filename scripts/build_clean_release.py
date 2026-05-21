@@ -3,7 +3,7 @@
 
 Produces:
 - JUDGE_ATLASX-alpha-clean.zip
-- artifacts/current/RELEASE_MANIFEST.json
+- artifacts/proof/current/RELEASE_MANIFEST.json
 - Optional JUDGE_ATLASX-reference-bundle.zip (external references only)
 """
 
@@ -19,7 +19,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUT_ZIP = REPO_ROOT / "JUDGE_ATLASX-alpha-clean.zip"
 REF_ZIP = REPO_ROOT / "JUDGE_ATLASX-reference-bundle.zip"
-MANIFEST_PATH = REPO_ROOT / "artifacts" / "current" / "RELEASE_MANIFEST.json"
+MANIFEST_PATH = REPO_ROOT / "artifacts" / "proof" / "current" / "RELEASE_MANIFEST.json"
 
 INCLUDED_DIRS = [
     "backend",
@@ -29,7 +29,7 @@ INCLUDED_DIRS = [
     "scripts",
     "tests",
     "tools",
-    "artifacts/current",
+    "artifacts/proof/current",
 ]
 
 EXCLUDED_DIR_MARKERS = {
@@ -63,6 +63,7 @@ EXCLUDED_FILE_SUFFIXES = {
     ".pyc",
     ".pyo",
     ".log",
+    ".tsbuildinfo",
 }
 
 

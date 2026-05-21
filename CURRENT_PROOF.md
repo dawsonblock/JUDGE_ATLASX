@@ -1,18 +1,18 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-21T04:50:54.337310+00:00
-- commit_hash: f76cdf11d5ecf0c097e692602d4088c12aad3b12
-- alpha_gate_status: PASS
-- alpha_gate_passed: true
-- release_gate_check_count: 39
+- generated_at_utc: 2026-05-21T06:23:10.298560+00:00
+- commit_hash: bb16dd0cd7ec8868c6f18dc050d7ce562da0de8d
+- alpha_gate_status: BLOCKED
+- alpha_gate_passed: false
+- release_gate_check_count: 41
 - docker_available: true
 - postgis_proof_result: PASS
 - egress_proxy_proof_result: PASS
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
-- archive_validation_result: PASS
-- proof_input_tree_hash: 9aedb11122dba5a543015a23f4374533a125bd0df1bdca16775b8f9b582c113a
-- proof_input_file_count: 994
+- archive_validation_result: FAIL
+- proof_input_tree_hash: 2e288707f7b8a47c19c182f017e024b0f49ab24279c169b236a246ccfd35cacc
+- proof_input_file_count: 995
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
@@ -23,8 +23,8 @@
 - backend_test_python_version: 3.11.7
 - backend_test_python_executable: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/.venv/bin/python
 - backend_required_python: >=3.11
-- node_version: v24.15.0
-- npm_version: 11.12.1
+- node_version: v20.20.2
+- npm_version: 10.8.2
 - platform: macOS-26.2-arm64-arm-64bit
 - test_database_backend: sqlite
 - test_database_url_type: sqlite_file
@@ -46,7 +46,7 @@
 - Dedicated egress proxy proof passed in the current release gate.
 - Dedicated synthetic demo proof passed in the current release gate.
 - Proof freshness passed against the stored proof-input file list and tree hash.
-- Archive validation passed against the final distributable archive shape.
+- Archive validation has not yet been recorded for this run.
 - archive_validation_log: artifacts/proof/current/archive_validation.log
 - archive_validation_supported_shapes:
   - JUDGE-main/
@@ -59,7 +59,7 @@
 
 ## Current Proof Facts
 
-- backend pytest: 3309 passed, 34 skipped
+- backend pytest: 2467 passed, 27 skipped
 - backend import proof: PASS (105 routes)
 - frontend contracts: 48 passed
 - public API boundary: 55 passed
@@ -69,6 +69,11 @@
 - demo proof: PASS
 - mutation fail-closed coverage: PASS
 - Alembic migrations: 69
+
+## Failed Checks
+
+- backend_pytest
+- archive_validation
 
 ## Egress Proxy Coverage
 

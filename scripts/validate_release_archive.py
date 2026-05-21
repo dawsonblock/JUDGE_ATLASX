@@ -71,14 +71,13 @@ FORBIDDEN_FILE_NAMES = (
     "id_rsa",
     "id_ed25519",
     "archive_validation.md",
-    "archive_validation.log",
 )
 FORBIDDEN_FILE_SUFFIXES = (
     ".pem",
     ".key",
     ".p12",
     ".crt",
-    ".log",
+    ".tsbuildinfo",
 )
 TEXT_METADATA_SUFFIXES = {".md", ".json", ".txt", ".yml", ".yaml"}
 ABSOLUTE_PATH_PATTERNS = (
@@ -174,6 +173,35 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
                 if f"{root}/{rel_file}" not in name_set:
                     report["errors"].append(f"missing_required_root_file:{rel_file}")
 
+            release_gate_name = f"{root}/artifacts/proof/current/release_gate.json"
+            release_gate_data: dict | None = None
+            if release_gate_name in name_set:
+                release_gate_text = _read_text_member(zf, release_gate_name)
+                if release_gate_text:
+                    try:
+                        release_gate_data = json.loads(release_gate_text)
+                    except json.JSONDecodeError:
+                        report["errors"].append("invalid_release_gate_json")
+
+            if release_gate_data is not None:
+                logs = release_gate_data.get("logs", {})
+                if isinstance(logs, dict):
+                    for key, rel_path in logs.items():
+                        if not isinstance(rel_path, str) or not rel_path:
+                            continue
+                        normalized = rel_path.replace("\\", "/")
+                        if normalized.startswith("artifacts/current/"):
+                            report["errors"].append(
+                                f"legacy_proof_log_reference:{key}:{normalized}"
+                            )
+                            continue
+                        if not normalized.startswith("artifacts/proof/current/"):
+                            continue
+                        if f"{root}/{normalized}" not in name_set:
+                            report["errors"].append(
+                                f"missing_claimed_proof_file:{key}:{normalized}"
+                            )
+
             for info in infos:
                 parts = Path(info.filename).parts
                 if any(segment in FORBIDDEN_SEGMENTS for segment in parts):
@@ -209,14 +237,19 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
                 ):
                     report["errors"].append(f"forbidden_release_surface_path:{info.filename}")
                 name_lower = Path(rel_path).name.lower()
+                if name_lower == "archive_validation.log" and not rel_path.startswith("artifacts/proof/current/"):
+                    report["errors"].append(f"forbidden_secret_file:{info.filename}")
+                    continue
                 if name_lower in FORBIDDEN_FILE_NAMES:
                     report["errors"].append(f"forbidden_secret_file:{info.filename}")
-                elif name_lower.endswith(FORBIDDEN_FILE_SUFFIXES):
+                elif name_lower.endswith(FORBIDDEN_FILE_SUFFIXES) or (
+                    name_lower.endswith(".log")
+                    and not rel_path.startswith("artifacts/proof/current/")
+                ):
                     report["errors"].append(f"forbidden_secret_or_log_suffix:{info.filename}")
 
             # Verify CURRENT_PROOF.md counts match release_gate.json
             current_proof_name = f"{root}/artifacts/proof/current/CURRENT_PROOF.md"
-            release_gate_name = f"{root}/artifacts/proof/current/release_gate.json"
             if current_proof_name in name_set and release_gate_name in name_set:
                 current_proof_text = _read_text_member(zf, current_proof_name)
                 release_gate_text = _read_text_member(zf, release_gate_name)

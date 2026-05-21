@@ -16,7 +16,7 @@ REQUIRED_PREFIXES = [
     "docs/",
     "deploy/",
     "scripts/",
-    "artifacts/current/",
+    "artifacts/proof/current/",
 ]
 
 FORBIDDEN_MARKERS = [
@@ -39,6 +39,7 @@ FORBIDDEN_MARKERS = [
     "docs/archive/",
     "legacy_disabled/",
     "reference_only/",
+    "artifacts/current/",
 ]
 
 

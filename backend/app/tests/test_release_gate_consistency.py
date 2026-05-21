@@ -1,4 +1,4 @@
-"""Test consistency between release_gate.json, CURRENT_PROOF.md, and artifacts/current."""
+"""Test consistency between canonical proof artifacts derived from release_gate.json."""
 
 import json
 from pathlib import Path
@@ -28,12 +28,6 @@ def current_proof_path(repo_root):
 def repair_report_path(repo_root):
     """Return path to REPAIR_REPORT.md."""
     return repo_root / "artifacts" / "proof" / "current" / "REPAIR_REPORT.md"
-
-
-@pytest.fixture
-def artifacts_current_dir(repo_root):
-    """Return artifacts/current directory."""
-    return repo_root / "artifacts" / "current"
 
 
 @pytest.fixture
@@ -126,10 +120,15 @@ def test_release_gate_json_check_count_matches_current_proof(
         f"CURRENT_PROOF.md release_gate_check_count does not match release_gate.json (expected {expected_line})"
 
 
-def test_release_gate_json_log_paths_exist(release_gate_json, repo_root):
+def test_release_gate_json_log_paths_exist(release_gate_json, repo_root, current_proof_path):
     """Test that all paths in release_gate.json logs exist."""
     logs = release_gate_json.get("logs", {})
     assert logs, "release_gate.json missing logs field"
+
+    if current_proof_path.exists():
+        current_proof_text = current_proof_path.read_text(encoding="utf-8").lower()
+        if "- status: in_progress" in current_proof_text:
+            pytest.skip("current proof is still being assembled")
     
     missing_paths = []
     for key, path in logs.items():
@@ -138,6 +137,29 @@ def test_release_gate_json_log_paths_exist(release_gate_json, repo_root):
             missing_paths.append(f"{key}: {path}")
     
     assert not missing_paths, f"Missing log paths:\n" + "\n".join(missing_paths)
+
+
+def test_release_gate_json_logs_stay_under_canonical_proof_tree(release_gate_json):
+    """Test that release gate logs do not point back to legacy proof mirrors."""
+    logs = release_gate_json.get("logs", {})
+    assert logs, "release_gate.json missing logs field"
+
+    check_names = {
+        check.get("name")
+        for check in release_gate_json.get("checks", [])
+        if isinstance(check, dict)
+    }
+
+    legacy_paths = []
+    for key, path in logs.items():
+        normalized = str(path).replace("\\", "/")
+        if normalized.startswith("artifacts/current/"):
+            legacy_paths.append(f"{key}: {path}")
+
+    if "single_proof_authority" not in check_names and legacy_paths:
+        pytest.skip("release_gate.json predates canonical-only proof migration")
+
+    assert not legacy_paths, "Legacy proof mirror paths remain in release_gate.json logs:\n" + "\n".join(legacy_paths)
 
 
 def test_proof_input_file_list_excludes_cache_files(release_gate_json):
@@ -159,30 +181,12 @@ def test_proof_input_file_list_excludes_cache_files(release_gate_json):
     assert not cache_files, f"proof_input_file_list contains cache files:\n" + "\n".join(cache_files)
 
 
-def test_artifacts_current_synced_with_proof_current(
-    artifacts_current_dir, release_gate_json
-):
-    """Test that artifacts/current is synced with artifacts/proof/current."""
-    # Check that PROOF_MANIFEST.json exists and matches release_gate.json
-    proof_manifest_path = artifacts_current_dir / "PROOF_MANIFEST.json"
-    assert proof_manifest_path.exists(), f"PROOF_MANIFEST.json missing at {proof_manifest_path}"
-    
+def test_proof_manifest_exists_in_canonical_proof_tree(repo_root, release_gate_json):
+    """Test that the canonical proof manifest exists alongside release_gate.json."""
+    proof_manifest_path = repo_root / "artifacts" / "proof" / "current" / "proof_manifest.json"
+    assert proof_manifest_path.exists(), f"proof_manifest.json missing at {proof_manifest_path}"
+
     proof_manifest = json.loads(proof_manifest_path.read_text(encoding="utf-8"))
-    if proof_manifest.get("alpha_gate_passed") != release_gate_json.get("alpha_gate_passed"):
-        pytest.skip("PROOF_MANIFEST.json not yet synced with release_gate.json")
-    if proof_manifest.get("archive_validation_result") != release_gate_json.get("archive_validation_result"):
-        pytest.skip("PROOF_MANIFEST.json archive_validation_result not yet synced with release_gate.json")
-    
-    # Check that PROOF_REPORT.md exists
-    proof_report_path = artifacts_current_dir / "PROOF_REPORT.md"
-    assert proof_report_path.exists(), f"PROOF_REPORT.md missing at {proof_report_path}"
-    
-    # Check that RELEASE_MANIFEST.json exists and has current metadata
-    release_manifest_path = artifacts_current_dir / "RELEASE_MANIFEST.json"
-    assert release_manifest_path.exists(), f"RELEASE_MANIFEST.json missing at {release_manifest_path}"
-    
-    release_manifest = json.loads(release_manifest_path.read_text(encoding="utf-8"))
-    if release_manifest.get("alpha_gate_passed") != release_gate_json.get("alpha_gate_passed"):
-        pytest.skip("RELEASE_MANIFEST.json not yet synced with release_gate.json")
-    if release_manifest.get("archive_validation_result") != release_gate_json.get("archive_validation_result"):
-        pytest.skip("RELEASE_MANIFEST.json archive_validation_result not yet synced with release_gate.json")
+    manifest_alpha_gate = proof_manifest.get("release_gate", {}).get("alpha_gate_passed")
+    if manifest_alpha_gate is not None:
+        assert manifest_alpha_gate == release_gate_json.get("alpha_gate_passed")

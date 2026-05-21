@@ -45,9 +45,20 @@ def main() -> int:
     major, minor = parsed
     if major != args.expected_major:
         expected = f"{args.expected_major}.x"
+        print(f"NODE_VERSION: {version}")
         print(f"Frontend release gate requires Node {expected}. Current Node: {version}. Use nvm use {args.expected_major}.")
         return 1
 
+    npm_proc = subprocess.run(
+        ["npm", "--version"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    npm_version = npm_proc.stdout.strip() if npm_proc.returncode == 0 else "unknown"
+
+    print(f"NODE_VERSION: {version}")
+    print(f"NPM_VERSION: {npm_version}")
     print(f"Node gate PASS: {version}")
     return 0
 
