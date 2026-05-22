@@ -2,7 +2,6 @@
 
 Date: 2026-05-22
 Repository: JUDGE_ATLAS (main)
-Workspace: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2
 
 ## Final Authoritative Archive
 
