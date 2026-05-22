@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -17,7 +17,16 @@ class CKANPublicSafetyReviewPayload(BaseModel):
     source_key: str
     candidate_record_type: str
     external_id: str
-    coordinate_precision: str
+    coordinate_precision: Literal[
+        "exact",
+        "block",
+        "intersection",
+        "neighbourhood",
+        "city",
+        "unknown",
+    ]
+    external_id_confidence: Literal["high", "low"] = "high"
+    external_id_strategy: Literal["official_record_id", "composite_fallback"] = "official_record_id"
     raw: dict[str, Any]
     parser_version: str
     schema_version: str = SCHEMA_VERSION
@@ -33,11 +42,20 @@ def build_ckan_public_safety_payload(
     source_key: str,
     candidate_record_type: str,
     external_id: str,
-    coordinate_precision: str,
+    coordinate_precision: Literal[
+        "exact",
+        "block",
+        "intersection",
+        "neighbourhood",
+        "city",
+        "unknown",
+    ],
     raw: dict[str, Any],
     parser_version: str,
     public_record_authority: str,
     source_url: str,
+    external_id_confidence: Literal["high", "low"] = "high",
+    external_id_strategy: Literal["official_record_id", "composite_fallback"] = "official_record_id",
 ) -> dict[str, Any]:
     """Build a validated review-only payload for CKAN public-safety rows."""
     payload = CKANPublicSafetyReviewPayload(
@@ -45,6 +63,8 @@ def build_ckan_public_safety_payload(
         candidate_record_type=candidate_record_type,
         external_id=external_id,
         coordinate_precision=coordinate_precision,
+        external_id_confidence=external_id_confidence,
+        external_id_strategy=external_id_strategy,
         raw=raw,
         parser_version=parser_version,
         public_record_authority=public_record_authority,

@@ -121,13 +121,38 @@ class CKANApiAdapter(CanadianSourceAdapter):
     def _validate_row_schema(self, row: Any) -> bool:
         return validate_ckan_row(row)
 
-    def _stable_external_id(self, row: dict[str, Any]) -> str:
+    def _stable_external_id(self, row: dict[str, Any]) -> tuple[str, str, str]:
+        resource_id = self._resource_id or "unknown_resource"
         explicit = row.get("_id") or row.get("id") or row.get("record_id") or row.get("uuid")
-        if explicit is not None:
-            return str(explicit)
-        payload = _json.dumps(row, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
-        digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
-        return f"ckan-{digest[:20]}"
+        if explicit is not None and str(explicit).strip():
+            identity = f"{self._source_key}|{resource_id}|{str(explicit).strip()}"
+            digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()
+            return f"ckan-{digest[:24]}", "high", "official_record_id"
+
+        event_date = str(
+            row.get("event_date")
+            or row.get("date")
+            or row.get("occurrence_date")
+            or ""
+        ).strip()
+        category = str(
+            row.get("category")
+            or row.get("incident_type")
+            or row.get("type")
+            or ""
+        ).strip()
+        location_text = str(
+            row.get("location_text")
+            or row.get("location")
+            or row.get("address")
+            or row.get("neighbourhood")
+            or ""
+        ).strip()
+        fallback_identity = (
+            f"{self._source_key}|{resource_id}|{event_date}|{category}|{location_text}"
+        )
+        digest = hashlib.sha256(fallback_identity.encode("utf-8")).hexdigest()
+        return f"ckan-{digest[:24]}", "low", "composite_fallback"
 
     def _classify_coordinate_precision(self, row: dict[str, Any]) -> str:
         def _as_float(value: Any) -> float | None:
@@ -160,12 +185,14 @@ class CKANApiAdapter(CanadianSourceAdapter):
         precision = min(_decimal_places(lat_raw), _decimal_places(lon_raw))
         if precision >= 4:
             return "exact"
-        if precision >= 2:
-            return "city_block"
-        if precision >= 1:
-            return "district"
+        if precision == 3:
+            return "block"
+        if precision == 2:
+            return "intersection"
+        if precision == 1:
+            return "neighbourhood"
         if precision == 0:
-            return "city_wide"
+            return "city"
         return "unknown"
 
     def fetch(self) -> list[dict[str, Any]]:
@@ -264,7 +291,7 @@ class CKANApiAdapter(CanadianSourceAdapter):
             )
             if violation:
                 continue
-            external_id = self._stable_external_id(row)
+            external_id, external_id_confidence, external_id_strategy = self._stable_external_id(row)
             coord_precision = self._classify_coordinate_precision(row)
             if use_public_safety_schema:
                 payload = build_ckan_public_safety_payload(
@@ -276,6 +303,8 @@ class CKANApiAdapter(CanadianSourceAdapter):
                     parser_version=_PARSER_VERSION,
                     public_record_authority=self._public_record_authority,
                     source_url=self._base_url,
+                    external_id_confidence=external_id_confidence,
+                    external_id_strategy=external_id_strategy,
                 )
             else:
                 payload = build_ckan_review_payload(
@@ -287,6 +316,8 @@ class CKANApiAdapter(CanadianSourceAdapter):
                     parser_version=_PARSER_VERSION,
                     public_record_authority=self._public_record_authority,
                     source_url=self._base_url,
+                    external_id_confidence=external_id_confidence,
+                    external_id_strategy=external_id_strategy,
                 )
             records.append(
                 ParsedRecord(

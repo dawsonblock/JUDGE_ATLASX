@@ -171,7 +171,7 @@ class TestCKANApiAdapterUnit:
         parsed = adapter.parse([{"field": "value", "lat": 52.13, "lon": -106.67}])
         assert len(parsed) == 1
         assert parsed[0].external_id is not None
-        assert parsed[0].payload["coordinate_precision"] == "city_block"
+        assert parsed[0].payload["coordinate_precision"] == "intersection"
 
     def test_run_creates_review_items_only(self) -> None:
         class _FetchResult:

@@ -83,6 +83,8 @@ def test_ckan_parse_generates_deterministic_external_id_without_explicit_id() ->
 
     assert parsed_first.external_id.startswith("ckan-")
     assert parsed_first.external_id == parsed_second.external_id
+    assert parsed_first.payload["external_id_confidence"] == "low"
+    assert parsed_first.payload["external_id_strategy"] == "composite_fallback"
 
 
 def test_ckan_fetch_preserves_all_paginated_raw_pages_in_snapshot() -> None:
@@ -185,15 +187,40 @@ def test_ckan_coordinate_precision_taxonomy_is_normalized() -> None:
     parsed = adapter.parse(
         [
             {"_id": 1, "lat": "52.10001", "lon": "-106.60001"},
-            {"_id": 2, "lat": "52.10", "lon": "-106.60"},
-            {"_id": 3, "lat": "52.1", "lon": "-106.6"},
-            {"_id": 4, "lat": "52", "lon": "-106"},
-            {"_id": 5, "lat": "200", "lon": "-106"},
+            {"_id": 2, "lat": "52.100", "lon": "-106.600"},
+            {"_id": 3, "lat": "52.10", "lon": "-106.60"},
+            {"_id": 4, "lat": "52.1", "lon": "-106.6"},
+            {"_id": 5, "lat": "52", "lon": "-106"},
+            {"_id": 6, "lat": "200", "lon": "-106"},
         ]
     )
 
     precisions = [item.payload["coordinate_precision"] for item in parsed]
-    assert precisions == ["exact", "city_block", "district", "city_wide", "unknown"]
+    assert precisions == [
+        "exact",
+        "block",
+        "intersection",
+        "neighbourhood",
+        "city",
+        "unknown",
+    ]
+
+
+def test_ckan_explicit_identifier_is_hashed_and_marked_high_confidence() -> None:
+    adapter = CKANApiAdapter(
+        source_key="saskatoon_open_data_public_safety",
+        base_url="https://opendata.saskatoon.ca",
+        resource_id="rid",
+        allowed_domains_json='["opendata.saskatoon.ca"]',
+        public_record_authority="official_open_data",
+    )
+
+    parsed = adapter.parse([{"_id": 12345, "lat": "52.1000", "lon": "-106.6000"}])[0]
+
+    assert parsed.external_id.startswith("ckan-")
+    assert "12345" not in parsed.external_id
+    assert parsed.payload["external_id_confidence"] == "high"
+    assert parsed.payload["external_id_strategy"] == "official_record_id"
 
 
 def test_ckan_adapter_reports_expected_parser_version() -> None:
