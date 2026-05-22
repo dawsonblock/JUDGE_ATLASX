@@ -5,21 +5,33 @@ backend-install:
 
 backend-test:
 	cd backend && python -m compileall -q app
-	cd backend && python -m pytest -q
+	python -m pytest -q backend/app/tests
 
 frontend-install:
-	cd frontend && npm ci
+	@bash -lc 'NVM_DIR="$${NVM_DIR:-$$HOME/.nvm}"; \
+		[ -s "$$NVM_DIR/nvm.sh" ] && . "$$NVM_DIR/nvm.sh"; \
+		nvm use 20 >/dev/null 2>&1 || { echo "BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20"; exit 1; }; \
+		npm ci --prefix frontend'
 
 frontend-check:
-	cd frontend && npm run lint
-	cd frontend && npm run typecheck
-	cd frontend && npm run build
+	@bash -lc 'NVM_DIR="$${NVM_DIR:-$$HOME/.nvm}"; \
+		[ -s "$$NVM_DIR/nvm.sh" ] && . "$$NVM_DIR/nvm.sh"; \
+		nvm use 20 >/dev/null 2>&1 || { echo "BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20"; exit 1; }; \
+		npm run lint --prefix frontend; \
+		npm run typecheck --prefix frontend; \
+		npm run build --prefix frontend'
 
 frontend-build:
-	cd frontend && npm run build
+	@bash -lc 'NVM_DIR="$${NVM_DIR:-$$HOME/.nvm}"; \
+		[ -s "$$NVM_DIR/nvm.sh" ] && . "$$NVM_DIR/nvm.sh"; \
+		nvm use 20 >/dev/null 2>&1 || { echo "BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20"; exit 1; }; \
+		npm run build --prefix frontend'
 
 frontend-typecheck:
-	cd frontend && npm run typecheck
+	@bash -lc 'NVM_DIR="$${NVM_DIR:-$$HOME/.nvm}"; \
+		[ -s "$$NVM_DIR/nvm.sh" ] && . "$$NVM_DIR/nvm.sh"; \
+		nvm use 20 >/dev/null 2>&1 || { echo "BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20"; exit 1; }; \
+		npm run typecheck --prefix frontend'
 
 bootstrap-backend:
 	bash scripts/bootstrap_backend.sh

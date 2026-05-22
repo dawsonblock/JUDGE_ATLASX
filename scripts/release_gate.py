@@ -46,7 +46,7 @@ def _redact_local_path(value: str, repo_root: Path) -> str:
     if normalized == repo_prefix:
         return "[REDACTED_LOCAL_PATH]"
     if normalized.startswith(repo_prefix + "/"):
-        suffix = normalized[len(repo_prefix) + 1:]
+        suffix = normalized[len(repo_prefix) + 1 :]
         return f"[REDACTED_LOCAL_PATH]/{suffix}"
 
     redacted = normalized
@@ -113,6 +113,7 @@ def _sanitize_current_proof_artifacts(repo_root: Path, out_dir: Path) -> None:
     for path in out_dir.rglob("*"):
         if path.is_file() and path.suffix.lower() in allowed_suffixes:
             _redact_file_local_paths(path, repo_root)
+
 
 PROOF_INPUT_PATTERNS = [
     "README.md",
@@ -325,14 +326,20 @@ def _archive_legacy_sidecars(repo_root: Path, out_dir: Path) -> list[str]:
     return archived
 
 
-def _extract_pytest_counts(log_path: Path) -> tuple[int | None, int | None, int | None]:
+def _extract_pytest_counts(
+    log_path: Path,
+) -> tuple[int | None, int | None, int | None]:
     if not log_path.exists():
         return (None, None, None)
     text = log_path.read_text(encoding="utf-8", errors="ignore")
     passed_match = re.search(r"(\d+) passed(?:,\s*(\d+) skipped)?", text)
     failed_match = re.search(r"(\d+) failed", text)
     passed = int(passed_match.group(1)) if passed_match else None
-    skipped = int(passed_match.group(2)) if passed_match and passed_match.group(2) else 0
+    skipped = (
+        int(passed_match.group(2))
+        if passed_match and passed_match.group(2)
+        else 0
+    )
     failed = int(failed_match.group(1)) if failed_match else 0
     return (passed, skipped, failed)
 
@@ -370,6 +377,7 @@ def _extract_backend_import_route_count(log_path: Path) -> int | None:
     if not match:
         return None
     return int(match.group(1))
+
 
 def _extract_prefixed_value(log_path: Path, prefix: str) -> str | None:
     if not log_path.exists():
@@ -436,13 +444,17 @@ def _canonical_checks_summary(results: list[GateStep]) -> dict[str, str]:
         _normalize_gate_status(by_name.get("docker_runtime_preflight")),
         _normalize_gate_status(by_name.get("postgis_proof")),
     )
-    archive_validation = _normalize_gate_status(by_name.get("archive_validation"))
+    archive_validation = _normalize_gate_status(
+        by_name.get("archive_validation")
+    )
     source_registry = _combine_gate_status(
         _normalize_gate_status(by_name.get("verify_source_registry")),
         _normalize_gate_status(by_name.get("source_registry_status")),
     )
     proof_freshness = _normalize_gate_status(by_name.get("proof_freshness"))
-    public_boundary = _normalize_gate_status(by_name.get("public_api_boundary"))
+    public_boundary = _normalize_gate_status(
+        by_name.get("public_api_boundary")
+    )
     return {
         "backend_tests": backend_tests,
         "frontend_tests": frontend_tests,
@@ -455,9 +467,13 @@ def _canonical_checks_summary(results: list[GateStep]) -> dict[str, str]:
     }
 
 
-def _refresh_release_payload_schema(payload: dict, results: list[GateStep]) -> None:
+def _refresh_release_payload_schema(
+    payload: dict, results: list[GateStep]
+) -> None:
     payload["schema_version"] = "1.1.0"
-    payload["release_candidate"] = bool(payload.get("alpha_gate_passed", False))
+    payload["release_candidate"] = bool(
+        payload.get("alpha_gate_passed", False)
+    )
     payload["checks_summary"] = _canonical_checks_summary(results)
 
 
@@ -484,7 +500,11 @@ def _proof_db_counts(out_dir: Path) -> dict[str, int]:
     counts: dict[str, int] = {}
     with sqlite3.connect(proof_db) as conn:
         cursor = conn.cursor()
-        for table_name in ("audit_logs", "source_snapshots", "source_registry"):
+        for table_name in (
+            "audit_logs",
+            "source_snapshots",
+            "source_registry",
+        ):
             try:
                 cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
             except sqlite3.Error:
@@ -494,12 +514,17 @@ def _proof_db_counts(out_dir: Path) -> dict[str, int]:
     return counts
 
 
-def _write_grouped_proof_artifacts(repo_root: Path, out_dir: Path, payload: dict) -> dict[str, str]:
+def _write_grouped_proof_artifacts(
+    repo_root: Path,
+    out_dir: Path,
+    payload: dict,
+) -> dict[str, str]:
     checks = _check_status_map(payload)
+    backend_checks: list[dict[str, object]] = []
     backend_group = {
         "group": "backend_proof",
         "status": "PASS",
-        "checks": [],
+        "checks": backend_checks,
         "route_count": payload.get("backend_import_route_count"),
         "pytest_passed": payload.get("backend_pytest_passed"),
         "pytest_skipped": payload.get("backend_pytest_skipped"),
@@ -521,7 +546,7 @@ def _write_grouped_proof_artifacts(repo_root: Path, out_dir: Path, payload: dict
         check = checks.get(name)
         if not check:
             continue
-        backend_group["checks"].append(
+        backend_checks.append(
             {
                 "name": name,
                 "status": check["status"],
@@ -532,10 +557,11 @@ def _write_grouped_proof_artifacts(repo_root: Path, out_dir: Path, payload: dict
         if check["exit_code"] != 0:
             backend_group["status"] = "FAIL"
 
+    frontend_checks: list[dict[str, object]] = []
     frontend_group = {
         "group": "frontend_proof",
         "status": "PASS",
-        "checks": [],
+        "checks": frontend_checks,
     }
     frontend_names = [
         "frontend_node_gate",
@@ -553,7 +579,7 @@ def _write_grouped_proof_artifacts(repo_root: Path, out_dir: Path, payload: dict
         check = checks.get(name)
         if not check:
             continue
-        frontend_group["checks"].append(
+        frontend_checks.append(
             {
                 "name": name,
                 "status": check["status"],
@@ -563,8 +589,6 @@ def _write_grouped_proof_artifacts(repo_root: Path, out_dir: Path, payload: dict
         )
         if check["exit_code"] != 0:
             frontend_group["status"] = "FAIL"
-
-    source_registry_summary = _read_source_registry_summary(out_dir)
     artifacts = {
         "backend_proof_summary": _write_json(
             repo_root,
@@ -584,7 +608,9 @@ def _write_grouped_proof_artifacts(repo_root: Path, out_dir: Path, payload: dict
     return artifacts
 
 
-def _write_static_guards_log(repo_root: Path, out_dir: Path, steps: list[GateStep]) -> str:
+def _write_static_guards_log(
+    repo_root: Path, out_dir: Path, steps: list[GateStep]
+) -> str:
     guard_names = [
         "check_false_claims",
         "check_source_keys",
@@ -599,7 +625,9 @@ def _write_static_guards_log(repo_root: Path, out_dir: Path, steps: list[GateSte
         if step is None:
             lines.append(f"{guard}: MISSING")
             continue
-        lines.append(f"{guard}: {step.status} rc={step.exit_code} log={step.log_path}")
+        lines.append(
+            f"{guard}: {step.status} rc={step.exit_code} log={step.log_path}"
+        )
     log_path = out_dir / "static_guards.log"
     log_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return str(log_path.relative_to(repo_root))
@@ -667,10 +695,14 @@ def _generate_release_readiness_from_manifest(
     missing_required_names = sorted(REQUIRED_GATE_NAMES - present_names)
 
     required_entries = [
-        entry for entry in manifest.get("proof_commands", []) if entry.get("required", True)
+        entry
+        for entry in manifest.get("proof_commands", [])
+        if entry.get("required", True)
     ]
     optional_entries = [
-        entry for entry in manifest.get("proof_commands", []) if not entry.get("required", True)
+        entry
+        for entry in manifest.get("proof_commands", [])
+        if not entry.get("required", True)
     ]
 
     blockers: list[str] = []
@@ -681,12 +713,18 @@ def _generate_release_readiness_from_manifest(
         if entry.get("status") != "PASS":
             blockers.append(f"required_gate_failed:{entry.get('name')}")
         if not entry.get("log_exists"):
-            blockers.append(f"missing_log:{entry.get('name')}:{entry.get('log_path')}")
+            blockers.append(
+                f"missing_log:{entry.get('name')}:{entry.get('log_path')}"
+            )
         if not entry.get("log_sha256"):
             blockers.append(f"missing_log_sha256:{entry.get('name')}")
 
     archive_entry = next(
-        (entry for entry in manifest.get("proof_commands", []) if entry.get("name") == "archive_validation"),
+        (
+            entry
+            for entry in manifest.get("proof_commands", [])
+            if entry.get("name") == "archive_validation"
+        ),
         None,
     )
     if archive_entry is None:
@@ -730,13 +768,15 @@ def _generate_release_readiness_from_manifest(
         )
 
     if optional_entries:
-        lines.extend([
-            "",
-            "## Optional Proof Gates",
-            "",
-            "| gate | status | exit_code | log | sha256 |",
-            "|---|---|---:|---|---|",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Optional Proof Gates",
+                "",
+                "| gate | status | exit_code | log | sha256 |",
+                "|---|---|---:|---|---|",
+            ]
+        )
         for entry in optional_entries:
             lines.append(
                 f"| {entry.get('name')} | {entry.get('status')} | {entry.get('exit_code')} | "
@@ -748,28 +788,36 @@ def _generate_release_readiness_from_manifest(
         lines.extend(f"- {blocker}" for blocker in blockers)
     else:
         lines.append("- none")
-    lines.extend([
-        "",
-        "## Stale Or Misreported Claims",
-        "",
-        (
-            "- none"
-            if not blockers
-            else "- readiness is blocked due to failed/missing required proof evidence"
-        ),
-        "",
-        "## Next Repair Action",
-        "",
-        "- Resolve any required failed gate and rerun scripts/release_gate.py.",
-        "",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Stale Or Misreported Claims",
+            "",
+            (
+                "- none"
+                if not blockers
+                else "- readiness is blocked due to failed/missing required proof evidence"
+            ),
+            "",
+            "## Next Repair Action",
+            "",
+            "- Resolve any required failed gate and rerun scripts/release_gate.py.",
+            "",
+        ]
+    )
 
     readiness_text = "\n".join(lines)
-    (out_dir / "release_readiness.md").write_text(readiness_text, encoding="utf-8")
-    return readiness, str((out_dir / "release_readiness.md").relative_to(repo_root))
+    (out_dir / "release_readiness.md").write_text(
+        readiness_text, encoding="utf-8"
+    )
+    return readiness, str(
+        (out_dir / "release_readiness.md").relative_to(repo_root)
+    )
 
 
-def _write_current_alpha_status_md(repo_root: Path, out_dir: Path, payload: dict) -> str:
+def _write_current_alpha_status_md(
+    repo_root: Path, out_dir: Path, payload: dict
+) -> str:
     blockers = payload.get("release_blockers_remaining", [])
     lines = [
         "# CURRENT_ALPHA_STATUS",
@@ -803,7 +851,9 @@ def _write_current_alpha_status_md(repo_root: Path, out_dir: Path, payload: dict
     output_path = out_dir / "CURRENT_ALPHA_STATUS.md"
     text = "\n".join(lines)
     output_path.write_text(text, encoding="utf-8")
-    (repo_root / "docs" / "CURRENT_ALPHA_STATUS.md").write_text(text, encoding="utf-8")
+    (repo_root / "docs" / "CURRENT_ALPHA_STATUS.md").write_text(
+        text, encoding="utf-8"
+    )
     return str(output_path.relative_to(repo_root))
 
 
@@ -843,11 +893,15 @@ def _write_source_registry_status_md(
         "| source key | source name | jurisdiction | source class/type | lifecycle state | automation status | adapter state | parser key | adapter exists | runnable now | enable ready | blockers | review required before public visibility | current alpha status |",
         "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
-    for source in sorted(sources, key=lambda item: str(item.get("source_key", ""))):
+    for source in sorted(
+        sources, key=lambda item: str(item.get("source_key", ""))
+    ):
         runnable_now = "yes" if source.get("runnable_now") else "no"
         enable_ready = "yes" if source.get("enable_ready") else "no"
         blockers = source.get("blockers") or []
-        blockers_text = ", ".join(str(item) for item in blockers) if blockers else "none"
+        blockers_text = (
+            ", ".join(str(item) for item in blockers) if blockers else "none"
+        )
         review_required = (
             "yes"
             if source.get("public_visibility_policy", {}).get(
@@ -856,7 +910,9 @@ def _write_source_registry_status_md(
             else "no"
         )
         alpha_status = (
-            "runnable-alpha-source" if runnable_now == "yes" else "limited-alpha-source"
+            "runnable-alpha-source"
+            if runnable_now == "yes"
+            else "limited-alpha-source"
         )
         lines.append(
             "| "
@@ -880,16 +936,22 @@ def _write_source_registry_status_md(
             )
             + " |"
         )
-    lines.extend(["", "- artifacts/proof/current/source_registry_status.json", ""])
+    lines.extend(
+        ["", "- artifacts/proof/current/source_registry_status.json", ""]
+    )
 
     output_path = out_dir / "SOURCE_REGISTRY_STATUS.md"
     text = "\n".join(lines)
     output_path.write_text(text, encoding="utf-8")
-    (repo_root / "docs" / "SOURCE_REGISTRY_STATUS.md").write_text(text, encoding="utf-8")
+    (repo_root / "docs" / "SOURCE_REGISTRY_STATUS.md").write_text(
+        text, encoding="utf-8"
+    )
     return str(output_path.relative_to(repo_root))
 
 
-def _write_proof_policy_md(repo_root: Path, out_dir: Path, payload: dict) -> str:
+def _write_proof_policy_md(
+    repo_root: Path, out_dir: Path, payload: dict
+) -> str:
     lines = [
         "# PROOF_POLICY",
         "",
@@ -942,7 +1004,10 @@ def _write_repair_report_md(
         ),
         (
             "2. Canonical Proof Artifacts",
-            phase_status((out_dir / "release_gate.json").exists() and (out_dir / "CURRENT_PROOF.md").exists()),
+            phase_status(
+                (out_dir / "release_gate.json").exists()
+                and (out_dir / "CURRENT_PROOF.md").exists()
+            ),
             "artifacts/proof/current/CURRENT_PROOF.md",
         ),
         (
@@ -967,32 +1032,44 @@ def _write_repair_report_md(
         ),
         (
             "7. Evidence Store Integrity",
-            phase_status(checks.get("verify_evidence_store", {}).get("status") == "PASS"),
+            phase_status(
+                checks.get("verify_evidence_store", {}).get("status") == "PASS"
+            ),
             "artifacts/proof/current/verify_evidence_store.log",
         ),
         (
             "8. Audit Chain Integrity",
-            phase_status(checks.get("verify_audit_chain", {}).get("status") == "PASS"),
+            phase_status(
+                checks.get("verify_audit_chain", {}).get("status") == "PASS"
+            ),
             "artifacts/proof/current/verify_audit_chain.log",
         ),
         (
             "9. Justice XML Proof Coverage",
-            phase_status(checks.get("backend_pytest", {}).get("status") == "PASS"),
+            phase_status(
+                checks.get("backend_pytest", {}).get("status") == "PASS"
+            ),
             "artifacts/proof/current/backend_pytest.log",
         ),
         (
             "10. Public Review Gate Coverage",
-            phase_status(checks.get("public_api_boundary", {}).get("status") == "PASS"),
+            phase_status(
+                checks.get("public_api_boundary", {}).get("status") == "PASS"
+            ),
             "artifacts/proof/current/public_api_boundary.log",
         ),
         (
             "11. Derivative Memory Boundary Coverage",
-            phase_status(checks.get("public_api_boundary", {}).get("status") == "PASS"),
+            phase_status(
+                checks.get("public_api_boundary", {}).get("status") == "PASS"
+            ),
             "artifacts/proof/current/public_api_boundary.log",
         ),
         (
             "12. Frontend Node 20 Gate",
-            phase_status(checks.get("frontend_node_gate", {}).get("status") == "PASS"),
+            phase_status(
+                checks.get("frontend_node_gate", {}).get("status") == "PASS"
+            ),
             "artifacts/proof/current/frontend_node_gate.log",
         ),
         (
@@ -1020,11 +1097,13 @@ def _write_repair_report_md(
     for phase_name, status, evidence in phases:
         lines.append(f"- {phase_name}: {status} ({evidence})")
 
-    lines.extend([
-        "",
-        "## Remaining Blockers",
-        "",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Remaining Blockers",
+            "",
+        ]
+    )
     blockers = payload.get("release_blockers_remaining", [])
     if blockers:
         lines.extend(f"- {blocker}" for blocker in blockers)
@@ -1179,14 +1258,20 @@ def _collect_proof_input_metadata(repo_root: Path, python_exe: str) -> dict:
     except json.JSONDecodeError:
         parsed = {}
     return {
-        "proof_input_tree_hash": parsed.get("proof_input_tree_hash", "unknown"),
+        "proof_input_tree_hash": parsed.get(
+            "proof_input_tree_hash", "unknown"
+        ),
         "proof_input_tree_hash_algorithm": parsed.get(
             "proof_input_tree_hash_algorithm", "sha256"
         ),
-        "proof_input_paths": parsed.get("proof_input_paths", PROOF_INPUT_PATTERNS),
+        "proof_input_paths": parsed.get(
+            "proof_input_paths", PROOF_INPUT_PATTERNS
+        ),
         "proof_input_file_count": parsed.get("proof_input_file_count", 0),
         "proof_input_file_list": parsed.get("proof_input_file_list", []),
-        "proof_input_file_fingerprints": parsed.get("proof_input_file_fingerprints", {}),
+        "proof_input_file_fingerprints": parsed.get(
+            "proof_input_file_fingerprints", {}
+        ),
     }
 
 
@@ -1237,10 +1322,7 @@ def _write_current_proof_md(
             "- egress_proxy_proof_log: "
             f"{payload.get('egress_proxy_proof_log', 'unknown')}"
         ),
-        (
-            "- demo_proof_log: "
-            f"{payload.get('demo_proof_log', 'unknown')}"
-        ),
+        (f"- demo_proof_log: {payload.get('demo_proof_log', 'unknown')}"),
         "",
         "## Runtime Metadata",
         "",
@@ -1348,11 +1430,17 @@ def _write_current_proof_md(
                 f"{backend_passed} passed, {backend_skipped or 0} skipped"
             )
         if backend_import_route_count is not None:
-            lines.append(f"- backend import proof: PASS ({backend_import_route_count} routes)")
+            lines.append(
+                f"- backend import proof: PASS ({backend_import_route_count} routes)"
+            )
         if frontend_contracts_passed is not None:
-            lines.append(f"- frontend contracts: {frontend_contracts_passed} passed")
+            lines.append(
+                f"- frontend contracts: {frontend_contracts_passed} passed"
+            )
         if public_api_boundary_passed is not None:
-            lines.append(f"- public API boundary: {public_api_boundary_passed} passed")
+            lines.append(
+                f"- public API boundary: {public_api_boundary_passed} passed"
+            )
         lines.append(
             f"- Docker runtime preflight: {payload.get('docker_runtime_preflight_result', 'UNKNOWN')}"
         )
@@ -1364,8 +1452,7 @@ def _write_current_proof_md(
             f"{payload.get('egress_proxy_proof_result', 'UNKNOWN')}"
         )
         lines.append(
-            "- demo proof: "
-            f"{payload.get('demo_proof_result', 'UNKNOWN')}"
+            f"- demo proof: {payload.get('demo_proof_result', 'UNKNOWN')}"
         )
         lines.append(
             "- CanLII staging proof: "
@@ -1499,9 +1586,15 @@ def main() -> int:
         ).stdout.strip()
         or "unknown"
     )
-    db_backend = "sqlite" if proof_db_url.startswith("sqlite://") else "unknown"
-    docker_check_timeout_seconds = int(os.getenv("JTA_DOCKER_CHECK_TIMEOUT", "60"))
-    postgis_timeout_seconds = int(os.getenv("JTA_POSTGIS_PROOF_TIMEOUT", "900"))
+    db_backend = (
+        "sqlite" if proof_db_url.startswith("sqlite://") else "unknown"
+    )
+    docker_check_timeout_seconds = int(
+        os.getenv("JTA_DOCKER_CHECK_TIMEOUT", "60")
+    )
+    postgis_timeout_seconds = int(
+        os.getenv("JTA_POSTGIS_PROOF_TIMEOUT", "900")
+    )
     proof_input_metadata = _collect_proof_input_metadata(repo_root, python_exe)
     gate_steps: list[GateStepSpec] = [
         GateStepSpec(
@@ -1517,7 +1610,14 @@ def main() -> int:
         GateStepSpec(
             "check_source_keys",
             "check_source_keys.log",
-            [python_exe, "scripts/check_source_keys.py", "--root", "backend/app", "--repo-root", "."],
+            [
+                python_exe,
+                "scripts/check_source_keys.py",
+                "--root",
+                "backend/app",
+                "--repo-root",
+                ".",
+            ],
         ),
         GateStepSpec(
             "check_statuses",
@@ -1527,7 +1627,10 @@ def main() -> int:
         GateStepSpec(
             "check_no_direct_ingestion_network_clients",
             "check_no_direct_ingestion_network_clients.log",
-            [python_exe, "backend/scripts/check_no_direct_ingestion_network_clients.py"],
+            [
+                python_exe,
+                "backend/scripts/check_no_direct_ingestion_network_clients.py",
+            ],
         ),
         GateStepSpec(
             "check_source_registry_docs",
@@ -1542,12 +1645,22 @@ def main() -> int:
         GateStepSpec(
             "check_dockerfile_copy_paths",
             "check_dockerfile_copy_paths.log",
-            [python_exe, "scripts/check_dockerfile_copy_paths.py", "--root", str(repo_root)],
+            [
+                python_exe,
+                "scripts/check_dockerfile_copy_paths.py",
+                "--root",
+                str(repo_root),
+            ],
         ),
         GateStepSpec(
             "check_compose_auth_defaults",
             "check_compose_auth_defaults.log",
-            [python_exe, "scripts/check_compose_auth_defaults.py", "--compose", "docker-compose.yml"],
+            [
+                python_exe,
+                "scripts/check_compose_auth_defaults.py",
+                "--compose",
+                "docker-compose.yml",
+            ],
         ),
         GateStepSpec(
             "backend_compile",
@@ -1704,7 +1817,8 @@ def main() -> int:
             "check_node_policy",
             "check_node_policy.log",
             [
-                "bash", "-lc",
+                "bash",
+                "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
                     " nvm use 20 >/dev/null 2>&1"
@@ -1717,12 +1831,13 @@ def main() -> int:
             "frontend_node_gate",
             "frontend_node_gate.log",
             [
-                "bash", "-lc",
+                "bash",
+                "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
                     " nvm use 20 >/dev/null 2>&1"
                     " || { echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; };"
-                    f" \"{python_exe}\" scripts/check_frontend_node_gate.py --expected-major 20"
+                    f' "{python_exe}" scripts/check_frontend_node_gate.py --expected-major 20'
                 ),
             ],
         ),
@@ -1730,7 +1845,8 @@ def main() -> int:
             "frontend_install",
             "frontend_install.log",
             [
-                "bash", "-lc",
+                "bash",
+                "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
                     " nvm use 20 >/dev/null 2>&1"
@@ -1744,7 +1860,8 @@ def main() -> int:
             "frontend_lint",
             "frontend_lint.log",
             [
-                "bash", "-lc",
+                "bash",
+                "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
                     " nvm use 20 >/dev/null 2>&1"
@@ -1757,7 +1874,8 @@ def main() -> int:
             "frontend_typecheck",
             "frontend_typecheck.log",
             [
-                "bash", "-lc",
+                "bash",
+                "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
                     " nvm use 20 >/dev/null 2>&1"
@@ -1770,7 +1888,8 @@ def main() -> int:
             "frontend_contracts",
             "frontend_contracts.log",
             [
-                "bash", "-lc",
+                "bash",
+                "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
                     " nvm use 20 >/dev/null 2>&1"
@@ -1783,7 +1902,8 @@ def main() -> int:
             "frontend_build",
             "frontend_build.log",
             [
-                "bash", "-lc",
+                "bash",
+                "-lc",
                 (
                     'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";'
                     " nvm use 20 >/dev/null 2>&1"
@@ -1857,12 +1977,22 @@ def main() -> int:
     _required_proof_logs_spec = GateStepSpec(
         "required_proof_logs",
         "required_proof_logs.log",
-        [python_exe, "scripts/check_required_proof_logs.py", "--root", str(repo_root)],
+        [
+            python_exe,
+            "scripts/check_required_proof_logs.py",
+            "--root",
+            str(repo_root),
+        ],
     )
     _local_path_hygiene_spec = GateStepSpec(
         "check_no_local_paths_in_release_proof",
         "check_no_local_paths_in_release_proof.log",
-        [python_exe, "scripts/check_no_local_paths_in_release_proof.py", "--root", str(repo_root)],
+        [
+            python_exe,
+            "scripts/check_no_local_paths_in_release_proof.py",
+            "--root",
+            str(repo_root),
+        ],
     )
 
     archived_current_proof = _archive_current_proof(repo_root, out_dir)
@@ -1970,7 +2100,10 @@ def main() -> int:
                 required=spec.required,
             )
         )
-        if spec.name == "docker_runtime_preflight" and results[-1].exit_code != 0:
+        if (
+            spec.name == "docker_runtime_preflight"
+            and results[-1].exit_code != 0
+        ):
             docker_preflight_failed = True
         if spec.name == "frontend_node_gate" and results[-1].exit_code != 0:
             frontend_node_gate_failed = True
@@ -1981,7 +2114,9 @@ def main() -> int:
     # read the stored manifest. Nothing between here and the freshness step
     # modifies proof-input source files.
     # -----------------------------------------------------------------------
-    readiness_rel = str((out_dir / "release_readiness.md").relative_to(repo_root))
+    readiness_rel = str(
+        (out_dir / "release_readiness.md").relative_to(repo_root)
+    )
 
     missing_logs = _missing_logs(repo_root, results)
     proof_input_metadata = _collect_proof_input_metadata(repo_root, python_exe)
@@ -2000,24 +2135,30 @@ def main() -> int:
                 gate_log.write(f"- {log}\n")
 
     checks_map = {r.name: r for r in results}
-    backend_pytest_passed, backend_pytest_skipped, backend_pytest_failed = _extract_pytest_counts(
-        out_dir / "backend_pytest.log"
+    backend_pytest_passed, backend_pytest_skipped, backend_pytest_failed = (
+        _extract_pytest_counts(out_dir / "backend_pytest.log")
     )
     frontend_contracts_passed = _extract_vitest_tests_passed(
         out_dir / "frontend_contracts.log"
     )
-    public_api_boundary_passed, _public_api_boundary_skipped, _public_api_boundary_failed = _extract_pytest_counts(
-        out_dir / "public_api_boundary.log"
-    )
+    (
+        public_api_boundary_passed,
+        _public_api_boundary_skipped,
+        _public_api_boundary_failed,
+    ) = _extract_pytest_counts(out_dir / "public_api_boundary.log")
     backend_import_route_count = _extract_backend_import_route_count(
         out_dir / "backend_import.log"
     )
-    alembic_migration_count = _extract_migration_count(out_dir / "check_migrations.log")
+    alembic_migration_count = _extract_migration_count(
+        out_dir / "check_migrations.log"
+    )
     canlii_staging_status = _extract_prefixed_value(
         out_dir / "canlii_staging_proof.log",
         "CANLII_STAGING_STATUS=",
     )
-    _enforce_canlii_staging_gate(checks_map, blocked_checks, canlii_staging_status)
+    _enforce_canlii_staging_gate(
+        checks_map, blocked_checks, canlii_staging_status
+    )
     if alembic_migration_count is None:
         alembic_migration_count = _count_alembic_version_files(repo_root)
 
@@ -2025,7 +2166,10 @@ def main() -> int:
         repo_root / "docs" / "security" / "LEGACY_AUTH_REMOVAL_PLAN.md"
     ).exists()
     dependency_plan_exists = (
-        repo_root / "docs" / "deployment-guide" / "DEPENDENCY_REMEDIATION_PLAN.md"
+        repo_root
+        / "docs"
+        / "deployment-guide"
+        / "DEPENDENCY_REMEDIATION_PLAN.md"
     ).exists()
 
     payload = {
@@ -2075,13 +2219,15 @@ def main() -> int:
             "proof_input_tree_hash_algorithm"
         ],
         "proof_input_paths": proof_input_metadata["proof_input_paths"],
-        "proof_input_file_count": proof_input_metadata["proof_input_file_count"],
+        "proof_input_file_count": proof_input_metadata[
+            "proof_input_file_count"
+        ],
         "proof_input_file_list": proof_input_metadata["proof_input_file_list"],
-        "docker_runtime_preflight_result": checks_map.get(
-            "docker_runtime_preflight"
-        ).status
-        if checks_map.get("docker_runtime_preflight")
-        else "UNKNOWN",
+        "docker_runtime_preflight_result": (
+            checks_map["docker_runtime_preflight"].status
+            if "docker_runtime_preflight" in checks_map
+            else "UNKNOWN"
+        ),
         "postgis_proof_result": next(
             (r.status for r in results if r.name == "postgis_proof"),
             "UNKNOWN",
@@ -2097,16 +2243,21 @@ def main() -> int:
         "egress_proxy_proof_log": str(
             (out_dir / "egress_proxy_proof.log").relative_to(repo_root)
         ),
-        "demo_proof_log": str((out_dir / "demo_proof.log").relative_to(repo_root)),
+        "demo_proof_log": str(
+            (out_dir / "demo_proof.log").relative_to(repo_root)
+        ),
         "archive_validation_log": str(
             (out_dir / "archive_validation.log").relative_to(repo_root)
         ),
-        "archive_validation_supported_shapes": ["JUDGE-main/", "*/JUDGE-main/"],
-        "mutation_fail_closed_coverage_result": checks_map.get(
-            "mutation_fail_closed_coverage"
-        ).status
-        if checks_map.get("mutation_fail_closed_coverage")
-        else "UNKNOWN",
+        "archive_validation_supported_shapes": [
+            "JUDGE-main/",
+            "*/JUDGE-main/",
+        ],
+        "mutation_fail_closed_coverage_result": (
+            checks_map["mutation_fail_closed_coverage"].status
+            if "mutation_fail_closed_coverage" in checks_map
+            else "UNKNOWN"
+        ),
         "canlii_staging_status": canlii_staging_status or "UNKNOWN",
         "proof_freshness_result": "UNKNOWN",
         "archive_validation_result": _archive_validation_result(out_dir),
@@ -2136,7 +2287,9 @@ def main() -> int:
         "logs": {r.name: r.log_path for r in results}
         | {
             _proof_freshness_spec.name: str(
-                (out_dir / _proof_freshness_spec.log_name).relative_to(repo_root)
+                (out_dir / _proof_freshness_spec.log_name).relative_to(
+                    repo_root
+                )
             ),
             "archive_validation": str(
                 (out_dir / "archive_validation.log").relative_to(repo_root)
@@ -2163,14 +2316,28 @@ def main() -> int:
 
     check_node_policy_log = out_dir / "check_node_policy.log"
     frontend_node_gate_log = out_dir / "frontend_node_gate.log"
-    gated_node_version = _extract_prefixed_value(check_node_policy_log, "NODE_VERSION:")
-    gated_npm_version = _extract_prefixed_value(check_node_policy_log, "NPM_VERSION:")
-    frontend_node_gate_version = _extract_prefixed_value(frontend_node_gate_log, "NODE_VERSION:")
-    frontend_npm_version = _extract_prefixed_value(frontend_node_gate_log, "NPM_VERSION:")
-    payload["node_version"] = gated_node_version or frontend_node_gate_version or "unknown"
+    gated_node_version = _extract_prefixed_value(
+        check_node_policy_log, "NODE_VERSION:"
+    )
+    gated_npm_version = _extract_prefixed_value(
+        check_node_policy_log, "NPM_VERSION:"
+    )
+    frontend_node_gate_version = _extract_prefixed_value(
+        frontend_node_gate_log, "NODE_VERSION:"
+    )
+    frontend_npm_version = _extract_prefixed_value(
+        frontend_node_gate_log, "NPM_VERSION:"
+    )
+    payload["node_version"] = (
+        gated_node_version or frontend_node_gate_version or "unknown"
+    )
     payload["gate_runner_node_version"] = payload["node_version"]
-    payload["frontend_node_gate_version"] = frontend_node_gate_version or gated_node_version
-    payload["npm_version"] = gated_npm_version or frontend_npm_version or "unknown"
+    payload["frontend_node_gate_version"] = (
+        frontend_node_gate_version or gated_node_version
+    )
+    payload["npm_version"] = (
+        gated_npm_version or frontend_npm_version or "unknown"
+    )
     _refresh_release_payload_schema(payload, results)
 
     # -----------------------------------------------------------------------
@@ -2196,7 +2363,9 @@ def main() -> int:
     # ok, failed_checks, release_blockers_remaining, alpha_gate_passed.
     manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
     manifest_path = out_dir / "proof_manifest.json"
-    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+    )
 
     # Generate required policy/status artifacts before archive validation so
     # the packaged proof tree can be validated as a complete release candidate.
@@ -2219,7 +2388,9 @@ def main() -> int:
     static_guards_rel = _write_static_guards_log(repo_root, out_dir, results)
 
     manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
-    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+    )
 
     missing_logs = _missing_logs(repo_root, results)
     remaining_required_steps = {
@@ -2238,12 +2409,14 @@ def main() -> int:
     payload["archive_validation_result"] = "UNKNOWN"
     payload["checks"] = [asdict(r) for r in results]
     payload["logs"] = {r.name: r.log_path for r in results}
-    payload["failed_checks"] = [r.name for r in results if r.exit_code != 0] + (
-        ["missing_logs"] if missing_logs else []
-    )
+    payload["failed_checks"] = [
+        r.name for r in results if r.exit_code != 0
+    ] + (["missing_logs"] if missing_logs else [])
     payload["logs"][_proof_freshness_spec.name] = pf_step.log_path
     payload["logs"]["release_gate"] = str(gate_log_path.relative_to(repo_root))
-    payload["logs"]["proof_manifest"] = str(manifest_path.relative_to(repo_root))
+    payload["logs"]["proof_manifest"] = str(
+        manifest_path.relative_to(repo_root)
+    )
     payload["logs"]["release_readiness"] = readiness_rel
     payload["logs"]["static_guards"] = static_guards_rel
     payload["release_blockers_remaining"] = (
@@ -2271,8 +2444,12 @@ def main() -> int:
         payload,
         check_count=len(results),
     )
-    grouped_artifacts = _write_grouped_proof_artifacts(repo_root, out_dir, payload)
-    current_alpha_status_rel = _write_current_alpha_status_md(repo_root, out_dir, payload)
+    grouped_artifacts = _write_grouped_proof_artifacts(
+        repo_root, out_dir, payload
+    )
+    current_alpha_status_rel = _write_current_alpha_status_md(
+        repo_root, out_dir, payload
+    )
     source_registry_status_md_rel = _write_source_registry_status_md(
         repo_root,
         out_dir,
@@ -2299,7 +2476,9 @@ def main() -> int:
     payload["logs"]["fix_verification_report"] = fix_verification_report_rel
 
     payload["logs"]["current_alpha_status"] = current_alpha_status_rel
-    payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
+    payload["logs"]["source_registry_status_md"] = (
+        source_registry_status_md_rel
+    )
     payload["logs"]["proof_policy"] = proof_policy_rel
     payload["logs"]["repair_report"] = repair_report_rel
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
@@ -2309,12 +2488,19 @@ def main() -> int:
         out_dir,
         "single_proof_authority",
         "single_proof_authority.log",
-        [python_exe, "scripts/check_single_proof_authority.py", "--root", str(repo_root)],
+        [
+            python_exe,
+            "scripts/check_single_proof_authority.py",
+            "--root",
+            str(repo_root),
+        ],
         timeout_seconds=60,
     )
     results.append(single_proof_authority_step)
 
-    final_manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
+    final_manifest = _build_proof_manifest(
+        repo_root, out_dir, payload, results
+    )
     _, readiness_rel = _generate_release_readiness_from_manifest(
         repo_root,
         out_dir,
@@ -2350,12 +2536,14 @@ def main() -> int:
     payload["checks"] = [asdict(r) for r in results]
     payload["logs"] = {r.name: r.log_path for r in results}
     payload["logs"]["release_gate"] = str(gate_log_path.relative_to(repo_root))
-    payload["logs"]["proof_manifest"] = str(manifest_path.relative_to(repo_root))
+    payload["logs"]["proof_manifest"] = str(
+        manifest_path.relative_to(repo_root)
+    )
     payload["logs"]["release_readiness"] = readiness_rel
     payload["logs"]["static_guards"] = static_guards_rel
-    payload["failed_checks"] = [r.name for r in results if r.exit_code != 0] + (
-        ["missing_logs"] if missing_logs else []
-    )
+    payload["failed_checks"] = [
+        r.name for r in results if r.exit_code != 0
+    ] + (["missing_logs"] if missing_logs else [])
     payload["release_blockers_remaining"] = (
         [r.name for r in results if r.exit_code != 0]
         + sorted(remaining_required_steps)
@@ -2371,7 +2559,9 @@ def main() -> int:
         payload,
         check_count=len(results),
     )
-    current_alpha_status_rel = _write_current_alpha_status_md(repo_root, out_dir, payload)
+    current_alpha_status_rel = _write_current_alpha_status_md(
+        repo_root, out_dir, payload
+    )
     source_registry_status_md_rel = _write_source_registry_status_md(
         repo_root,
         out_dir,
@@ -2392,20 +2582,28 @@ def main() -> int:
     )
     payload["logs"]["current_proof"] = current_proof_rel
     payload["logs"]["current_alpha_status"] = current_alpha_status_rel
-    payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
+    payload["logs"]["source_registry_status_md"] = (
+        source_registry_status_md_rel
+    )
     payload["logs"]["proof_policy"] = proof_policy_rel
     payload["logs"]["repair_report"] = repair_report_rel
     payload["logs"]["fix_verification_report"] = fix_verification_report_rel
 
-    final_manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
+    final_manifest = _build_proof_manifest(
+        repo_root, out_dir, payload, results
+    )
     _, readiness_rel = _generate_release_readiness_from_manifest(
         repo_root,
         out_dir,
         final_manifest,
     )
-    manifest_path.write_text(json.dumps(final_manifest, indent=2) + "\n", encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps(final_manifest, indent=2) + "\n", encoding="utf-8"
+    )
     payload["logs"]["release_readiness"] = readiness_rel
-    payload["logs"]["proof_manifest"] = str(manifest_path.relative_to(repo_root))
+    payload["logs"]["proof_manifest"] = str(
+        manifest_path.relative_to(repo_root)
+    )
 
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
@@ -2442,11 +2640,13 @@ def main() -> int:
     payload["checks"] = [asdict(r) for r in results]
     payload["logs"] = {r.name: r.log_path for r in results}
     payload["logs"]["release_gate"] = str(gate_log_path.relative_to(repo_root))
-    payload["logs"]["proof_manifest"] = str(manifest_path.relative_to(repo_root))
-    payload["logs"]["static_guards"] = static_guards_rel
-    payload["failed_checks"] = [r.name for r in results if r.exit_code != 0] + (
-        ["missing_logs"] if missing_logs else []
+    payload["logs"]["proof_manifest"] = str(
+        manifest_path.relative_to(repo_root)
     )
+    payload["logs"]["static_guards"] = static_guards_rel
+    payload["failed_checks"] = [
+        r.name for r in results if r.exit_code != 0
+    ] + (["missing_logs"] if missing_logs else [])
     payload["release_blockers_remaining"] = (
         [r.name for r in results if r.exit_code != 0]
         + (["missing_logs"] if missing_logs else [])
@@ -2461,7 +2661,9 @@ def main() -> int:
         payload,
         check_count=len(results),
     )
-    current_alpha_status_rel = _write_current_alpha_status_md(repo_root, out_dir, payload)
+    current_alpha_status_rel = _write_current_alpha_status_md(
+        repo_root, out_dir, payload
+    )
     source_registry_status_md_rel = _write_source_registry_status_md(
         repo_root,
         out_dir,
@@ -2482,20 +2684,28 @@ def main() -> int:
     )
     payload["logs"]["current_proof"] = current_proof_rel
     payload["logs"]["current_alpha_status"] = current_alpha_status_rel
-    payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
+    payload["logs"]["source_registry_status_md"] = (
+        source_registry_status_md_rel
+    )
     payload["logs"]["proof_policy"] = proof_policy_rel
     payload["logs"]["repair_report"] = repair_report_rel
     payload["logs"]["fix_verification_report"] = fix_verification_report_rel
 
-    final_manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
+    final_manifest = _build_proof_manifest(
+        repo_root, out_dir, payload, results
+    )
     _, readiness_rel = _generate_release_readiness_from_manifest(
         repo_root,
         out_dir,
         final_manifest,
     )
-    manifest_path.write_text(json.dumps(final_manifest, indent=2) + "\n", encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps(final_manifest, indent=2) + "\n", encoding="utf-8"
+    )
     payload["logs"]["release_readiness"] = readiness_rel
-    payload["logs"]["proof_manifest"] = str(manifest_path.relative_to(repo_root))
+    payload["logs"]["proof_manifest"] = str(
+        manifest_path.relative_to(repo_root)
+    )
 
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
@@ -2586,18 +2796,22 @@ def main() -> int:
     payload["checks"] = [asdict(r) for r in results]
     payload["logs"] = {r.name: r.log_path for r in results}
     payload["logs"]["release_gate"] = str(gate_log_path.relative_to(repo_root))
-    payload["logs"]["proof_manifest"] = str(manifest_path.relative_to(repo_root))
+    payload["logs"]["proof_manifest"] = str(
+        manifest_path.relative_to(repo_root)
+    )
     payload["logs"]["static_guards"] = static_guards_rel
     payload["logs"]["current_proof"] = current_proof_rel
     payload["logs"]["current_alpha_status"] = current_alpha_status_rel
-    payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
+    payload["logs"]["source_registry_status_md"] = (
+        source_registry_status_md_rel
+    )
     payload["logs"]["proof_policy"] = proof_policy_rel
     payload["logs"]["repair_report"] = repair_report_rel
     payload["logs"]["fix_verification_report"] = fix_verification_report_rel
     payload["logs"]["release_readiness"] = readiness_rel
-    payload["failed_checks"] = [r.name for r in results if r.exit_code != 0] + (
-        ["missing_logs"] if missing_logs else []
-    )
+    payload["failed_checks"] = [
+        r.name for r in results if r.exit_code != 0
+    ] + (["missing_logs"] if missing_logs else [])
     payload["release_blockers_remaining"] = (
         [r.name for r in results if r.exit_code != 0]
         + (["missing_logs"] if missing_logs else [])
@@ -2612,19 +2826,27 @@ def main() -> int:
         payload,
         check_count=len(results),
     )
-    current_alpha_status_rel = _write_current_alpha_status_md(repo_root, out_dir, payload)
+    current_alpha_status_rel = _write_current_alpha_status_md(
+        repo_root, out_dir, payload
+    )
     payload["logs"]["current_proof"] = current_proof_rel
     payload["logs"]["current_alpha_status"] = current_alpha_status_rel
 
-    final_manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
+    final_manifest = _build_proof_manifest(
+        repo_root, out_dir, payload, results
+    )
     _, readiness_rel = _generate_release_readiness_from_manifest(
         repo_root,
         out_dir,
         final_manifest,
     )
-    manifest_path.write_text(json.dumps(final_manifest, indent=2) + "\n", encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps(final_manifest, indent=2) + "\n", encoding="utf-8"
+    )
     payload["logs"]["release_readiness"] = readiness_rel
-    payload["logs"]["proof_manifest"] = str(manifest_path.relative_to(repo_root))
+    payload["logs"]["proof_manifest"] = str(
+        manifest_path.relative_to(repo_root)
+    )
 
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
@@ -2635,7 +2857,9 @@ def main() -> int:
     print(f"BLOCKED: wrote {out_path.relative_to(repo_root)}")
     for result in results:
         if result.exit_code != 0:
-            print(f"- {result.name} rc={result.exit_code} " f"log={result.log_path}")
+            print(
+                f"- {result.name} rc={result.exit_code} log={result.log_path}"
+            )
     for missing in missing_logs:
         print(f"- missing_log={missing}")
     return 1
