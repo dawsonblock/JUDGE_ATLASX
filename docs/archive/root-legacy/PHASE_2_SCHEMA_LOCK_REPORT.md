@@ -264,7 +264,7 @@ Activities:
 
 **Run all Phase 2 tests:**
 ```bash
-cd "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2"
+cd "[LOCAL_REPO_ROOT]"
 pytest backend/app/tests/test_phase2_schema_lock.py -v
 ```
 

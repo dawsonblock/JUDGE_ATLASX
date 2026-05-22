@@ -64,7 +64,7 @@ Research and reference material exists to inform the product, not to ship with i
 2. Do not manually ZIP the workspace folder.
 3. The clean archive must pass `scripts/validate_release_archive.py` with `valid: true, errors: 0`.
 4. The validator rejects any archive member with a trailing-whitespace path component.
-5. The validator rejects any embedded absolute local developer paths (`/Users/...`, `/home/...`, `C:\Users\...`).
+5. The validator rejects any embedded absolute local developer paths (for example `<user-home>/...` or `<windows-user-home>\\...`).
 
 ## Acceptance criteria for a releaseable archive
 

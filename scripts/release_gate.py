@@ -67,6 +67,53 @@ def _redact_local_paths_in_text(text: str, repo_root: Path) -> str:
         redacted = pattern.sub("[REDACTED_LOCAL_PATH]", redacted)
     return redacted
 
+
+def _redact_local_paths_in_obj(value, repo_root: Path):
+    """Recursively redact local paths from JSON-like structures."""
+    if isinstance(value, str):
+        return _redact_local_paths_in_text(value, repo_root)
+    if isinstance(value, list):
+        return [_redact_local_paths_in_obj(item, repo_root) for item in value]
+    if isinstance(value, dict):
+        return {
+            key: _redact_local_paths_in_obj(item, repo_root)
+            for key, item in value.items()
+        }
+    return value
+
+
+def _redact_file_local_paths(path: Path, repo_root: Path) -> None:
+    """Redact local absolute paths from a text file in place."""
+    if not path.exists() or not path.is_file():
+        return
+
+    if path.suffix.lower() == ".json":
+        try:
+            parsed = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            parsed = None
+
+        if parsed is not None:
+            redacted_obj = _redact_local_paths_in_obj(parsed, repo_root)
+            path.write_text(
+                json.dumps(redacted_obj, indent=2) + "\n",
+                encoding="utf-8",
+            )
+            return
+
+    text = path.read_text(encoding="utf-8", errors="ignore")
+    redacted = _redact_local_paths_in_text(text, repo_root)
+    if redacted != text:
+        path.write_text(redacted, encoding="utf-8")
+
+
+def _sanitize_current_proof_artifacts(repo_root: Path, out_dir: Path) -> None:
+    """Redact local absolute paths from generated proof artifacts."""
+    allowed_suffixes = {".log", ".md", ".json", ".txt"}
+    for path in out_dir.rglob("*"):
+        if path.is_file() and path.suffix.lower() in allowed_suffixes:
+            _redact_file_local_paths(path, repo_root)
+
 PROOF_INPUT_PATTERNS = [
     "README.md",
     "CURRENT_STATUS.md",
@@ -196,6 +243,7 @@ def _run(
             fh.write(timeout_note)
             return_code = 124
             failure_reason = "timeout"
+            _redact_file_local_paths(log_path, repo_root)
     finished_at = datetime.now(timezone.utc)
     duration = round(time.monotonic() - t0, 3)
     passed = return_code == 0
@@ -2319,6 +2367,10 @@ def main() -> int:
     payload["logs"]["release_readiness"] = readiness_rel
     payload["logs"]["proof_manifest"] = str(manifest_path.relative_to(repo_root))
 
+    # Sanitize generated proof artifacts so release-included files do not
+    # leak workstation-specific absolute paths.
+    _sanitize_current_proof_artifacts(repo_root, out_dir)
+
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
     # Run proof consistency only after release_gate.json, CURRENT_PROOF.md,
@@ -2422,6 +2474,12 @@ def main() -> int:
         required=_archive_validation_spec.required,
     )
     results.append(archive_step)
+
+    # archive_validation writes additional proof files outside _run stdout,
+    # so sanitize those side artifacts explicitly.
+    _redact_file_local_paths(out_dir / "archive_validation.log", repo_root)
+    _redact_file_local_paths(out_dir / "archive_validation.md", repo_root)
+    _sanitize_current_proof_artifacts(repo_root, out_dir)
 
     missing_logs = _missing_logs(repo_root, results)
     ok = all(r.exit_code == 0 for r in results) and not missing_logs

@@ -92,6 +92,15 @@ ABSOLUTE_PATH_PATTERNS = (
 )
 
 
+def _display_path(path: Path) -> str:
+    """Render paths for reports without leaking local absolute prefixes."""
+    resolved = path.resolve()
+    try:
+        return str(resolved.relative_to(REPO_ROOT)).replace("\\", "/")
+    except ValueError:
+        return f"[REDACTED_LOCAL_PATH]/{resolved.name}"
+
+
 def _compute_sha256(path: Path) -> str:
     import hashlib
 
@@ -125,7 +134,7 @@ def _read_text_member(zf: zipfile.ZipFile, name: str) -> str | None:
 
 def inspect_archive(archive: Path, expected_root: str, allow_external: bool = False) -> dict:
     report: dict = {
-        "archive": str(archive),
+        "archive": _display_path(archive),
         "expected_root": expected_root,
         "validated_at_utc": datetime.now(timezone.utc).isoformat(),
         "valid": False,
@@ -411,7 +420,7 @@ def main() -> int:
     if args.json:
         print(json.dumps(report, indent=2))
     else:
-        print(f"Archive validation written to {output}")
+        print(f"Archive validation written to {_display_path(output)}")
         print("PASS" if report["valid"] else "FAIL")
 
     return 0 if report["valid"] else 1

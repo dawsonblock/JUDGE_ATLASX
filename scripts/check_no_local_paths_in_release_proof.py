@@ -28,19 +28,39 @@ def _find_matches(text: str) -> list[str]:
     return sorted(set(matches))
 
 
+def _iter_targets(root: Path) -> list[Path]:
+    targets: list[Path] = [root / "CURRENT_PROOF.md"]
+
+    proof_root = root / "artifacts" / "proof" / "current"
+    if proof_root.exists():
+        for path in sorted(proof_root.rglob("*")):
+            if path.is_file() and path.suffix.lower() in {".md", ".json", ".log", ".txt"}:
+                targets.append(path)
+
+    docs_root = root / "docs"
+    if docs_root.exists():
+        for path in sorted(docs_root.rglob("*")):
+            if not path.is_file():
+                continue
+            if "/docs/archive/" in str(path).replace("\\", "/"):
+                continue
+            if path.suffix.lower() in {".md", ".json", ".txt"}:
+                targets.append(path)
+
+    # De-duplicate while preserving deterministic order.
+    deduped: dict[Path, None] = {}
+    for path in targets:
+        deduped[path] = None
+    return list(deduped)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default=".", help="Repository root")
     args = parser.parse_args()
 
     root = Path(args.root).resolve()
-    targets = [
-        root / "CURRENT_PROOF.md",
-        root / "artifacts" / "proof" / "current" / "CURRENT_PROOF.md",
-        root / "artifacts" / "proof" / "current" / "release_gate.json",
-        root / "artifacts" / "proof" / "current" / "proof_manifest.json",
-        root / "artifacts" / "proof" / "current" / "release_readiness.md",
-    ]
+    targets = _iter_targets(root)
 
     violations: list[tuple[Path, list[str]]] = []
     for path in targets:
