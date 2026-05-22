@@ -22,6 +22,51 @@ from datetime import datetime, timezone
 from pathlib import Path
 from shutil import move
 
+
+LOCAL_PATH_PATTERNS = (
+    re.compile(r"/Users/[^\s\"'`]+"),
+    re.compile(r"/home/[^\s\"'`]+"),
+    re.compile(r"/private/[^\s\"'`]+"),
+    re.compile(r"[A-Za-z]:\\[^\s\"'`]+"),
+)
+
+
+def _redact_local_path(value: str, repo_root: Path) -> str:
+    """Redact local absolute path prefixes while preserving useful suffixes.
+
+    If the path points under repo_root, keep the relative suffix so proof
+    artifacts remain informative without leaking the host absolute path.
+    """
+    if not isinstance(value, str) or not value:
+        return value
+
+    normalized = value.replace("\\", "/")
+    repo_prefix = str(repo_root.resolve()).replace("\\", "/")
+
+    if normalized == repo_prefix:
+        return "[REDACTED_LOCAL_PATH]"
+    if normalized.startswith(repo_prefix + "/"):
+        suffix = normalized[len(repo_prefix) + 1:]
+        return f"[REDACTED_LOCAL_PATH]/{suffix}"
+
+    redacted = normalized
+    for pattern in LOCAL_PATH_PATTERNS:
+        redacted = pattern.sub("[REDACTED_LOCAL_PATH]", redacted)
+    return redacted
+
+
+def _redact_local_paths_in_text(text: str, repo_root: Path) -> str:
+    """Redact any local absolute paths embedded in free-form text."""
+    if not isinstance(text, str) or not text:
+        return text
+
+    normalized = text.replace("\\", "/")
+    repo_prefix = str(repo_root.resolve()).replace("\\", "/")
+    redacted = normalized.replace(repo_prefix, "[REDACTED_LOCAL_PATH]")
+    for pattern in LOCAL_PATH_PATTERNS:
+        redacted = pattern.sub("[REDACTED_LOCAL_PATH]", redacted)
+    return redacted
+
 PROOF_INPUT_PATTERNS = [
     "README.md",
     "CURRENT_STATUS.md",
@@ -156,7 +201,7 @@ def _run(
     passed = return_code == 0
     return GateStep(
         name=name,
-        command=" ".join(command),
+        command=_redact_local_paths_in_text(" ".join(command), repo_root),
         status="PASS" if passed else "FAIL",
         exit_code=return_code,
         duration_seconds=duration,
@@ -164,7 +209,7 @@ def _run(
         started_at_utc=started_at.isoformat(),
         finished_at_utc=finished_at.isoformat(),
         required=required,
-        cwd=str(repo_root),
+        cwd=_redact_local_paths_in_text(str(repo_root), repo_root),
         failure_reason=failure_reason,
     )
 
@@ -1796,7 +1841,7 @@ def main() -> int:
                     started_at_utc=datetime.now(timezone.utc).isoformat(),
                     finished_at_utc=datetime.now(timezone.utc).isoformat(),
                     required=spec.required,
-                    cwd=str(repo_root),
+                    cwd=_redact_local_paths_in_text(str(repo_root), repo_root),
                     failure_reason="dependency_blocked",
                 )
             )
@@ -1820,7 +1865,7 @@ def main() -> int:
                     started_at_utc=datetime.now(timezone.utc).isoformat(),
                     finished_at_utc=datetime.now(timezone.utc).isoformat(),
                     required=spec.required,
-                    cwd=str(repo_root),
+                    cwd=_redact_local_paths_in_text(str(repo_root), repo_root),
                     failure_reason="frontend_node_gate_failed",
                 )
             )
@@ -1917,9 +1962,15 @@ def main() -> int:
         or "unknown",
         "python_version": sys.version.split()[0],
         "gate_runner_python_version": sys.version.split()[0],
-        "gate_runner_python_executable": sys.executable,
+        "gate_runner_python_executable": _redact_local_path(
+            sys.executable,
+            repo_root,
+        ),
         "backend_test_python_version": backend_python_version,
-        "backend_test_python_executable": python_exe,
+        "backend_test_python_executable": _redact_local_path(
+            python_exe,
+            repo_root,
+        ),
         "backend_required_python": ">=3.11",
         "node_version": "unknown",
         "npm_version": "unknown",
@@ -2191,7 +2242,7 @@ def main() -> int:
         started_at_utc=datetime.now(timezone.utc).isoformat(),
         finished_at_utc=datetime.now(timezone.utc).isoformat(),
         required=True,
-        cwd=str(repo_root),
+        cwd=_redact_local_paths_in_text(str(repo_root), repo_root),
         failure_reason=None,
     )
     results.append(readiness_step)

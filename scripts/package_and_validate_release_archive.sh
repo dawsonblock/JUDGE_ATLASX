@@ -49,6 +49,7 @@ log "Validating local proof integrity"
 python scripts/check_proof_consistency.py
 python scripts/check_single_proof_authority.py --root .
 python scripts/check_required_proof_logs.py --root .
+python scripts/check_no_local_paths_in_release_proof.py --root .
 
 log "Building archive at ${ARCHIVE_PATH}"
 python scripts/build_release_archive.py \
@@ -101,6 +102,7 @@ fi
   "${PYTHON_BIN}" scripts/check_proof_consistency.py
   "${PYTHON_BIN}" scripts/check_single_proof_authority.py
   "${PYTHON_BIN}" scripts/check_required_proof_logs.py --root .
+  "${PYTHON_BIN}" scripts/check_no_local_paths_in_release_proof.py --root .
   bash scripts/check_no_pyc.sh
   "${PYTHON_BIN}" scripts/check_external_boundaries.py
   "${PYTHON_BIN}" backend/scripts/check_repo_boundaries.py
