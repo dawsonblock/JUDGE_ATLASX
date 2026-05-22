@@ -1,7 +1,7 @@
 # SOURCE_REGISTRY_STATUS
 
-- generated_at_utc: 2026-05-22T03:54:39.719775+00:00
-- commit_hash: 86b1433e20d72d229a1a4b057dbcf8d574d12895
+- generated_at_utc: 2026-05-22T04:09:13.757106+00:00
+- commit_hash: 03cfb98bdb1fa45393dd524c77d075efef97a1d0
 - total_sources: 26
 - machine_ingest_sources: 8
 - runnable_now: 1
