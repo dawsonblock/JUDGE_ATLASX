@@ -72,12 +72,14 @@ def _write_release_gate(
     proof_input_file_list: list[str],
     *,
     include_current_proof_line: bool = True,
+    proof_input_file_fingerprints: dict[str, dict[str, int | str]] | None = None,
 ) -> None:
     release_gate = {
         "proof_input_tree_hash": proof_hash,
         "proof_input_tree_hash_algorithm": "sha256",
         "proof_input_file_count": len(proof_input_file_list),
         "proof_input_file_list": proof_input_file_list,
+        "proof_input_file_fingerprints": proof_input_file_fingerprints or {},
     }
     (repo_root / "artifacts" / "proof" / "current" / "release_gate.json").write_text(
         json.dumps(release_gate), encoding="utf-8"
@@ -121,6 +123,18 @@ def test_release_gate_writes_proof_input_file_count() -> None:
     assert metadata["proof_input_file_count"] == len(metadata["proof_input_file_list"])
 
 
+def test_release_gate_writes_proof_input_file_fingerprints() -> None:
+    repo_root = Path(__file__).resolve().parents[3]
+    release_gate = _load_module("release_gate_module_fingerprints", repo_root / "scripts" / "release_gate.py")
+    metadata = release_gate._collect_proof_input_metadata(repo_root, sys.executable)
+    fingerprints = metadata["proof_input_file_fingerprints"]
+    assert isinstance(fingerprints, dict)
+    assert fingerprints
+    first_key = next(iter(fingerprints))
+    assert "sha256" in fingerprints[first_key]
+    assert "size_bytes" in fingerprints[first_key]
+
+
 def test_proof_freshness_passes_when_stored_file_list_matches(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     _seed_minimal_repo(repo_root)
@@ -135,12 +149,18 @@ def test_proof_freshness_fails_when_listed_file_changes(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     _seed_minimal_repo(repo_root)
     module = _proof_module()
-    proof_hash, files = module.compute_proof_input_tree_hash(repo_root)
-    _write_release_gate(repo_root, proof_hash, files)
+    metadata = module.metadata_payload(repo_root)
+    _write_release_gate(
+        repo_root,
+        metadata["proof_input_tree_hash"],
+        metadata["proof_input_file_list"],
+        proof_input_file_fingerprints=metadata["proof_input_file_fingerprints"],
+    )
     (repo_root / "backend" / "app" / "sample.py").write_text("x = 2\n", encoding="utf-8")
     result = module.validate_stored_manifest(repo_root)
     assert result["status"] == "FAIL"
     assert "hash mismatch" in result["message"]
+    assert "backend/app/sample.py" in result["changed_files"]
 
 
 def test_proof_freshness_fails_when_listed_file_missing(tmp_path: Path) -> None:

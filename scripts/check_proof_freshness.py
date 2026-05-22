@@ -161,17 +161,23 @@ def discover_proof_input_files(repo_root: Path) -> list[str]:
     return sorted(files)
 
 
-def _hash_files(repo_root: Path, rel_files: list[str]) -> tuple[str, list[str]]:
+def _hash_files_with_fingerprints(
+    repo_root: Path,
+    rel_files: list[str],
+) -> tuple[str, list[str], dict[str, dict[str, int | str]]]:
     hasher = hashlib.sha256()
     missing: list[str] = []
+    fingerprints: dict[str, dict[str, int | str]] = {}
     for rel in rel_files:
         file_path = repo_root / rel
         if not file_path.is_file():
             missing.append(rel)
             continue
+        size_bytes = file_path.stat().st_size
+        file_hasher = hashlib.sha256()
         hasher.update(rel.encode("utf-8"))
         hasher.update(b"\n")
-        hasher.update(str(file_path.stat().st_size).encode("utf-8"))
+        hasher.update(str(size_bytes).encode("utf-8"))
         hasher.update(b"\n")
         with file_path.open("rb") as fh:
             while True:
@@ -179,8 +185,18 @@ def _hash_files(repo_root: Path, rel_files: list[str]) -> tuple[str, list[str]]:
                 if not chunk:
                     break
                 hasher.update(chunk)
+                file_hasher.update(chunk)
         hasher.update(b"\n")
-    return hasher.hexdigest(), missing
+        fingerprints[rel] = {
+            "size_bytes": size_bytes,
+            "sha256": file_hasher.hexdigest(),
+        }
+    return hasher.hexdigest(), missing, fingerprints
+
+
+def _hash_files(repo_root: Path, rel_files: list[str]) -> tuple[str, list[str]]:
+    digest, missing, _fingerprints = _hash_files_with_fingerprints(repo_root, rel_files)
+    return digest, missing
 
 
 def compute_proof_input_tree_hash(repo_root: Path) -> tuple[str, list[str]]:
@@ -228,6 +244,7 @@ def validate_stored_manifest(
         }
 
     stored_file_list = payload.get("proof_input_file_list")
+    stored_fingerprints = payload.get("proof_input_file_fingerprints")
     discovered_file_list = discover_proof_input_files(repo_root)
     extra_files = sorted(set(discovered_file_list) - set(stored_file_list))
 
@@ -243,6 +260,8 @@ def validate_stored_manifest(
         "discovered_file_count": len(discovered_file_list),
         "stored_file_list": stored_file_list,
         "discovered_file_list": discovered_file_list,
+        "changed_files": [],
+        "changed_file_count": 0,
         "message": "proof artifacts are fresh",
     }
 
@@ -265,7 +284,10 @@ def validate_stored_manifest(
         result["message"] = "release_gate.json missing/invalid proof_input_file_list"
         return result
 
-    actual_hash, missing_files = _hash_files(repo_root, sorted(stored_file_list))
+    actual_hash, missing_files, runtime_fingerprints = _hash_files_with_fingerprints(
+        repo_root,
+        sorted(stored_file_list),
+    )
     result["actual_hash"] = actual_hash
     result["missing_files"] = missing_files
 
@@ -278,11 +300,34 @@ def validate_stored_manifest(
         return result
 
     if actual_hash != expected_hash:
+        changed_files: list[str] = []
+        if isinstance(stored_fingerprints, dict):
+            for rel in sorted(stored_file_list):
+                if rel in missing_files:
+                    continue
+                expected_fp = stored_fingerprints.get(rel)
+                runtime_fp = runtime_fingerprints.get(rel)
+                if not isinstance(expected_fp, dict) or not isinstance(runtime_fp, dict):
+                    continue
+                if (
+                    expected_fp.get("size_bytes") != runtime_fp.get("size_bytes")
+                    or expected_fp.get("sha256") != runtime_fp.get("sha256")
+                ):
+                    changed_files.append(rel)
+        result["changed_files"] = changed_files
+        result["changed_file_count"] = len(changed_files)
         result["status"] = "FAIL"
-        result["message"] = (
+        mismatch_msg = (
             "proof input tree hash mismatch: "
             f"expected={expected_hash} actual={actual_hash}"
         )
+        if changed_files:
+            mismatch_msg += (
+                "; changed_files_detected="
+                + ", ".join(changed_files[:10])
+                + (" ..." if len(changed_files) > 10 else "")
+            )
+        result["message"] = mismatch_msg
         return result
 
     if extra_files and strict_extra_files:
@@ -326,7 +371,8 @@ def check_against_expected(repo_root: Path, expected_hash: str) -> dict:
 
 
 def metadata_payload(repo_root: Path) -> dict:
-    digest, rel_files = compute_proof_input_tree_hash(repo_root)
+    rel_files = discover_proof_input_files(repo_root)
+    digest, _missing, fingerprints = _hash_files_with_fingerprints(repo_root, rel_files)
     return {
         "status": "OK",
         "proof_input_tree_hash": digest,
@@ -334,6 +380,7 @@ def metadata_payload(repo_root: Path) -> dict:
         "proof_input_paths": PROOF_INPUT_PATTERNS,
         "proof_input_file_count": len(rel_files),
         "proof_input_file_list": rel_files,
+        "proof_input_file_fingerprints": fingerprints,
     }
 
 
@@ -424,6 +471,8 @@ def main() -> int:
     print(f"FAIL: {result['message']}")
     if result["actual_hash"]:
         print(f"proof_input_tree_hash={result['actual_hash']}")
+    if result.get("changed_files"):
+        print("changed_files=" + ",".join(result["changed_files"]))
     if result["extra_files"]:
         print("extra_discovered_files=" + ",".join(result["extra_files"]))
     return 1

@@ -7,7 +7,7 @@ Workspace: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2
 ## Final Authoritative Archive
 
 - Path: dist/JUDGE_ATLAS-main-final.zip
-- SHA-256: 4cc7784f3cdfaae9d4a0abeb79db1195559fab254f9f58ad9799898cf936c88d
+- SHA-256: fdb81c29b1fd2255427bba50cf7438a2652f915422772fa51b87d69f6b434787
 
 ## What Was Implemented
 

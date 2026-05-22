@@ -1163,6 +1163,7 @@ def _collect_proof_input_metadata(repo_root: Path, python_exe: str) -> dict:
             "proof_input_paths": PROOF_INPUT_PATTERNS,
             "proof_input_file_count": 0,
             "proof_input_file_list": [],
+            "proof_input_file_fingerprints": {},
         }
     try:
         parsed = json.loads(proc.stdout)
@@ -1176,6 +1177,7 @@ def _collect_proof_input_metadata(repo_root: Path, python_exe: str) -> dict:
         "proof_input_paths": parsed.get("proof_input_paths", PROOF_INPUT_PATTERNS),
         "proof_input_file_count": parsed.get("proof_input_file_count", 0),
         "proof_input_file_list": parsed.get("proof_input_file_list", []),
+        "proof_input_file_fingerprints": parsed.get("proof_input_file_fingerprints", {}),
     }
 
 
