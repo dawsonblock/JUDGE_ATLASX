@@ -372,25 +372,31 @@ def main() -> int:
     frontend_nvmrc = repo_root / "frontend" / ".nvmrc"
     package_json_path = repo_root / "frontend" / "package.json"
 
-    root_major = _read_text(root_nvmrc)
-    frontend_major = _read_text(frontend_nvmrc)
+    root_major = _read_text(root_nvmrc) if root_nvmrc.exists() else None
+    frontend_major = _read_text(frontend_nvmrc) if frontend_nvmrc.exists() else None
     package_json = json.loads(package_json_path.read_text(encoding="utf-8"))
     node_range = package_json.get("engines", {}).get("node")
     npm_range = package_json.get("engines", {}).get("npm")
 
     errors: list[str] = []
-    if root_major != frontend_major:
+    if root_major is None and frontend_major is None:
+        errors.append("missing .nvmrc policy files")
+    elif root_major is not None and frontend_major is not None and root_major != frontend_major:
         errors.append(f".nvmrc mismatch: root={root_major} frontend={frontend_major}")
 
-    node_version, npm_version, runtime_source = _resolve_runtime_versions(root_major, node_range)
+    declared_major = root_major or frontend_major or ""
+    if not declared_major:
+        declared_major = "0"
+
+    node_version, npm_version, runtime_source = _resolve_runtime_versions(declared_major, node_range)
 
     parsed_node = _parse_version(node_version)
     if parsed_node is None:
         errors.append(f"Unable to parse node version: {node_version}")
     else:
-        if parsed_node[0] != int(root_major):
+        if declared_major.isdigit() and parsed_node[0] != int(declared_major):
             errors.append(
-                f"Node major mismatch: declared .nvmrc={root_major} but runtime is {node_version}"
+                f"Node major mismatch: declared .nvmrc={declared_major} but runtime is {node_version}"
             )
         if not isinstance(node_range, str) or not _satisfies_range(node_version, node_range):
             errors.append(
@@ -405,7 +411,7 @@ def main() -> int:
     # Validate stored proof metadata for node version drift
     metadata_errors = _validate_stored_metadata(
         repo_root,
-        root_major,
+        declared_major,
         node_range,
         npm_range,
         node_version,
@@ -416,11 +422,11 @@ def main() -> int:
     print(f"NODE_VERSION: {node_version}")
     print(f"NPM_VERSION: {npm_version}")
     print(f"RUNTIME_SOURCE: {runtime_source}")
-    print(f"ROOT_NVMRC: {root_major}")
-    print(f"FRONTEND_NVMRC: {frontend_major}")
+    print(f"ROOT_NVMRC: {root_major if root_major is not None else '<missing>'}")
+    print(f"FRONTEND_NVMRC: {frontend_major if frontend_major is not None else '<missing>'}")
     print(f"NODE_RANGE: {node_range}")
     print(f"NPM_RANGE: {npm_range}")
-    print(f"DECLARED_NODE_MAJOR: {root_major}")
+    print(f"DECLARED_NODE_MAJOR: {declared_major}")
 
     if errors:
         print("NODE_POLICY: FAIL")

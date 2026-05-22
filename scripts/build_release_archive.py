@@ -214,6 +214,10 @@ def _load_packaged_proof_paths(repo_root: Path) -> set[str]:
     release_gate_path = repo_root / "artifacts" / "proof" / "current" / "release_gate.json"
     packaged: set[str] = set()
     if not release_gate_path.exists():
+        proof_logs_dir = repo_root / "artifacts" / "proof" / "current"
+        if proof_logs_dir.exists():
+            for log_path in proof_logs_dir.glob("*.log"):
+                packaged.add(_normalize(log_path.relative_to(repo_root)))
         return packaged
     try:
         payload = json.loads(release_gate_path.read_text(encoding="utf-8"))
@@ -230,6 +234,11 @@ def _load_packaged_proof_paths(repo_root: Path) -> set[str]:
         normalized = path.replace("\\", "/")
         if normalized.startswith("artifacts/proof/current/"):
             packaged.add(normalized)
+
+    proof_logs_dir = repo_root / "artifacts" / "proof" / "current"
+    if proof_logs_dir.exists():
+        for log_path in proof_logs_dir.glob("*.log"):
+            packaged.add(_normalize(log_path.relative_to(repo_root)))
     return packaged
 
 

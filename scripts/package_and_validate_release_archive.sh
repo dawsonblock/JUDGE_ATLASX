@@ -70,6 +70,7 @@ python scripts/validate_release_archive.py \
 
 python scripts/check_release_surface.py --archive "${ARCHIVE_PATH}"
 python scripts/validate_final_zip.py "${ARCHIVE_PATH}"
+python scripts/verify_archive_proof_freshness.py --archive "${ARCHIVE_PATH}"
 
 EXTRACT_DIR="${TMP_DIR}/extracted"
 mkdir -p "${EXTRACT_DIR}"
@@ -85,15 +86,23 @@ fi
 
 (
   cd "${EXTRACTED_ROOT}"
+  python scripts/check_path_hygiene.py --root .
+  python scripts/check_no_generated_files.py --root .
   "${PYTHON_BIN}" scripts/check_false_claims.py
   "${PYTHON_BIN}" scripts/check_truth_claims.py
   "${PYTHON_BIN}" scripts/check_proof_freshness.py
   "${PYTHON_BIN}" scripts/check_proof_freshness.py --strict-extra-files
+  "${PYTHON_BIN}" scripts/check_source_registry_docs.py
+  "${PYTHON_BIN}" scripts/check_proof_consistency.py
+  "${PYTHON_BIN}" scripts/check_single_proof_authority.py
+  "${PYTHON_BIN}" scripts/check_required_proof_logs.py --root .
   bash scripts/check_no_pyc.sh
   "${PYTHON_BIN}" scripts/check_external_boundaries.py
   "${PYTHON_BIN}" backend/scripts/check_repo_boundaries.py
   "${PYTHON_BIN}" backend/scripts/check_no_direct_ingestion_network_clients.py
   "${PYTHON_BIN}" scripts/validate_workflows.py
+  "${PYTHON_BIN}" scripts/verify_status_consistency.py --root .
+  "${PYTHON_BIN}" -m compileall -q backend/app scripts
 )
 
 log "Verifying proof hash synchronization"

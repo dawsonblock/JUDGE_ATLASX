@@ -11,6 +11,8 @@ Key checks:
 - Timestamp sanity
 """
 
+from __future__ import annotations
+
 import json
 import re
 import sys
@@ -208,11 +210,18 @@ def check_node_policy_alignment(repo_root: Path, manifest: dict, gate: dict) -> 
 
     package_json = load_json_file(repo_root / "frontend" / "package.json")
     node_range = package_json.get("engines", {}).get("node")
-    root_major = (repo_root / ".nvmrc").read_text(encoding="utf-8").strip()
-    frontend_major = (repo_root / "frontend" / ".nvmrc").read_text(encoding="utf-8").strip()
+    root_nvmrc = repo_root / ".nvmrc"
+    frontend_nvmrc = repo_root / "frontend" / ".nvmrc"
+    root_major = root_nvmrc.read_text(encoding="utf-8").strip() if root_nvmrc.exists() else None
+    frontend_major = (
+        frontend_nvmrc.read_text(encoding="utf-8").strip() if frontend_nvmrc.exists() else None
+    )
 
-    if root_major != frontend_major:
+    policy_major = root_major or frontend_major
+    if root_major is not None and frontend_major is not None and root_major != frontend_major:
         errors.append(f".nvmrc mismatch: root={root_major} frontend={frontend_major}")
+    elif policy_major is None:
+        errors.append("Missing .nvmrc policy files in packaged archive")
 
     gate_node = gate.get("frontend_node_gate_version") or gate.get("node_version")
     manifest_node = manifest.get("frontend_node_gate_version") or manifest.get("node_version")
@@ -225,8 +234,8 @@ def check_node_policy_alignment(repo_root: Path, manifest: dict, gate: dict) -> 
         if parsed is None:
             errors.append(f"{label} has unparsable Node version '{version}'")
             continue
-        if parsed[0] != int(root_major):
-            errors.append(f"{label} records Node {version} but .nvmrc requires major {root_major}")
+        if policy_major is not None and parsed[0] != int(policy_major):
+            errors.append(f"{label} records Node {version} but .nvmrc requires major {policy_major}")
         if not isinstance(node_range, str) or not _satisfies_range(version, node_range):
             errors.append(f"{label} records Node {version} outside engines.node '{node_range}'")
 

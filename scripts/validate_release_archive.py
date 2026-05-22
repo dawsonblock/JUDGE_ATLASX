@@ -30,6 +30,7 @@ REQUIRED_PROOF_FILES = (
     "artifacts/proof/current/CURRENT_ALPHA_STATUS.md",
     "artifacts/proof/current/SOURCE_REGISTRY_STATUS.md",
     "artifacts/proof/current/FIX_VERIFICATION_REPORT.md",
+    "artifacts/proof/current/release_readiness.md",
     "artifacts/proof/current/release_gate.json",
     "artifacts/proof/current/proof_manifest.json",
     "artifacts/proof/current/source_registry_status.json",

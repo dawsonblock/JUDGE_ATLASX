@@ -144,42 +144,10 @@ def _write_release_manifest(file_count: int, reference_bundle: str | None) -> di
 
 
 def main() -> int:
-    if OUT_ZIP.exists():
-        OUT_ZIP.unlink()
-
-    reference_bundle = _build_reference_bundle()
-
-    file_count = 0
-
-    # Write manifest first so it gets included in archive.
-    _write_release_manifest(file_count=0, reference_bundle=reference_bundle)
-
-    with ZipFile(OUT_ZIP, "w", compression=ZIP_DEFLATED) as zf:
-        for rel_dir in INCLUDED_DIRS:
-            root = REPO_ROOT / rel_dir
-            if not root.exists():
-                continue
-            for path in root.rglob("*"):
-                if path.is_dir() or _is_excluded(path):
-                    continue
-                if path.resolve() == MANIFEST_PATH.resolve():
-                    continue
-                arcname = path.relative_to(REPO_ROOT).as_posix()
-                zf.write(path, arcname)
-                file_count += 1
-
-    payload = _write_release_manifest(file_count=file_count, reference_bundle=reference_bundle)
-
-    # Ensure updated manifest file count is in the zip.
-    with ZipFile(OUT_ZIP, "a", compression=ZIP_DEFLATED) as zf:
-        zf.write(MANIFEST_PATH, MANIFEST_PATH.relative_to(REPO_ROOT).as_posix())
-
-    print(f"release archive: {OUT_ZIP}")
-    print(f"release manifest: {MANIFEST_PATH}")
-    if reference_bundle:
-        print(f"reference bundle: {REF_ZIP}")
-    print(f"files included: {payload['file_count']}")
-    return 0
+    raise SystemExit(
+        "build_clean_release.py is deprecated. "
+        "Use scripts/package_and_validate_release_archive.sh"
+    )
 
 
 if __name__ == "__main__":

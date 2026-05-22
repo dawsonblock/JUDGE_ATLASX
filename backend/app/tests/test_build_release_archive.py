@@ -108,4 +108,4 @@ def test_archive_validation_files_excluded(tmp_path: Path) -> None:
     with zipfile.ZipFile(output, "r") as zf:
         names = set(zf.namelist())
         assert not any("archive_validation.md" in n for n in names)
-        assert not any("archive_validation.log" in n for n in names)
+        assert "JUDGE_ATLAS-main/artifacts/proof/current/archive_validation.log" in names
