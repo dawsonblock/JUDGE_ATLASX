@@ -14,6 +14,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+DEFAULT_REQUIRED_PROOF_FILES = (
+    "artifacts/proof/current/CURRENT_PROOF.md",
+    "artifacts/proof/current/CURRENT_ALPHA_STATUS.md",
+    "artifacts/proof/current/SOURCE_REGISTRY_STATUS.md",
+    "artifacts/proof/current/source_registry_status.json",
+    "artifacts/proof/current/release_gate.json",
+    "artifacts/proof/current/proof_manifest.json",
+    "artifacts/proof/current/FIX_VERIFICATION_REPORT.md",
+    "artifacts/proof/current/release_readiness.md",
+    "artifacts/proof/current/PROOF_POLICY.md",
+)
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -38,6 +51,44 @@ def _resolve_relative(repo_root: Path, candidate: Path) -> str:
     except ValueError:
         # Keep absolute path when archive is intentionally outside repo_root.
         return str(candidate_resolved).replace("\\", "/")
+
+
+def _missing_referenced_logs(repo_root: Path, release_gate: dict) -> list[str]:
+    missing: list[str] = []
+    seen: set[str] = set()
+
+    for entry in release_gate.get("checks", []):
+        if not isinstance(entry, dict):
+            continue
+        log_path = entry.get("log_path")
+        if not isinstance(log_path, str) or not log_path:
+            continue
+        if log_path in seen:
+            continue
+        seen.add(log_path)
+        if not (repo_root / log_path).is_file():
+            missing.append(log_path)
+
+    for _name, log_path in release_gate.get("logs", {}).items():
+        if not isinstance(log_path, str) or not log_path:
+            continue
+        if log_path in seen:
+            continue
+        if not log_path.startswith("artifacts/proof/current/"):
+            continue
+        seen.add(log_path)
+        if not (repo_root / log_path).is_file():
+            missing.append(log_path)
+
+    return sorted(missing)
+
+
+def _missing_required_proof_files(repo_root: Path) -> list[str]:
+    return sorted(
+        rel_path
+        for rel_path in DEFAULT_REQUIRED_PROOF_FILES
+        if not (repo_root / rel_path).is_file()
+    )
 
 
 def main() -> int:
@@ -77,6 +128,21 @@ def main() -> int:
     release_gate = _load_json(release_gate_path)
     _load_json(proof_manifest_path)
 
+    missing_required_proof_files = _missing_required_proof_files(repo_root)
+    missing_referenced_logs = _missing_referenced_logs(repo_root, release_gate)
+    if missing_required_proof_files or missing_referenced_logs:
+        errors: list[str] = []
+        if missing_required_proof_files:
+            errors.append(
+                "missing_required_proof_files="
+                + ",".join(missing_required_proof_files)
+            )
+        if missing_referenced_logs:
+            errors.append(
+                "missing_referenced_logs=" + ",".join(missing_referenced_logs)
+            )
+        raise SystemExit("proof_incomplete:" + "|".join(errors))
+
     archive_rel = _resolve_relative(repo_root, archive_path)
     output_path = Path(args.output)
     if not output_path.is_absolute():
@@ -90,6 +156,7 @@ def main() -> int:
     alpha_gate_passed = bool(release_gate.get("alpha_gate_passed", False))
     release_candidate = bool(release_gate.get("release_candidate", False))
     production_ready = bool(release_gate.get("production_ready", False))
+    proof_complete = True
     runtime = release_gate.get("runtime", {})
     if not isinstance(runtime, dict):
         runtime = {}
@@ -130,6 +197,7 @@ def main() -> int:
             f"- alpha_gate_passed: {str(alpha_gate_passed).lower()}",
             f"- release_candidate: {str(release_candidate).lower()}",
             f"- production_ready: {str(production_ready).lower()}",
+            f"- proof_complete: {str(proof_complete).lower()}",
             f"- blocked_release_checks: {blocker_text}",
             "",
             "## Build Metadata",

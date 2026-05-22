@@ -21,6 +21,17 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_REQUIRED_PROOF_FILES = (
+    "artifacts/proof/current/CURRENT_PROOF.md",
+    "artifacts/proof/current/CURRENT_ALPHA_STATUS.md",
+    "artifacts/proof/current/SOURCE_REGISTRY_STATUS.md",
+    "artifacts/proof/current/source_registry_status.json",
+    "artifacts/proof/current/release_gate.json",
+    "artifacts/proof/current/proof_manifest.json",
+    "artifacts/proof/current/FIX_VERIFICATION_REPORT.md",
+    "artifacts/proof/current/release_readiness.md",
+    "artifacts/proof/current/PROOF_POLICY.md",
+)
 
 
 def check_required_proof_logs(repo_root: Path) -> tuple[list[str], int, int]:
@@ -39,8 +50,8 @@ def check_required_proof_logs(repo_root: Path) -> tuple[list[str], int, int]:
     gate_json = repo_root / "artifacts" / "proof" / "current" / "release_gate.json"
     if not gate_json.exists():
         print(f"ERROR: release_gate.json not found at {gate_json}", file=sys.stderr)
-        missing = [str(gate_json.relative_to(repo_root))]
-        return missing, len(missing), 0
+        missing_paths = [str(gate_json.relative_to(repo_root))]
+        return missing_paths, len(missing_paths), 0
 
     try:
         payload = json.loads(gate_json.read_text(encoding="utf-8"))
@@ -83,15 +94,33 @@ def check_required_proof_logs(repo_root: Path) -> tuple[list[str], int, int]:
     return sorted(missing), referenced_total, present_total
 
 
+def _missing_required_proof_files(repo_root: Path) -> list[str]:
+    missing: list[str] = []
+    for rel_path in DEFAULT_REQUIRED_PROOF_FILES:
+        if not (repo_root / rel_path).exists():
+            missing.append(rel_path)
+    return sorted(missing)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default=str(REPO_ROOT), help="Repository root")
+    parser.add_argument(
+        "--strict-required-files",
+        action="store_true",
+        help=(
+            "Also fail if canonical proof files required by archive packaging are missing"
+        ),
+    )
     args = parser.parse_args()
 
     repo_root = Path(args.root).resolve()
     missing, referenced_total, present_total = check_required_proof_logs(repo_root)
+    missing_required_files: list[str] = []
+    if args.strict_required_files:
+        missing_required_files = _missing_required_proof_files(repo_root)
 
-    if missing:
+    if missing or missing_required_files:
         print(
             "REQUIRED_PROOF_LOGS: FAIL "
             f"({len(missing)} missing of {referenced_total} referenced)"
@@ -110,6 +139,14 @@ def main() -> int:
                 print(f"  MISSING: {path} (exists_on_disk size={size} bytes)")
             else:
                 print(f"  MISSING: {path}")
+
+        if missing_required_files:
+            print(
+                "REQUIRED_PROOF_LOGS: DEBUG "
+                f"missing_required_files={len(missing_required_files)}"
+            )
+            for path in missing_required_files:
+                print(f"  MISSING_REQUIRED_FILE: {path}")
         return 1
 
     print(

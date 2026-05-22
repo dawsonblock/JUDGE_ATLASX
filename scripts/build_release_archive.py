@@ -225,20 +225,30 @@ def _load_packaged_proof_paths(repo_root: Path) -> set[str]:
         return packaged
 
     logs = payload.get("logs", {})
-    if not isinstance(logs, dict):
-        return packaged
+    if isinstance(logs, dict):
+        for path in logs.values():
+            if not isinstance(path, str):
+                continue
+            normalized = path.replace("\\", "/")
+            if normalized.startswith("artifacts/proof/current/"):
+                packaged.add(normalized)
 
-    for path in logs.values():
-        if not isinstance(path, str):
-            continue
-        normalized = path.replace("\\", "/")
-        if normalized.startswith("artifacts/proof/current/"):
-            packaged.add(normalized)
+    checks = payload.get("checks", [])
+    if isinstance(checks, list):
+        for check in checks:
+            if not isinstance(check, dict):
+                continue
+            check_log_path = check.get("log_path")
+            if not isinstance(check_log_path, str):
+                continue
+            normalized = check_log_path.replace("\\", "/")
+            if normalized.startswith("artifacts/proof/current/"):
+                packaged.add(normalized)
 
     proof_logs_dir = repo_root / "artifacts" / "proof" / "current"
     if proof_logs_dir.exists():
-        for log_path in proof_logs_dir.glob("*.log"):
-            packaged.add(_normalize(log_path.relative_to(repo_root)))
+        for log_file in proof_logs_dir.glob("*.log"):
+            packaged.add(_normalize(log_file.relative_to(repo_root)))
     return packaged
 
 
@@ -401,6 +411,29 @@ def build_archive(output: Path, root_name: str, include_external: bool, include_
     )
 
     packaged_proof_paths = _load_packaged_proof_paths(REPO_ROOT)
+
+    missing_required_proof_files = sorted(
+        rel_path
+        for rel_path in DEFAULT_INCLUDE_PROOF_FILES
+        if not (REPO_ROOT / rel_path).is_file()
+    )
+    if missing_required_proof_files:
+        raise SystemExit(
+            "Missing required proof files for archive packaging: "
+            + ", ".join(missing_required_proof_files)
+        )
+
+    missing_referenced_proof_paths = sorted(
+        rel_path
+        for rel_path in packaged_proof_paths
+        if not (REPO_ROOT / rel_path).is_file()
+    )
+    if missing_referenced_proof_paths:
+        raise SystemExit(
+            "Missing packaged proof files required by release_gate.json: "
+            + ", ".join(missing_referenced_proof_paths)
+        )
+
     files, included_top_level, excluded_top_level = _collect_files(
         REPO_ROOT,
         include_external=include_external,

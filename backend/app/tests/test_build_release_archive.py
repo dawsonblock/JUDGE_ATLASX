@@ -33,7 +33,14 @@ def _seed_repo(root: Path) -> None:
     _write_file(root / "docs" / "README.md", "docs\n")
     _write_file(root / "scripts" / "release_gate.py", "print('gate')\n")
     _write_file(root / "artifacts" / "proof" / "current" / "CURRENT_PROOF.md", "proof\n")
+    _write_file(root / "artifacts" / "proof" / "current" / "CURRENT_ALPHA_STATUS.md", "alpha\n")
+    _write_file(root / "artifacts" / "proof" / "current" / "SOURCE_REGISTRY_STATUS.md", "registry\n")
+    _write_file(root / "artifacts" / "proof" / "current" / "source_registry_status.json", "{}\n")
+    _write_file(root / "artifacts" / "proof" / "current" / "release_gate.json", json.dumps({"logs": {}}, indent=2) + "\n")
+    _write_file(root / "artifacts" / "proof" / "current" / "proof_manifest.json", "{}\n")
+    _write_file(root / "artifacts" / "proof" / "current" / "FIX_VERIFICATION_REPORT.md", "fixes\n")
     _write_file(root / "artifacts" / "proof" / "current" / "release_readiness.md", "ready\n")
+    _write_file(root / "artifacts" / "proof" / "current" / "PROOF_POLICY.md", "policy\n")
     _write_file(root / "external" / "reference" / "README.md", "external\n")
     _write_file(root / "artifacts" / "proof" / "archive" / "old.txt", "old\n")
 
@@ -109,3 +116,44 @@ def test_archive_validation_files_excluded(tmp_path: Path) -> None:
         names = set(zf.namelist())
         assert not any("archive_validation.md" in n for n in names)
         assert "JUDGE_ATLAS-main/artifacts/proof/current/archive_validation.log" in names
+
+
+def test_build_release_archive_fails_on_missing_release_gate_referenced_log(tmp_path: Path) -> None:
+    module = _load_module()
+    root = tmp_path / "repo"
+    _seed_repo(root)
+    _write_file(
+        root / "artifacts" / "proof" / "current" / "release_gate.json",
+        json.dumps(
+            {
+                "checks": [
+                    {
+                        "name": "required_proof_logs",
+                        "log_path": "artifacts/proof/current/required_proof_logs.log",
+                    }
+                ],
+                "logs": {
+                    "required_proof_logs": "artifacts/proof/current/required_proof_logs.log"
+                },
+            },
+            indent=2,
+        )
+        + "\n",
+    )
+    module.REPO_ROOT = root
+
+    output = tmp_path / "dist" / "clean.zip"
+    try:
+        module.build_archive(
+            output=output,
+            root_name="JUDGE_ATLAS-main",
+            include_external=False,
+            include_proof_archive=False,
+        )
+    except SystemExit as exc:
+        message = str(exc)
+    else:
+        raise AssertionError("Expected build_archive to fail when referenced proof log is missing")
+
+    assert "Missing packaged proof files required by release_gate.json" in message
+    assert "artifacts/proof/current/required_proof_logs.log" in message

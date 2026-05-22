@@ -12,7 +12,7 @@ import pytest
 
 
 def test_release_gate_log_paths_exist(repo_root: Path):
-    """All paths in release_gate.json["logs"] must exist relative to repo root."""
+    """All proof log paths in release_gate.json must exist relative to repo root."""
     release_gate_path = repo_root / "artifacts" / "proof" / "current" / "release_gate.json"
     current_proof_path = repo_root / "artifacts" / "proof" / "current" / "CURRENT_PROOF.md"
 
@@ -29,8 +29,9 @@ def test_release_gate_log_paths_exist(repo_root: Path):
             pytest.skip("current proof is still being assembled")
 
     logs = release_gate.get("logs", {})
-    if not logs:
-        pytest.fail("release_gate.json has no 'logs' section")
+    checks = release_gate.get("checks", [])
+    if not logs and not checks:
+        pytest.fail("release_gate.json has neither 'logs' nor 'checks' sections")
 
     missing = []
     for name, path in logs.items():
@@ -38,11 +39,22 @@ def test_release_gate_log_paths_exist(repo_root: Path):
         if not full_path.exists():
             missing.append((name, path))
 
+    for check in checks:
+        if not isinstance(check, dict):
+            continue
+        check_name = check.get("name", "unknown")
+        path = check.get("log_path")
+        if not isinstance(path, str) or not path:
+            continue
+        full_path = repo_root / path
+        if not full_path.exists():
+            missing.append((f"checks.{check_name}", path))
+
     if missing:
         missing_str = "\n".join(f"  - {name}: {path}" for name, path in missing)
         pytest.fail(
             f"release_gate.json references {len(missing)} missing file(s):\n{missing_str}\n"
-            f"Total log references: {len(logs)}"
+            f"Total references: logs={len(logs)} checks={len(checks)}"
         )
 
     # All files exist

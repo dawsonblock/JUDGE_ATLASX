@@ -333,87 +333,45 @@ def test_admin_ingestion_retry_adapter_failure_does_not_commit_without_audit() -
     db.commit.assert_not_called()
 
 
-def _bulk_settings(data_dir: str) -> SimpleNamespace:
-    return SimpleNamespace(
-        enable_legacy_us_ingest_routes=True,
-        courtlistener_bulk_snapshot_date="2026-05-10",
-        courtlistener_bulk_include_opinions=False,
-        courtlistener_bulk_enabled_files="courts",
-        courtlistener_bulk_data_dir=data_dir,
-        courtlistener_bulk_import_batch_size=10,
-    )
-
-
-def test_courtlistener_bulk_import_success_writes_file_audit_before_commit(
-    tmp_path,
-) -> None:
+def _call_disabled_courtlistener_bulk_import(db: MagicMock) -> HTTPException:
     with pytest.raises(HTTPException) as exc_info:
         cl_bulk_import(
             payload={"snapshot_date": "2026-05-10", "files": "courts"},
             request=MagicMock(),
-            db=MagicMock(),
+            db=db,
             actor=MagicMock(auth_method="jwt"),
         )
-
-    assert exc_info.value.status_code == 404
-    assert "disabled" in str(exc_info.value.detail).lower()
+    return exc_info.value
 
 
-def test_courtlistener_bulk_import_failure_writes_file_audit_before_commit(
-    tmp_path,
-) -> None:
-    with pytest.raises(HTTPException) as exc_info:
-        cl_bulk_import(
-            payload={"snapshot_date": "2026-05-10", "files": "courts"},
-            request=MagicMock(),
-            db=MagicMock(),
-            actor=MagicMock(auth_method="jwt"),
-        )
-
-    assert exc_info.value.status_code == 404
-    assert "disabled" in str(exc_info.value.detail).lower()
+def test_courtlistener_bulk_import_disabled_returns_404() -> None:
+    error = _call_disabled_courtlistener_bulk_import(MagicMock())
+    assert error.status_code == 404
+    assert "disabled" in str(error.detail).lower()
 
 
-def test_courtlistener_bulk_import_audit_failure_rolls_back_file_success(
-    tmp_path,
-) -> None:
-    with pytest.raises(HTTPException) as exc_info:
-        cl_bulk_import(
-            payload={"snapshot_date": "2026-05-10", "files": "courts"},
-            request=MagicMock(),
-            db=MagicMock(),
-            actor=MagicMock(auth_method="jwt"),
-        )
+def test_courtlistener_bulk_import_disabled_does_not_mutate_db_state() -> None:
+    db = MagicMock()
+    _call_disabled_courtlistener_bulk_import(db)
 
-    assert exc_info.value.status_code == 404
-    assert "disabled" in str(exc_info.value.detail).lower()
+    db.add.assert_not_called()
+    db.flush.assert_not_called()
+    db.commit.assert_not_called()
+    db.rollback.assert_not_called()
 
 
-def test_courtlistener_bulk_import_audit_failure_rolls_back_file_failure_status(
-    tmp_path,
-) -> None:
-    with pytest.raises(HTTPException) as exc_info:
-        cl_bulk_import(
-            payload={"snapshot_date": "2026-05-10", "files": "courts"},
-            request=MagicMock(),
-            db=MagicMock(),
-            actor=MagicMock(auth_method="jwt"),
-        )
-
-    assert exc_info.value.status_code == 404
-    assert "disabled" in str(exc_info.value.detail).lower()
-
-
-def test_courtlistener_bulk_import_final_summary_audit_is_not_only_audit_for_committed_files(
-    tmp_path,
-) -> None:
-    with pytest.raises(HTTPException) as exc_info:
-        cl_bulk_import(
-            payload={"snapshot_date": "2026-05-10", "files": "courts"},
-            request=MagicMock(),
-            db=MagicMock(),
-            actor=MagicMock(auth_method="jwt"),
-        )
-
-    assert exc_info.value.status_code == 404
-    assert "disabled" in str(exc_info.value.detail).lower()
+def test_courtlistener_bulk_import_disabled_rejects_all_payload_variants() -> None:
+    for payload in (
+        {"snapshot_date": "2026-05-10", "files": "courts"},
+        {"snapshot_date": "2026-05-10", "files": "dockets"},
+        {"snapshot_date": "2026-05-10", "files": "courts,people,positions"},
+        {},
+    ):
+        with pytest.raises(HTTPException) as exc_info:
+            cl_bulk_import(
+                payload=payload,
+                request=MagicMock(),
+                db=MagicMock(),
+                actor=MagicMock(auth_method="jwt"),
+            )
+        assert exc_info.value.status_code == 404
