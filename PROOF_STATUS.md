@@ -13,6 +13,13 @@
 | Archive validation | ✓ PASS | artifacts/proof/current/archive_validation.log | Release archive format verified |
 | Proof consistency | ✓ PASS | artifacts/proof/current/proof_consistency_pytest.log | release_gate/current proof docs aligned |
 
+## Authority Notes
+
+- Canonical machine truth is artifacts/proof/current/release_gate.json.
+- This file summarizes proof state and must not override release_gate.json.
+- Proof gate PASS indicates alpha proof-check completion only.
+- production_ready remains false unless explicitly changed in canonical artifacts.
+
 ## Runtime Environment
 
 - **Python version**: 3.11.7
@@ -46,6 +53,7 @@ make proof
 
 - Current release truth is derived from `artifacts/proof/current/release_gate.json`.
 - Historical counts and phase narratives are non-authoritative if they conflict with canonical artifacts.
+- Canonical repository posture is summarized in `STATUS.md`.
 
 ---
 

@@ -4,6 +4,14 @@
 **Production ready**: NO  
 **Last updated**: 2026-05-21
 
+## Canonical Authority
+
+- Gate status authority: artifacts/proof/current/release_gate.json
+- Human-readable proof summary: artifacts/proof/current/CURRENT_PROOF.md
+- Release readiness narrative: artifacts/proof/current/release_readiness.md
+- Alpha gate PASS, if present, applies only to release-proof checks.
+- Production readiness remains false for alpha scope.
+
 ## Platform Posture
 
 - This is an alpha platform.

@@ -4,10 +4,61 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORKSPACE_ROOT="$(dirname "${ROOT_DIR}")"
 LOG_PATH="${ROOT_DIR}/artifacts/proof/current/archive_validation.log"
+MD_PATH="${ROOT_DIR}/artifacts/proof/current/archive_validation.md"
 ARCHIVE_HELPER="${ROOT_DIR}/scripts/archive_validation_paths.py"
 
 mkdir -p "$(dirname "${LOG_PATH}")"
 : >"${LOG_PATH}"
+
+sanitize_archive_validation_artifacts() {
+  python3 - <<'PY' || true
+import json
+import re
+from pathlib import Path
+
+root = Path('.').resolve()
+log_path = root / 'artifacts/proof/current/archive_validation.log'
+md_path = root / 'artifacts/proof/current/archive_validation.md'
+
+patterns = (
+  re.compile(r"/Users/[^\s\"'`]+"),
+  re.compile(r"/home/[^\s\"'`]+"),
+  re.compile(r"/private/[^\s\"'`]+"),
+  re.compile(r"[A-Za-z]:\\[^\s\"'`]+"),
+)
+
+repo_prefix = str(root).replace('\\', '/')
+
+def redact_text(text: str) -> str:
+  normalized = text.replace('\\', '/')
+  redacted = normalized.replace(repo_prefix, '[REDACTED_LOCAL_PATH]')
+  for pattern in patterns:
+    redacted = pattern.sub('[REDACTED_LOCAL_PATH]', redacted)
+  return redacted
+
+def redact_file(path: Path) -> None:
+  if not path.exists() or not path.is_file():
+    return
+
+  if path.suffix.lower() == '.json':
+    try:
+      parsed = json.loads(path.read_text(encoding='utf-8'))
+    except json.JSONDecodeError:
+      parsed = None
+    if parsed is not None:
+      serialized = json.dumps(parsed, indent=2)
+      path.write_text(redact_text(serialized) + '\n', encoding='utf-8')
+      return
+
+  text = path.read_text(encoding='utf-8', errors='ignore')
+  redacted = redact_text(text)
+  if redacted != text:
+    path.write_text(redacted, encoding='utf-8')
+
+redact_file(log_path)
+redact_file(md_path)
+PY
+}
 
 # Capture all output, including early archive build/validation failures.
 exec > >(tee -a "${LOG_PATH}") 2>&1
@@ -50,7 +101,11 @@ forbid_path() {
 
 ARCHIVE_PATH="${1:-}"
 TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "${TMP_DIR}"' EXIT INT TERM
+cleanup() {
+  sanitize_archive_validation_artifacts
+  rm -rf "${TMP_DIR}"
+}
+trap cleanup EXIT INT TERM
 
 archive_sha256() {
   if command -v sha256sum >/dev/null 2>&1; then

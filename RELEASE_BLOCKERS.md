@@ -1,10 +1,12 @@
 # RELEASE_BLOCKERS
 
-
-## Current Blockers for Alpha Release
+## Alpha Gate Status
 
 - Source-of-truth blocker state is defined by artifacts/proof/current/release_gate.json.
 - Source-of-truth readiness narrative is defined by artifacts/proof/current/release_readiness.md.
+- Canonical status file is STATUS.md.
+- Canonical current proof summary is artifacts/proof/current/CURRENT_PROOF.md.
+- Alpha gate pass/fail is not a production readiness claim.
 
 ## Completed Resolution Summary
 
@@ -30,3 +32,8 @@
 - release_status: proof-hardened alpha
 - production_ready: false
 - operational_posture: alpha
+
+## Interpretation
+
+- Current alpha release may be unblocked while production_ready remains false.
+- Deferred scope items are non-blocking for alpha gate completion.

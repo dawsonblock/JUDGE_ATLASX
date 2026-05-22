@@ -23,8 +23,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-def check_required_proof_logs(repo_root: Path) -> list[str]:
-    """Return a list of log_path values that are missing on disk.
+def check_required_proof_logs(repo_root: Path) -> tuple[list[str], int, int]:
+    """Return missing log paths plus referenced/present totals.
 
     Reads ``artifacts/proof/current/release_gate.json`` and inspects every
     entry in the ``checks`` array for a ``log_path`` field.  Also checks the
@@ -34,19 +34,19 @@ def check_required_proof_logs(repo_root: Path) -> list[str]:
         repo_root: Repository root directory.
 
     Returns:
-        Sorted list of relative paths (strings) that do not exist on disk.
-        Empty list means all referenced logs are present.
+        Tuple of ``(missing_paths, referenced_total, present_total)``.
     """
     gate_json = repo_root / "artifacts" / "proof" / "current" / "release_gate.json"
     if not gate_json.exists():
         print(f"ERROR: release_gate.json not found at {gate_json}", file=sys.stderr)
-        return [str(gate_json.relative_to(repo_root))]
+        missing = [str(gate_json.relative_to(repo_root))]
+        return missing, len(missing), 0
 
     try:
         payload = json.loads(gate_json.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         print(f"ERROR: failed to parse release_gate.json: {exc}", file=sys.stderr)
-        return ["release_gate.json:parse_error"]
+        return ["release_gate.json:parse_error"], 1, 0
 
     missing: list[str] = []
     seen: set[str] = set()
@@ -78,7 +78,9 @@ def check_required_proof_logs(repo_root: Path) -> list[str]:
         if not abs_path.exists():
             missing.append(log_path)
 
-    return sorted(missing)
+    referenced_total = len(seen)
+    present_total = referenced_total - len(missing)
+    return sorted(missing), referenced_total, present_total
 
 
 def main() -> int:
@@ -87,27 +89,33 @@ def main() -> int:
     args = parser.parse_args()
 
     repo_root = Path(args.root).resolve()
-    missing = check_required_proof_logs(repo_root)
-
-    gate_json = repo_root / "artifacts" / "proof" / "current" / "release_gate.json"
-    if gate_json.exists():
-        try:
-            payload = json.loads(gate_json.read_text(encoding="utf-8"))
-            total = len([
-                e for e in payload.get("checks", []) if e.get("log_path")
-            ])
-        except (json.JSONDecodeError, OSError):
-            total = 0
-    else:
-        total = 0
+    missing, referenced_total, present_total = check_required_proof_logs(repo_root)
 
     if missing:
-        print(f"REQUIRED_PROOF_LOGS: FAIL ({len(missing)} missing of {total} referenced)")
+        print(
+            "REQUIRED_PROOF_LOGS: FAIL "
+            f"({len(missing)} missing of {referenced_total} referenced)"
+        )
+        print(
+            "REQUIRED_PROOF_LOGS: DEBUG "
+            f"present={present_total} missing={len(missing)} referenced={referenced_total}"
+        )
+        if referenced_total > 0:
+            percentage = (present_total / referenced_total) * 100.0
+            print(f"REQUIRED_PROOF_LOGS: DEBUG present_ratio={percentage:.1f}%")
         for path in missing:
-            print(f"  MISSING: {path}")
+            abs_path = repo_root / path
+            if abs_path.exists():
+                size = abs_path.stat().st_size
+                print(f"  MISSING: {path} (exists_on_disk size={size} bytes)")
+            else:
+                print(f"  MISSING: {path}")
         return 1
 
-    print(f"REQUIRED_PROOF_LOGS: PASS ({total} referenced logs present)")
+    print(
+        "REQUIRED_PROOF_LOGS: PASS "
+        f"({present_total} referenced logs present)"
+    )
     return 0
 
 

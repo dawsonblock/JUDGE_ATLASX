@@ -92,6 +92,16 @@ ABSOLUTE_PATH_PATTERNS = (
 )
 
 
+def _redact_embedded_path(value: str) -> str:
+    """Redact any local absolute path fragments from an arbitrary string."""
+    if not value:
+        return value
+    redacted = value.replace("\\", "/")
+    for pattern in ABSOLUTE_PATH_PATTERNS:
+        redacted = pattern.sub("[REDACTED_LOCAL_PATH]", redacted)
+    return redacted
+
+
 def _display_path(path: Path) -> str:
     """Render paths for reports without leaking local absolute prefixes."""
     resolved = path.resolve()
@@ -313,8 +323,9 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
                 for pattern in ABSOLUTE_PATH_PATTERNS:
                     match = pattern.search(text)
                     if match:
+                        redacted_match = _redact_embedded_path(match.group(0))
                         report["errors"].append(
-                            f"absolute_path_embedded:{info.filename}:{match.group(0)}"
+                            f"absolute_path_embedded:{info.filename}:{redacted_match}"
                         )
                         break
 

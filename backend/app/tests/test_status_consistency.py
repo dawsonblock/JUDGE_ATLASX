@@ -28,9 +28,11 @@ def _seed_valid_repo(tmp_path: Path) -> Path:
         "\n".join(
             [
                 "# STATUS",
+                "**Alpha gate checks**: see artifacts/proof/current/release_gate.json",
                 "- Alpha proof status: PASS",
                 "- Production ready: FALSE",
                 "This repository is an alpha/research-grade platform, not a production legal system.",
+                "## Gate Interpretation",
             ]
         )
         + "\n",
@@ -44,7 +46,40 @@ def _seed_valid_repo(tmp_path: Path) -> Path:
     )
     _write_file(
         root / "CURRENT_STATUS.md",
-        shared_doc + "\n- Alpha proof status: PASS\n- Production ready: FALSE\n",
+        shared_doc
+        + "\n## Canonical Authority\n"
+        + "- Gate status authority: artifacts/proof/current/release_gate.json\n"
+        + "- Alpha proof status: PASS\n- Production ready: FALSE\n",
+    )
+    _write_file(
+        root / "RELEASE_BLOCKERS.md",
+        "\n".join(
+            [
+                "# RELEASE_BLOCKERS",
+                "## Alpha Gate Status",
+                "Source-of-truth blocker state is defined by artifacts/proof/current/release_gate.json.",
+                "Source-of-truth readiness narrative is defined by artifacts/proof/current/release_readiness.md.",
+                "Alpha gate pass/fail is not a production readiness claim.",
+                "See STATUS.md for canonical status.",
+                "Current proof: artifacts/proof/current/CURRENT_PROOF.md",
+                "Current release readiness: artifacts/proof/current/release_readiness.md",
+            ]
+        )
+        + "\n",
+    )
+    _write_file(
+        root / "PROOF_STATUS.md",
+        "\n".join(
+            [
+                "# PROOF_STATUS",
+                "Current proof: artifacts/proof/current/CURRENT_PROOF.md",
+                "Current release readiness: artifacts/proof/current/release_readiness.md",
+                "See STATUS.md for canonical status.",
+                "## Authority Notes",
+                "Canonical machine truth is artifacts/proof/current/release_gate.json.",
+            ]
+        )
+        + "\n",
     )
     _write_file(root / "README.md", shared_doc + "\n")
     _write_file(root / "docs" / "RELEASE_READINESS.md", shared_doc + "\n")

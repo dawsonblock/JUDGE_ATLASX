@@ -21,6 +21,8 @@ ARCHIVED_HEADER = "ARCHIVED / NOT CURRENT"
 DOCS_TO_CHECK = (
     "README.md",
     "CURRENT_STATUS.md",
+    "RELEASE_BLOCKERS.md",
+    "PROOF_STATUS.md",
     "docs/RELEASE_READINESS.md",
     "docs/REPO_REALITY.md",
     "docs/DEPLOYMENT.md",
@@ -102,11 +104,15 @@ def verify(root: Path) -> list[str]:
 
     if "Production ready: FALSE" not in status_text:
         errors.append("STATUS.md:missing_production_false_line")
+    if "**Alpha gate checks**: see artifacts/proof/current/release_gate.json" not in status_text:
+        errors.append("STATUS.md:missing_alpha_gate_authority_line")
     if (
         "This repository is an alpha/research-grade platform, not a production legal system."
         not in status_text
     ):
         errors.append("STATUS.md:missing_required_research_grade_disclaimer")
+    if "## Gate Interpretation" not in status_text:
+        errors.append("STATUS.md:missing_gate_interpretation_section")
 
     status_alpha = _extract_line_value(status_text, "- Alpha proof status")
     status_prod = _extract_line_value(status_text, "- Production ready")
@@ -133,12 +139,34 @@ def verify(root: Path) -> list[str]:
     current_status_path = root / "CURRENT_STATUS.md"
     if current_status_path.exists():
         current_status_text = _read(current_status_path)
+        if "## Canonical Authority" not in current_status_text:
+            errors.append("CURRENT_STATUS.md:missing_canonical_authority_section")
+        if "Gate status authority: artifacts/proof/current/release_gate.json" not in current_status_text:
+            errors.append("CURRENT_STATUS.md:missing_gate_authority_reference")
         current_alpha = _extract_line_value(current_status_text, "- Alpha proof status")
         current_prod = _extract_line_value(current_status_text, "- Production ready")
         if current_alpha is not None and status_alpha is not None and current_alpha != status_alpha:
             errors.append("CURRENT_STATUS.md:alpha_status_contradicts_STATUS.md")
         if current_prod is not None and status_prod is not None and current_prod != status_prod:
             errors.append("CURRENT_STATUS.md:production_status_contradicts_STATUS.md")
+
+    release_blockers_path = root / "RELEASE_BLOCKERS.md"
+    if release_blockers_path.exists():
+        release_blockers_text = _read(release_blockers_path)
+        if "## Alpha Gate Status" not in release_blockers_text:
+            errors.append("RELEASE_BLOCKERS.md:missing_alpha_gate_status_section")
+        if "Source-of-truth blocker state is defined by artifacts/proof/current/release_gate.json." not in release_blockers_text:
+            errors.append("RELEASE_BLOCKERS.md:missing_release_gate_reference")
+        if "Alpha gate pass/fail is not a production readiness claim." not in release_blockers_text:
+            errors.append("RELEASE_BLOCKERS.md:missing_gate_vs_production_disclaimer")
+
+    proof_status_path = root / "PROOF_STATUS.md"
+    if proof_status_path.exists():
+        proof_status_text = _read(proof_status_path)
+        if "## Authority Notes" not in proof_status_text:
+            errors.append("PROOF_STATUS.md:missing_authority_notes_section")
+        if "Canonical machine truth is artifacts/proof/current/release_gate.json." not in proof_status_text:
+            errors.append("PROOF_STATUS.md:missing_release_gate_authority_line")
 
     legacy_release_path = root / LEGACY_RELEASE_READINESS
     if legacy_release_path.exists():

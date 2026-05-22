@@ -2,6 +2,7 @@
 
 **Repository**: JUDGE_ATLASX-main  
 **Current release status**: proof-hardened alpha  
+**Alpha gate checks**: see artifacts/proof/current/release_gate.json  
 **Production ready**: false
 Production ready: FALSE
 
@@ -40,6 +41,12 @@ This repository is an alpha/research-grade platform, not a production legal syst
 - Complete Canadian legal coverage claim is not validated
 - Production deployment environment is not tested
 - Production operational readiness is not certified
+
+## Gate Interpretation
+
+- Alpha gate checks passing means release-proof checks are currently satisfied.
+- Alpha gate checks passing does not mean production readiness.
+- Production readiness remains false by design for this alpha scope.
 
 ## Known Constraints
 

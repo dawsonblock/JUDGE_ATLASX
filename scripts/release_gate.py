@@ -2376,10 +2376,6 @@ def main() -> int:
     payload["logs"]["release_readiness"] = readiness_rel
     payload["logs"]["proof_manifest"] = str(manifest_path.relative_to(repo_root))
 
-    # Sanitize generated proof artifacts so release-included files do not
-    # leak workstation-specific absolute paths.
-    _sanitize_current_proof_artifacts(repo_root, out_dir)
-
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
     # Run proof consistency only after release_gate.json, CURRENT_PROOF.md,
@@ -2397,6 +2393,16 @@ def main() -> int:
         timeout_seconds=120,
     )
     results.append(proof_consistency_pytest_step)
+
+    if proof_consistency_pytest_step.exit_code == 0:
+        # Sanitize generated proof artifacts only after proof consistency is
+        # confirmed, so path-related failures are not masked.
+        _sanitize_current_proof_artifacts(repo_root, out_dir)
+    else:
+        with gate_log_path.open("a", encoding="utf-8") as gate_log:
+            gate_log.write(
+                "skip_sanitize_current_proof_artifacts=proof_consistency_failed\n"
+            )
 
     missing_logs = _missing_logs(repo_root, results)
     ok = all(r.exit_code == 0 for r in results) and not missing_logs
@@ -2484,6 +2490,27 @@ def main() -> int:
     )
     results.append(archive_step)
 
+    archive_sidecars = {
+        "archive_validation.log": out_dir / "archive_validation.log",
+        "archive_validation.md": out_dir / "archive_validation.md",
+    }
+    missing_archive_sidecars = [
+        name for name, path in archive_sidecars.items() if not path.exists()
+    ]
+    if missing_archive_sidecars:
+        archive_step.status = "FAIL"
+        archive_step.exit_code = 1
+        archive_step.failure_reason = (
+            "missing_archive_validation_artifacts:"
+            + ",".join(sorted(missing_archive_sidecars))
+        )
+        with gate_log_path.open("a", encoding="utf-8") as gate_log:
+            gate_log.write(
+                "archive_validation_missing_artifacts="
+                + ",".join(sorted(missing_archive_sidecars))
+                + "\n"
+            )
+
     # archive_validation writes additional proof files outside _run stdout,
     # so sanitize those side artifacts explicitly.
     _redact_file_local_paths(out_dir / "archive_validation.log", repo_root)
@@ -2513,6 +2540,13 @@ def main() -> int:
     payload["logs"]["release_gate"] = str(gate_log_path.relative_to(repo_root))
     payload["logs"]["proof_manifest"] = str(manifest_path.relative_to(repo_root))
     payload["logs"]["static_guards"] = static_guards_rel
+    payload["logs"]["current_proof"] = current_proof_rel
+    payload["logs"]["current_alpha_status"] = current_alpha_status_rel
+    payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
+    payload["logs"]["proof_policy"] = proof_policy_rel
+    payload["logs"]["repair_report"] = repair_report_rel
+    payload["logs"]["fix_verification_report"] = fix_verification_report_rel
+    payload["logs"]["release_readiness"] = readiness_rel
     payload["failed_checks"] = [r.name for r in results if r.exit_code != 0] + (
         ["missing_logs"] if missing_logs else []
     )
