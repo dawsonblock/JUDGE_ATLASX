@@ -16,7 +16,13 @@ def get_source_registry() -> dict[str, dict]:
     Falls back to an empty mapping when proof artifacts are unavailable.
     """
     repo_root = Path(__file__).resolve().parents[3]
-    status_path = repo_root / "artifacts" / "proof" / "current" / "source_registry_status.json"
+    status_path = (
+        repo_root
+        / "artifacts"
+        / "proof"
+        / "current"
+        / "source_registry_status.json"
+    )
     if not status_path.exists():
         return {}
 
@@ -42,7 +48,7 @@ def get_source_registry() -> dict[str, dict]:
         registry[str(source_key)] = {
             "source_key": source_key,
             "lifecycle_state": lifecycle_state,
-            "is_runnable": lifecycle_state == "enabled_runnable",
+            "is_runnable": lifecycle_state in {"runnable", "enabled_runnable"},
             "is_active": is_active,
             "automation_status": automation_status,
         }

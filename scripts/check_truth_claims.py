@@ -10,6 +10,7 @@ assisted", "evidence-linked", "partially implemented", or "source-dependent".
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 from typing import NamedTuple
@@ -328,16 +329,25 @@ TRUTH_SENSITIVE_REL_PATHS = {
 
 def _iter_files(root: Path):
     self_path = Path(__file__).resolve()
-    for path in root.rglob("*"):
-        if not path.is_file():
-            continue
-        if path.resolve() == self_path:
-            continue
-        if any(part in SKIP_DIRS for part in path.parts):
-            continue
-        if path.suffix.lower() in SKIP_SUFFIXES:
-            continue
-        yield path
+    for dirpath, dirnames, filenames in os.walk(root, topdown=True):
+        # Prune skipped directories in-place to avoid descending into them.
+        dirnames[:] = [name for name in dirnames if name not in SKIP_DIRS]
+
+        base = Path(dirpath)
+        for filename in filenames:
+            path = base / filename
+            if path.suffix.lower() in SKIP_SUFFIXES:
+                continue
+            try:
+                if not path.is_file():
+                    continue
+                if path.resolve() == self_path:
+                    continue
+            except FileNotFoundError:
+                # Concurrent file-system mutations (for example npm install)
+                # can remove files between discovery and stat/resolve.
+                continue
+            yield path
 
 
 def get_scanned_paths(root: Path) -> list[Path]:

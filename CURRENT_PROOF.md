@@ -1,30 +1,30 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-22T20:18:39.831476+00:00
-- commit_hash: 46e13b7d41afc04eec1fb49a0fa3b6a6750ea8ef
-- alpha_gate_status: BLOCKED
-- alpha_gate_passed: false
-- release_gate_check_count: 43
+- generated_at_utc: 2026-05-22T21:09:11.977695+00:00
+- commit_hash: 757de1e07c19957d2ff00ede49915d3830860cbe
+- alpha_gate_status: PASS
+- alpha_gate_passed: true
+- release_gate_check_count: 46
 - docker_available: true
 - postgis_proof_result: PASS
 - egress_proxy_proof_result: PASS
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
-- archive_validation_result: UNKNOWN
-- proof_input_tree_hash: 3ac691ea0590111620db9500e826236a37b18339d60fae8f9d85f9d73b2f0c31
-- proof_input_file_count: 1038
+- archive_validation_result: PASS
+- proof_input_tree_hash: 0f6dcabcfb8f91a477aac14f34ca7a116b440a6860236b78b1ab163a5268f28b
+- proof_input_file_count: 1050
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
 ## Runtime Metadata
 
 - gate_runner_python_version: 3.11.7
-- gate_runner_python_executable: [REDACTED_LOCAL_PATH]/backend/.venv/bin/python
+- gate_runner_python_executable: [REDACTED_LOCAL_PATH]
 - backend_test_python_version: 3.11.7
 - backend_test_python_executable: [REDACTED_LOCAL_PATH]/backend/.venv/bin/python
 - backend_required_python: >=3.11
-- node_version: unknown
-- npm_version: unknown
+- node_version: v20.20.2
+- npm_version: 10.8.2
 - platform: macOS-26.2-arm64-arm-64bit
 - test_database_backend: sqlite
 - test_database_url_type: sqlite_file
@@ -46,7 +46,7 @@
 - Dedicated egress proxy proof passed in the current release gate.
 - Dedicated synthetic demo proof passed in the current release gate.
 - Proof freshness passed against the stored proof-input file list and tree hash.
-- Archive validation has not yet been recorded for this run.
+- Archive validation passed against the final distributable archive shape.
 - archive_validation_log: artifacts/proof/current/archive_validation.log
 - archive_validation_supported_shapes:
   - JUDGE-main/
@@ -59,7 +59,8 @@
 
 ## Current Proof Facts
 
-- backend import proof: PASS (124 routes)
+- backend pytest: 3368 passed, 34 skipped
+- backend import proof: PASS (107 routes)
 - frontend contracts: 48 passed
 - public API boundary: 55 passed
 - Docker runtime preflight: PASS
@@ -69,12 +70,6 @@
 - CanLII staging proof: PASS
 - mutation fail-closed coverage: PASS
 - Alembic migrations: 71
-
-## Failed Checks
-
-- check_node_policy
-- proof_consistency_pytest
-- missing_logs
 
 ## Egress Proxy Coverage
 

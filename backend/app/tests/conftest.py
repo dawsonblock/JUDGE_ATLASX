@@ -27,6 +27,7 @@ os.environ["JTA_ENABLE_LEGACY_ADMIN_TOKEN"] = "false"
 # Tests that specifically exercise the legacy shared-token mutation path
 # must monkeypatch get_settings or set JTA_ENABLE_LEGACY_ADMIN_TOKEN=true locally.
 os.environ["JTA_ENFORCE_JWT_MUTATIONS"] = "true"
+os.environ["JTA_ENABLE_WORKFLOW_ADMIN"] = "true"
 
 from fastapi.testclient import TestClient  # noqa: E402
 

@@ -33,7 +33,9 @@ from fastapi import APIRouter
 router = APIRouter()
 router.include_router(auth.router)
 router.include_router(public_events.router)
-router.include_router(live_map.router)
+settings = get_settings()
+if settings.enable_experimental_live_map:
+    router.include_router(live_map.router)
 router.include_router(map.router)
 router.include_router(map_record.router)
 router.include_router(boundaries.router)
@@ -54,11 +56,11 @@ router.include_router(evidence.router)
 router.include_router(snapshots.router)
 router.include_router(ai_correctness.router)
 router.include_router(sources.router)
-router.include_router(workflow_admin.router)
+if settings.enable_workflow_admin:
+    router.include_router(workflow_admin.router)
 router.include_router(status.router)
 
 # Conditionally mount legacy U.S. ingestion routes (disabled by default)
-settings = get_settings()
 if settings.enable_legacy_us_ingest_routes:
     router.include_router(admin_legacy_ingest.router)
 

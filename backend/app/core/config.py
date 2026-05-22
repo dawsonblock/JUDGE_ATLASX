@@ -102,6 +102,8 @@ class Settings(BaseSettings):
 
     # Experimental live-map public router remains blocked by default.
     enable_experimental_live_map: bool = False
+    # Workflow admin router remains blocked by default.
+    enable_workflow_admin: bool = False
     public_map_min_confidence: float = 0.65
 
     # Enforce JWT-only authority for mutation routes
@@ -117,7 +119,8 @@ class Settings(BaseSettings):
 
     # Ingestion queue backend selection: "inprocess" or "postgres".
     # inprocess is alpha-only and not production-capable.
-    # postgres is alpha-hardened with worker-safe features but not production-certified.
+    # postgres is alpha-hardened with worker-safe features but not
+    # production-certified.
     ingestion_queue_backend: Literal["inprocess", "postgres"] = "inprocess"
 
     # Allow alpha postgres queue in production environments.

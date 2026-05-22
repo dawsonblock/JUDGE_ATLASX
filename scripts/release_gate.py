@@ -1119,9 +1119,18 @@ def _archive_validation_result(out_dir: Path) -> str:
     return "FAIL"
 
 
-def _ensure_required_proof_markers(out_dir: Path) -> None:
+def _ensure_required_proof_markers(
+    out_dir: Path,
+    node_version: str,
+    npm_version: str,
+) -> None:
     placeholders = {
-        "CURRENT_PROOF.md": "# CURRENT_PROOF\n\n- status: in_progress\n",
+        "CURRENT_PROOF.md": (
+            "# CURRENT_PROOF\n\n"
+            "- status: in_progress\n"
+            f"- node_version: {node_version}\n"
+            f"- npm_version: {npm_version}\n"
+        ),
         "REPAIR_REPORT.md": "# REPAIR_REPORT\n\n- status: in_progress\n",
         "SOURCE_REGISTRY_STATUS.md": "# SOURCE_REGISTRY_STATUS\n\n- status: in_progress\n",
         "FIX_VERIFICATION_REPORT.md": (
@@ -1469,6 +1478,24 @@ def main() -> int:
             [python_exe, "-c", "import sys; print(sys.version.split()[0])"],
             capture_output=True,
             text=True,
+        ).stdout.strip()
+        or "unknown"
+    )
+    gate_node_version = (
+        subprocess.run(
+            ["node", "--version"],
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout.strip()
+        or "unknown"
+    )
+    gate_npm_version = (
+        subprocess.run(
+            ["npm", "--version"],
+            capture_output=True,
+            text=True,
+            check=False,
         ).stdout.strip()
         or "unknown"
     )
@@ -1864,7 +1891,11 @@ def main() -> int:
 
     # Some backend consistency tests assert these files always exist.
     # Create temporary placeholders; final versions are written later.
-    _ensure_required_proof_markers(out_dir)
+    _ensure_required_proof_markers(
+        out_dir,
+        gate_node_version,
+        gate_npm_version,
+    )
 
     results: list[GateStep] = []
     blocked_checks: dict[str, str] = {}
