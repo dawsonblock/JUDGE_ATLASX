@@ -113,10 +113,14 @@ statscan-boundary-proof:
 	@backend/.venv/bin/python -m pytest backend/app/tests/test_statscan_table_adapter_boundary.py backend/app/tests/test_source_registry_consistency.py -q
 
 build-clean-release:
-	@python3 scripts/build_clean_release.py
+	@echo "DEPRECATED: use make release-package-proof-local (authoritative pipeline)"
+	@bash scripts/package_and_validate_release_archive.sh --archive-path dist/JUDGE_ATLAS-main-final.zip --package-root-name JUDGE_ATLAS-main
 
 validate-release-zip:
-	@python3 scripts/validate_release_zip.py
+	@echo "DEPRECATED: use validate_final_zip/check_release_surface/verify_archive_proof_freshness on dist/JUDGE_ATLAS-main-final.zip"
+	@python3 scripts/validate_final_zip.py dist/JUDGE_ATLAS-main-final.zip
+	@python3 scripts/check_release_surface.py --archive dist/JUDGE_ATLAS-main-final.zip
+	@python3 scripts/verify_archive_proof_freshness.py --archive dist/JUDGE_ATLAS-main-final.zip
 
 validate-smoke-workspace:
 	@TOOLATHLON_PROFILE=smoke bash scripts/validate_smoke_workspace.sh

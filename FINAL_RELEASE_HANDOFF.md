@@ -1,7 +1,7 @@
 # Final Release Handoff
 
 Date: 2026-05-22
-Repository: JUDGE_ATLASX (main)
+Repository: JUDGE_ATLAS (main)
 Workspace: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2
 
 ## Final Authoritative Archive
@@ -44,8 +44,8 @@ Workspace: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2
 
 ## Current Working Tree Delta
 
-- Untracked: FINAL_RELEASE_HANDOFF.md
-- Modified tracked files: none
+- This section is point-in-time and may change after proof regeneration.
+- Before publishing, run `git status --short` and include the exact output in release notes if needed.
 
 ## Important Result
 

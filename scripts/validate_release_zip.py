@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate clean alpha release zip contents."""
+"""Validate release zip contents (legacy wrapper)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 from zipfile import ZipFile
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_ZIP = REPO_ROOT / "JUDGE_ATLASX-alpha-clean.zip"
+DEFAULT_ZIP = REPO_ROOT / "dist" / "JUDGE_ATLAS-main-final.zip"
 
 REQUIRED_PREFIXES = [
     "backend/",

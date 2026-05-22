@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-"""Build clean alpha runtime release archive.
+"""Legacy clean-release helper (deprecated).
 
-Produces:
-- JUDGE_ATLASX-alpha-clean.zip
-- artifacts/proof/current/RELEASE_MANIFEST.json
-- Optional JUDGE_ATLASX-reference-bundle.zip (external references only)
+Deprecated in favor of scripts/package_and_validate_release_archive.sh.
+Canonical release artifact: dist/JUDGE_ATLAS-main-final.zip.
 """
 
 from __future__ import annotations
@@ -17,8 +15,8 @@ from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-OUT_ZIP = REPO_ROOT / "JUDGE_ATLASX-alpha-clean.zip"
-REF_ZIP = REPO_ROOT / "JUDGE_ATLASX-reference-bundle.zip"
+OUT_ZIP = REPO_ROOT / "dist" / "JUDGE_ATLAS-main-final.zip"
+REF_ZIP = REPO_ROOT / "JUDGE_ATLAS-reference-bundle.zip"
 MANIFEST_PATH = REPO_ROOT / "artifacts" / "proof" / "current" / "RELEASE_MANIFEST.json"
 
 INCLUDED_DIRS = [

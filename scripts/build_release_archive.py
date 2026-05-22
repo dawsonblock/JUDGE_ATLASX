@@ -13,8 +13,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUTPUT = REPO_ROOT / "dist" / "JUDGE_ATLASX-main.clean.zip"
-DEFAULT_ROOT_NAME = "JUDGE_ATLASX-main"
+DEFAULT_OUTPUT = REPO_ROOT / "dist" / "JUDGE_ATLAS-main-final.zip"
+DEFAULT_ROOT_NAME = "JUDGE_ATLAS-main"
 
 DEFAULT_INCLUDE_TOP_LEVEL = (
     ".github",

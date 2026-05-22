@@ -53,4 +53,15 @@ Evidence is authoritative. AI and memory outputs are derivative only. Public vis
 
 - Authoritative release archives are produced only by scripts/package_and_validate_release_archive.sh.
 - Raw source snapshot ZIP files are not distributable release artifacts.
+- Publish only dist/JUDGE_ATLAS-main-final.zip and include its SHA-256 in release communication.
+- Do not upload workspace/source snapshots (for example JUDGE_ATLASX-main N.zip) as release candidates.
 - See docs/RELEASE_READINESS.md and docs/reports/HARDENING_RELEASE_ARTIFACT_CHAIN.md.
+
+## Canonical Release Commands
+
+```bash
+make proof
+bash scripts/package_and_validate_release_archive.sh \
+	--archive-path dist/JUDGE_ATLAS-main-final.zip \
+	--package-root-name JUDGE_ATLAS-main
+```
