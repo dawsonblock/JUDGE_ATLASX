@@ -5,6 +5,7 @@
 ### Core Strength Areas
 
 #### Evidence Storage & Retrieval ✓
+
 - Evidence snapshot model with version tracking
 - Source registry with 26 registered sources
 - Evidence query API (`/api/evidence/*`)
@@ -13,6 +14,7 @@
 - Audit trail for evidence modifications
 
 #### Legal Document Ingestion ✓
+
 - Backend ingestion pipeline (single active source: `justice_canada_laws_xml`)
 - SQLAlchemy ORM models for legal instruments, sections, and relationships
 - Alembic migrations for schema evolution
@@ -21,6 +23,7 @@
 - Repeal status tracking
 
 #### Public API Boundaries ✓
+
 - Anonymous public endpoints (`GET /api/evidence`, `GET /api/claims`)
 - Authenticated routes (`POST /api/claims`, `PATCH /api/claims`)
 - Admin-only routes (`POST /api/admin/*`)
@@ -29,6 +32,7 @@
 - Public-safe/public-redacted filtering
 
 #### Review & Publication Workflow ✓
+
 - Claim entity model with status (pending/approved/rejected/disputed)
 - Review assignment to admin/reviewer users
 - Publish status control (internal/public_redacted/public_safe)
@@ -37,6 +41,7 @@
 - Audit logging of all review actions
 
 #### Testing & Quality Gates ✓
+
 - Backend pytest suite (9 gate suites)
 - Frontend typecheck, lint, test, build gates
 - Docker runtime validation
@@ -48,6 +53,7 @@
 - False-claim scanner
 
 #### Proof & Deployment ✓
+
 - Proof artifact generation (`make proof`)
 - Release archive builder
 - Archive validator
@@ -62,19 +68,24 @@
 ### Partial/Limited Implementation
 
 #### Memory System 🟡
+
 - **Status**: Working but shallow
-- **Implemented**: Claim storage, status tracking, confidence scoring
-- **Missing**: 
-  - Subject/predicate/object detail preservation
+- **Implemented**:
+  - Structured memory claims with predicate/object fields and normalized values
+  - Claim status and review lifecycle fields
+  - Confidence scoring and corroboration/contradiction counters
+  - Valid-time style fields (`valid_from`, `valid_to`, `observed_at`, `last_seen_at`)
+- **Missing**:
+  - Uniform temporal query operators across all memory read paths
   - Match reason and salience tracking
-  - Temporal query operators
-  - Full evidence reference recovery
-- **Scope**: Observation + status + confidence only
+  - Full answer-basis reconstruction for every downstream response
+- **Scope**: Rich claim records exist, but retrieval and explanation depth are still limited
 - **Risk**: Memory outputs lose source detail; derivatives only
 
 #### AI/LLM Integration 🟡
+
 - **Status**: Basic chat interface; no production-grade inference
-- **Implemented**: 
+- **Implemented**:
   - Backend `/api/ai/chat` endpoint
   - Context window management
   - Role-based access control
@@ -87,6 +98,7 @@
 - **Risk**: AI outputs are hypotheses; not authoritative
 
 #### Live Map / Workflow Admin Routes 🟡
+
 - **Status**: Experimental modules exist in tree but are unmounted
 - **Implemented**: No mounted `live_map` or `workflow_admin` endpoints
 - **Missing**:
@@ -97,9 +109,10 @@
 - **Risk**: Low in current state; rises if reintroduced without boundary tests
 
 #### Event Origin Tracking 🟡
+
 - **Status**: Partially implemented
 - **Enum values**: RuntimeLoop, Evaluator, ClaimStore, ToolGate, ProofHarness
-- **Missing**: 
+- **Missing**:
   - External integration origins
   - Batch operation tracking
   - Schedule/cron tracking
@@ -111,12 +124,15 @@
 ### Not Yet Implemented ❌
 
 #### Bi-temporal Modeling
-- No `valid_from`, `valid_to`, `tx_from`, `tx_to` fields
-- No temporal query helpers
+
+- Partial valid-time support exists (`valid_from`, `valid_to` in memory/legal models)
+- No transaction-time (`tx_from` / `tx_to`) model
+- No uniform temporal query helpers platform-wide
 - No as-of queries
 - Deferred to Phase 14
 
 #### Advanced Memory Features
+
 - No memory_records table (claim-table-only)
 - No answer basis reconstruction
 - No contradiction resolution
@@ -124,17 +140,20 @@
 - Deferred to Phase 14
 
 #### Multi-Region Deployment
+
 - Single deployment only
 - No failover
 - No multi-region redundancy
 
 #### Performance Optimization
+
 - No query caching (except Redis session store)
 - No pagination optimization
 - No index materialization
 - No pre-computed result caching
 
 #### Advanced Search
+
 - No full-text search on evidence text
 - No semantic search
 - No vector embeddings for document similarity
@@ -147,9 +166,9 @@
 ### Accuracy of Current Status Claims
 
 | Claim | Accuracy | Notes |
-|-------|----------|-------|
+| ----- | -------- | ----- |
 | "Alpha platform" | ✓ Accurate | Ready for research/review, not production deployment |
-| "Not suitable for production deployment" | ✓ Accurate | Single deployment, no HA, no temporal support |
+| "Not suitable for production deployment" | ✓ Accurate | Single deployment, no HA, no bi-temporal model |
 | "Evidence authoritative" | ✓ Accurate | Evidence snapshots are versioned and audited |
 | "AI outputs derivative" | ✓ Accurate | No inference authority; hypotheses only |
 | "Manual review required" | ✓ Accurate | Public publication requires approval |
@@ -160,7 +179,7 @@
 ### Gaps Between Documentation and Reality
 
 | Gap | Severity | Status |
-|-----|----------|--------|
+| --- | -------- | ------ |
 | `REPO_INVENTORY.md` stale proof numbers | LOW | Will regenerate in Phase 11 |
 | Memory system docs overstate capabilities | MEDIUM | Phase 14 will formalize temporal model |
 | No hardening report (CODEX_MAIN_12) | MEDIUM | Will generate after Phase 13 |
@@ -170,23 +189,23 @@
 
 ## What Works Well
 
-✓ **Evidence model**: Versioned, audited, queryable  
-✓ **Public/private boundaries**: Enforced at API layer  
-✓ **Review workflow**: Functional and tracked  
-✓ **Proof infrastructure**: Comprehensive and automated  
-✓ **Test coverage**: Main gates pass consistently  
-✓ **Source registry**: Conservative and well-documented  
-✓ **Docker deployment**: Validated and working  
+- ✓ **Evidence model**: Versioned, audited, queryable
+- ✓ **Public/private boundaries**: Enforced at API layer
+- ✓ **Review workflow**: Functional and tracked
+- ✓ **Proof infrastructure**: Comprehensive and automated
+- ✓ **Test coverage**: Main gates pass consistently
+- ✓ **Source registry**: Conservative and well-documented
+- ✓ **Docker deployment**: Validated and working
 
 ---
 
 ## What Needs Work (Post-Alpha)
 
-⏳ **Temporal queries**: No as-of support  
-⏳ **Memory depth**: Shallow implementation  
-⏳ **Event tracking**: Limited to internal operations  
-⏳ **Performance**: No caching or optimization  
-⏳ **Advanced features**: All deferred to Phase 14+  
+- ⏳ **Temporal queries**: No as-of support
+- ⏳ **Memory depth**: Retrieval/explanation depth still limited
+- ⏳ **Event tracking**: Limited to internal operations
+- ⏳ **Performance**: No caching or optimization
+- ⏳ **Advanced features**: All deferred to Phase 14+
 
 ---
 

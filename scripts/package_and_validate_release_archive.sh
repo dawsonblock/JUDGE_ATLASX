@@ -45,6 +45,11 @@ log "Validating local proof freshness"
 python scripts/check_proof_freshness.py
 python scripts/check_proof_freshness.py --strict-extra-files
 
+log "Validating local proof integrity"
+python scripts/check_proof_consistency.py
+python scripts/check_single_proof_authority.py --root .
+python scripts/check_required_proof_logs.py --root .
+
 log "Building archive at ${ARCHIVE_PATH}"
 python scripts/build_release_archive.py \
   --output "${ARCHIVE_PATH}" \
