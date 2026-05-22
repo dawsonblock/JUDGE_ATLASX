@@ -363,12 +363,12 @@ def validate_final_zip(zip_path: Path) -> dict:
         
         # Try to run proof freshness check on extracted content
         try:
-            # Copy proof freshness checker if needed
+            freshness_script = root / "scripts" / "check_proof_freshness.py"
+            python_bin = sys.executable or "python3"
             freshness_result = subprocess.run(
                 [
-                    "python3.11",
-                    str(REPO_ROOT / "scripts" / "check_proof_freshness.py"),
-                    "--no-update-artifacts",
+                    python_bin,
+                    str(freshness_script),
                 ],
                 cwd=root,
                 capture_output=True,
@@ -378,7 +378,16 @@ def validate_final_zip(zip_path: Path) -> dict:
             
             if freshness_result.returncode != 0:
                 result["warnings"].append("proof_freshness_check_failed")
-                result["warnings"].append(freshness_result.stdout)
+                detail = "\n".join(
+                    part
+                    for part in (
+                        freshness_result.stdout.strip(),
+                        freshness_result.stderr.strip(),
+                    )
+                    if part
+                )
+                if detail:
+                    result["warnings"].append(detail)
         except Exception as e:
             result["warnings"].append(f"proof_freshness_check_error:{str(e)}")
     
