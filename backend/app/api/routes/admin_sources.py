@@ -96,6 +96,20 @@ class SourceHealthMetrics(BaseModel):
     recent_error_count: int
 
 
+class SourceHealthSummary(BaseModel):
+    source_key: str
+    source_name: str
+    source_type: str
+    health_status: Literal["healthy", "degraded", "unhealthy", "unknown"]
+    last_fetch_at: datetime | None
+    last_fetch_success: bool
+    fetch_count_24h: int
+    error_count_24h: int
+    success_rate_24h: float
+    created_events_count: int
+    created_claims_count: int
+
+
 class SourceResponse(BaseModel):
     """Source registry entry response."""
 
@@ -669,15 +683,83 @@ def get_source_health(
         .first()
     )
 
+    total_runs = int(getattr(run_stats, "total_runs", 0) or 0)
+    total_errors = int(getattr(run_stats, "total_errors", 0) or 0)
+
     return {
         "health_score": source.health_score,
         "last_successful_fetch": source.last_successful_fetch,
         "last_error": source.last_error,
         "last_error_at": source.last_error_at,
         "last_ingested_at": source.last_ingested_at,
-        "recent_run_count": run_stats.total_runs or 0,
-        "recent_error_count": run_stats.total_errors or 0,
+        "recent_run_count": total_runs,
+        "recent_error_count": total_errors,
     }
+
+
+@router.get("/health")
+def get_sources_health(
+    db: Session = Depends(get_db),
+    _: AdminActor = Depends(require_admin_token),
+) -> dict[str, Any]:
+    """Return aggregate health summaries for all sources (frontend panel shape)."""
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+    sources = db.query(SourceRegistry).order_by(SourceRegistry.source_name).all()
+
+    summaries: list[dict[str, Any]] = []
+    for source in sources:
+        stats = (
+            db.query(
+                func.count(IngestionRun.id).label("total_runs"),
+                func.sum(IngestionRun.error_count).label("total_errors"),
+                func.sum(IngestionRun.persisted_count).label("total_persisted"),
+            )
+            .filter(
+                IngestionRun.source_name == source.source_key,
+                IngestionRun.started_at >= cutoff,
+            )
+            .first()
+        )
+
+        fetch_count = int(getattr(stats, "total_runs", 0) or 0)
+        error_count = int(getattr(stats, "total_errors", 0) or 0)
+        persisted_count = int(getattr(stats, "total_persisted", 0) or 0)
+        success_count = max(fetch_count - error_count, 0)
+        success_rate = (success_count / fetch_count * 100.0) if fetch_count > 0 else 0.0
+
+        if source.health_score >= 0.8:
+            health_status: Literal["healthy", "degraded", "unhealthy", "unknown"] = "healthy"
+        elif source.health_score >= 0.5:
+            health_status = "degraded"
+        elif source.health_score > 0:
+            health_status = "unhealthy"
+        else:
+            health_status = "unknown"
+
+        summaries.append(
+            {
+                "source_key": source.source_key,
+                "source_name": source.source_name,
+                "source_type": source.source_type,
+                "health_status": health_status,
+                "last_fetch_at": source.last_ingested_at,
+                "last_fetch_success": (source.last_error_at is None)
+                or (
+                    source.last_successful_fetch is not None
+                    and (
+                        source.last_error_at is None
+                        or source.last_successful_fetch >= source.last_error_at
+                    )
+                ),
+                "fetch_count_24h": fetch_count,
+                "error_count_24h": error_count,
+                "success_rate_24h": success_rate,
+                "created_events_count": persisted_count,
+                "created_claims_count": 0,
+            }
+        )
+
+    return {"sources": summaries}
 
 
 class RunResult(BaseModel):

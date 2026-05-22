@@ -7,26 +7,30 @@ confidence scoring, review status, and publication gates.
 import logging
 from datetime import datetime, timezone
 from typing import Any
-from uuid import uuid4
 
 from sqlalchemy.orm import Session
 
 from app.ai.confidence_engine import calculate_claim_confidence
-from app.map.materialize_geo_legal_events import GeoLegalEvent
 from app.memory.contradiction_engine import get_open_contradictions_by_claim
 from app.models.entities import (
     CanonicalEntity,
     CrimeIncident,
     Event,
     LegalInstrument,
+    MemoryEvidenceLink,
     MemoryClaim,
+    SourceSnapshot,
 )
-from app.review.publication_gate import assert_legal_instrument_publication_ready
+from app.review.publication_gate import (
+    assert_legal_instrument_publication_ready,
+    assert_memory_claim_publication_ready,
+)
 from app.schemas.geo_legal_event import (
     EVENT_TYPES,
     GeoLegalEvent,
     PUBLISH_STATUSES,
     REVIEW_STATUSES,
+    get_confidence_label,
 )
 
 logger = logging.getLogger(__name__)
@@ -92,7 +96,7 @@ def materialize_from_event(event: Event, db: Session) -> GeoLegalEvent | None:
             tags.append(event.event_type)
 
         return GeoLegalEvent(
-            id=str(uuid.uuid4()),
+            id=f"event:{event.id}",
             event_type="court_event",
             title=event.title or f"Court Event {event.event_id}",
             description=event.summary,
@@ -181,7 +185,7 @@ def materialize_from_crime_incident(
             tags.append("aggregate")
 
         return GeoLegalEvent(
-            id=str(uuid.uuid4()),
+            id=f"crime:{incident.id}",
             event_type="crime_event",
             title=incident.incident_category or "Crime Incident",
             description=incident.summary,
@@ -237,8 +241,6 @@ def materialize_from_memory_claim(
             return None
 
         # Get location from entity
-        from app.models.entities import CanonicalEntity
-
         entity = db.query(CanonicalEntity).filter(
             CanonicalEntity.id == claim.entity_id
         ).first()
@@ -258,8 +260,6 @@ def materialize_from_memory_claim(
                 evidence_ids.append(str(snapshot.id))
 
         # Get evidence links
-        from app.models.entities import MemoryEvidenceLink
-
         evidence_links = db.query(MemoryEvidenceLink).filter(
             MemoryEvidenceLink.claim_id == claim.id
         ).all()
@@ -289,7 +289,7 @@ def materialize_from_memory_claim(
             tags.append("contradicted")
 
         return GeoLegalEvent(
-            id=str(uuid.uuid4()),
+            id=f"claim:{claim.id}",
             event_type="contradiction_event" if has_contradiction else "news_event",
             title=claim.claim_value[:200] if claim.claim_value and len(claim.claim_value) > 200 else (claim.claim_value or "Claim"),
             description=claim.normalized_value,
@@ -365,7 +365,7 @@ def materialize_from_legal_instrument(
             tags.append(instrument.instrument_type)
 
         return GeoLegalEvent(
-            id=str(uuid.uuid4()),
+            id=f"legal:{instrument.id}",
             event_type="legislation_event",
             title=instrument.title or f"Legal Instrument {instrument.id}",
             description=instrument.summary,

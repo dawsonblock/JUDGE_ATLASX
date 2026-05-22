@@ -22,16 +22,20 @@ router = APIRouter()
 
 
 def _load_live_map_events(db: Session) -> list[GeoLegalEvent]:
-    """Load GeoLegalEvents via materializer, with a DB fallback for tests."""
-    try:
-        from app.map.materialize_geo_legal_events import materialize_all_events
+    """Load GeoLegalEvents from materialized table.
 
-        return materialize_all_events(db)
-    except Exception:
+    Fallback to on-demand materialization only when table access fails in local
+    dev/test contexts.
+    """
+    try:
         from app.models.geo_legal_event import GeoLegalEvent as GeoLegalEventModel
 
         rows = db.query(GeoLegalEventModel).all()
         return [GeoLegalEvent.model_validate(row) for row in rows]
+    except Exception:
+        from app.map.materialize_geo_legal_events import materialize_all_events
+
+        return materialize_all_events(db)
 
 
 PLATFORM_DISCLAIMER = (
@@ -170,7 +174,7 @@ def get_live_map_events(
     # Materialize events from database
     events = _load_live_map_events(db)
 
-    # Public endpoint always enforces public visibility boundaries.
+    # Public endpoint always enforces visibility boundaries.
     events = _apply_public_filters(events, settings)
 
     # Apply bbox filter
@@ -212,6 +216,7 @@ def get_live_map_events(
 
     filters_applied: dict[str, Any] = {
         "public_only": True,
+        "public_visibility": True,
         "bbox": bbox,
         "event_type": event_type,
         "jurisdiction": jurisdiction,

@@ -17,9 +17,11 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
+from app.auth.actor import AdminActor
+from app.auth.admin import enforce_jwt_mutation_authority, log_mutation
 from app.db.session import get_db
 from app.orchestration.task_registry import TaskRegistry
 from app.orchestration.workflow_registry import WorkflowRegistry
@@ -32,6 +34,7 @@ from app.orchestration.workflow_step_models import (
     WorkflowStep,
     WorkflowStepStatus,
 )
+from app.security.import_authority import require_source_admin_actor
 
 logger = logging.getLogger(__name__)
 
@@ -90,9 +93,12 @@ def get_workflow(workflow_name: str, db: Session = Depends(get_db)) -> dict[str,
 @router.post("/{workflow_name}/run")
 def trigger_workflow_run(
     workflow_name: str,
+    request: Request,
     db: Session = Depends(get_db),
+    actor: AdminActor = Depends(require_source_admin_actor),
 ) -> dict[str, Any]:
     """Trigger an immediate workflow run."""
+    enforce_jwt_mutation_authority(actor)
     workflow_registry = WorkflowRegistry()
     workflow = workflow_registry.get_workflow(workflow_name)
     
@@ -112,6 +118,16 @@ def trigger_workflow_run(
     
     try:
         run = runner.execute_workflow(workflow, db)
+        log_mutation(
+            action="workflow.run.trigger",
+            entity_type="workflow",
+            entity_id=workflow_name,
+            payload={"workflow_name": workflow_name, "run_id": run.run_id},
+            request=request,
+            actor=actor,
+            db=db,
+            fail_closed=True,
+        )
         return {
             "run_id": run.run_id,
             "status": run.status,
@@ -140,12 +156,52 @@ def list_workflow_runs(
     return {
         "runs": [
             {
+                "id": run.id,
                 "run_id": run.run_id,
                 "status": run.status,
+                "workflow_name": run.workflow_name,
+                "workspace_path": run.workspace_path,
+                "source_key": run.source_key,
+                "updated_at": run.updated_at,
                 "started_at": run.started_at,
                 "completed_at": run.completed_at,
                 "error_message": run.error_message,
                 "created_at": run.created_at,
+            }
+            for run in runs
+        ]
+    }
+
+
+@router.get("/runs")
+def list_all_workflow_runs(
+    workflow_name: str | None = None,
+    status: str | None = None,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Compatibility endpoint for frontend panels listing workflow runs."""
+    query = db.query(WorkflowRun)
+    if workflow_name:
+        query = query.filter(WorkflowRun.workflow_name == workflow_name)
+    if status:
+        query = query.filter(WorkflowRun.status == status)
+
+    runs = query.order_by(WorkflowRun.created_at.desc()).limit(limit).all()
+    return {
+        "runs": [
+            {
+                "id": run.id,
+                "run_id": run.run_id,
+                "workflow_name": run.workflow_name,
+                "status": run.status,
+                "started_at": run.started_at,
+                "completed_at": run.completed_at,
+                "error_message": run.error_message,
+                "workspace_path": run.workspace_path,
+                "source_key": run.source_key,
+                "created_at": run.created_at,
+                "updated_at": run.updated_at,
             }
             for run in runs
         ]
@@ -214,9 +270,48 @@ def get_workflow_run(run_id: str, db: Session = Depends(get_db)) -> dict[str, An
     }
 
 
+@router.get("/runs/{run_id}/steps")
+def get_workflow_run_steps(run_id: str, db: Session = Depends(get_db)) -> dict[str, Any]:
+    """Compatibility endpoint for frontend step panel."""
+    run = db.query(WorkflowRun).filter(WorkflowRun.run_id == run_id).first()
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    steps = (
+        db.query(WorkflowStep)
+        .filter(WorkflowStep.run_id == run.id)
+        .order_by(WorkflowStep.created_at)
+        .all()
+    )
+    return {
+        "steps": [
+            {
+                "id": step.id,
+                "step_id": step.step_id,
+                "run_id": run.id,
+                "step_name": step.step_name,
+                "step_type": step.step_type,
+                "status": step.status,
+                "started_at": step.started_at,
+                "completed_at": step.completed_at,
+                "error_message": step.error_message,
+                "output": step.output,
+                "retry_count": step.retry_count,
+            }
+            for step in steps
+        ]
+    }
+
+
 @router.post("/runs/{run_id}/retry")
-def retry_workflow_run(run_id: str, db: Session = Depends(get_db)) -> dict[str, Any]:
+def retry_workflow_run(
+    run_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    actor: AdminActor = Depends(require_source_admin_actor),
+) -> dict[str, Any]:
     """Retry a failed workflow run."""
+    enforce_jwt_mutation_authority(actor)
     run = db.query(WorkflowRun).filter(WorkflowRun.run_id == run_id).first()
     
     if not run:
@@ -238,6 +333,20 @@ def retry_workflow_run(run_id: str, db: Session = Depends(get_db)) -> dict[str, 
     
     try:
         new_run = runner.execute_workflow(workflow, db, run_id=run_id)
+        log_mutation(
+            action="workflow.run.retry",
+            entity_type="workflow_run",
+            entity_id=run_id,
+            payload={
+                "run_id": run_id,
+                "workflow_name": workflow.name,
+                "status": new_run.status,
+            },
+            request=request,
+            actor=actor,
+            db=db,
+            fail_closed=True,
+        )
         return {
             "run_id": new_run.run_id,
             "status": new_run.status,
@@ -302,8 +411,14 @@ def list_schedules(db: Session = Depends(get_db)) -> dict[str, Any]:
 
 
 @router.post("/schedules/{workflow_name}/pause")
-def pause_schedule(workflow_name: str, db: Session = Depends(get_db)) -> dict[str, Any]:
+def pause_schedule(
+    workflow_name: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    actor: AdminActor = Depends(require_source_admin_actor),
+) -> dict[str, Any]:
     """Pause a scheduled workflow."""
+    enforce_jwt_mutation_authority(actor)
     schedule = (
         db.query(WorkflowSchedule)
         .filter(WorkflowSchedule.workflow_name == workflow_name)
@@ -315,13 +430,30 @@ def pause_schedule(workflow_name: str, db: Session = Depends(get_db)) -> dict[st
     
     schedule.enabled = False
     db.commit()
+
+    log_mutation(
+        action="workflow.schedule.pause",
+        entity_type="workflow_schedule",
+        entity_id=workflow_name,
+        payload={"workflow_name": workflow_name, "enabled": False},
+        request=request,
+        actor=actor,
+        db=db,
+        fail_closed=True,
+    )
     
     return {"message": "Schedule paused successfully"}
 
 
 @router.post("/schedules/{workflow_name}/resume")
-def resume_schedule(workflow_name: str, db: Session = Depends(get_db)) -> dict[str, Any]:
+def resume_schedule(
+    workflow_name: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    actor: AdminActor = Depends(require_source_admin_actor),
+) -> dict[str, Any]:
     """Resume a paused scheduled workflow."""
+    enforce_jwt_mutation_authority(actor)
     schedule = (
         db.query(WorkflowSchedule)
         .filter(WorkflowSchedule.workflow_name == workflow_name)
@@ -333,5 +465,16 @@ def resume_schedule(workflow_name: str, db: Session = Depends(get_db)) -> dict[s
     
     schedule.enabled = True
     db.commit()
+
+    log_mutation(
+        action="workflow.schedule.resume",
+        entity_type="workflow_schedule",
+        entity_id=workflow_name,
+        payload={"workflow_name": workflow_name, "enabled": True},
+        request=request,
+        actor=actor,
+        db=db,
+        fail_closed=True,
+    )
     
     return {"message": "Schedule resumed successfully"}

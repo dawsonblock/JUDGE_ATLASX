@@ -17,12 +17,14 @@ from app.api.routes import (
     evidence_store,
     graph,
     ingestion,
+    live_map,
     map,
     map_record,
     public_events,
     snapshots,
     sources,
     status,
+    workflow_admin,
 )
 from app.core.config import get_settings
 from app.serializers.public import is_mappable as _is_mappable
@@ -31,8 +33,7 @@ from fastapi import APIRouter
 router = APIRouter()
 router.include_router(auth.router)
 router.include_router(public_events.router)
-# live_map route unmounted for public boundary hardening (see repair plan)
-# router.include_router(live_map.router)
+router.include_router(live_map.router)
 router.include_router(map.router)
 router.include_router(map_record.router)
 router.include_router(boundaries.router)
@@ -53,6 +54,7 @@ router.include_router(evidence.router)
 router.include_router(snapshots.router)
 router.include_router(ai_correctness.router)
 router.include_router(sources.router)
+router.include_router(workflow_admin.router)
 router.include_router(status.router)
 
 # Conditionally mount legacy U.S. ingestion routes (disabled by default)

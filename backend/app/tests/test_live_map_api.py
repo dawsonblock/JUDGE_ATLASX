@@ -118,20 +118,17 @@ def test_live_map_events_public_mode_filters_correctly(client, sample_geo_events
     assert data["filters_applied"]["public_visibility"] is True
 
 
-def test_live_map_events_admin_mode_shows_all(client, sample_geo_events, db_session):
-    """Test that admin mode shows all events including non-approved ones."""
+def test_live_map_events_reject_admin_mode_bypass(client, sample_geo_events, db_session):
+    """Query param admin_mode must not bypass public filtering."""
     response = client.get("/api/live-map/events?admin_mode=true")
 
     assert response.status_code == 200
     data = response.json()
 
-    # Should return all events
-    assert data["returned_count"] == 3
-    assert data["filters_applied"]["admin_mode"] is True
-    event_ids = [e["id"] for e in data["events"]]
-    assert "public-event-1" in event_ids
-    assert "private-event-1" in event_ids
-    assert "low-conf-event-1" in event_ids
+    # Public endpoint still returns only publicly eligible events
+    assert data["returned_count"] == 1
+    assert data["events"][0]["id"] == "public-event-1"
+    assert data["filters_applied"]["public_visibility"] is True
 
 
 def test_live_map_events_public_mode_redacts_evidence_ids(client, sample_geo_events, db_session):
@@ -168,19 +165,21 @@ def test_live_map_events_public_mode_redacts_source_ids(client, sample_geo_event
     assert "source-abc123" not in event["source_ids"][0]
 
 
-def test_live_map_events_admin_mode_preserves_ids(client, sample_geo_events, db_session):
-    """Test that IDs are preserved in admin mode."""
+def test_live_map_events_public_mode_redacts_ids_even_with_admin_mode_param(
+    client, sample_geo_events, db_session
+):
+    """Public endpoint always redacts IDs, even when admin_mode query is present."""
     response = client.get("/api/live-map/events?admin_mode=true")
 
     assert response.status_code == 200
     data = response.json()
 
-    assert data["returned_count"] == 3
-    public_event = next(e for e in data["events"] if e["id"] == "public-event-1")
+    assert data["returned_count"] == 1
+    public_event = data["events"][0]
 
-    # IDs should be preserved in admin mode
-    assert "source-abc123" in public_event["source_ids"]
-    assert "evidence-def456" in public_event["evidence_ids"]
+    # IDs remain redacted on public endpoint
+    assert "source-abc123" not in public_event["source_ids"][0]
+    assert "evidence-def456" not in public_event["evidence_ids"][0]
     assert "claim-ghi789" in public_event["claim_ids"]
 
 
@@ -219,9 +218,7 @@ def test_live_map_events_bbox_area_limit(client, sample_geo_events, db_session):
 
 def test_live_map_events_event_type_filter(client, sample_geo_events, db_session):
     """Test filtering by event type."""
-    response = client.get(
-        "/api/live-map/events?event_type=court_event&admin_mode=true"
-    )
+    response = client.get("/api/live-map/events?event_type=court_event")
 
     assert response.status_code == 200
     data = response.json()
@@ -233,24 +230,20 @@ def test_live_map_events_event_type_filter(client, sample_geo_events, db_session
 
 def test_live_map_events_jurisdiction_filter(client, sample_geo_events, db_session):
     """Test filtering by jurisdiction."""
-    response = client.get(
-        "/api/live-map/events?jurisdiction=federal&admin_mode=true"
-    )
+    response = client.get("/api/live-map/events?jurisdiction=federal")
 
     assert response.status_code == 200
     data = response.json()
 
-    # Should only return federal events
-    assert data["returned_count"] == 2
+    # Should only return publicly eligible federal events
+    assert data["returned_count"] == 1
     for event in data["events"]:
         assert event["jurisdiction"] == "federal"
 
 
 def test_live_map_events_confidence_filter(client, sample_geo_events, db_session):
     """Test filtering by minimum confidence."""
-    response = client.get(
-        "/api/live-map/events?min_confidence=0.75&admin_mode=true"
-    )
+    response = client.get("/api/live-map/events?min_confidence=0.75")
 
     assert response.status_code == 200
     data = response.json()
@@ -262,14 +255,14 @@ def test_live_map_events_confidence_filter(client, sample_geo_events, db_session
 
 def test_live_map_events_pagination(client, sample_geo_events, db_session):
     """Test that pagination works correctly."""
-    response = client.get("/api/live-map/events?limit=2&offset=0&admin_mode=true")
+    response = client.get("/api/live-map/events?limit=2&offset=0")
 
     assert response.status_code == 200
     data = response.json()
 
-    # Should return 2 events
-    assert data["returned_count"] == 2
-    assert data["truncated"] is True  # There are 3 total, so this should be truncated
+    # Public visibility filter leaves one event, so no truncation occurs
+    assert data["returned_count"] == 1
+    assert data["truncated"] is False
 
 
 def test_live_map_events_disclaimer_present(client, sample_geo_events, db_session):

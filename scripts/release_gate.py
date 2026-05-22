@@ -1409,8 +1409,6 @@ def _write_current_proof_md(
             "- artifacts/proof/current/archive_validation.log",
             "- artifacts/proof/current/backend_import.log",
             "- artifacts/proof/current/backend_pytest.log",
-            "- artifacts/proof/current/backend_proof_summary.json",
-            "- artifacts/proof/current/frontend_proof_summary.json",
             "- artifacts/proof/current/frontend_node_gate.log",
             "- artifacts/proof/current/check_node_policy.log",
             "- artifacts/proof/current/frontend_install.log",

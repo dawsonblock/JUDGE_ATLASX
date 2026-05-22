@@ -102,6 +102,7 @@ class Settings(BaseSettings):
 
     # Experimental live-map public router remains blocked by default.
     enable_experimental_live_map: bool = False
+    public_map_min_confidence: float = 0.65
 
     # Enforce JWT-only authority for mutation routes
     # (review decisions, source configuration updates,
