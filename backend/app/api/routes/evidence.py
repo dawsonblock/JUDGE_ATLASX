@@ -90,8 +90,9 @@ def get_relationship_evidence(
     to_id: int,
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
+    _: AdminActor = Depends(require_reviewer_actor),
 ) -> EvidenceListResponse:
-    """Get all evidence for a specific relationship."""
+    """Get all evidence for a specific relationship (reviewer only)."""
     service = RelationshipEvidenceService(db)
     evidence = service.get_evidence_for_relationship(
         from_entity_type=from_type,
@@ -126,8 +127,9 @@ def get_entity_evidence(
     as_target: bool = Query(True, description="Include as relationship target"),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
+    _: AdminActor = Depends(require_reviewer_actor),
 ) -> EvidenceListResponse:
-    """Get all evidence involving an entity."""
+    """Get all evidence involving an entity (reviewer only)."""
     service = RelationshipEvidenceService(db)
     evidence = service.get_evidence_for_entity(
         entity_type=entity_type,

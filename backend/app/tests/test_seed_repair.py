@@ -6,7 +6,34 @@ import pytest
 
 from app.db.session import SessionLocal
 from app.models.entities import CrimeIncident, SourceRegistry
-from app.seed.source_registry import repair_canada_first_defaults, seed_source_registry
+from app.seed.source_registry import (
+    _merged_sources,
+    repair_canada_first_defaults,
+    seed_source_registry,
+)
+
+
+def _ensure_source_row(db, key: str) -> SourceRegistry:
+    row = db.query(SourceRegistry).filter_by(source_key=key).first()
+    if row is None:
+        row = SourceRegistry(
+            source_key=key,
+            source_name=key,
+            source_tier="news_only_context",
+            is_active=False,
+            requires_manual_review=True,
+            auto_publish_enabled=False,
+        )
+        db.add(row)
+        db.commit()
+        db.refresh(row)
+    return row
+
+
+def _seed_key(index: int = 0) -> str:
+    sources = _merged_sources()
+    assert sources, "No source specs available for seed repair tests"
+    return str(sources[index % len(sources)]["source_key"])
 
 # ---------------------------------------------------------------------------
 # TestRepairCanadaFirstDefaults
@@ -34,9 +61,8 @@ class TestRepairCanadaFirstDefaults:
         """dry_run=True must detect deviations but not fix them in the DB."""
         with SessionLocal() as db:
             seed_source_registry(db)
-            row = db.query(SourceRegistry).filter_by(source_key="statscan").first()
-            if row is None:
-                pytest.skip("statscan row not seeded")
+            row = _ensure_source_row(db, _seed_key(0))
+            source_key = str(row.source_key)
             # Introduce a deviation in a field that _REPAIR_FIELDS will catch.
             row.source_tier = "wrong_tier"
             db.commit()
@@ -44,7 +70,9 @@ class TestRepairCanadaFirstDefaults:
         with SessionLocal() as db:
             changes = repair_canada_first_defaults(db, dry_run=True)
 
-        assert any("statscan" in c for c in changes), "Expected deviation not detected"
+        assert any(source_key in c for c in changes), (
+            "Expected deviation not detected"
+        )
 
         # DB must be unchanged (dry_run did not commit)
         with SessionLocal() as db:
@@ -56,31 +84,33 @@ class TestRepairCanadaFirstDefaults:
         """dry_run=False must repair deviated fields in the DB."""
         with SessionLocal() as db:
             seed_source_registry(db)
-            row = db.query(SourceRegistry).filter_by(source_key="statscan").first()
-            if row is None:
-                pytest.skip("statscan row not seeded")
+            row = _ensure_source_row(db, _seed_key(0))
+            source_key = str(row.source_key)
+            spec = next(
+                item for item in _merged_sources()
+                if str(item["source_key"]) == source_key
+            )
+            expected_tier = str(spec.get("source_tier", row.source_tier))
             row.source_tier = "wrong_tier"
             db.commit()
 
         with SessionLocal() as db:
             changes = repair_canada_first_defaults(db, dry_run=False)
 
-        assert any("statscan" in c for c in changes)
+        assert any(source_key in c for c in changes)
 
         with SessionLocal() as db:
-            row = db.query(SourceRegistry).filter_by(source_key="statscan").first()
+            row = db.query(SourceRegistry).filter_by(source_key=source_key).first()
             assert row is not None
             # Spec value restored
-            assert row.source_tier == "official_government_statistics"
+            assert row.source_tier == expected_tier
 
     def test_operational_flags_not_reset_by_repair(self):
         """requires_manual_review and auto_publish_enabled are excluded from _REPAIR_FIELDS;
         admin-set values must survive a live repair pass."""
         with SessionLocal() as db:
             seed_source_registry(db)
-            row = db.query(SourceRegistry).filter_by(source_key="statscan").first()
-            if row is None:
-                pytest.skip("statscan row not seeded")
+            row = _ensure_source_row(db, "statscan")
             # Override operational flags (not in _REPAIR_FIELDS)
             row.requires_manual_review = False
             row.auto_publish_enabled = True
@@ -100,9 +130,8 @@ class TestRepairCanadaFirstDefaults:
         """is_active is excluded from _REPAIR_FIELDS; admin-set value must survive repair."""
         with SessionLocal() as db:
             seed_source_registry(db)
-            row = db.query(SourceRegistry).filter_by(source_key="toronto_crime").first()
-            if row is None:
-                pytest.skip("toronto_crime row not seeded")
+            row = _ensure_source_row(db, _seed_key(1))
+            source_key = str(row.source_key)
             row.is_active = True  # admin-enabled; spec has is_active=False
             db.commit()
 
@@ -110,7 +139,7 @@ class TestRepairCanadaFirstDefaults:
             repair_canada_first_defaults(db, dry_run=False)
 
         with SessionLocal() as db:
-            row = db.query(SourceRegistry).filter_by(source_key="toronto_crime").first()
+            row = db.query(SourceRegistry).filter_by(source_key=source_key).first()
             assert row is not None
             assert row.is_active is True  # must survive repair
 

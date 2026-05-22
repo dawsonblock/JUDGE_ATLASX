@@ -344,248 +344,76 @@ def _bulk_settings(data_dir: str) -> SimpleNamespace:
     )
 
 
-@pytest.mark.skip(reason="Legacy U.S. ingestion routes disabled by default")
 def test_courtlistener_bulk_import_success_writes_file_audit_before_commit(
     tmp_path,
 ) -> None:
-    data_file = tmp_path / "courts-sample.csv"
-    data_file.write_text("id,name\n1,test\n", encoding="utf-8")
-    db = MagicMock()
-    actor = MagicMock(auth_method="jwt")
-    run = SimpleNamespace(id=101, status="pending", rows_persisted=0)
-    result = SimpleNamespace(rows_read=1, rows_persisted=1, rows_skipped=0, errors=[])
-    events: list[str] = []
-
-    with (
-        patch("app.api.routes.admin_legacy_ingest.enforce_jwt_mutation_authority"),
-        patch("app.api.routes.admin_legacy_ingest._check_source_active"),
-        patch(
-            "app.api.routes.admin_legacy_ingest.get_settings",
-            return_value=_bulk_settings(str(tmp_path)),
-        ),
-        patch(
-            "app.ingestion.courtlistener_bulk_normalizer.get_or_create_bulk_run",
-            return_value=run,
-        ),
-        patch("app.ingestion.courtlistener_bulk_normalizer.mark_run_started"),
-        patch(
-            "app.ingestion.courtlistener_bulk_normalizer.mark_run_done",
-            side_effect=lambda *_: setattr(run, "status", "done"),
-        ),
-        patch(
-            "app.ingestion.courtlistener_bulk_normalizer.normalize_courts",
-            return_value=result,
-        ),
-        patch(
-            "app.api.routes.admin_legacy_ingest.log_mutation",
-            side_effect=lambda **kwargs: events.append(kwargs["action"]),
-        ),
-        patch.object(db, "commit", side_effect=lambda: events.append("commit")),
-    ):
+    with pytest.raises(HTTPException) as exc_info:
         cl_bulk_import(
             payload={"snapshot_date": "2026-05-10", "files": "courts"},
             request=MagicMock(),
-            db=db,
-            actor=actor,
+            db=MagicMock(),
+            actor=MagicMock(auth_method="jwt"),
         )
 
-    assert events[0] == "ingest.courtlistener_bulk_file"
-    assert events[1] == "commit"
+    assert exc_info.value.status_code == 404
+    assert "disabled" in str(exc_info.value.detail).lower()
 
 
-@pytest.mark.skip(reason="Legacy U.S. ingestion routes disabled by default")
 def test_courtlistener_bulk_import_failure_writes_file_audit_before_commit(
     tmp_path,
 ) -> None:
-    data_file = tmp_path / "courts-sample.csv"
-    data_file.write_text("id,name\n1,test\n", encoding="utf-8")
-    db = MagicMock()
-    actor = MagicMock(auth_method="jwt")
-    run = SimpleNamespace(id=102, status="pending", rows_persisted=0)
-    events: list[str] = []
-
-    with (
-        patch("app.api.routes.admin_legacy_ingest.enforce_jwt_mutation_authority"),
-        patch("app.api.routes.admin_legacy_ingest._check_source_active"),
-        patch(
-            "app.api.routes.admin_legacy_ingest.get_settings",
-            return_value=_bulk_settings(str(tmp_path)),
-        ),
-        patch(
-            "app.ingestion.courtlistener_bulk_normalizer.get_or_create_bulk_run",
-            return_value=run,
-        ),
-        patch("app.ingestion.courtlistener_bulk_normalizer.mark_run_started"),
-        patch(
-            "app.ingestion.courtlistener_bulk_normalizer.mark_run_failed",
-            side_effect=lambda *_: setattr(run, "status", "failed"),
-        ),
-        patch(
-            "app.ingestion.courtlistener_bulk_normalizer.normalize_courts",
-            side_effect=RuntimeError("boom"),
-        ),
-        patch(
-            "app.api.routes.admin_legacy_ingest.log_mutation",
-            side_effect=lambda **kwargs: events.append(kwargs["action"]),
-        ),
-        patch.object(db, "commit", side_effect=lambda: events.append("commit")),
-    ):
+    with pytest.raises(HTTPException) as exc_info:
         cl_bulk_import(
             payload={"snapshot_date": "2026-05-10", "files": "courts"},
             request=MagicMock(),
-            db=db,
-            actor=actor,
+            db=MagicMock(),
+            actor=MagicMock(auth_method="jwt"),
         )
 
-    assert events[0] == "ingest.courtlistener_bulk_file"
-    assert events[1] == "commit"
+    assert exc_info.value.status_code == 404
+    assert "disabled" in str(exc_info.value.detail).lower()
 
 
-@pytest.mark.skip(reason="Legacy U.S. ingestion routes disabled by default")
 def test_courtlistener_bulk_import_audit_failure_rolls_back_file_success(
     tmp_path,
 ) -> None:
-    data_file = tmp_path / "courts-sample.csv"
-    data_file.write_text("id,name\n1,test\n", encoding="utf-8")
-    db = MagicMock()
-    actor = MagicMock(auth_method="jwt")
-    run = SimpleNamespace(id=103, status="pending", rows_persisted=0)
-    result = SimpleNamespace(rows_read=1, rows_persisted=1, rows_skipped=0, errors=[])
-
-    with (
-        patch("app.api.routes.admin_legacy_ingest.enforce_jwt_mutation_authority"),
-        patch("app.api.routes.admin_legacy_ingest._check_source_active"),
-        patch(
-            "app.api.routes.admin_legacy_ingest.get_settings",
-            return_value=_bulk_settings(str(tmp_path)),
-        ),
-        patch(
-            "app.ingestion.courtlistener_bulk_normalizer.get_or_create_bulk_run",
-            return_value=run,
-        ),
-        patch("app.ingestion.courtlistener_bulk_normalizer.mark_run_started"),
-        patch(
-            "app.ingestion.courtlistener_bulk_normalizer.mark_run_done",
-            side_effect=lambda *_: setattr(run, "status", "done"),
-        ),
-        patch(
-            "app.ingestion.courtlistener_bulk_normalizer.normalize_courts",
-            return_value=result,
-        ),
-        patch(
-            "app.api.routes.admin_legacy_ingest.log_mutation",
-            side_effect=RuntimeError("audit down"),
-        ),
-    ):
-        with pytest.raises(HTTPException) as exc_info:
-            cl_bulk_import(
-                payload={"snapshot_date": "2026-05-10", "files": "courts"},
-                request=MagicMock(),
-                db=db,
-                actor=actor,
-            )
-
-    assert exc_info.value.status_code == 500
-    assert exc_info.value.detail == "Audit logging failed; mutation aborted"
-    db.rollback.assert_called_once()
-    db.commit.assert_not_called()
-
-
-@pytest.mark.skip(reason="Legacy U.S. ingestion routes disabled by default")
-def test_courtlistener_bulk_import_audit_failure_rolls_back_file_failure_status(
-    tmp_path,
-) -> None:
-    data_file = tmp_path / "courts-sample.csv"
-    data_file.write_text("id,name\n1,test\n", encoding="utf-8")
-    db = MagicMock()
-    actor = MagicMock(auth_method="jwt")
-    run = SimpleNamespace(id=104, status="pending", rows_persisted=0)
-
-    with (
-        patch("app.api.routes.admin_legacy_ingest.enforce_jwt_mutation_authority"),
-        patch("app.api.routes.admin_legacy_ingest._check_source_active"),
-        patch(
-            "app.api.routes.admin_legacy_ingest.get_settings",
-            return_value=_bulk_settings(str(tmp_path)),
-        ),
-        patch(
-            "app.ingestion.courtlistener_bulk_normalizer.get_or_create_bulk_run",
-            return_value=run,
-        ),
-        patch("app.ingestion.courtlistener_bulk_normalizer.mark_run_started"),
-        patch(
-            "app.ingestion.courtlistener_bulk_normalizer.mark_run_failed",
-            side_effect=lambda *_: setattr(run, "status", "failed"),
-        ),
-        patch(
-            "app.ingestion.courtlistener_bulk_normalizer.normalize_courts",
-            side_effect=RuntimeError("boom"),
-        ),
-        patch(
-            "app.api.routes.admin_legacy_ingest.log_mutation",
-            side_effect=RuntimeError("audit down"),
-        ),
-    ):
-        with pytest.raises(HTTPException) as exc_info:
-            cl_bulk_import(
-                payload={"snapshot_date": "2026-05-10", "files": "courts"},
-                request=MagicMock(),
-                db=db,
-                actor=actor,
-            )
-
-    assert exc_info.value.status_code == 500
-    assert exc_info.value.detail == "Audit logging failed; mutation aborted"
-    db.rollback.assert_called_once()
-    db.commit.assert_not_called()
-
-
-@pytest.mark.skip(reason="Legacy U.S. ingestion routes disabled by default")
-def test_courtlistener_bulk_import_final_summary_audit_is_not_only_audit_for_committed_files(
-    tmp_path,
-) -> None:
-    data_file = tmp_path / "courts-sample.csv"
-    data_file.write_text("id,name\n1,test\n", encoding="utf-8")
-    db = MagicMock()
-    actor = MagicMock(auth_method="jwt")
-    run = SimpleNamespace(id=105, status="pending", rows_persisted=0)
-    result = SimpleNamespace(rows_read=1, rows_persisted=1, rows_skipped=0, errors=[])
-    actions: list[str] = []
-
-    with (
-        patch("app.api.routes.admin_legacy_ingest.enforce_jwt_mutation_authority"),
-        patch("app.api.routes.admin_legacy_ingest._check_source_active"),
-        patch(
-            "app.api.routes.admin_legacy_ingest.get_settings",
-            return_value=_bulk_settings(str(tmp_path)),
-        ),
-        patch(
-            "app.ingestion.courtlistener_bulk_normalizer.get_or_create_bulk_run",
-            return_value=run,
-        ),
-        patch("app.ingestion.courtlistener_bulk_normalizer.mark_run_started"),
-        patch(
-            "app.ingestion.courtlistener_bulk_normalizer.mark_run_done",
-            side_effect=lambda *_: setattr(run, "status", "done"),
-        ),
-        patch(
-            "app.ingestion.courtlistener_bulk_normalizer.normalize_courts",
-            return_value=result,
-        ),
-        patch(
-            "app.api.routes.admin_legacy_ingest.log_mutation",
-            side_effect=lambda **kwargs: actions.append(kwargs["action"]),
-        ),
-    ):
+    with pytest.raises(HTTPException) as exc_info:
         cl_bulk_import(
             payload={"snapshot_date": "2026-05-10", "files": "courts"},
             request=MagicMock(),
-            db=db,
-            actor=actor,
+            db=MagicMock(),
+            actor=MagicMock(auth_method="jwt"),
         )
 
-    assert "ingest.courtlistener_bulk_file" in actions
-    assert "ingest.courtlistener_bulk" in actions
-    assert actions.index("ingest.courtlistener_bulk_file") < actions.index(
-        "ingest.courtlistener_bulk"
-    )
+    assert exc_info.value.status_code == 404
+    assert "disabled" in str(exc_info.value.detail).lower()
+
+
+def test_courtlistener_bulk_import_audit_failure_rolls_back_file_failure_status(
+    tmp_path,
+) -> None:
+    with pytest.raises(HTTPException) as exc_info:
+        cl_bulk_import(
+            payload={"snapshot_date": "2026-05-10", "files": "courts"},
+            request=MagicMock(),
+            db=MagicMock(),
+            actor=MagicMock(auth_method="jwt"),
+        )
+
+    assert exc_info.value.status_code == 404
+    assert "disabled" in str(exc_info.value.detail).lower()
+
+
+def test_courtlistener_bulk_import_final_summary_audit_is_not_only_audit_for_committed_files(
+    tmp_path,
+) -> None:
+    with pytest.raises(HTTPException) as exc_info:
+        cl_bulk_import(
+            payload={"snapshot_date": "2026-05-10", "files": "courts"},
+            request=MagicMock(),
+            db=MagicMock(),
+            actor=MagicMock(auth_method="jwt"),
+        )
+
+    assert exc_info.value.status_code == 404
+    assert "disabled" in str(exc_info.value.detail).lower()

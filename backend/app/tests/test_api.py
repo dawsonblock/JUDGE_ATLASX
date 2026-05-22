@@ -770,6 +770,8 @@ def test_admin_routes_require_token_when_enabled(client, monkeypatch):
         ("get", "/api/admin/review/items", {}),
         ("post", "/api/admin/review/items/1/approve", {"json": {"actor": "admin"}}),
         ("get", "/api/admin/review-queue", {}),
+        ("get", "/api/evidence/entity/event/1", {}),
+        ("get", "/api/evidence/relationship/event/1/person/1", {}),
         (
             "post",
             "/api/admin/review-queue/event/EVT-SAMPLE-001/decision",
@@ -828,6 +830,12 @@ def test_admin_routes_accept_valid_token_and_use_pagination(client, monkeypatch)
     ai_response = client.post(
         "/api/admin/ai/process-source/SRC-SAMPLE-001", headers=headers
     )
+    entity_evidence_response = client.get(
+        "/api/evidence/entity/event/1", headers=headers
+    )
+    relationship_evidence_response = client.get(
+        "/api/evidence/relationship/event/1/person/1", headers=headers
+    )
 
     assert queue_response.status_code == 200
     assert len(queue_response.json()["items"]) <= 2
@@ -837,6 +845,8 @@ def test_admin_routes_accept_valid_token_and_use_pagination(client, monkeypatch)
     assert csv_response.status_code == 422
     assert ingest_response.status_code == 200
     assert ai_response.status_code == 200
+    assert entity_evidence_response.status_code == 200
+    assert relationship_evidence_response.status_code == 200
 
 
 def test_admin_review_decision_updates_entity_and_audit(client, monkeypatch):

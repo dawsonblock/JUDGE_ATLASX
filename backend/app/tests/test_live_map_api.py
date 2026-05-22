@@ -21,10 +21,6 @@ from app.schemas.geo_legal_event import GeoLegalEvent
 _LIVE_MAP_MOUNTED = any(
     getattr(route, "path", None) == "/api/live-map/events" for route in app.routes
 )
-pytestmark = pytest.mark.skipif(
-    not _LIVE_MAP_MOUNTED,
-    reason="live_map route intentionally unmounted for public boundary hardening",
-)
 
 
 @pytest.fixture
@@ -105,8 +101,17 @@ def sample_geo_events(db_session):
     return events
 
 
+def _assert_live_map_unmounted(client: TestClient, path: str) -> None:
+    response = client.get(path)
+    assert response.status_code == 404
+
+
 def test_live_map_events_public_mode_filters_correctly(client, sample_geo_events, db_session):
     """Test that public mode filters out non-approved and low-confidence events."""
+    if not _LIVE_MAP_MOUNTED:
+        _assert_live_map_unmounted(client, "/api/live-map/events?admin_mode=false")
+        return
+
     response = client.get("/api/live-map/events?admin_mode=false")
 
     assert response.status_code == 200
@@ -120,6 +125,10 @@ def test_live_map_events_public_mode_filters_correctly(client, sample_geo_events
 
 def test_live_map_events_reject_admin_mode_bypass(client, sample_geo_events, db_session):
     """Query param admin_mode must not bypass public filtering."""
+    if not _LIVE_MAP_MOUNTED:
+        _assert_live_map_unmounted(client, "/api/live-map/events?admin_mode=true")
+        return
+
     response = client.get("/api/live-map/events?admin_mode=true")
 
     assert response.status_code == 200
@@ -133,6 +142,10 @@ def test_live_map_events_reject_admin_mode_bypass(client, sample_geo_events, db_
 
 def test_live_map_events_public_mode_redacts_evidence_ids(client, sample_geo_events, db_session):
     """Test that evidence IDs are redacted in public mode."""
+    if not _LIVE_MAP_MOUNTED:
+        _assert_live_map_unmounted(client, "/api/live-map/events?admin_mode=false")
+        return
+
     response = client.get("/api/live-map/events?admin_mode=false")
 
     assert response.status_code == 200
@@ -150,6 +163,10 @@ def test_live_map_events_public_mode_redacts_evidence_ids(client, sample_geo_eve
 
 def test_live_map_events_public_mode_redacts_source_ids(client, sample_geo_events, db_session):
     """Test that source IDs are redacted in public mode."""
+    if not _LIVE_MAP_MOUNTED:
+        _assert_live_map_unmounted(client, "/api/live-map/events?admin_mode=false")
+        return
+
     response = client.get("/api/live-map/events?admin_mode=false")
 
     assert response.status_code == 200
@@ -169,6 +186,10 @@ def test_live_map_events_public_mode_redacts_ids_even_with_admin_mode_param(
     client, sample_geo_events, db_session
 ):
     """Public endpoint always redacts IDs, even when admin_mode query is present."""
+    if not _LIVE_MAP_MOUNTED:
+        _assert_live_map_unmounted(client, "/api/live-map/events?admin_mode=true")
+        return
+
     response = client.get("/api/live-map/events?admin_mode=true")
 
     assert response.status_code == 200
@@ -185,6 +206,13 @@ def test_live_map_events_public_mode_redacts_ids_even_with_admin_mode_param(
 
 def test_live_map_events_bbox_filtering(client, sample_geo_events, db_session):
     """Test that bbox filtering works correctly."""
+    if not _LIVE_MAP_MOUNTED:
+        _assert_live_map_unmounted(
+            client,
+            "/api/live-map/events?bbox=-106.0,49.5,-104.0,50.5&admin_mode=true",
+        )
+        return
+
     # Bbox that includes only the first event (around 50.0, -105.0)
     response = client.get(
         "/api/live-map/events?bbox=-106.0,49.5,-104.0,50.5&admin_mode=true"
@@ -200,6 +228,10 @@ def test_live_map_events_bbox_filtering(client, sample_geo_events, db_session):
 
 def test_live_map_events_bbox_validation(client, sample_geo_events, db_session):
     """Test that invalid bbox values are rejected."""
+    if not _LIVE_MAP_MOUNTED:
+        _assert_live_map_unmounted(client, "/api/live-map/events?bbox=-106.0,50.5,-104.0,49.5")
+        return
+
     # Invalid bbox: south > north
     response = client.get("/api/live-map/events?bbox=-106.0,50.5,-104.0,49.5")
 
@@ -209,6 +241,10 @@ def test_live_map_events_bbox_validation(client, sample_geo_events, db_session):
 
 def test_live_map_events_bbox_area_limit(client, sample_geo_events, db_session):
     """Test that oversized bbox requests are rejected."""
+    if not _LIVE_MAP_MOUNTED:
+        _assert_live_map_unmounted(client, "/api/live-map/events?bbox=-180.0,-90.0,180.0,90.0")
+        return
+
     # Very large bbox (should exceed max area limit)
     response = client.get("/api/live-map/events?bbox=-180.0,-90.0,180.0,90.0")
 
@@ -218,6 +254,10 @@ def test_live_map_events_bbox_area_limit(client, sample_geo_events, db_session):
 
 def test_live_map_events_event_type_filter(client, sample_geo_events, db_session):
     """Test filtering by event type."""
+    if not _LIVE_MAP_MOUNTED:
+        _assert_live_map_unmounted(client, "/api/live-map/events?event_type=court_event")
+        return
+
     response = client.get("/api/live-map/events?event_type=court_event")
 
     assert response.status_code == 200
@@ -230,6 +270,10 @@ def test_live_map_events_event_type_filter(client, sample_geo_events, db_session
 
 def test_live_map_events_jurisdiction_filter(client, sample_geo_events, db_session):
     """Test filtering by jurisdiction."""
+    if not _LIVE_MAP_MOUNTED:
+        _assert_live_map_unmounted(client, "/api/live-map/events?jurisdiction=federal")
+        return
+
     response = client.get("/api/live-map/events?jurisdiction=federal")
 
     assert response.status_code == 200
@@ -243,6 +287,10 @@ def test_live_map_events_jurisdiction_filter(client, sample_geo_events, db_sessi
 
 def test_live_map_events_confidence_filter(client, sample_geo_events, db_session):
     """Test filtering by minimum confidence."""
+    if not _LIVE_MAP_MOUNTED:
+        _assert_live_map_unmounted(client, "/api/live-map/events?min_confidence=0.75")
+        return
+
     response = client.get("/api/live-map/events?min_confidence=0.75")
 
     assert response.status_code == 200
@@ -255,6 +303,10 @@ def test_live_map_events_confidence_filter(client, sample_geo_events, db_session
 
 def test_live_map_events_pagination(client, sample_geo_events, db_session):
     """Test that pagination works correctly."""
+    if not _LIVE_MAP_MOUNTED:
+        _assert_live_map_unmounted(client, "/api/live-map/events?limit=2&offset=0")
+        return
+
     response = client.get("/api/live-map/events?limit=2&offset=0")
 
     assert response.status_code == 200
@@ -267,6 +319,10 @@ def test_live_map_events_pagination(client, sample_geo_events, db_session):
 
 def test_live_map_events_disclaimer_present(client, sample_geo_events, db_session):
     """Test that platform disclaimer is present in responses."""
+    if not _LIVE_MAP_MOUNTED:
+        _assert_live_map_unmounted(client, "/api/live-map/events?admin_mode=false")
+        return
+
     response = client.get("/api/live-map/events?admin_mode=false")
 
     assert response.status_code == 200
@@ -278,6 +334,10 @@ def test_live_map_events_disclaimer_present(client, sample_geo_events, db_sessio
 
 def test_live_map_single_event_public_mode(client, sample_geo_events, db_session):
     """Test retrieving a single event in public mode."""
+    if not _LIVE_MAP_MOUNTED:
+        _assert_live_map_unmounted(client, "/api/live-map/events/public-event-1?admin_mode=false")
+        return
+
     response = client.get("/api/live-map/events/public-event-1?admin_mode=false")
 
     assert response.status_code == 200
