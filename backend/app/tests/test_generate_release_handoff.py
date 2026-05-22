@@ -89,7 +89,7 @@ def test_generate_release_handoff_fails_when_referenced_log_missing(tmp_path: Pa
     finally:
         sys.argv = old_argv
 
-    assert "proof_incomplete:" in message
+    assert "PROOF_INCOMPLETE:" in message
     assert "missing_referenced_logs=artifacts/proof/current/proof_freshness.log" in message
 
 

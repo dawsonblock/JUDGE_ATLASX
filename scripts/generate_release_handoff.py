@@ -25,6 +25,7 @@ DEFAULT_REQUIRED_PROOF_FILES = (
     "artifacts/proof/current/release_readiness.md",
     "artifacts/proof/current/PROOF_POLICY.md",
 )
+PROOF_INCOMPLETE_PREFIX = "PROOF_INCOMPLETE:"
 
 
 def _sha256(path: Path) -> str:
@@ -141,7 +142,7 @@ def main() -> int:
             errors.append(
                 "missing_referenced_logs=" + ",".join(missing_referenced_logs)
             )
-        raise SystemExit("proof_incomplete:" + "|".join(errors))
+        raise SystemExit(PROOF_INCOMPLETE_PREFIX + "|".join(errors))
 
     archive_rel = _resolve_relative(repo_root, archive_path)
     output_path = Path(args.output)

@@ -32,6 +32,7 @@ DEFAULT_REQUIRED_PROOF_FILES = (
     "artifacts/proof/current/release_readiness.md",
     "artifacts/proof/current/PROOF_POLICY.md",
 )
+PROOF_INCOMPLETE_PREFIX = "PROOF_INCOMPLETE:"
 
 
 def check_required_proof_logs(repo_root: Path) -> tuple[list[str], int, int]:
@@ -102,6 +103,19 @@ def _missing_required_proof_files(repo_root: Path) -> list[str]:
     return sorted(missing)
 
 
+def _format_proof_incomplete_message(
+    *,
+    missing_logs: list[str],
+    missing_required_files: list[str],
+) -> str:
+    parts: list[str] = []
+    if missing_logs:
+        parts.append("missing_referenced_logs=" + ",".join(missing_logs))
+    if missing_required_files:
+        parts.append("missing_required_proof_files=" + ",".join(missing_required_files))
+    return PROOF_INCOMPLETE_PREFIX + "|".join(parts)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default=str(REPO_ROOT), help="Repository root")
@@ -124,6 +138,12 @@ def main() -> int:
         print(
             "REQUIRED_PROOF_LOGS: FAIL "
             f"({len(missing)} missing of {referenced_total} referenced)"
+        )
+        print(
+            _format_proof_incomplete_message(
+                missing_logs=missing,
+                missing_required_files=missing_required_files,
+            )
         )
         print(
             "REQUIRED_PROOF_LOGS: DEBUG "

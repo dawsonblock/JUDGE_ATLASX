@@ -48,6 +48,95 @@ def _resolve_runtime_root(extract_dir: Path) -> Path:
     return unique[0]
 
 
+def _build_checks(
+    *,
+    runtime_root: Path,
+    repo_root: Path,
+    archive_path: Path,
+    expected_root: str,
+) -> list[tuple[str, list[str], Path]]:
+    return [
+        (
+            "check_no_pyc_strict_archive",
+            ["bash", "scripts/check_no_pyc.sh", "--strict-archive"],
+            runtime_root,
+        ),
+        (
+            "validate_release_archive",
+            [
+                "python3",
+                "scripts/validate_release_archive.py",
+                "--archive",
+                str(archive_path),
+                "--expected-root",
+                expected_root,
+            ],
+            repo_root,
+        ),
+        (
+            "validate_final_zip",
+            ["python3", "scripts/validate_final_zip.py", str(archive_path)],
+            runtime_root,
+        ),
+        (
+            "check_release_surface",
+            [
+                "python3",
+                "scripts/check_release_surface.py",
+                "--archive",
+                str(archive_path),
+            ],
+            runtime_root,
+        ),
+        (
+            "verify_archive_proof_freshness",
+            [
+                "python3",
+                "scripts/verify_archive_proof_freshness.py",
+                "--archive",
+                str(archive_path),
+            ],
+            runtime_root,
+        ),
+        (
+            "check_required_proof_logs",
+            [
+                "python3",
+                "scripts/check_required_proof_logs.py",
+                "--root",
+                ".",
+                "--strict-required-files",
+            ],
+            runtime_root,
+        ),
+        (
+            "check_proof_consistency",
+            ["python3", "scripts/check_proof_consistency.py"],
+            runtime_root,
+        ),
+        (
+            "check_proof_freshness",
+            ["python3", "scripts/check_proof_freshness.py"],
+            runtime_root,
+        ),
+        (
+            "verify_proof_hash_sync",
+            ["python3", "scripts/verify_proof_hash_sync.py", "--root", "."],
+            runtime_root,
+        ),
+        (
+            "check_no_local_paths",
+            [
+                "python3",
+                "scripts/check_no_local_paths_in_release_proof.py",
+                "--root",
+                ".",
+            ],
+            runtime_root,
+        ),
+    ]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -83,84 +172,12 @@ def main() -> int:
 
         runtime_root = _resolve_runtime_root(extract_dir)
 
-        checks = [
-            (
-                "check_no_pyc_strict_archive",
-                ["bash", "scripts/check_no_pyc.sh", "--strict-archive"],
-                runtime_root,
-            ),
-            (
-                "validate_release_archive",
-                [
-                    "python3",
-                    "scripts/validate_release_archive.py",
-                    "--archive",
-                    str(archive_path),
-                    "--expected-root",
-                    args.expected_root,
-                ],
-                repo_root,
-            ),
-            (
-                "validate_final_zip",
-                [
-                    "python3",
-                    "scripts/validate_final_zip.py",
-                    str(archive_path),
-                ],
-                runtime_root,
-            ),
-            (
-                "check_release_surface",
-                [
-                    "python3",
-                    "scripts/check_release_surface.py",
-                    "--archive",
-                    str(archive_path),
-                ],
-                runtime_root,
-            ),
-            (
-                "verify_archive_proof_freshness",
-                [
-                    "python3",
-                    "scripts/verify_archive_proof_freshness.py",
-                    "--archive",
-                    str(archive_path),
-                ],
-                runtime_root,
-            ),
-            (
-                "check_required_proof_logs",
-                [
-                    "python3",
-                    "scripts/check_required_proof_logs.py",
-                    "--root",
-                    ".",
-                ],
-                runtime_root,
-            ),
-            (
-                "check_proof_consistency",
-                ["python3", "scripts/check_proof_consistency.py"],
-                runtime_root,
-            ),
-            (
-                "check_proof_freshness",
-                ["python3", "scripts/check_proof_freshness.py"],
-                runtime_root,
-            ),
-            (
-                "check_no_local_paths",
-                [
-                    "python3",
-                    "scripts/check_no_local_paths_in_release_proof.py",
-                    "--root",
-                    ".",
-                ],
-                runtime_root,
-            ),
-        ]
+        checks = _build_checks(
+            runtime_root=runtime_root,
+            repo_root=repo_root,
+            archive_path=archive_path,
+            expected_root=args.expected_root,
+        )
 
         for name, cmd, cwd in checks:
             rc, output = _run(cmd, cwd=cwd)

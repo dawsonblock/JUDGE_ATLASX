@@ -83,6 +83,7 @@ FORBIDDEN_FILE_SUFFIXES = (
     ".crt",
     ".tsbuildinfo",
 )
+PROOF_INCOMPLETE_PREFIX = "PROOF_INCOMPLETE:"
 TEXT_METADATA_SUFFIXES = {".md", ".json", ".txt", ".yml", ".yaml"}
 ABSOLUTE_PATH_PATTERNS = (
     re.compile(r'/Users/[^"\)\s]+'),
@@ -225,6 +226,30 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
                                 f"missing_claimed_proof_file:{key}:{normalized}"
                             )
 
+                checks = release_gate_data.get("checks", [])
+                if isinstance(checks, list):
+                    for check in checks:
+                        if not isinstance(check, dict):
+                            continue
+                        check_name = check.get("name", "unknown")
+                        log_path = check.get("log_path")
+                        if not isinstance(log_path, str) or not log_path:
+                            continue
+                        normalized = log_path.replace("\\", "/")
+                        if normalized.startswith("artifacts/current/"):
+                            report["errors"].append(
+                                "legacy_proof_log_reference:"
+                                f"checks.{check_name}:{normalized}"
+                            )
+                            continue
+                        if not normalized.startswith("artifacts/proof/current/"):
+                            continue
+                        if f"{root}/{normalized}" not in name_set:
+                            report["errors"].append(
+                                "missing_claimed_proof_file:"
+                                f"checks.{check_name}:{normalized}"
+                            )
+
             for info in infos:
                 parts = Path(info.filename).parts
                 if any(segment in FORBIDDEN_SEGMENTS for segment in parts):
@@ -301,7 +326,7 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
                                 pattern1 = f"- {key}: {expected_value}"
                                 pattern2 = f"- {key}:[^\n]*{expected_value}"
                                 if pattern1 not in current_proof_text and not re.search(pattern2, current_proof_text):
-                                    report["warnings"].append(
+                                    report["errors"].append(
                                         f"proof_count_mismatch:{key}={expected_value} "
                                         f"not found in CURRENT_PROOF.md"
                                     )
@@ -409,6 +434,49 @@ def write_markdown(report: dict, output_path: Path) -> None:
     output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def _proof_incomplete_reasons(report: dict) -> list[str]:
+    errors = report.get("errors", [])
+    if not isinstance(errors, list):
+        return []
+
+    buckets = {
+        "missing_required_proof_file": [],
+        "missing_claimed_proof_file": [],
+        "proof_count_mismatch": [],
+        "invalid_release_gate_json": [],
+        "proof_artifacts_incomplete": [],
+    }
+    for err in errors:
+        if not isinstance(err, str):
+            continue
+        for key in buckets:
+            if err.startswith(key + ":") or err == key:
+                buckets[key].append(err)
+
+    reasons: list[str] = []
+    if buckets["missing_required_proof_file"]:
+        reasons.append(
+            "missing_required_proof_files="
+            + ",".join(sorted(buckets["missing_required_proof_file"]))
+        )
+    if buckets["missing_claimed_proof_file"]:
+        reasons.append(
+            "missing_claimed_proof_files="
+            + ",".join(sorted(buckets["missing_claimed_proof_file"]))
+        )
+    if buckets["proof_count_mismatch"]:
+        reasons.append(
+            "proof_count_mismatch="
+            + ",".join(sorted(buckets["proof_count_mismatch"]))
+        )
+    if buckets["invalid_release_gate_json"]:
+        reasons.append("invalid_release_gate_json")
+    if buckets["proof_artifacts_incomplete"]:
+        reasons.append("proof_artifacts_incomplete")
+
+    return reasons
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--archive", required=True, help="Path to archive zip")
@@ -433,6 +501,9 @@ def main() -> int:
     else:
         print(f"Archive validation written to {_display_path(output)}")
         print("PASS" if report["valid"] else "FAIL")
+        reasons = _proof_incomplete_reasons(report)
+        if reasons:
+            print(PROOF_INCOMPLETE_PREFIX + "|".join(reasons))
 
     return 0 if report["valid"] else 1
 

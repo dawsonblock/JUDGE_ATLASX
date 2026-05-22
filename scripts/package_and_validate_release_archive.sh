@@ -166,49 +166,7 @@ if [[ "${SKIP_EXTRACTED_VALIDATION}" != "true" ]]; then
 fi
 
 log "Verifying proof hash synchronization"
-python - <<'PY'
-import json
-import re
-from pathlib import Path
-
-root = Path('.')
-rg = json.loads((root / 'artifacts/proof/current/release_gate.json').read_text(encoding='utf-8'))
-cp = (root / 'artifacts/proof/current/CURRENT_PROOF.md').read_text(encoding='utf-8')
-pf = (root / 'artifacts/proof/current/proof_freshness.log').read_text(encoding='utf-8')
-av = (root / 'artifacts/proof/current/archive_validation.log').read_text(encoding='utf-8')
-
-release_hash = rg.get('proof_input_tree_hash', '')
-cp_match = re.search(r"- proof_input_tree_hash: ([0-9a-f]{64})", cp)
-pf_match = re.search(r"proof_input_tree_hash=([0-9a-f]{64})", pf)
-av_release_match = re.search(r"release_gate\.json proof_input_tree_hash=([0-9a-f]{64})", av)
-av_actual_match = re.search(r"proof_freshness actual_hash=([0-9a-f]{64})", av)
-
-if not av_release_match:
-  av_release_match = re.search(r"proof_input_tree_hash=([0-9a-f]{64})", av)
-if not av_actual_match:
-  av_actual_match = re.search(r"proof_freshness.*actual_hash=([0-9a-f]{64})", av)
-
-values = {
-    'release_gate.json': release_hash,
-    'CURRENT_PROOF.md': cp_match.group(1) if cp_match else '',
-    'proof_freshness.log': pf_match.group(1) if pf_match else '',
-    'archive_validation.log release_hash': av_release_match.group(1) if av_release_match else '',
-    'archive_validation.log actual_hash': av_actual_match.group(1) if av_actual_match else '',
-}
-
-missing = [name for name, value in values.items() if not value]
-if missing:
-    raise SystemExit('Missing hash values in: ' + ', '.join(missing))
-
-unique = set(values.values())
-if len(unique) != 1:
-    lines = ['Hash mismatch across proof artifacts:']
-    for name, value in values.items():
-        lines.append(f'  {name}: {value}')
-    raise SystemExit('\n'.join(lines))
-
-print(f"PASS: synchronized proof_input_tree_hash={release_hash}")
-PY
+python scripts/verify_proof_hash_sync.py --root .
 
 log "PASS: release package and proof validation complete"
 log "AUTHORITATIVE_RELEASE_ARCHIVE=${ARCHIVE_PATH}"

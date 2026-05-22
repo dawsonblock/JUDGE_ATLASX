@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import sys
 import zipfile
 from pathlib import Path
 
@@ -180,3 +181,85 @@ def test_validate_release_archive_rejects_trailing_whitespace_segment(tmp_path: 
 
     assert report["valid"] is False
     assert any(error.startswith("whitespace_path_segment:") for error in report["errors"])
+
+
+def test_validate_release_archive_rejects_missing_claimed_check_log_path(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    archive = tmp_path / "missing-check-log.zip"
+    files = _valid_files()
+    files["JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json"] = (
+        '{\n'
+        '  "checks": [\n'
+        '    {"name": "required_proof_logs", '
+        '"log_path": "artifacts/proof/current/required_proof_logs.log"}\n'
+        '  ]\n'
+        '}\n'
+    )
+    _write_zip(archive, files)
+
+    report = module.inspect_archive(archive, expected_root="JUDGE_ATLAS-main")
+
+    assert report["valid"] is False
+    assert any(
+        error.startswith("missing_claimed_proof_file:checks.required_proof_logs:")
+        for error in report["errors"]
+    )
+
+
+def test_validate_release_archive_marks_proof_count_mismatch_as_error(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    archive = tmp_path / "count-mismatch.zip"
+    files = _valid_files()
+    files["JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json"] = (
+        '{\n'
+        '  "check_count": 5,\n'
+        '  "proof_input_file_count": 21\n'
+        '}\n'
+    )
+    files["JUDGE_ATLAS-main/artifacts/proof/current/CURRENT_PROOF.md"] = (
+        "# CURRENT_PROOF\n"
+        "\n"
+        "- unrelated_metric: 999\n"
+    )
+    _write_zip(archive, files)
+
+    report = module.inspect_archive(archive, expected_root="JUDGE_ATLAS-main")
+
+    assert report["valid"] is False
+    assert any(error.startswith("proof_count_mismatch:") for error in report["errors"])
+
+
+def test_validate_release_archive_main_prints_proof_incomplete_summary(
+    tmp_path: Path, capsys
+) -> None:
+    module = _load_module()
+    archive = tmp_path / "stdout-proof-incomplete.zip"
+    files = _valid_files()
+    files.pop("JUDGE_ATLAS-main/artifacts/proof/current/CURRENT_ALPHA_STATUS.md")
+    _write_zip(archive, files)
+
+    output_md = tmp_path / "archive_validation.md"
+    old_argv = sys.argv
+    try:
+        sys.argv = [
+            "prog",
+            "--archive",
+            str(archive),
+            "--expected-root",
+            "JUDGE_ATLAS-main",
+            "--output",
+            str(output_md),
+        ]
+        rc = module.main()
+    finally:
+        sys.argv = old_argv
+
+    stdout = capsys.readouterr().out
+    assert rc == 1
+    assert "FAIL" in stdout
+    assert "PROOF_INCOMPLETE:" in stdout
+    assert "missing_required_proof_files=" in stdout
