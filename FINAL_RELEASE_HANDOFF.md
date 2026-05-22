@@ -36,6 +36,17 @@ Workspace: /Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2
 - verify_archive_proof_freshness.py --archive dist/JUDGE_ATLAS-main-final.zip: PASS
 - package_and_validate_release_archive.sh full pipeline: PASS
 
+## Revalidation Checkpoint (2026-05-22)
+
+- validate_release_archive.py --archive dist/JUDGE_ATLAS-main-final.zip --expected-root JUDGE_ATLAS-main: PASS
+- check_release_surface.py --archive dist/JUDGE_ATLAS-main-final.zip: PASS
+- verify_archive_proof_freshness.py --archive dist/JUDGE_ATLAS-main-final.zip: PASS
+
+## Current Working Tree Delta
+
+- Untracked: FINAL_RELEASE_HANDOFF.md
+- Modified tracked files: none
+
 ## Important Result
 
 The final zip is now a validated clean release archive with a passing proof chain and synchronized proof-input hash across generated artifacts.
