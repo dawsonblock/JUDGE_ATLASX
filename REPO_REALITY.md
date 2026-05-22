@@ -156,7 +156,7 @@
 
 - No full-text search on evidence text
 - No semantic search
-- No vector embeddings for document similarity
+- Embedding-related fields and services exist in parts of the system, but production semantic search and audited vector retrieval/reranking are not complete.
 - No evidence inference graph
 
 ---
