@@ -62,10 +62,11 @@ trap cleanup EXIT INT TERM
 
 ARCHIVE_VALIDATION_LOG="${ROOT_DIR}/artifacts/proof/current/archive_validation.log"
 
-ARCHIVE_PATH="/tmp/JUDGE_ATLAS-main-final.zip"
+ARCHIVE_PATH="${ROOT_DIR}/dist/JUDGE_ATLAS-main-final.zip"
 PACKAGE_ROOT_NAME="JUDGE_ATLAS-main"
 SKIP_RELEASE_GATE=false
 SKIP_HANDOFF_CHECK=false
+SKIP_EXTRACTED_VALIDATION=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -83,6 +84,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-handoff-check)
       SKIP_HANDOFF_CHECK=true
+      shift
+      ;;
+    --skip-extracted-validation)
+      SKIP_EXTRACTED_VALIDATION=true
       shift
       ;;
     *)
@@ -130,6 +135,12 @@ ARCHIVE_BASENAME="$(basename "${ARCHIVE_PATH}")"
 ARCHIVE_SHA256="$(archive_sha256 "${ARCHIVE_PATH}")"
 log "Built archive filename=${ARCHIVE_BASENAME} sha256=${ARCHIVE_SHA256}"
 
+log "Generating authoritative handoff from built archive"
+python3 scripts/generate_release_handoff.py \
+  --root . \
+  --archive "${ARCHIVE_PATH}" \
+  --output FINAL_RELEASE_HANDOFF.md
+
 if [[ "${SKIP_HANDOFF_CHECK}" != "true" ]]; then
   log "Validating final handoff consistency"
   python scripts/check_release_handoff_consistency.py \
@@ -146,39 +157,13 @@ python scripts/verify_archive_proof_freshness.py --archive "${ARCHIVE_PATH}" | t
 
 sanitize_archive_validation_artifacts
 
-EXTRACT_DIR="${TMP_DIR}/extracted"
-mkdir -p "${EXTRACT_DIR}"
-unzip -q "${ARCHIVE_PATH}" -d "${EXTRACT_DIR}"
-
-EXTRACTED_ROOT="$(python scripts/archive_validation_paths.py --extract-dir "${EXTRACT_DIR}")"
-log "Resolved extracted root: ${EXTRACTED_ROOT}"
-
-PYTHON_BIN="${EXTRACTED_ROOT}/backend/.venv/bin/python"
-if [[ ! -x "${PYTHON_BIN}" ]]; then
-  PYTHON_BIN="python3"
+if [[ "${SKIP_EXTRACTED_VALIDATION}" != "true" ]]; then
+  log "Running extracted-archive release validation"
+  python3 scripts/validate_extracted_release.py \
+    --root . \
+    --archive "${ARCHIVE_PATH}" \
+    --expected-root "${PACKAGE_ROOT_NAME}"
 fi
-
-(
-  cd "${EXTRACTED_ROOT}"
-  python scripts/check_path_hygiene.py --root .
-  python scripts/check_no_generated_files.py --root .
-  "${PYTHON_BIN}" scripts/check_false_claims.py
-  "${PYTHON_BIN}" scripts/check_truth_claims.py
-  "${PYTHON_BIN}" scripts/check_proof_freshness.py
-  "${PYTHON_BIN}" scripts/check_proof_freshness.py --strict-extra-files
-  "${PYTHON_BIN}" scripts/check_source_registry_docs.py
-  "${PYTHON_BIN}" scripts/check_proof_consistency.py
-  "${PYTHON_BIN}" scripts/check_single_proof_authority.py
-  "${PYTHON_BIN}" scripts/check_required_proof_logs.py --root .
-  "${PYTHON_BIN}" scripts/check_no_local_paths_in_release_proof.py --root .
-  bash scripts/check_no_pyc.sh
-  "${PYTHON_BIN}" scripts/check_external_boundaries.py
-  "${PYTHON_BIN}" backend/scripts/check_repo_boundaries.py
-  "${PYTHON_BIN}" backend/scripts/check_no_direct_ingestion_network_clients.py
-  "${PYTHON_BIN}" scripts/validate_workflows.py
-  "${PYTHON_BIN}" scripts/verify_status_consistency.py --root .
-  "${PYTHON_BIN}" -m compileall -q backend/app scripts
-)
 
 log "Verifying proof hash synchronization"
 python - <<'PY'

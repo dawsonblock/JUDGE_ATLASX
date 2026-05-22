@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEFAULT_OUTPUT="agent_eval_skills_merged_clean-pruned-smoke.zip"
-DEFAULT_ROOT_NAME="JUDGE_ATLASX-main"
+DEFAULT_ROOT_NAME="JUDGE_ATLAS-main"
 
 OUTPUT="${DEFAULT_OUTPUT}"
 ROOT_NAME="${DEFAULT_ROOT_NAME}"
