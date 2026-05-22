@@ -61,11 +61,11 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 ARCHIVE_VALIDATION_LOG="${ROOT_DIR}/artifacts/proof/current/archive_validation.log"
-ARCHIVE_VALIDATION_MD="${ROOT_DIR}/artifacts/proof/current/archive_validation.md"
 
 ARCHIVE_PATH="/tmp/JUDGE_ATLAS-main-final.zip"
 PACKAGE_ROOT_NAME="JUDGE_ATLAS-main"
 SKIP_RELEASE_GATE=false
+SKIP_HANDOFF_CHECK=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -79,6 +79,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-release-gate)
       SKIP_RELEASE_GATE=true
+      shift
+      ;;
+    --skip-handoff-check)
+      SKIP_HANDOFF_CHECK=true
       shift
       ;;
     *)
@@ -125,6 +129,14 @@ archive_sha256() {
 ARCHIVE_BASENAME="$(basename "${ARCHIVE_PATH}")"
 ARCHIVE_SHA256="$(archive_sha256 "${ARCHIVE_PATH}")"
 log "Built archive filename=${ARCHIVE_BASENAME} sha256=${ARCHIVE_SHA256}"
+
+if [[ "${SKIP_HANDOFF_CHECK}" != "true" ]]; then
+  log "Validating final handoff consistency"
+  python scripts/check_release_handoff_consistency.py \
+    --root . \
+    --handoff FINAL_RELEASE_HANDOFF.md \
+    --archive "${ARCHIVE_PATH}"
+fi
 
 log "Running archive validation"
 bash scripts/validate_archive_proof.sh "${ARCHIVE_PATH}"
