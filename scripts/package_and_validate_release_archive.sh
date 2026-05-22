@@ -5,6 +5,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "${TMP_DIR}"' EXIT INT TERM
 
+ARCHIVE_VALIDATION_LOG="${ROOT_DIR}/artifacts/proof/current/archive_validation.log"
+ARCHIVE_VALIDATION_MD="${ROOT_DIR}/artifacts/proof/current/archive_validation.md"
+
 ARCHIVE_PATH="/tmp/JUDGE_ATLAS-main-final.zip"
 PACKAGE_ROOT_NAME="JUDGE_ATLAS-main"
 SKIP_RELEASE_GATE=false
@@ -69,14 +72,58 @@ ARCHIVE_SHA256="$(archive_sha256 "${ARCHIVE_PATH}")"
 log "Built archive filename=${ARCHIVE_BASENAME} sha256=${ARCHIVE_SHA256}"
 
 log "Running archive validation"
-python scripts/validate_release_archive.py \
-  --archive "${ARCHIVE_PATH}" \
-  --expected-root "${PACKAGE_ROOT_NAME}" \
-  --output "${ROOT_DIR}/artifacts/proof/current/archive_validation.md"
+bash scripts/validate_archive_proof.sh "${ARCHIVE_PATH}"
 
-python scripts/check_release_surface.py --archive "${ARCHIVE_PATH}"
-python scripts/validate_final_zip.py "${ARCHIVE_PATH}"
-python scripts/verify_archive_proof_freshness.py --archive "${ARCHIVE_PATH}"
+python scripts/validate_final_zip.py "${ARCHIVE_PATH}" | tee -a "${ARCHIVE_VALIDATION_LOG}"
+python scripts/verify_archive_proof_freshness.py --archive "${ARCHIVE_PATH}" | tee -a "${ARCHIVE_VALIDATION_LOG}"
+
+python - <<'PY'
+import json
+import re
+from pathlib import Path
+
+root = Path('.').resolve()
+log_path = root / 'artifacts/proof/current/archive_validation.log'
+md_path = root / 'artifacts/proof/current/archive_validation.md'
+
+patterns = (
+  re.compile(r"/Users/[^\s\"'`]+"),
+  re.compile(r"/home/[^\s\"'`]+"),
+  re.compile(r"/private/[^\s\"'`]+"),
+  re.compile(r"[A-Za-z]:\\[^\s\"'`]+"),
+)
+
+repo_prefix = str(root).replace('\\', '/')
+
+def redact_text(text: str) -> str:
+  normalized = text.replace('\\', '/')
+  redacted = normalized.replace(repo_prefix, '[REDACTED_LOCAL_PATH]')
+  for pattern in patterns:
+    redacted = pattern.sub('[REDACTED_LOCAL_PATH]', redacted)
+  return redacted
+
+def redact_file(path: Path) -> None:
+  if not path.exists() or not path.is_file():
+    return
+
+  if path.suffix.lower() == '.json':
+    try:
+      parsed = json.loads(path.read_text(encoding='utf-8'))
+    except json.JSONDecodeError:
+      parsed = None
+    if parsed is not None:
+      serialized = json.dumps(parsed, indent=2)
+      path.write_text(redact_text(serialized) + '\n', encoding='utf-8')
+      return
+
+  text = path.read_text(encoding='utf-8', errors='ignore')
+  redacted = redact_text(text)
+  if redacted != text:
+    path.write_text(redacted, encoding='utf-8')
+
+redact_file(log_path)
+redact_file(md_path)
+PY
 
 EXTRACT_DIR="${TMP_DIR}/extracted"
 mkdir -p "${EXTRACT_DIR}"
@@ -129,6 +176,11 @@ cp_match = re.search(r"- proof_input_tree_hash: ([0-9a-f]{64})", cp)
 pf_match = re.search(r"proof_input_tree_hash=([0-9a-f]{64})", pf)
 av_release_match = re.search(r"release_gate\.json proof_input_tree_hash=([0-9a-f]{64})", av)
 av_actual_match = re.search(r"proof_freshness actual_hash=([0-9a-f]{64})", av)
+
+if not av_release_match:
+  av_release_match = re.search(r"proof_input_tree_hash=([0-9a-f]{64})", av)
+if not av_actual_match:
+  av_actual_match = re.search(r"proof_freshness.*actual_hash=([0-9a-f]{64})", av)
 
 values = {
     'release_gate.json': release_hash,

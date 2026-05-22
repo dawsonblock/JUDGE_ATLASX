@@ -163,6 +163,7 @@ REQUIRED_GATE_NAMES = {
     "verify_source_registry",
     "check_source_registry_docs",
     "check_false_claims",
+    "check_no_local_paths_in_release_proof",
     "check_source_keys",
     "check_statuses",
     "check_no_direct_ingestion_network_clients",
@@ -1027,8 +1028,10 @@ def _write_repair_report_md(
     blockers = payload.get("release_blockers_remaining", [])
     if blockers:
         lines.extend(f"- {blocker}" for blocker in blockers)
-    else:
+    elif payload.get("alpha_gate_passed", False):
         lines.append("- none")
+    else:
+        lines.append("- unresolved_gate_failure")
     lines.append("")
 
     output_path = out_dir / "REPAIR_REPORT.md"
@@ -1829,6 +1832,11 @@ def main() -> int:
         "required_proof_logs.log",
         [python_exe, "scripts/check_required_proof_logs.py", "--root", str(repo_root)],
     )
+    _local_path_hygiene_spec = GateStepSpec(
+        "check_no_local_paths_in_release_proof",
+        "check_no_local_paths_in_release_proof.log",
+        [python_exe, "scripts/check_no_local_paths_in_release_proof.py", "--root", str(repo_root)],
+    )
 
     archived_current_proof = _archive_current_proof(repo_root, out_dir)
 
@@ -1837,6 +1845,7 @@ def main() -> int:
     stale_outputs = [spec.log_name for spec in gate_steps] + [
         _proof_freshness_spec.log_name,
         _required_proof_logs_spec.log_name,
+        _local_path_hygiene_spec.log_name,
         "proof_consistency_pytest.log",
         "release_gate.log",
         "release_gate.json",
@@ -2480,6 +2489,17 @@ def main() -> int:
     _redact_file_local_paths(out_dir / "archive_validation.log", repo_root)
     _redact_file_local_paths(out_dir / "archive_validation.md", repo_root)
     _sanitize_current_proof_artifacts(repo_root, out_dir)
+
+    local_path_hygiene_step = _run(
+        repo_root,
+        out_dir,
+        _local_path_hygiene_spec.name,
+        _local_path_hygiene_spec.log_name,
+        list(_local_path_hygiene_spec.command),
+        timeout_seconds=_local_path_hygiene_spec.timeout_seconds,
+        required=_local_path_hygiene_spec.required,
+    )
+    results.append(local_path_hygiene_step)
 
     missing_logs = _missing_logs(repo_root, results)
     ok = all(r.exit_code == 0 for r in results) and not missing_logs
