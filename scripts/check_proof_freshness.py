@@ -6,6 +6,9 @@ Default validation reads the stored manifest from
 1) listed files are present,
 2) listed-file hash matches stored hash,
 3) newly discovered proof-relevant files are reported.
+
+On mismatches, this checker reports per-file diagnostics when stored
+fingerprints are available, plus added/removed file-path deltas.
 """
 
 from __future__ import annotations
@@ -255,7 +258,9 @@ def validate_stored_manifest(
         "proof_input_tree_hash_algorithm": algorithm,
         "file_count": len(stored_file_list),
         "missing_files": [],
+        "removed_files": [],
         "extra_files": extra_files,
+        "added_files": extra_files,
         "stored_file_count": len(stored_file_list),
         "discovered_file_count": len(discovered_file_list),
         "stored_file_list": stored_file_list,
@@ -290,6 +295,7 @@ def validate_stored_manifest(
     )
     result["actual_hash"] = actual_hash
     result["missing_files"] = missing_files
+    result["removed_files"] = missing_files
 
     if missing_files:
         result["status"] = "FAIL"
@@ -473,6 +479,10 @@ def main() -> int:
         print(f"proof_input_tree_hash={result['actual_hash']}")
     if result.get("changed_files"):
         print("changed_files=" + ",".join(result["changed_files"]))
+    if result.get("removed_files"):
+        print("removed_files=" + ",".join(result["removed_files"]))
+    if result.get("added_files"):
+        print("added_files=" + ",".join(result["added_files"]))
     if result["extra_files"]:
         print("extra_discovered_files=" + ",".join(result["extra_files"]))
     return 1
