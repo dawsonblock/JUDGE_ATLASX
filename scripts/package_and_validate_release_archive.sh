@@ -153,6 +153,7 @@ log "Running archive validation"
 bash scripts/validate_archive_proof.sh "${ARCHIVE_PATH}"
 
 python scripts/validate_final_zip.py "${ARCHIVE_PATH}" | tee -a "${ARCHIVE_VALIDATION_LOG}"
+python scripts/check_release_surface.py --archive "${ARCHIVE_PATH}" | tee -a "${ARCHIVE_VALIDATION_LOG}"
 python scripts/verify_archive_proof_freshness.py --archive "${ARCHIVE_PATH}" | tee -a "${ARCHIVE_VALIDATION_LOG}"
 
 sanitize_archive_validation_artifacts

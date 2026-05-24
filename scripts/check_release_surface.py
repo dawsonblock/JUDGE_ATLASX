@@ -18,12 +18,16 @@ FORBIDDEN_SEGMENTS = {
     ".pytest_cache",
     ".mypy_cache",
     ".ruff_cache",
+    ".validation_logs",
     ".git",
 }
 FORBIDDEN_PREFIXES = (
     "artifacts/proof/archive/",
+    "artifacts/proof/backend/",
+    "artifacts/proof/frontend/",
     "artifacts/proof/history/",
     "artifacts/history/",
+    ".validation_logs/",
     "logs/",
     "tmp/",
     "temp/",

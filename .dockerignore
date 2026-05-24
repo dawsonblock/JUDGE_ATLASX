@@ -17,6 +17,7 @@ __pycache__/
 .pytest_cache/
 .nox/
 .tox/
+.validation_logs/
 
 # ---- Virtual environments ----------------------------------------------------
 .venv/
@@ -86,6 +87,8 @@ temp/
 
 # ---- Proof archive (historical; not for images) -----------------------------
 artifacts/history/
+artifacts/proof/backend/
+artifacts/proof/frontend/
 artifacts/proof/archive/
 artifacts/proof/history/
 artifacts/proof/latest/

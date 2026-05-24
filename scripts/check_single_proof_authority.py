@@ -9,6 +9,8 @@ from pathlib import Path
 CANONICAL_DIR = Path("artifacts/proof/current")
 LEGACY_DIRS = (
     Path("artifacts/current"),
+    Path("artifacts/proof/backend"),
+    Path("artifacts/proof/frontend"),
     Path("artifacts/proof/latest"),
     Path("proof/latest"),
 )

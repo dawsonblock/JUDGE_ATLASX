@@ -32,6 +32,34 @@ DEFAULT_REQUIRED_PROOF_FILES = (
     "artifacts/proof/current/release_readiness.md",
     "artifacts/proof/current/PROOF_POLICY.md",
 )
+DEFAULT_REQUIRED_PROOF_LOGS = (
+    "artifacts/proof/current/backend_pytest.log",
+    "artifacts/proof/current/backend_compile.log",
+    "artifacts/proof/current/backend_import.log",
+    "artifacts/proof/current/frontend_install.log",
+    "artifacts/proof/current/frontend_lint.log",
+    "artifacts/proof/current/frontend_typecheck.log",
+    "artifacts/proof/current/frontend_contracts.log",
+    "artifacts/proof/current/frontend_build.log",
+    "artifacts/proof/current/frontend_node_gate.log",
+    "artifacts/proof/current/check_api_contracts.log",
+    "artifacts/proof/current/public_api_boundary.log",
+    "artifacts/proof/current/mutation_fail_closed_coverage.log",
+    "artifacts/proof/current/docker_runtime_preflight.log",
+    "artifacts/proof/current/postgis_proof.log",
+    "artifacts/proof/current/egress_proxy_proof.log",
+    "artifacts/proof/current/demo_proof.log",
+    "artifacts/proof/current/verify_evidence_store.log",
+    "artifacts/proof/current/verify_source_registry.log",
+    "artifacts/proof/current/check_false_claims.log",
+    "artifacts/proof/current/check_no_pyc.log",
+    "artifacts/proof/current/repo_generated_files.log",
+    "artifacts/proof/current/proof_freshness.log",
+    "artifacts/proof/current/proof_consistency_pytest.log",
+    "artifacts/proof/current/required_proof_logs.log",
+    "artifacts/proof/current/single_proof_authority.log",
+    "artifacts/proof/current/archive_validation.log",
+)
 PROOF_INCOMPLETE_PREFIX = "PROOF_INCOMPLETE:"
 
 
@@ -103,16 +131,31 @@ def _missing_required_proof_files(repo_root: Path) -> list[str]:
     return sorted(missing)
 
 
+def _missing_required_proof_logs(repo_root: Path) -> list[str]:
+    missing: list[str] = []
+    for rel_path in DEFAULT_REQUIRED_PROOF_LOGS:
+        if not (repo_root / rel_path).exists():
+            missing.append(rel_path)
+    return sorted(missing)
+
+
 def _format_proof_incomplete_message(
     *,
     missing_logs: list[str],
+    missing_required_logs: list[str],
     missing_required_files: list[str],
 ) -> str:
     parts: list[str] = []
     if missing_logs:
         parts.append("missing_referenced_logs=" + ",".join(missing_logs))
+    if missing_required_logs:
+        parts.append(
+            "missing_required_proof_logs=" + ",".join(missing_required_logs)
+        )
     if missing_required_files:
-        parts.append("missing_required_proof_files=" + ",".join(missing_required_files))
+        parts.append(
+            "missing_required_proof_files=" + ",".join(missing_required_files)
+        )
     return PROOF_INCOMPLETE_PREFIX + "|".join(parts)
 
 
@@ -129,12 +172,18 @@ def main() -> int:
     args = parser.parse_args()
 
     repo_root = Path(args.root).resolve()
-    missing, referenced_total, present_total = check_required_proof_logs(repo_root)
+    (
+        missing,
+        referenced_total,
+        present_total,
+    ) = check_required_proof_logs(repo_root)
     missing_required_files: list[str] = []
+    missing_required_logs: list[str] = []
     if args.strict_required_files:
         missing_required_files = _missing_required_proof_files(repo_root)
+        missing_required_logs = _missing_required_proof_logs(repo_root)
 
-    if missing or missing_required_files:
+    if missing or missing_required_logs or missing_required_files:
         print(
             "REQUIRED_PROOF_LOGS: FAIL "
             f"({len(missing)} missing of {referenced_total} referenced)"
@@ -142,12 +191,14 @@ def main() -> int:
         print(
             _format_proof_incomplete_message(
                 missing_logs=missing,
+                missing_required_logs=missing_required_logs,
                 missing_required_files=missing_required_files,
             )
         )
         print(
             "REQUIRED_PROOF_LOGS: DEBUG "
-            f"present={present_total} missing={len(missing)} referenced={referenced_total}"
+            "present="
+            f"{present_total} missing={len(missing)} referenced={referenced_total}"
         )
         if referenced_total > 0:
             percentage = (present_total / referenced_total) * 100.0
@@ -167,6 +218,13 @@ def main() -> int:
             )
             for path in missing_required_files:
                 print(f"  MISSING_REQUIRED_FILE: {path}")
+        if missing_required_logs:
+            print(
+                "REQUIRED_PROOF_LOGS: DEBUG "
+                f"missing_required_logs={len(missing_required_logs)}"
+            )
+            for path in missing_required_logs:
+                print(f"  MISSING_REQUIRED_LOG: {path}")
         return 1
 
     print(

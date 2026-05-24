@@ -8,6 +8,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+.validation_logs/
 *.db
 *.sqlite
 *.sqlite3
@@ -37,6 +38,8 @@ coverage/
 evidence_store/
 data/local/
 artifacts/history/
+artifacts/proof/backend/
+artifacts/proof/frontend/
 artifacts/proof/history/
 artifacts/proof/latest/
 proof/latest/

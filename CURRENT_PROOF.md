@@ -1,7 +1,7 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-24T21:40:20.320654+00:00
-- commit_hash: 8a34506926e47ad59ef6d3bee7109da5ffe42896
+- generated_at_utc: 2026-05-24T22:53:51.584844+00:00
+- commit_hash: 25c8097eaee89d92c743aaba27c9645097b9e334
 - alpha_gate_status: PASS
 - alpha_gate_passed: true
 - release_gate_check_count: 46
@@ -11,15 +11,15 @@
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
 - archive_validation_result: PASS
-- proof_input_tree_hash: d4587c17ae768ebe7af0bb530b92103b8ecf226e268416ccfe12b689a56fa357
-- proof_input_file_count: 1059
+- proof_input_tree_hash: c9c9b41cf5e85ca9c24287a510c25ba50d61a0251dea971f793997e3be5f63a8
+- proof_input_file_count: 1060
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
 ## Runtime Metadata
 
 - gate_runner_python_version: 3.11.7
-- gate_runner_python_executable: [REDACTED_LOCAL_PATH]/backend/.venv/bin/python
+- gate_runner_python_executable: [REDACTED_LOCAL_PATH]
 - backend_test_python_version: 3.11.7
 - backend_test_python_executable: [REDACTED_LOCAL_PATH]/backend/.venv/bin/python
 - backend_required_python: >=3.11

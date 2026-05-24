@@ -27,13 +27,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import shutil
 import subprocess
 import sys
 import tempfile
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -96,14 +96,29 @@ def find_forbidden_paths(extract_dir: Path) -> list[str]:
         "__pycache__/",
         ".pytest_cache/",
         ".mypy_cache/",
+        ".validation_logs/",
         "venv/",
         ".venv/",
         ".git/",
+        "artifacts/history/",
+        "artifacts/proof/history/",
+        "artifacts/proof/backend/",
+        "artifacts/proof/frontend/",
         ".gitignore",
     }
     
     forbidden_extensions = {".pyc", ".egg-info", ".pyo"}
-    forbidden_files = {".DS_Store", ".ds_store", ".coverage", "thumbs.db", "Thumbs.db"}
+    forbidden_files = {
+        ".DS_Store",
+        ".ds_store",
+        ".coverage",
+        "thumbs.db",
+        "Thumbs.db",
+        ".env",
+        ".env.local",
+        ".env.production",
+        ".env.development",
+    }
     
     found: list[str] = []
     
@@ -253,7 +268,7 @@ def validate_final_zip(zip_path: Path) -> dict:
     - validated_at_utc: str
     """
     
-    result = {
+    result: dict[str, Any] = {
         "valid": False,
         "zip_path": str(zip_path),
         "zip_sha256": "",
