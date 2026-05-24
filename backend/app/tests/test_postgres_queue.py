@@ -155,7 +155,7 @@ class TestQueueRetryLogic:
 
         assert caps.name == "postgres"
         assert caps.supports_production is False
-        assert caps.implementation_status == "placeholder"
+        assert caps.implementation_status == "alpha"
 
 
 @pytest.fixture

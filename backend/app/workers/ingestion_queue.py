@@ -2,7 +2,7 @@
 
 This module provides a factory for creating ingestion queue backends
 based on configuration. Supports in-process (alpha-only) and Postgres
-(placeholder) backends.
+(alpha-durable, non-production-qualified) backends.
 
 Usage::
 
@@ -46,7 +46,8 @@ def get_ingestion_queue(settings: SimpleNamespace | None = None) -> IngestionQue
     The backend is selected based on the ``ingestion_queue_backend``
     configuration setting:
     - "inprocess": InProcessIngestionQueue (alpha-only, not production-capable)
-    - "postgres": PostgresIngestionQueue (placeholder, not implemented)
+        - "postgres": PostgresIngestionQueue
+            (implemented alpha-durable backend, not production-qualified)
 
     Args:
         settings: Optional settings object. If not provided, uses
@@ -71,8 +72,9 @@ def get_ingestion_queue(settings: SimpleNamespace | None = None) -> IngestionQue
                     logger.info("Initialized in-process ingestion queue (alpha-only)")
                 elif backend == "postgres":
                     _QUEUE = PostgresIngestionQueue()
-                    logger.warning(
-                        "Initialized Postgres ingestion queue (placeholder - not implemented)"
+                    logger.info(
+                        "Initialized Postgres ingestion queue "
+                        "(alpha-durable, not production-qualified)"
                     )
                 else:
                     raise ValueError(

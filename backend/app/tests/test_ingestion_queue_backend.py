@@ -30,7 +30,7 @@ def test_get_ingestion_queue_uses_postgres_backend() -> None:
     assert queue is not None
     assert isinstance(queue, PostgresIngestionQueue)
     assert queue._capabilities.supports_production is False
-    assert queue._capabilities.implementation_status == "placeholder"
+    assert queue._capabilities.implementation_status == "alpha"
 
 
 def test_get_ingestion_queue_rejects_invalid_backend() -> None:

@@ -31,7 +31,8 @@ logger = logging.getLogger(__name__)
 class PostgresIngestionQueue:
     """PostgreSQL-backed ingestion queue with durability and retry logic.
 
-    Production-capable backend with health monitoring and automatic retries.
+    Implemented alpha-durable backend with health monitoring and retries.
+    Not yet production-qualified.
     """
 
     def __init__(self, dsn: Optional[str] = None) -> None:
@@ -39,7 +40,7 @@ class PostgresIngestionQueue:
         self._capabilities = QueueBackendCapabilities(
             name="postgres",
             supports_production=False,
-            implementation_status="placeholder",
+            implementation_status="alpha",
         )
         self._max_retries = 3
         self._retry_delay_seconds = 60

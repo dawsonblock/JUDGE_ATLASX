@@ -483,28 +483,57 @@ export async function fetchAdminSourcesList(): Promise<AdminSourceItem[]> {
   return fetchJson<AdminSourceItem[]>("/api/admin/sources");
 }
 
+async function adminCsrfToken(): Promise<string> {
+  const resp = await fetch('/api/admin/csrf', {
+    method: 'GET',
+    cache: 'no-store',
+  });
+  if (!resp.ok) {
+    throw new Error(`API request failed: ${resp.status}`);
+  }
+  const data = (await resp.json()) as { csrf_token?: unknown };
+  const token = data?.csrf_token;
+  if (typeof token !== 'string' || token.length < 16) {
+    throw new Error('API request failed: invalid admin CSRF token');
+  }
+  return token;
+}
+
+async function adminPostJson<T>(path: string): Promise<T> {
+  const token = await adminCsrfToken();
+  const response = await fetch(path, {
+    method: 'POST',
+    cache: 'no-store',
+    headers: {
+      'x-jta-csrf-token': token,
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status}`);
+  }
+  return response.json() as Promise<T>;
+}
+
 export async function triggerSourceRun(
   sourceKey: string,
 ): Promise<SourceRunResult> {
-  return fetchJson<SourceRunResult>(`/api/admin/sources/${sourceKey}/run`, {
-    method: "POST",
-  });
+  return adminPostJson<SourceRunResult>(`/api/admin/sources/${sourceKey}/run`);
 }
 
 export async function enableSource(
   sourceKey: string,
 ): Promise<AdminSourceItem> {
-  return fetchJson<AdminSourceItem>(`/api/admin/sources/${sourceKey}/enable`, {
-    method: "POST",
-  });
+  return adminPostJson<AdminSourceItem>(
+    `/api/admin/sources/${sourceKey}/enable`,
+  );
 }
 
 export async function disableSource(
   sourceKey: string,
 ): Promise<AdminSourceItem> {
-  return fetchJson<AdminSourceItem>(`/api/admin/sources/${sourceKey}/disable`, {
-    method: "POST",
-  });
+  return adminPostJson<AdminSourceItem>(
+    `/api/admin/sources/${sourceKey}/disable`,
+  );
 }
 
 export async function fetchAdminReviewQueue(

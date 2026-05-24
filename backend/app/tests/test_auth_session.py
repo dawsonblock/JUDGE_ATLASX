@@ -113,6 +113,14 @@ class TestSessionHelpers:
 
 
 class TestLoginCreatesSession:
+    def test_login_rejects_username_field_payload(self, db_session):
+        user = _make_user(db_session, email="schema-test@example.com")
+        response = client.post(
+            "/api/auth/login",
+            json={"username": user.email, "password": "TestPassword123!"},
+        )
+        assert response.status_code == 422
+
     def test_login_creates_user_session(self, db_session):
         user = _make_user(db_session)
         response = client.post(

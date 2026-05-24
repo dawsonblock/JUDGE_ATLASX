@@ -12,6 +12,9 @@ LEGACY_DIRS = (
     Path("artifacts/proof/latest"),
     Path("proof/latest"),
 )
+LEGACY_FILES = (
+    Path("artifacts/proof/source_registry_status.json"),
+)
 
 
 def _has_active_files(path: Path) -> bool:
@@ -37,6 +40,14 @@ def check(root: Path) -> list[str]:
         if _has_active_files(absolute):
             errors.append(
                 f"legacy proof directory contains active artifacts: {rel}"
+            )
+
+    for rel in LEGACY_FILES:
+        absolute = root / rel
+        if absolute.is_file():
+            errors.append(
+                "legacy proof artifact present outside canonical current: "
+                f"{rel}"
             )
 
     return errors
