@@ -5,7 +5,7 @@ set -euo pipefail
 # This script is intentionally fast-failing so release_gate can report
 # environment blockers before PostGIS setup begins.
 
-DOCKER_TIMEOUT_SECONDS="${JTA_DOCKER_CHECK_TIMEOUT:-60}"
+DOCKER_TIMEOUT_SECONDS="${JTA_DOCKER_CHECK_TIMEOUT:-180}"
 
 run_with_timeout() {
     local timeout_seconds="$1"
@@ -82,6 +82,7 @@ run_docker_check() {
     if [ "$rc" -eq 124 ]; then
         echo "[docker_runtime] FAIL: ${label} timed out after ${DOCKER_TIMEOUT_SECONDS}s"
         echo "[docker_runtime] HINT: start Docker Desktop or verify Docker daemon/socket access"
+        echo "[docker_runtime] HINT: increase timeout with JTA_DOCKER_CHECK_TIMEOUT if daemon cold-start is slow"
         return 1
     fi
 

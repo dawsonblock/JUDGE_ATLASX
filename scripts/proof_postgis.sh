@@ -14,7 +14,7 @@ DB_PORT="15432"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROOF_LOG="$SCRIPT_DIR/../artifacts/proof/postgis_proof.log"
 PULL_TIMEOUT_SECONDS="${JTA_POSTGIS_PULL_TIMEOUT:-600}"
-DOCKER_TIMEOUT_SECONDS="${JTA_DOCKER_CHECK_TIMEOUT:-60}"
+DOCKER_TIMEOUT_SECONDS="${JTA_DOCKER_CHECK_TIMEOUT:-180}"
 BACKEND_PYTHON="${BACKEND_PYTHON:-backend/.venv/bin/python}"
 CLEANUP_DONE=0
 
@@ -47,9 +47,9 @@ fail_with_reason() {
     local reason="$1"
     echo "[proof_postgis] FAIL: $reason"
     echo "[proof_postgis] Container status dump (if available):"
-    run_with_timeout 20 docker ps -a || true
+    run_with_timeout "$DOCKER_TIMEOUT_SECONDS" docker ps -a || true
     echo "[proof_postgis] Container logs dump (if available):"
-    run_with_timeout 20 docker logs "$CONTAINER" || true
+    run_with_timeout "$DOCKER_TIMEOUT_SECONDS" docker logs "$CONTAINER" || true
     exit 1
 }
 
@@ -101,13 +101,13 @@ require_docker() {
     fi
 
     echo "[proof_postgis] Docker preflight: docker version"
-    if ! run_with_timeout 20 docker version; then
+    if ! run_with_timeout "$DOCKER_TIMEOUT_SECONDS" docker version; then
         echo "[proof_postgis] ERROR: docker version failed"
         return 1
     fi
 
     echo "[proof_postgis] Docker preflight: docker info"
-    if ! run_with_timeout 20 docker info; then
+    if ! run_with_timeout "$DOCKER_TIMEOUT_SECONDS" docker info; then
         echo "[proof_postgis] ERROR: docker info failed"
         return 1
     fi
@@ -119,7 +119,7 @@ cleanup() {
     fi
     CLEANUP_DONE=1
     echo "[proof_postgis] Cleanup: removing container '$CONTAINER'"
-    run_with_timeout 20 docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+    run_with_timeout "$DOCKER_TIMEOUT_SECONDS" docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
     echo "[proof_postgis] Cleanup: complete"
 }
 trap cleanup EXIT
