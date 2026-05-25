@@ -1,8 +1,7 @@
 # JUDGE_ATLASX Repair Status
 
 > [!WARNING]
-> **CRITICAL WARNING:** This repository and its release candidate build are currently **BLOCKED** and not production-ready. The release gates have identified contradictions and validation failures, and the repository must remain frozen under the `repair/proof-truth-hardening-main11` branch until all repair steps are fully executed, verified, and certified by passing the canonical gate suite.
-
+> **WARNING:** The current proof artifacts indicate `alpha_gate_passed: true` and `release_candidate: true`, but `production_ready` remains **false**. Do not deploy as a production release until the canonical gate suite and this status file confirm production readiness.
 ## Repair Status Overview
 
 - **Branch**: `repair/proof-truth-hardening-main11`
