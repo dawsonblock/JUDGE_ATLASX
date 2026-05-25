@@ -1,10 +1,10 @@
 # RELEASE_READINESS
 
-- generated_at_utc: 2026-05-25T06:29:05.924045+00:00
-- overall_status: alpha-proof-pass
+- generated_at_utc: 2026-05-25T20:52:09.954918+00:00
+- overall_status: blocked
 - production_ready: false
-- release_recommendation: alpha-proof-pass
-- archive_hash: 4e707a04aeb756bd11bbfb7ab856a917af1727b8
+- release_recommendation: blocked
+- archive_hash: 12c1a720ec79f9e5ff9190a0c6335b51fe7fcc11
 - platform: macOS-26.2-arm64-arm-64bit
 - python_version: 3.11.7
 - node_version: v20.20.2
@@ -25,49 +25,61 @@
 | check_compose_auth_defaults | PASS | 0 | artifacts/proof/current/check_compose_auth_defaults.log | ce53c858a818dccbbd3685948e8ce1414dddb23714d77e259787b0ce79eceac9 |
 | backend_compile | PASS | 0 | artifacts/proof/current/backend_compile.log | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 |
 | backend_import | PASS | 0 | artifacts/proof/current/backend_import.log | b5409e2a52e4b96662c82b82dbf8e58fb1deb5387c82ca205874b9e5ceb612e4 |
-| backend_pytest | PASS | 0 | artifacts/proof/current/backend_pytest.log | 45456fffdc25db845a9e9e0c1c8a22b93062de56c306176dbb314d560cdbc10b |
+| runtime_smoke | PASS | 0 | artifacts/proof/current/runtime_smoke.log | 561261d657b5b6b5bd99f9db4f716948b8a6188d16238c6259018c5ac421a7f3 |
+| backend_pytest | PASS | 0 | artifacts/proof/current/backend_pytest.log | 6f7074f1e4bb07e3058873fdbbd13848b7dd786edbddeaaca60305cf3e5f0b71 |
 | check_migrations | PASS | 0 | artifacts/proof/current/check_migrations.log | b1a31ef1e482457fd1c47ac213cc98d199e78f8051acc81264a305cf629b66bf |
-| docker_runtime_preflight | PASS | 0 | artifacts/proof/current/docker_runtime_preflight.log | 63782a22daeee2b92d789f56d2d695b87f658d9337c3c64058e458877851c03a |
-| postgis_proof | PASS | 0 | artifacts/proof/current/postgis_proof.log | cf3f0b87f96bb741c498832307e4c294cc1324ba4a82facc9a97324785de819d |
-| egress_proxy_proof | PASS | 0 | artifacts/proof/current/egress_proxy_proof.log | 5b3c2bf476c9857ef4a56333a533bd76c2727220342ff42e7f50d18a9005f9c7 |
+| docker_runtime_preflight | FAIL | 1 | artifacts/proof/current/docker_runtime_preflight.log | 281c9ac27f157a2a3dab85290471aacfc284373bb0f2541708d3f4f65445ac94 |
+| docker_smoke | FAIL | 1 | artifacts/proof/current/docker_smoke.log | 00b3b9bc919004d120a586522658f3b218af13d726802c8648dcc2ec0b6452e8 |
+| postgis_proof | BLOCKED | 1 | artifacts/proof/current/postgis_proof.log | 20d252c24174576e18993ddeed557e9eb469ec52d0a574aff6c0f1a26edac3b1 |
+| egress_proxy_proof | PASS | 0 | artifacts/proof/current/egress_proxy_proof.log | b2bba42190df8902558658f87693037b1f437028ffa31f69befd53efae46d3b0 |
 | demo_proof | PASS | 0 | artifacts/proof/current/demo_proof.log | d4daf93a4255ba5763f141482a36011e9135c5bd214c08d9d6f7d90c5d8d6b29 |
 | validate_sources | PASS | 0 | artifacts/proof/current/validate_sources.log | 4d734d90bf04c25a04d4752d5067c94dc51e963876cfc4f61bbf698de63c27ba |
 | check_yaml_duplicate_keys | PASS | 0 | artifacts/proof/current/check_yaml_duplicate_keys.log | 88b52b46f87e415fc01b849aececd79f567ac8ea21f09f1d891a37eca7ddb06d |
-| verify_source_registry | PASS | 0 | artifacts/proof/current/verify_source_registry.log | bb7f4a23d410ddbbb182c7c28575f78bf7ec864860ebc400cd128caf9e150a3c |
+| verify_source_registry | PASS | 0 | artifacts/proof/current/verify_source_registry.log | 0b5e9558e3a12ed9854ff2948e23ebbea5440a6e592cb10088a76d5ac6841bf7 |
 | source_registry_status | PASS | 0 | artifacts/proof/current/source_registry_status.log | a627028cae8dc77fd1985e05a14c9eb33197aebcd2791d1824866799fe8c86be |
 | prepare_proof_db | PASS | 0 | artifacts/proof/current/prepare_proof_db.log | ef6779db88eeffa32551cb68ca12147f76837d1ef139b9e8d67f668940f260d5 |
 | verify_evidence_store | PASS | 0 | artifacts/proof/current/verify_evidence_store.log | 7b693f37394b451d76dd236d9668d34a5e48b67f48dee151954763083deca20f |
-| verify_audit_chain | PASS | 0 | artifacts/proof/current/verify_audit_chain.log | befcae0308d1153b47b7ae54a50f1c29a7a1a0168491d67dd5759ed249f395c1 |
-| auth_mutation_route_coverage | PASS | 0 | artifacts/proof/current/auth_mutation_route_coverage.log | 19e95f03931508bcb63d5f1f276741db94fd3f8f0399d2690ed306a73c3ba6c7 |
-| mutation_fail_closed_coverage | PASS | 0 | artifacts/proof/current/mutation_fail_closed_coverage.log | 44091516c6f7d278c9900d796163d45f95d1ad1819370ffeeaf887bc704f2e38 |
+| verify_audit_chain | PASS | 0 | artifacts/proof/current/verify_audit_chain.log | 155f86358ed51d7e407cd9373114171cf3017511e610745da946c781328b57ef |
+| auth_mutation_route_coverage | PASS | 0 | artifacts/proof/current/auth_mutation_route_coverage.log | bfb94aa3bce5e5c9a8e413d4c0b8cbbecf5444cc553dd49310e15bc548c86a10 |
+| mutation_fail_closed_coverage | PASS | 0 | artifacts/proof/current/mutation_fail_closed_coverage.log | ffe2a4a341462d569b35e1e292ac1aa0fb4d5f4f8c0cc6d1855131d67100244c |
 | check_node_policy | PASS | 0 | artifacts/proof/current/check_node_policy.log | 4ac278efce24b13829768ac56e4c61c8e3a44e6168b2e384eba7e5cf0de08681 |
 | frontend_node_gate | PASS | 0 | artifacts/proof/current/frontend_node_gate.log | 79c45e2f36695f8f728fccd4a155f367fe9dd7f76d137710ca4b5c8898dfbe45 |
-| frontend_install | PASS | 0 | artifacts/proof/current/frontend_install.log | e26b9f6048e87c5c48ad95a5a14da8f30c8b177c5cb30065eebab9c14106f8c6 |
+| frontend_install | PASS | 0 | artifacts/proof/current/frontend_install.log | 5a75bbbe0fded76a8c74af49b70fc02dc48c937d20b51e30b93edcf664e83329 |
 | frontend_lint | PASS | 0 | artifacts/proof/current/frontend_lint.log | 9d79910829d5abcf1161f85f3d57cc9c745d1edd5734a88fee634c9913b368e8 |
 | frontend_typecheck | PASS | 0 | artifacts/proof/current/frontend_typecheck.log | 701338e1389ab6284419cba533b353099f6b47658b930e128a8627a7a2d6d6e7 |
-| frontend_contracts | PASS | 0 | artifacts/proof/current/frontend_contracts.log | 8cb0d644c2079c7b483592a0a1c88d9aaeff6aa07ec3ebb84742694653d6779b |
+| frontend_contracts | PASS | 0 | artifacts/proof/current/frontend_contracts.log | d3e0fd0531cc9d61b01dd0875effb0e20f52228cf04431c8c6981c85ed79e6c5 |
 | frontend_build | PASS | 0 | artifacts/proof/current/frontend_build.log | 47aef45e83089014d566914acdaa079f5d71d7fd00cb88ef943bd86c97608dd7 |
 | check_api_contracts | PASS | 0 | artifacts/proof/current/check_api_contracts.log | f6750f8d64797a660c9122c245fa0ae38eb689dd8023b7fef1d0481e4ab86216 |
 | repo_generated_files | PASS | 0 | artifacts/proof/current/repo_generated_files.log | 1f136c767a6ec6bd6d527af249dd34271e19a2e1287eedd33fd8364bb9384137 |
 | check_npm_audit_triage | PASS | 0 | artifacts/proof/current/check_npm_audit_triage.log | 09470ee10bceef4b5371da2106a690e33d7d563a18a5dd2ccabfc2af0a29a331 |
 | map_route_check | PASS | 0 | artifacts/proof/current/map_route_check.log | 3f2c0fb18144134952224494bc6690cde35213914ff5880a8eed0b5ca519e30f |
-| public_api_boundary | PASS | 0 | artifacts/proof/current/public_api_boundary.log | e70d0188d73e7d473f7c8d00a0af294861197ec58c6ec66375fd0ecc7902862e |
+| public_api_boundary | PASS | 0 | artifacts/proof/current/public_api_boundary.log | b1ee663cb8006edcddccfe6d03b9e367e1e54f2a3eb345548d93110033c998ee |
 | canlii_staging_proof | PASS | 0 | artifacts/proof/current/canlii_staging_proof.log | d7c9393bb589559678b644f26519944ef1a69f81a771fdbd5fce0282bb665ab5 |
-| proof_freshness | PASS | 0 | artifacts/proof/current/proof_freshness.log | 0dd4d9baf077b2f80d16060b731fe438c87b5a76420ceddb75661ceaec484528 |
+| proof_freshness | PASS | 0 | artifacts/proof/current/proof_freshness.log | a511a213437e429f5d366c79de942780113f19237d0233244a29d05e7cc36c31 |
 | single_proof_authority | PASS | 0 | artifacts/proof/current/single_proof_authority.log | 67de9d9d555d8a633cccb3b3fd168f55f5975ed306de95965f06666949cc4337 |
-| release_readiness_generation | PASS | 0 | artifacts/proof/current/release_readiness.md | d93d177410204c668a230acfef07e69164c0a95902be6ef2fdc0b10a290f065a |
-| proof_consistency_pytest | PASS | 0 | artifacts/proof/current/proof_consistency_pytest.log | f6127ea06ecec78e96ed73da41127de0eb6545404e09ab19b417650064c8e118 |
-| archive_validation | PASS | 0 | artifacts/proof/current/archive_validation.log | 7655d4264bce5e59d7a813069e41be752c084a2284584f6d33c3bee9e4991c85 |
-| required_proof_logs | PASS | 0 | artifacts/proof/current/required_proof_logs.log | 62d8c2876e715bc853e01dc1a07e7c8216b908ebee94b18b8fa27935bb0d58de |
+| release_readiness_generation | PASS | 0 | artifacts/proof/current/release_readiness.md | 7643e7d4677114925355ff6478db4c3e2ef1a60921e37544b8a38f1c64e5e1db |
+| proof_consistency_pytest | PASS | 0 | artifacts/proof/current/proof_consistency_pytest.log | b6c7ffc9d80c78da811cf4c0f8da9b1721c6b323b8ab236716f7a65a8887a1ff |
+| archive_validation | FAIL | 1 | artifacts/proof/current/archive_validation.log | 0748ea4d90c2ab814d731350dd9376d5eda55be8064134063eff4f4b0c9d4cde |
+| required_proof_logs | PASS | 0 | artifacts/proof/current/required_proof_logs.log | ad8c9ebbeff9e5b698c8aa73f066a698f5f44a98c08a9f78568e4635d931da5c |
+| check_proof_manifest | PASS | 0 | artifacts/proof/current/check_proof_manifest.log | ff1ef0478a609a163e8fa82044e2d0d530b8373a7e38ba8c3720403cf4376212 |
 | check_no_local_paths_in_release_proof | PASS | 0 | artifacts/proof/current/check_no_local_paths_in_release_proof.log | 7ab4d071c63ecc123622b94a78dda4a32381a788cc2f318f840fe2f9e799c8e4 |
 
 ## Remaining Blockers
 
-- none
+- required_gate_failed:docker_runtime_preflight
+- required_gate_failed:docker_smoke
+- required_gate_failed:postgis_proof
+- required_gate_failed:archive_validation
+- archive_validation_not_pass
+- docker_runtime_preflight
+- docker_smoke
+- postgis_proof
+- archive_validation
+- validation_summary_failed:docker_smoke,runtime_smoke
 
 ## Stale Or Misreported Claims
 
-- none
+- readiness is blocked due to failed/missing required proof evidence
 
 ## Next Repair Action
 

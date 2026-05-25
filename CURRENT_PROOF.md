@@ -1,25 +1,25 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-25T09:12:10.399125+00:00
-- commit_hash: b42628f11ccafe4898e2f6807a1fc040a9bd2945
+- generated_at_utc: 2026-05-25T20:52:09.954918+00:00
+- commit_hash: 12c1a720ec79f9e5ff9190a0c6335b51fe7fcc11
 - alpha_gate_status: BLOCKED
 - alpha_gate_passed: false
-- release_gate_check_count: 46
+- release_gate_check_count: 49
 - docker_available: false
 - postgis_proof_result: BLOCKED
 - egress_proxy_proof_result: PASS
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
-- archive_validation_result: PASS
-- proof_input_tree_hash: 2076f995c096c32137dfcb4a70a99358a3f11bfc1c873957f64a80bc92021431
-- proof_input_file_count: 1064
+- archive_validation_result: FAIL
+- proof_input_tree_hash: bb1c90a08821b352f55e7501b2153b1126500c4ee731ddc543846cda87b5e6cb
+- proof_input_file_count: 1069
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
 ## Runtime Metadata
 
 - gate_runner_python_version: 3.11.7
-- gate_runner_python_executable: [REDACTED_LOCAL_PATH]/backend/.venv/bin/python
+- gate_runner_python_executable: [REDACTED_LOCAL_PATH]
 - backend_test_python_version: 3.11.7
 - backend_test_python_executable: [REDACTED_LOCAL_PATH]/backend/.venv/bin/python
 - backend_required_python: >=3.11
@@ -46,7 +46,7 @@
 - Dedicated egress proxy proof passed in the current release gate.
 - Dedicated synthetic demo proof passed in the current release gate.
 - Proof freshness passed against the stored proof-input file list and tree hash.
-- Archive validation passed against the final distributable archive shape.
+- Archive validation has not yet been recorded for this run.
 - archive_validation_log: artifacts/proof/current/archive_validation.log
 - archive_validation_supported_shapes:
   - JUDGE-main/
@@ -74,7 +74,10 @@
 ## Failed Checks
 
 - docker_runtime_preflight
+- docker_smoke
 - postgis_proof
+- archive_validation
+- validation_summary_failed:docker_smoke,runtime_smoke
 
 ## Blocked Checks
 

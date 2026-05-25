@@ -24,6 +24,11 @@ def _log(lines: list[str]) -> None:
     LOG_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def _append(lines: list[str], message: str) -> None:
+    lines.append(message)
+    _log(lines)
+
+
 def _run(
     lines: list[str],
     cmd: list[str],
@@ -31,7 +36,7 @@ def _run(
     timeout: int,
     allow_failure: bool = False,
 ) -> subprocess.CompletedProcess[str]:
-    lines.append(f"$ {' '.join(cmd)}")
+    _append(lines, f"$ {' '.join(cmd)}")
     cp = subprocess.run(
         cmd,
         cwd=REPO_ROOT,
@@ -42,7 +47,7 @@ def _run(
     )
     output = ((cp.stdout or "") + (cp.stderr or "")).strip()
     if output:
-        lines.append(output)
+        _append(lines, output)
     if cp.returncode != 0 and not allow_failure:
         raise SmokeError(f"command_failed:{' '.join(cmd)}:rc={cp.returncode}")
     return cp
@@ -59,13 +64,13 @@ def _append_logs(lines: list[str], service: str) -> None:
             timeout=30,
         )
     except Exception as exc:  # pragma: no cover - defensive logging path
-        lines.append(f"log_capture_error:{service}:{exc}")
+        _append(lines, f"log_capture_error:{service}:{exc}")
         return
-    lines.append(f"--- {service} logs (tail 200) ---")
+    _append(lines, f"--- {service} logs (tail 200) ---")
     if cp.stdout:
-        lines.append(cp.stdout.rstrip())
+        _append(lines, cp.stdout.rstrip())
     if cp.stderr:
-        lines.append(cp.stderr.rstrip())
+        _append(lines, cp.stderr.rstrip())
 
 
 def _wait_http(lines: list[str], url: str, attempts: int, timeout: int) -> bool:
@@ -79,20 +84,21 @@ def _wait_http(lines: list[str], url: str, attempts: int, timeout: int) -> bool:
             timeout=timeout,
         )
         if cp.returncode == 0:
-            lines.append(f"http_ready:{url}:attempt={attempt}")
+            _append(lines, f"http_ready:{url}:attempt={attempt}")
             return True
     return False
 
 
 def main() -> int:
     lines: list[str] = ["docker smoke", f"repo_root: {REPO_ROOT}"]
+    _log(lines)
     failed = False
 
     try:
-        _run(lines, ["docker", "compose", "down", "-v"], timeout=120, allow_failure=True)
+        _run(lines, ["docker", "compose", "down", "-v"], timeout=20, allow_failure=True)
 
-        _run(lines, ["docker", "compose", "build", "--no-cache"], timeout=1800)
-        lines.append("docker compose build: PASS")
+        _run(lines, ["docker", "compose", "build", "--no-cache"], timeout=300)
+        _append(lines, "docker compose build: PASS")
 
         _run(lines, ["docker", "compose", "up", "-d", "db", "redis", "minio"], timeout=300)
 
@@ -113,7 +119,7 @@ def main() -> int:
             ],
             timeout=30,
         )
-        lines.append("postgres health: PASS")
+        _append(lines, "postgres health: PASS")
 
         # Redis
         redis_ok = False
@@ -129,12 +135,12 @@ def main() -> int:
                 break
         if not redis_ok:
             raise SmokeError("redis_not_healthy")
-        lines.append("redis health: PASS")
+        _append(lines, "redis health: PASS")
 
         # MinIO
         if not _wait_http(lines, "http://localhost:9000/minio/health/live", attempts=30, timeout=5):
             raise SmokeError("minio_not_healthy")
-        lines.append("minio health: PASS")
+        _append(lines, "minio health: PASS")
 
         _run(lines, ["docker", "compose", "up", "-d", "backend"], timeout=300)
 
@@ -143,7 +149,7 @@ def main() -> int:
             backend_ready = _wait_http(lines, "http://localhost:8000/api/health", attempts=10, timeout=5)
         if not backend_ready:
             raise SmokeError("backend_health_endpoint_failed")
-        lines.append("backend health: PASS")
+        _append(lines, "backend health: PASS")
 
         # Verify migrations are healthy in container
         cp = _run(
@@ -186,30 +192,31 @@ def main() -> int:
         )
         if cp.returncode != 0:
             raise SmokeError("frontend_cannot_reach_backend")
-        lines.append("frontend health: PASS")
+        _append(lines, "frontend health: PASS")
 
-        lines.append("docker smoke: PASS")
-        _run(lines, ["docker", "compose", "down", "-v"], timeout=180, allow_failure=True)
+        _append(lines, "docker smoke: PASS")
+        _run(lines, ["docker", "compose", "down", "-v"], timeout=20, allow_failure=True)
         _log(lines)
         return 0
 
     except SmokeError as exc:
         failed = True
-        lines.append(f"docker smoke failure: {exc}")
+        _append(lines, f"docker smoke failure: {exc}")
         for service in ("db", "redis", "minio", "backend", "frontend"):
             _append_logs(lines, service)
     except subprocess.TimeoutExpired as exc:
         failed = True
-        lines.append(f"docker smoke timeout: {exc}")
+        _append(lines, f"docker smoke timeout: {exc}")
         for service in ("db", "redis", "minio", "backend", "frontend"):
             _append_logs(lines, service)
     finally:
         try:
-            _run(lines, ["docker", "compose", "down", "-v"], timeout=180, allow_failure=True)
+            _run(lines, ["docker", "compose", "down", "-v"], timeout=20, allow_failure=True)
         except Exception:
-            lines.append("docker compose down -v failed during cleanup")
-        lines.append("docker smoke: FAIL" if failed else "docker smoke: PASS")
+            _append(lines, "docker compose down -v failed during cleanup")
+        _append(lines, "docker smoke: FAIL" if failed else "docker smoke: PASS")
         _log(lines)
+        print("\n".join(lines))
 
     return 1
 

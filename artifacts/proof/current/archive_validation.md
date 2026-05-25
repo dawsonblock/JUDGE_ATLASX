@@ -1,19 +1,23 @@
 # Archive Validation
 
-- validated_at_utc: 2026-05-25T06:29:12.736758+00:00
+- validated_at_utc: 2026-05-25T20:52:14.493806+00:00
 - archive: [REDACTED_LOCAL_PATH]/judge_atlas_archive.zip
-- archive_sha256: 3556bc71f22bc281b67666c52c6440c42cbccf18d3feca7b4d3c4fb705ab79cf
+- archive_sha256: 7c83ce842c5b8f24ca0aa1fb1aec3012d796ab2ff5d03c52ebb934624c240fd2
 - expected_root: JUDGE_ATLAS-main
 - actual_root: JUDGE_ATLAS-main
 - top_level_roots: JUDGE_ATLAS-main
 - root_match: yes
-- valid: PASS
-- compressed_size_bytes: 2018690
-- uncompressed_size_bytes: 7669188
+- valid: FAIL
+- compressed_size_bytes: 2020365
+- uncompressed_size_bytes: 7675780
 
 ## Errors
 
-- none
+- empty_required_log_from_manifest:artifacts/proof/current/archive_validation.log
+- missing_required_log_from_manifest:.validation_logs/docker_smoke.log
+- missing_required_log_from_manifest:.validation_logs/runtime_smoke.log
+- release_gate_not_alpha_passed
+- release_gate_not_release_candidate
 
 ## Largest Files
 
@@ -21,18 +25,18 @@
 |---|---:|---:|
 | JUDGE_ATLAS-main/backend/uv.lock | 769811 | 238625 |
 | JUDGE_ATLAS-main/frontend/package-lock.json | 393441 | 85051 |
-| JUDGE_ATLAS-main/scripts/release_gate.py | 103718 | 18609 |
+| JUDGE_ATLAS-main/scripts/release_gate.py | 106950 | 19218 |
 | JUDGE_ATLAS-main/backend/app/models/entities.py | 101799 | 16701 |
-| JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 86126 | 12964 |
+| JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 87544 | 13129 |
 | JUDGE_ATLAS-main/backend/app/memory/contradiction_engine.py | 48640 | 8977 |
 | JUDGE_ATLAS-main/backend/app/ingestion/sources/canada_saskatchewan_sources.yaml | 48464 | 6929 |
 | JUDGE_ATLAS-main/backend/app/tests/test_api.py | 43536 | 7488 |
 | JUDGE_ATLAS-main/backend/app/api/routes/admin_sources.py | 41311 | 8548 |
 | JUDGE_ATLAS-main/backend/app/tests/test_ingestion_runtime.py | 38018 | 5725 |
 | JUDGE_ATLAS-main/backend/app/tests/test_phase5_adaptive_retry.py | 35181 | 4174 |
+| JUDGE_ATLAS-main/artifacts/proof/current/proof_manifest.json | 30919 | 5025 |
 | JUDGE_ATLAS-main/backend/app/tests/test_ai_reasoning.py | 30318 | 4943 |
 | JUDGE_ATLAS-main/backend/app/ingestion/courtlistener_bulk_normalizer.py | 29758 | 5588 |
-| JUDGE_ATLAS-main/artifacts/proof/current/proof_manifest.json | 29350 | 4787 |
 | JUDGE_ATLAS-main/backend/app/tests/test_admin_ingestion.py | 29153 | 4559 |
 | JUDGE_ATLAS-main/backend/app/tests/test_graph_layer.py | 28216 | 4765 |
 | JUDGE_ATLAS-main/artifacts/proof/current/source_registry_status.json | 27776 | 3324 |
@@ -44,12 +48,12 @@
 
 | path | uncompressed |
 |---|---:|
-| backend | 5466732 |
+| backend | 5467114 |
 | frontend | 859320 |
-| scripts | 629049 |
-| docs | 358533 |
-| artifacts | 237320 |
-| .github | 39145 |
+| scripts | 652364 |
+| docs | 358588 |
+| artifacts | 219678 |
+| .github | 39644 |
 | demo | 26537 |
 | infra | 17264 |
 | REPO_REALITY.md | 7941 |
@@ -61,6 +65,6 @@
 | README.md | 1908 |
 | CURRENT_STATUS.md | 1833 |
 | RELEASE_BLOCKERS.md | 1507 |
-| RELEASE_MANIFEST.json | 1270 |
+| RELEASE_MANIFEST.json | 1253 |
 | Dockerfile.proof | 890 |
 | deploy | 389 |

@@ -38,8 +38,21 @@ def _valid_files(root: str = "JUDGE_ATLAS-main") -> dict[str, str]:
         prefix + "artifacts/proof/current/CURRENT_ALPHA_STATUS.md": "alpha status\n",
         prefix + "artifacts/proof/current/FIX_VERIFICATION_REPORT.md": "fixes\n",
         prefix + "artifacts/proof/current/SOURCE_REGISTRY_STATUS.md": "registry status\n",
-        prefix + "artifacts/proof/current/proof_manifest.json": "{}\n",
-        prefix + "artifacts/proof/current/release_gate.json": "{}\n",
+        prefix + "artifacts/proof/current/proof_manifest.json": (
+            "{\n"
+            '  "required_logs": [\n'
+            '    "artifacts/proof/current/release_gate.log"\n'
+            "  ]\n"
+            "}\n"
+        ),
+        prefix + "artifacts/proof/current/release_gate.json": (
+            "{\n"
+            '  "alpha_gate_passed": true,\n'
+            '  "release_candidate": true,\n'
+            '  "production_ready": false\n'
+            "}\n"
+        ),
+        prefix + "artifacts/proof/current/release_gate.log": "gate log\n",
         prefix + "artifacts/proof/current/release_readiness.md": "current readiness\n",
         prefix + "artifacts/proof/current/source_registry_status.json": "{}\n",
         prefix + "README.md": "repo readme\n",

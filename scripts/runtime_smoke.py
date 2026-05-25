@@ -158,6 +158,7 @@ def main() -> int:
 
     lines.append("runtime smoke: PASS" if not failed else "runtime smoke: FAIL")
     _write(lines)
+    print("\n".join(lines))
     return 0 if not failed else 1
 
 
