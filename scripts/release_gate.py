@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import signal
 import sqlite3
 import subprocess
 import sys
@@ -263,21 +264,37 @@ def _run(
     t0 = time.monotonic()
     started_at = datetime.now(timezone.utc)
     failure_reason: str | None = None
+    return_code = 0
     with log_path.open("w", encoding="utf-8") as fh:
+        proc = subprocess.Popen(
+            command,
+            cwd=repo_root,
+            stdout=fh,
+            stderr=subprocess.STDOUT,
+            text=True,
+            start_new_session=True,
+        )
         try:
-            proc = subprocess.run(
-                command,
-                cwd=repo_root,
-                stdout=fh,
-                stderr=subprocess.STDOUT,
-                text=True,
-                check=False,
-                timeout=timeout_seconds,
-            )
+            proc.communicate(timeout=timeout_seconds)
             return_code = proc.returncode
             if return_code != 0:
                 failure_reason = f"nonzero_exit_{return_code}"
         except subprocess.TimeoutExpired:
+            # Kill the whole process group so child/grandchild commands do not leak.
+            try:
+                os.killpg(proc.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                try:
+                    os.killpg(proc.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                proc.wait()
+
             timeout_note = (
                 "\n[release_gate] TIMEOUT after "
                 f"{timeout_seconds}s for step '{name}'.\n"
@@ -286,6 +303,13 @@ def _run(
             return_code = 124
             failure_reason = "timeout"
             _redact_file_local_paths(log_path, repo_root)
+        except Exception:
+            # Ensure we do not leave subprocesses behind on unexpected errors.
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            raise
     finished_at = datetime.now(timezone.utc)
     duration = round(time.monotonic() - t0, 3)
     passed = return_code == 0
