@@ -29,7 +29,6 @@ REQUIRED_DEPENDENCIES = (
     "require_ai_review_actor",
     "require_admin_actor",
     "require_reviewer_actor",
-    "require_admin_review",
     "require_public_event_actor",
 )
 

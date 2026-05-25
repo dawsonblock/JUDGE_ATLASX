@@ -31,6 +31,7 @@ from pathlib import Path
 PROHIBITED_PATTERNS: list[tuple[str, str]] = [
     ("Python bytecode (.pyc)", "**/*.pyc"),
     ("Python bytecode (.pyo)", "**/*.pyo"),
+    ("coverage data", "**/.coverage"),
     ("Python bytecode dir", "**/__pycache__"),
     ("pytest cache", "**/.pytest_cache"),
     ("mypy cache", "**/.mypy_cache"),
@@ -89,6 +90,10 @@ def _matches_prohibited(filepath: str) -> str | None:
     # Check file extension for compiled Python bytecode
     if p.name.endswith(".pyc") or p.name.endswith(".pyo"):
         return "[Python bytecode]"
+
+    # Coverage output must never be committed.
+    if p.name == ".coverage":
+        return "[coverage data]"
 
     # Check for the exact artifacts/proof/temp directory sequence anywhere in the path
     for i in range(len(parts) - 2):

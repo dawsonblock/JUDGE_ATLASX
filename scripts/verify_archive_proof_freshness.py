@@ -35,6 +35,8 @@ FORBIDDEN_PREFIXES = (
 )
 FORBIDDEN_FILE_NAMES = {
     ".coverage",
+    ".ds_store",
+    "thumbs.db",
 }
 # Forbidden path prefix variants under any root dir (e.g. JUDGE-main/external_reference/)
 FORBIDDEN_INNER_SEGMENTS = (
@@ -126,7 +128,7 @@ def verify_archive(archive_path: Path) -> list[str]:
                 failures.append(f"forbidden path in archive: {name}")
                 continue
 
-            file_name = Path(name).name
+            file_name = Path(name).name.lower()
             if file_name in FORBIDDEN_FILE_NAMES:
                 failures.append(f"forbidden file in archive: {name}")
                 continue

@@ -26,6 +26,7 @@ dist/
 build/
 release/
 coverage/
+.coverage
 *.tsbuildinfo
 .DS_Store
 *.egg-info/
