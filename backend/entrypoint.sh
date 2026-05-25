@@ -19,7 +19,7 @@ for i in range(30):
         print(f'FATAL: Database driver missing or invalid configuration: {e}')
         sys.exit(1)
     except Exception as e:
-        print(f'Database connection failed: {e}. Retrying in 2 seconds ({i+1}/30)...')
+        print(f"Database connection failed. Retrying in 2 seconds ({i+1}/30)...")
         time.sleep(2)
 print('FATAL: Database did not become ready in time.')
 sys.exit(1)
