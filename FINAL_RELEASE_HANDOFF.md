@@ -6,13 +6,13 @@ Manual edits are not authoritative.
 
 ## Authoritative Archive
 - Path: dist/JUDGE_ATLAS-main-final.zip
-- SHA-256: cfb77fc6bd3317954df9f56ec2d0f3a219e3a6736addf8df3b78ec875e2dd22f
+- SHA-256: aa4842478210a9209bbcfcfb45ecae5c14fd0077bd0fa9f4c55b234db0cb3b48
 
 ## Proof Anchors
 - release_gate_path: artifacts/proof/current/release_gate.json
-- release_gate_sha256: fcaa04c7d08da73fc29083e83b18f05124d3ff0aca1a5a67642d4ecab6218efe
+- release_gate_sha256: 93895f0cca263e53c8759babe7d957fad47afefa751b8deaa3c64cd444149b05
 - proof_manifest_path: artifacts/proof/current/proof_manifest.json
-- proof_manifest_sha256: e5359cc770ce4d6dbf757949fd52630c4cc766e0d690bc5bf99f32a4968c96fc
+- proof_manifest_sha256: 862193833f81cccacc57f85734a4fa13220100048aa240f457bab15d60fb40b1
 
 ## Release Status
 - alpha_gate_passed: true
@@ -22,7 +22,7 @@ Manual edits are not authoritative.
 - blocked_release_checks: none
 
 ## Build Metadata
-- generated_at_utc: 2026-05-24T22:54:23.973920+00:00
+- generated_at_utc: 2026-05-25T04:45:08.052241+00:00
 - git_commit: unknown
 - python: unknown
 - node: unknown

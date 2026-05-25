@@ -1,7 +1,7 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-24T22:53:51.584844+00:00
-- commit_hash: 25c8097eaee89d92c743aaba27c9645097b9e334
+- generated_at_utc: 2026-05-25T04:44:53.694097+00:00
+- commit_hash: b41148beb80ce2f798036bcc7de25f2bd3f9a8d8
 - alpha_gate_status: PASS
 - alpha_gate_passed: true
 - release_gate_check_count: 46
@@ -11,15 +11,15 @@
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
 - archive_validation_result: PASS
-- proof_input_tree_hash: c9c9b41cf5e85ca9c24287a510c25ba50d61a0251dea971f793997e3be5f63a8
-- proof_input_file_count: 1060
+- proof_input_tree_hash: c15a2c85984ef02911a00402dd70b765b028e8d28774ce6edda9738ff0d45940
+- proof_input_file_count: 1062
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
 ## Runtime Metadata
 
 - gate_runner_python_version: 3.11.7
-- gate_runner_python_executable: [REDACTED_LOCAL_PATH]
+- gate_runner_python_executable: [REDACTED_LOCAL_PATH]/backend/.venv/bin/python
 - backend_test_python_version: 3.11.7
 - backend_test_python_executable: [REDACTED_LOCAL_PATH]/backend/.venv/bin/python
 - backend_required_python: >=3.11
@@ -59,7 +59,7 @@
 
 ## Current Proof Facts
 
-- backend pytest: 3412 passed, 1 skipped
+- backend pytest: 3414 passed, 1 skipped
 - backend import proof: PASS (107 routes)
 - frontend contracts: 49 passed
 - public API boundary: 55 passed

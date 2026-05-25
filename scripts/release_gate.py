@@ -2727,17 +2727,6 @@ def main() -> int:
             encoding="utf-8",
         )
 
-    required_proof_logs_step = _run(
-        repo_root,
-        out_dir,
-        _required_proof_logs_spec.name,
-        _required_proof_logs_spec.log_name,
-        list(_required_proof_logs_spec.command),
-        timeout_seconds=_required_proof_logs_spec.timeout_seconds,
-        required=_required_proof_logs_spec.required,
-    )
-    results.append(required_proof_logs_step)
-
     archive_step = _run(
         repo_root,
         out_dir,
@@ -2775,6 +2764,17 @@ def main() -> int:
     _redact_file_local_paths(out_dir / "archive_validation.log", repo_root)
     _redact_file_local_paths(out_dir / "archive_validation.md", repo_root)
     _sanitize_current_proof_artifacts(repo_root, out_dir)
+
+    required_proof_logs_step = _run(
+        repo_root,
+        out_dir,
+        _required_proof_logs_spec.name,
+        _required_proof_logs_spec.log_name,
+        list(_required_proof_logs_spec.command),
+        timeout_seconds=_required_proof_logs_spec.timeout_seconds,
+        required=_required_proof_logs_spec.required,
+    )
+    results.append(required_proof_logs_step)
 
     local_path_hygiene_step = _run(
         repo_root,
