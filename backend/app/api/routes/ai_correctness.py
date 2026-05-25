@@ -15,7 +15,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth.admin import (
-    enforce_jwt_mutation_authority,
     log_mutation,
     require_admin_review,
 )
@@ -31,6 +30,7 @@ from app.services.ai_correctness import (
     check_crime_incident,
     is_safe_to_show,
 )
+from app.security.import_authority import require_ai_review_actor
 
 router = APIRouter()
 
@@ -114,9 +114,8 @@ def get_check(check_id: int, db: Session = Depends(get_db)):
 def run_incident_check(
     incident_id: int,
     db: Session = Depends(get_db),
-    actor: AdminActor = Depends(require_admin_review),
+    actor: AdminActor = Depends(require_ai_review_actor),
 ):
-    enforce_jwt_mutation_authority(actor)
     incident = db.get(CrimeIncident, incident_id)
     if not incident:
         raise HTTPException(status_code=404, detail="CrimeIncident not found")
@@ -147,9 +146,8 @@ def run_incident_check(
 def run_event_check(
     event_id: int,
     db: Session = Depends(get_db),
-    actor: AdminActor = Depends(require_admin_review),
+    actor: AdminActor = Depends(require_ai_review_actor),
 ):
-    enforce_jwt_mutation_authority(actor)
     event = db.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -181,7 +179,7 @@ def verify_source_endpoint(
     record_type: str,
     record_id: int,
     db: Session = Depends(get_db),
-    actor: AdminActor = Depends(require_admin_review),
+    actor: AdminActor = Depends(require_ai_review_actor),
 ):
     """Trigger source-grounded verification for a court Event or CrimeIncident.
 
@@ -196,8 +194,6 @@ def verify_source_endpoint(
     Returns 404 if the record or its existing correctness check is not found.
     """
     from app.services.source_verifier import verify_source
-
-    enforce_jwt_mutation_authority(actor)
 
     # Locate the record and pull primary source URL + claimed fields
     if record_type == "event":

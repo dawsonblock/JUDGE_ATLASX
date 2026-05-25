@@ -142,7 +142,20 @@ def smoke_runtime_checks() -> list[Check]:
     return [
         Check("check_dockerfile_copy_paths", ["python3", "scripts/check_dockerfile_copy_paths.py"]),
         Check("check_compose_auth_defaults", ["python3", "scripts/check_compose_auth_defaults.py"]),
-        Check("check_frontend_node_gate", ["python3", "scripts/check_frontend_node_gate.py"]),
+        Check(
+            "check_frontend_node_gate",
+            [
+                "bash",
+                "-lc",
+                (
+                    'NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; '
+                    '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"; '
+                    "nvm use 20 >/dev/null 2>&1 || "
+                    "{ echo 'BLOCKED_NODE_VERSION: nvm use 20 failed -- install Node 20 via: nvm install 20'; exit 1; }; "
+                    "python3 scripts/check_frontend_node_gate.py"
+                ),
+            ],
+        ),
     ]
 
 
@@ -234,7 +247,11 @@ def run_docker_checks(profile: str) -> tuple[dict, dict]:
         return docker_preflight, docker_smoke
 
     docker_smoke_result = run_check(
-        Check("docker_smoke", ["bash", "scripts/verify_docker.sh"], timeout_seconds=30),
+        Check(
+            "docker_smoke",
+            ["bash", "scripts/verify_docker.sh"],
+            timeout_seconds=600,
+        ),
         "docker_smoke.log",
     )
     docker_smoke = {

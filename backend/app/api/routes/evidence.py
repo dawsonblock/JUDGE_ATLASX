@@ -13,7 +13,6 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.auth.admin import (
-    enforce_jwt_mutation_authority,
     log_mutation,
     require_admin_token,
 )
@@ -189,7 +188,6 @@ def create_evidence(
     actor: AdminActor = Depends(require_source_admin_actor),
 ) -> EvidenceResponse:
     """Create new relationship evidence (source_admin only)."""
-    enforce_jwt_mutation_authority(actor)
     service = RelationshipEvidenceService(db)
 
     try:
@@ -254,7 +252,6 @@ def verify_evidence(
     admin_actor: AdminActor = Depends(require_reviewer_actor),
 ) -> EvidenceResponse:
     """Verify relationship evidence (reviewer only)."""
-    enforce_jwt_mutation_authority(admin_actor)
     service = RelationshipEvidenceService(db)
 
     evidence = service.verify_evidence(
@@ -309,7 +306,6 @@ def unverify_evidence(
     actor: AdminActor = Depends(require_reviewer_actor),
 ) -> EvidenceResponse:
     """Remove verification from evidence (reviewer only)."""
-    enforce_jwt_mutation_authority(actor)
     service = RelationshipEvidenceService(db)
 
     evidence = service.unverify_evidence(

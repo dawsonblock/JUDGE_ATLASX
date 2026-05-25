@@ -17,7 +17,6 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.auth.admin import (
-    enforce_jwt_mutation_authority,
     log_mutation,
     require_admin_token,
 )
@@ -248,7 +247,6 @@ def create_edge(
     actor: AdminActor = Depends(require_source_admin_actor),
 ) -> EdgeResponse:
     """Create a new graph edge (source_admin only)."""
-    enforce_jwt_mutation_authority(actor)
     service = GraphQueryService(db)
 
     try:

@@ -115,6 +115,46 @@ def _sanitize_current_proof_artifacts(repo_root: Path, out_dir: Path) -> None:
             _redact_file_local_paths(path, repo_root)
 
 
+def _validation_summary_gate(repo_root: Path) -> dict[str, object]:
+    """Read workspace validation summary and return gate blockers if failed."""
+    summary_path = repo_root / ".validation_logs" / "validation_summary.json"
+    rel_path = str(summary_path.relative_to(repo_root))
+
+    result: dict[str, object] = {
+        "path": rel_path,
+        "exists": summary_path.exists(),
+        "status": "missing",
+        "failed_phases": [],
+        "blockers": [],
+    }
+
+    if not summary_path.exists():
+        return result
+
+    try:
+        payload = json.loads(summary_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        result["status"] = "parse_error"
+        result["blockers"] = ["validation_summary_parse_error"]
+        return result
+
+    overall_status = str(payload.get("overall_status", "unknown")).strip().lower()
+    phases = payload.get("phases")
+    if not isinstance(phases, dict):
+        phases = {}
+    failed_phases = sorted(
+        name for name, state in phases.items() if str(state).strip().lower() == "failed"
+    )
+
+    result["status"] = overall_status
+    result["failed_phases"] = failed_phases
+    if overall_status == "failed":
+        suffix = ",".join(failed_phases) if failed_phases else "unknown"
+        result["blockers"] = [f"validation_summary_failed:{suffix}"]
+
+    return result
+
+
 PROOF_INPUT_PATTERNS = [
     "README.md",
     "CURRENT_STATUS.md",
@@ -2787,10 +2827,22 @@ def main() -> int:
     )
     results.append(local_path_hygiene_step)
 
+    validation_summary = _validation_summary_gate(repo_root)
+    validation_blockers = list(validation_summary.get("blockers", []))
+
     missing_logs = _missing_logs(repo_root, results)
-    ok = all(r.exit_code == 0 for r in results) and not missing_logs
+    ok = (
+        all(r.exit_code == 0 for r in results)
+        and not missing_logs
+        and not validation_blockers
+    )
     payload["alpha_gate_passed"] = ok
     payload["check_count"] = len(results)
+    payload["validation_summary_path"] = validation_summary.get("path")
+    payload["validation_summary_status"] = validation_summary.get("status")
+    payload["validation_summary_failed_phases"] = validation_summary.get(
+        "failed_phases", []
+    )
     payload["archive_validation_result"] = (
         "PASS" if archive_step.exit_code == 0 else "FAIL"
     )
@@ -2812,10 +2864,11 @@ def main() -> int:
     payload["logs"]["release_readiness"] = readiness_rel
     payload["failed_checks"] = [
         r.name for r in results if r.exit_code != 0
-    ] + (["missing_logs"] if missing_logs else [])
+    ] + (["missing_logs"] if missing_logs else []) + validation_blockers
     payload["release_blockers_remaining"] = (
         [r.name for r in results if r.exit_code != 0]
         + (["missing_logs"] if missing_logs else [])
+        + validation_blockers
         if not ok
         else []
     )

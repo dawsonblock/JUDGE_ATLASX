@@ -14,7 +14,7 @@ For a copy-and-edit production template see `backend/.env.production.example`.
 | Variable           | Type   | Default                       | Description                                                                                                                   |
 | ------------------ | ------ | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `JTA_APP_ENV`      | string | `development`                 | Runtime environment. Accepted: `development`, `staging`, `production`. Production mode activates all hard-fail safety checks. |
-| `JTA_DATABASE_URL` | string | `sqlite:///./judgetracker.db` | SQLAlchemy connection string. Use PostgreSQL in production.                                                                   |
+| `JTA_DATABASE_URL` | string | `sqlite:///./judgetracker.db` | SQLAlchemy connection string. Use PostgreSQL in production with `postgresql+psycopg://` (psycopg v3 dialect).               |
 | `JTA_APP_NAME`     | string | `JudgeTracker Atlas`          | Application display name.                                                                                                     |
 
 ---

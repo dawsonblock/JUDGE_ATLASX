@@ -237,3 +237,71 @@ def test_gate_summary_pass_with_frontend_true_is_clean(tmp_path: Path) -> None:
     errors = module.verify(root)
 
     assert not any("alpha_gate_summary.json" in e for e in errors)
+
+
+def test_validation_summary_failed_rejects_pass_claims(tmp_path: Path) -> None:
+    """STATUS and release_gate PASS claims must fail when validation summary fails."""
+    module = _load_module()
+    root = _seed_valid_repo(tmp_path)
+    _write_file(
+        root / ".validation_logs" / "validation_summary.json",
+        json.dumps(
+            {
+                "overall_status": "failed",
+                "phases": {
+                    "runtime_smoke": "failed",
+                    "docker_smoke": "failed",
+                },
+            }
+        )
+        + "\n",
+    )
+
+    errors = module.verify(root)
+
+    assert any("STATUS.md:false_pass_claim" in e for e in errors)
+    assert any("release_gate.json:validation_contradiction" in e for e in errors)
+
+
+def test_validation_summary_failed_with_blocked_status_is_clean(tmp_path: Path) -> None:
+    """Validation failures should not trigger contradiction errors when STATUS is BLOCKED and gate is false."""
+    module = _load_module()
+    root = _seed_valid_repo(tmp_path)
+    _write_file(
+        root / "artifacts" / "proof" / "current" / "release_gate.json",
+        json.dumps({"alpha_gate_passed": False, "checks": []}) + "\n",
+    )
+    _write_file(
+        root / "STATUS.md",
+        "\n".join(
+            [
+                "# STATUS",
+                "**Alpha gate checks**: see artifacts/proof/current/release_gate.json",
+                "- Alpha proof status: BLOCKED",
+                "- Alpha readiness status: BLOCKED",
+                "- Production ready: FALSE",
+                "This repository is an alpha/research-grade platform, not a production legal system.",
+                "## Gate Interpretation",
+            ]
+        )
+        + "\n",
+    )
+    _write_file(
+        root / ".validation_logs" / "validation_summary.json",
+        json.dumps(
+            {
+                "overall_status": "failed",
+                "phases": {
+                    "runtime_smoke": "failed",
+                    "docker_smoke": "failed",
+                },
+            }
+        )
+        + "\n",
+    )
+
+    errors = module.verify(root)
+
+    assert not any("validation_contradiction" in e for e in errors)
+    assert not any("STATUS.md:false_pass_claim" in e for e in errors)
+    assert not any("STATUS.md:false_readiness_claim" in e for e in errors)

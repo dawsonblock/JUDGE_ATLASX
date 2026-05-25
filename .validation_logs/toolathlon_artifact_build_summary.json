@@ -12,8 +12,8 @@
       "exit_code": 0,
       "error": null,
       "log_path": ".validation_logs/artifact_backend_compile.log",
-      "started_at": "2026-05-21T22:52:07.209696+00:00",
-      "finished_at": "2026-05-21T22:52:07.395542+00:00"
+      "started_at": "2026-05-25T06:18:29.168921+00:00",
+      "finished_at": "2026-05-25T06:18:29.316932+00:00"
     },
     {
       "name": "validate_workflows",
@@ -21,8 +21,8 @@
       "exit_code": 0,
       "error": null,
       "log_path": ".validation_logs/artifact_validate_workflows.log",
-      "started_at": "2026-05-21T22:52:07.395578+00:00",
-      "finished_at": "2026-05-21T22:52:08.423201+00:00"
+      "started_at": "2026-05-25T06:18:29.316980+00:00",
+      "finished_at": "2026-05-25T06:18:30.219972+00:00"
     },
     {
       "name": "check_false_claims",
@@ -30,9 +30,9 @@
       "exit_code": 0,
       "error": null,
       "log_path": ".validation_logs/artifact_check_false_claims.log",
-      "started_at": "2026-05-21T22:52:08.423276+00:00",
-      "finished_at": "2026-05-21T22:52:14.827992+00:00"
+      "started_at": "2026-05-25T06:18:30.220017+00:00",
+      "finished_at": "2026-05-25T06:18:31.855082+00:00"
     }
   ],
-  "generated_at": "2026-05-21T22:52:15.581379+00:00"
+  "generated_at": "2026-05-25T06:18:34.257179+00:00"
 }

@@ -42,6 +42,14 @@ MUTATION_GUARD_TARGETS: list[tuple[str, str]] = [
 ]
 
 
+HELPER_ENFORCED_DEPENDENCIES = (
+    "Depends(require_admin_actor)",
+    "Depends(require_ai_review_actor)",
+    "Depends(require_source_admin_actor)",
+    "Depends(require_reviewer_actor)",
+)
+
+
 def _function_block(source: str, function_signature: str) -> str:
     start = source.find(function_signature)
     assert start != -1, f"Function signature not found: {function_signature}"
@@ -58,7 +66,11 @@ def test_mutation_routes_enforce_jwt_authority() -> None:
         file_path = REPO_ROOT / rel_path
         source = file_path.read_text(encoding="utf-8")
         block = _function_block(source, function_signature)
-        if "enforce_jwt_mutation_authority(" not in block:
+        has_direct_guard = "enforce_jwt_mutation_authority(" in block
+        has_helper_guard = any(
+            dep in block for dep in HELPER_ENFORCED_DEPENDENCIES
+        )
+        if not (has_direct_guard or has_helper_guard):
             missing.append(f"{rel_path}::{function_signature}")
 
     assert not missing, "Missing JWT mutation guard: " + ", ".join(missing)

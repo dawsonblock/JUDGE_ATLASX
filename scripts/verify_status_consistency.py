@@ -15,6 +15,7 @@ CANONICAL_RELEASE_READINESS = "artifacts/proof/current/release_readiness.md"
 CANONICAL_STATUS = "STATUS.md"
 CANONICAL_RELEASE_GATE = "artifacts/proof/current/release_gate.json"
 CANONICAL_GATE_SUMMARY = "artifacts/proof/current/alpha_gate_summary.json"
+VALIDATION_SUMMARY = ".validation_logs/validation_summary.json"
 LEGACY_RELEASE_READINESS = "artifacts/proof/release_readiness.md"
 ARCHIVED_HEADER = "ARCHIVED / NOT CURRENT"
 
@@ -73,6 +74,7 @@ def verify(root: Path) -> list[str]:
     # never claims PASS when release_gate.json says otherwise.
     # ------------------------------------------------------------
     release_gate_path = root / CANONICAL_RELEASE_GATE
+    rg_passed: bool | None = None
     if not release_gate_path.exists():
         errors.append(f"missing:{CANONICAL_RELEASE_GATE}")
     else:
@@ -80,7 +82,7 @@ def verify(root: Path) -> list[str]:
             rg = json.loads(release_gate_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             rg = {}
-        rg_passed: bool | None = rg.get("alpha_gate_passed")
+        rg_passed = rg.get("alpha_gate_passed")
         if rg_passed is False and "Alpha proof status: PASS" in status_text:
             errors.append(
                 "STATUS.md:false_pass_claim:release_gate.json says alpha_gate_passed=false"
@@ -89,6 +91,51 @@ def verify(root: Path) -> list[str]:
             errors.append(
                 "STATUS.md:false_readiness_claim:release_gate.json says alpha_gate_passed=false"
             )
+
+    # Validate STATUS.md against validation summary outcomes when available.
+    validation_summary_path = root / VALIDATION_SUMMARY
+    if validation_summary_path.exists():
+        try:
+            validation_summary = json.loads(
+                validation_summary_path.read_text(encoding="utf-8")
+            )
+        except (OSError, json.JSONDecodeError):
+            validation_summary = {}
+
+        overall_status = str(
+            validation_summary.get("overall_status", "")
+        ).strip().lower()
+        phases = validation_summary.get("phases")
+        if not isinstance(phases, dict):
+            phases = {}
+
+        failed_phase_names = [
+            name
+            for name, state in phases.items()
+            if str(state).strip().lower() == "failed"
+        ]
+        failed_phase_list = ",".join(sorted(failed_phase_names)) or "unknown"
+
+        if overall_status == "failed":
+            if "Alpha proof status: PASS" in status_text:
+                errors.append(
+                    "STATUS.md:false_pass_claim:"
+                    "validation_summary.json says overall_status=failed"
+                    f" phases={failed_phase_list}"
+                )
+            if "Alpha readiness status: PASS" in status_text:
+                errors.append(
+                    "STATUS.md:false_readiness_claim:"
+                    "validation_summary.json says overall_status=failed"
+                    f" phases={failed_phase_list}"
+                )
+            if rg_passed is True:
+                errors.append(
+                    "release_gate.json:validation_contradiction:"
+                    "alpha_gate_passed=true while "
+                    "validation_summary.json overall_status=failed"
+                    f" phases={failed_phase_list}"
+                )
 
     # Validate alpha_gate_summary.json honesty: PASS must not appear when frontend was skipped.
     gate_summary_path = root / CANONICAL_GATE_SUMMARY

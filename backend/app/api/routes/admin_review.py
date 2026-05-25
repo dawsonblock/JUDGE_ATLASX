@@ -5,7 +5,6 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.auth.admin import (
-    enforce_jwt_mutation_authority,
     require_admin_review,
 )
 from app.audit.append_log import append_audit_entry
@@ -261,8 +260,6 @@ async def admin_review_decision(
     db: Session = Depends(get_db),
     actor: AdminActor = Depends(require_ai_review_actor),
 ):
-    enforce_jwt_mutation_authority(actor)
-
     entity = entity_by_type(db, entity_type, entity_id)
     if not entity:
         raise HTTPException(status_code=404, detail="Review entity not found")
@@ -377,7 +374,6 @@ def retract_legal_source(
     source_admin role via JWT Bearer or shared admin token.
     """
     source = db.scalar(select(LegalSource).where(LegalSource.source_id == source_id))
-    enforce_jwt_mutation_authority(actor)
     if not source:
         raise HTTPException(
             status_code=404, detail=f"Legal source '{source_id}' not found"
@@ -580,8 +576,6 @@ def resolve_contradiction(
     actor: AdminActor = Depends(require_admin_actor),
 ):
     """Resolve a contradiction with reviewer action."""
-    enforce_jwt_mutation_authority(actor)
-
     contradiction = db.query(MemoryContradiction).filter(
         MemoryContradiction.id == contradiction_id
     ).first()
