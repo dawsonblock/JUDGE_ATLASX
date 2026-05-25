@@ -197,6 +197,7 @@ PROOF_INPUT_PATTERNS = [
 REQUIRED_GATE_NAMES = {
     "backend_compile",
     "backend_import",
+    "runtime_smoke",
     "backend_pytest",
     "check_dockerfile_copy_paths",
     "check_compose_auth_defaults",
@@ -218,13 +219,26 @@ REQUIRED_GATE_NAMES = {
     "frontend_typecheck",
     "frontend_contracts",
     "frontend_build",
+    "docker_smoke",
     "canlii_staging_proof",
     "proof_consistency_pytest",
     "release_readiness_generation",
     "required_proof_logs",
+    "check_proof_manifest",
     "archive_validation",
     "single_proof_authority",
 }
+
+REQUIRED_PROOF_MANIFEST_LOGS = (
+    "artifacts/proof/current/release_gate.log",
+    "artifacts/proof/current/backend_pytest.log",
+    "artifacts/proof/current/frontend_build.log",
+    "artifacts/proof/current/docker_runtime_preflight.log",
+    "artifacts/proof/current/proof_consistency_pytest.log",
+    "artifacts/proof/current/archive_validation.log",
+    ".validation_logs/docker_smoke.log",
+    ".validation_logs/runtime_smoke.log",
+)
 
 
 @dataclass
@@ -743,6 +757,7 @@ def _build_proof_manifest(
         ),
         "proof_input_file_count": payload.get("proof_input_file_count", 0),
         "proof_root": str(out_dir.relative_to(repo_root)),
+        "required_logs": list(REQUIRED_PROOF_MANIFEST_LOGS),
         "proof_commands": entries,
     }
     return manifest
@@ -752,6 +767,7 @@ def _generate_release_readiness_from_manifest(
     repo_root: Path,
     out_dir: Path,
     manifest: dict,
+    additional_blockers: list[str] | None = None,
 ) -> tuple[dict, str]:
     present_names = {
         str(entry.get("name")) for entry in manifest.get("proof_commands", [])
@@ -796,15 +812,20 @@ def _generate_release_readiness_from_manifest(
     elif archive_entry.get("status") != "PASS":
         blockers.append("archive_validation_not_pass")
 
-    status = "alpha-proof-pass" if not blockers else "blocked"
-    recommendation = "alpha-proof-pass" if not blockers else "blocked"
+    merged_blockers = list(blockers)
+    for blocker in additional_blockers or []:
+        if blocker not in merged_blockers:
+            merged_blockers.append(blocker)
+
+    status = "alpha-proof-pass" if not merged_blockers else "blocked"
+    recommendation = "alpha-proof-pass" if not merged_blockers else "blocked"
     production_ready = False
 
     readiness = {
         "overall_status": status,
         "production_ready": production_ready,
         "release_recommendation": recommendation,
-        "blockers": blockers,
+        "blockers": merged_blockers,
     }
 
     lines = [
@@ -848,8 +869,8 @@ def _generate_release_readiness_from_manifest(
             )
 
     lines.extend(["", "## Remaining Blockers", ""])
-    if blockers:
-        lines.extend(f"- {blocker}" for blocker in blockers)
+    if merged_blockers:
+        lines.extend(f"- {blocker}" for blocker in merged_blockers)
     else:
         lines.append("- none")
     lines.extend(
@@ -859,7 +880,7 @@ def _generate_release_readiness_from_manifest(
             "",
             (
                 "- none"
-                if not blockers
+                if not merged_blockers
                 else "- readiness is blocked due to failed/missing required proof evidence"
             ),
             "",
@@ -1748,6 +1769,12 @@ def main() -> int:
             [python_exe, "backend/scripts/proof_backend_import.py"],
         ),
         GateStepSpec(
+            "runtime_smoke",
+            "runtime_smoke.log",
+            [python_exe, "scripts/runtime_smoke.py"],
+            timeout_seconds=300,
+        ),
+        GateStepSpec(
             "backend_pytest",
             "backend_pytest.log",
             [
@@ -1770,6 +1797,12 @@ def main() -> int:
             "docker_runtime_preflight.log",
             ["bash", "scripts/check_docker_runtime.sh"],
             timeout_seconds=docker_preflight_timeout_seconds,
+        ),
+        GateStepSpec(
+            "docker_smoke",
+            "docker_smoke.log",
+            [python_exe, "scripts/docker_smoke.py"],
+            timeout_seconds=1800,
         ),
         GateStepSpec(
             "postgis_proof",
@@ -2053,6 +2086,16 @@ def main() -> int:
             "--strict-required-files",
         ],
     )
+    _check_proof_manifest_spec = GateStepSpec(
+        "check_proof_manifest",
+        "check_proof_manifest.log",
+        [
+            python_exe,
+            "scripts/check_proof_manifest.py",
+            "--root",
+            str(repo_root),
+        ],
+    )
     _local_path_hygiene_spec = GateStepSpec(
         "check_no_local_paths_in_release_proof",
         "check_no_local_paths_in_release_proof.log",
@@ -2071,6 +2114,7 @@ def main() -> int:
     stale_outputs = [spec.log_name for spec in gate_steps] + [
         _proof_freshness_spec.log_name,
         _required_proof_logs_spec.log_name,
+        _check_proof_manifest_spec.log_name,
         _local_path_hygiene_spec.log_name,
         "proof_consistency_pytest.log",
         "release_gate.log",
@@ -2465,6 +2509,7 @@ def main() -> int:
     remaining_required_steps = {
         "proof_consistency_pytest",
         "required_proof_logs",
+        "check_proof_manifest",
         "archive_validation",
     }
     ok = (
@@ -2574,6 +2619,7 @@ def main() -> int:
         repo_root,
         out_dir,
         final_manifest,
+        additional_blockers=payload.get("release_blockers_remaining", []),
     )
     readiness_step = GateStep(
         name="release_readiness_generation",
@@ -2593,6 +2639,7 @@ def main() -> int:
     missing_logs = _missing_logs(repo_root, results)
     remaining_required_steps = {
         "required_proof_logs",
+        "check_proof_manifest",
         "archive_validation",
     }
     ok = (
@@ -2665,6 +2712,7 @@ def main() -> int:
         repo_root,
         out_dir,
         final_manifest,
+        additional_blockers=payload.get("release_blockers_remaining", []),
     )
     manifest_path.write_text(
         json.dumps(final_manifest, indent=2) + "\n", encoding="utf-8"
@@ -2767,6 +2815,7 @@ def main() -> int:
         repo_root,
         out_dir,
         final_manifest,
+        additional_blockers=payload.get("release_blockers_remaining", []),
     )
     manifest_path.write_text(
         json.dumps(final_manifest, indent=2) + "\n", encoding="utf-8"
@@ -2843,6 +2892,17 @@ def main() -> int:
         required=_required_proof_logs_spec.required,
     )
     results.append(required_proof_logs_step)
+
+    check_proof_manifest_step = _run(
+        repo_root,
+        out_dir,
+        _check_proof_manifest_spec.name,
+        _check_proof_manifest_spec.log_name,
+        list(_check_proof_manifest_spec.command),
+        timeout_seconds=_check_proof_manifest_spec.timeout_seconds,
+        required=_check_proof_manifest_spec.required,
+    )
+    results.append(check_proof_manifest_step)
 
     local_path_hygiene_step = _run(
         repo_root,
@@ -2921,6 +2981,7 @@ def main() -> int:
         repo_root,
         out_dir,
         final_manifest,
+        additional_blockers=payload.get("release_blockers_remaining", []),
     )
     manifest_path.write_text(
         json.dumps(final_manifest, indent=2) + "\n", encoding="utf-8"

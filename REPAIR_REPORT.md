@@ -1,12 +1,12 @@
 # REPAIR_REPORT
 
-- generated_at_utc: 2026-05-25T06:29:05.924045+00:00
-- commit_hash: 4e707a04aeb756bd11bbfb7ab856a917af1727b8
-- alpha_gate_passed: true
+- generated_at_utc: 2026-05-25T09:12:10.399125+00:00
+- commit_hash: b42628f11ccafe4898e2f6807a1fc040a9bd2945
+- alpha_gate_passed: false
 
 ## Phase Results
 
-- 1. Alpha Gate Truthfulness: PASS (artifacts/proof/current/release_gate.json)
+- 1. Alpha Gate Truthfulness: FAIL (artifacts/proof/current/release_gate.json)
 - 2. Canonical Proof Artifacts: PASS (artifacts/proof/current/CURRENT_PROOF.md)
 - 3. Generated Alpha Status: PASS (artifacts/proof/current/CURRENT_ALPHA_STATUS.md)
 - 4. Source Registry Governance: PASS (artifacts/proof/current/source_registry_status.json)
@@ -23,4 +23,5 @@
 
 ## Remaining Blockers
 
-- none
+- docker_runtime_preflight
+- postgis_proof

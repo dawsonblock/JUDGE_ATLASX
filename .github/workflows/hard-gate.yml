@@ -74,6 +74,11 @@ jobs:
           source ./backend/.venv/bin/activate
           python scripts/release_gate.py
 
+      - name: Check proof manifest required logs
+        run: |
+          source ./backend/.venv/bin/activate
+          python scripts/check_proof_manifest.py
+
       - name: Hard Gate Summary
         if: always()
         run: |

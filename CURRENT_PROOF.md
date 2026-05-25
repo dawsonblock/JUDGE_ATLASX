@@ -1,17 +1,17 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-25T06:29:05.924045+00:00
-- commit_hash: 4e707a04aeb756bd11bbfb7ab856a917af1727b8
+- generated_at_utc: 2026-05-25T09:12:10.399125+00:00
+- commit_hash: b42628f11ccafe4898e2f6807a1fc040a9bd2945
 - alpha_gate_status: BLOCKED
 - alpha_gate_passed: false
 - release_gate_check_count: 46
-- docker_available: true
-- postgis_proof_result: PASS
+- docker_available: false
+- postgis_proof_result: BLOCKED
 - egress_proxy_proof_result: PASS
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
 - archive_validation_result: PASS
-- proof_input_tree_hash: 5e139c67d575f6b30cbf882d4706623c2e997a51632832f1837003fc378e9157
+- proof_input_tree_hash: 2076f995c096c32137dfcb4a70a99358a3f11bfc1c873957f64a80bc92021431
 - proof_input_file_count: 1064
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
@@ -42,7 +42,7 @@
 - make verify = local no-Docker quality checks.
 - make release-proof-local = Docker/PostGIS alpha release gate.
 - Current alpha release is blocked if Docker/PostGIS proof fails.
-- Docker/PostGIS proof passed in the current release gate.
+- Docker/PostGIS proof did not pass in the current release gate.
 - Dedicated egress proxy proof passed in the current release gate.
 - Dedicated synthetic demo proof passed in the current release gate.
 - Proof freshness passed against the stored proof-input file list and tree hash.
@@ -63,8 +63,8 @@
 - backend import proof: PASS (107 routes)
 - frontend contracts: 49 passed
 - public API boundary: 55 passed
-- Docker runtime preflight: PASS
-- PostGIS proof: PASS
+- Docker runtime preflight: FAIL
+- PostGIS proof: BLOCKED
 - egress proxy proof: PASS
 - demo proof: PASS
 - CanLII staging proof: PASS
@@ -73,7 +73,12 @@
 
 ## Failed Checks
 
-- validation_summary_failed:docker_smoke,runtime_smoke
+- docker_runtime_preflight
+- postgis_proof
+
+## Blocked Checks
+
+- postgis_proof: docker_runtime_preflight failed
 
 ## Egress Proxy Coverage
 

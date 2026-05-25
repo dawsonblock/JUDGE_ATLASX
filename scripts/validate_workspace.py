@@ -140,6 +140,7 @@ def smoke_artifact_checks() -> list[Check]:
 
 def smoke_runtime_checks() -> list[Check]:
     return [
+        Check("runtime_smoke", ["python3", "scripts/runtime_smoke.py"]),
         Check("check_dockerfile_copy_paths", ["python3", "scripts/check_dockerfile_copy_paths.py"]),
         Check("check_compose_auth_defaults", ["python3", "scripts/check_compose_auth_defaults.py"]),
         Check(
@@ -249,10 +250,13 @@ def run_docker_checks(profile: str) -> tuple[dict, dict]:
     docker_smoke_result = run_check(
         Check(
             "docker_smoke",
-            ["bash", "scripts/verify_docker.sh"],
-            timeout_seconds=600,
+            ["python3", "scripts/docker_smoke.py"],
+            timeout_seconds=1800,
         ),
-        "docker_smoke.log",
+        "docker_smoke_runner.log",
+    )
+    docker_smoke_result["log_path"] = str(
+        (LOG_DIR / "docker_smoke.log").relative_to(REPO_ROOT)
     )
     docker_smoke = {
         "profile": profile,
@@ -328,6 +332,12 @@ def main() -> int:
         run_check(check, f"runtime_{check.name}.log")
         for check in runtime_checks
     ]
+
+    for runtime_result in runtime_results:
+        if runtime_result.get("name") == "runtime_smoke":
+            runtime_result["log_path"] = str(
+                (LOG_DIR / "runtime_smoke.log").relative_to(REPO_ROOT)
+            )
 
     expected_count = 3 if args.profile == "smoke" else 12
     artifact_summary = summarize_results(

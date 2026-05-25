@@ -192,6 +192,12 @@ jobs:
           source ./backend/.venv/bin/activate
           python scripts/release_gate.py
 
+      - name: Check proof manifest required logs
+        if: always()
+        run: |
+          source ./backend/.venv/bin/activate
+          python scripts/check_proof_manifest.py
+
       - name: Check canonical proof consistency
         if: always()
         run: |

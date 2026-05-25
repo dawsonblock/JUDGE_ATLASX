@@ -64,7 +64,7 @@ def _seed_minimal_repo(root: Path) -> None:
     (root / "artifacts" / "proof" / "CURRENT_PROOF.md").write_text(
         "pointer\n", encoding="utf-8"
     )
-
+wipe upSwipe upNo
 
 def _write_release_gate(
     repo_root: Path,

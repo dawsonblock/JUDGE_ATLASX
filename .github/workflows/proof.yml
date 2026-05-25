@@ -139,6 +139,11 @@ jobs:
           source backend/.venv/bin/activate
           python3 scripts/release_gate.py
 
+      - name: Check proof manifest required logs
+        run: |
+          source backend/.venv/bin/activate
+          python scripts/check_proof_manifest.py
+
       - name: Check proof consistency
         run: |
           source backend/.venv/bin/activate

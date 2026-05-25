@@ -167,6 +167,9 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
         report["errors"].append("archive_not_found")
         return report
 
+    if re.match(r".*-main(?:\s+\d+)?\.zip$", archive.name, re.IGNORECASE):
+        report["errors"].append("forbidden_raw_workspace_archive_name")
+
     report["archive_sha256"] = _compute_sha256(archive)
 
     try:
@@ -201,7 +204,9 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
                     report["errors"].append(f"missing_required_root_file:{rel_file}")
 
             release_gate_name = f"{root}/artifacts/proof/current/release_gate.json"
+            proof_manifest_name = f"{root}/artifacts/proof/current/proof_manifest.json"
             release_gate_data: dict | None = None
+            proof_manifest_data: dict | None = None
             if release_gate_name in name_set:
                 release_gate_text = _read_text_member(zf, release_gate_name)
                 if release_gate_text:
@@ -210,7 +215,26 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
                     except json.JSONDecodeError:
                         report["errors"].append("invalid_release_gate_json")
 
+            if proof_manifest_name in name_set:
+                proof_manifest_text = _read_text_member(zf, proof_manifest_name)
+                if proof_manifest_text:
+                    try:
+                        proof_manifest_data = json.loads(proof_manifest_text)
+                    except json.JSONDecodeError:
+                        report["errors"].append("invalid_proof_manifest_json")
+
             if release_gate_data is not None:
+                alpha_gate_passed = release_gate_data.get("alpha_gate_passed")
+                release_candidate = release_gate_data.get("release_candidate")
+                production_ready = release_gate_data.get("production_ready")
+
+                if alpha_gate_passed is not True:
+                    report["errors"].append("release_gate_not_alpha_passed")
+                if release_candidate is not True:
+                    report["errors"].append("release_gate_not_release_candidate")
+                if not isinstance(production_ready, bool):
+                    report["errors"].append("release_gate_missing_explicit_production_ready")
+
                 logs = release_gate_data.get("logs", {})
                 if isinstance(logs, dict):
                     for key, rel_path in logs.items():
@@ -252,6 +276,24 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
                                 "missing_claimed_proof_file:"
                                 f"checks.{check_name}:{normalized}"
                             )
+
+            if proof_manifest_data is not None:
+                required_logs = proof_manifest_data.get("required_logs", [])
+                if not isinstance(required_logs, list) or not required_logs:
+                    report["errors"].append("proof_manifest_required_logs_missing")
+                else:
+                    info_by_name = {info.filename: info for info in infos}
+                    for entry in required_logs:
+                        if not isinstance(entry, str) or not entry:
+                            report["errors"].append("proof_manifest_required_logs_invalid_entry")
+                            continue
+                        archive_name = f"{root}/{entry}"
+                        info = info_by_name.get(archive_name)
+                        if info is None:
+                            report["errors"].append(f"missing_required_log_from_manifest:{entry}")
+                            continue
+                        if info.file_size <= 0:
+                            report["errors"].append(f"empty_required_log_from_manifest:{entry}")
 
             for info in infos:
                 parts = Path(info.filename).parts
