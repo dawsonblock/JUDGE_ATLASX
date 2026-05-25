@@ -12,7 +12,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
-from app.auth.admin import log_mutation, require_admin_token
+from app.auth.admin import (
+    enforce_jwt_mutation_authority,
+    log_mutation,
+    require_admin_token,
+)
 from app.auth.actor import AdminActor
 from app.db.session import get_db
 from app.security.import_authority import require_reviewer_actor, require_source_admin_actor
@@ -185,6 +189,7 @@ def create_evidence(
     actor: AdminActor = Depends(require_source_admin_actor),
 ) -> EvidenceResponse:
     """Create new relationship evidence (source_admin only)."""
+    enforce_jwt_mutation_authority(actor)
     service = RelationshipEvidenceService(db)
 
     try:
@@ -249,6 +254,7 @@ def verify_evidence(
     admin_actor: AdminActor = Depends(require_reviewer_actor),
 ) -> EvidenceResponse:
     """Verify relationship evidence (reviewer only)."""
+    enforce_jwt_mutation_authority(admin_actor)
     service = RelationshipEvidenceService(db)
 
     evidence = service.verify_evidence(
@@ -303,6 +309,7 @@ def unverify_evidence(
     actor: AdminActor = Depends(require_reviewer_actor),
 ) -> EvidenceResponse:
     """Remove verification from evidence (reviewer only)."""
+    enforce_jwt_mutation_authority(actor)
     service = RelationshipEvidenceService(db)
 
     evidence = service.unverify_evidence(

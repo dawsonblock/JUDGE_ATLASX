@@ -377,6 +377,7 @@ def retract_legal_source(
     source_admin role via JWT Bearer or shared admin token.
     """
     source = db.scalar(select(LegalSource).where(LegalSource.source_id == source_id))
+    enforce_jwt_mutation_authority(actor)
     if not source:
         raise HTTPException(
             status_code=404, detail=f"Legal source '{source_id}' not found"

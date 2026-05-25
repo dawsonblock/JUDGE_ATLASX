@@ -40,15 +40,17 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         exit 1
     fi
 else
-    # Not in a git repo — only fail on distributed .pyc files.
-    # Runtime __pycache__ directories are expected during proof execution.
+    # Not in a git repo — fail on distributed cache/coverage artifacts.
+    # Exclude dependency/build dirs where runtime tooling may write cache files.
     if find . \
-        \( -type d \( -name "__pycache__" -o -name ".venv" -o -name "node_modules" -o -name ".next" \) -prune \) \
-        -o -name "*.pyc" -print -quit | grep -q .; then
-        echo "ERROR: Bytecode files found on disk (non-git context):"
+        \( -type d \( -name ".venv" -o -name "node_modules" -o -name ".next" \) -prune \) \
+        -o \( -type d -name "__pycache__" -o -type f \( -name "*.pyc" -o -name ".coverage" \) \) \
+        -print -quit | grep -q .; then
+        echo "ERROR: Generated cache/coverage files found on disk (non-git context):"
         find . \
-            \( -type d \( -name "__pycache__" -o -name ".venv" -o -name "node_modules" -o -name ".next" \) -prune \) \
-            -o -name "*.pyc" -print | head -20
+            \( -type d \( -name ".venv" -o -name "node_modules" -o -name ".next" \) -prune \) \
+            -o \( -type d -name "__pycache__" -o -type f \( -name "*.pyc" -o -name ".coverage" \) \) \
+            -print | head -20
         exit 1
     fi
 fi

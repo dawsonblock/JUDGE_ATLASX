@@ -14,7 +14,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.auth.admin import log_mutation, require_admin_review
+from app.auth.admin import (
+    enforce_jwt_mutation_authority,
+    log_mutation,
+    require_admin_review,
+)
 from app.auth.actor import AdminActor
 from app.db.session import get_db
 from app.models.entities import (
@@ -112,6 +116,7 @@ def run_incident_check(
     db: Session = Depends(get_db),
     actor: AdminActor = Depends(require_admin_review),
 ):
+    enforce_jwt_mutation_authority(actor)
     incident = db.get(CrimeIncident, incident_id)
     if not incident:
         raise HTTPException(status_code=404, detail="CrimeIncident not found")
@@ -144,6 +149,7 @@ def run_event_check(
     db: Session = Depends(get_db),
     actor: AdminActor = Depends(require_admin_review),
 ):
+    enforce_jwt_mutation_authority(actor)
     event = db.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -190,6 +196,8 @@ def verify_source_endpoint(
     Returns 404 if the record or its existing correctness check is not found.
     """
     from app.services.source_verifier import verify_source
+
+    enforce_jwt_mutation_authority(actor)
 
     # Locate the record and pull primary source URL + claimed fields
     if record_type == "event":
