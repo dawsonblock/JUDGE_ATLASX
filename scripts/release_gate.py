@@ -1982,6 +1982,7 @@ def main() -> int:
             "scripts/check_required_proof_logs.py",
             "--root",
             str(repo_root),
+            "--strict-required-files",
         ],
     )
     _local_path_hygiene_spec = GateStepSpec(

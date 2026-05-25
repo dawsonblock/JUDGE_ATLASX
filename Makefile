@@ -110,7 +110,7 @@ proof:
 	@python3 scripts/check_proof_consistency.py
 	@python3 scripts/check_proof_freshness.py
 	@python3 scripts/verify_proof_hash_sync.py --root .
-	@python3 scripts/check_required_proof_logs.py
+	@python3 scripts/check_required_proof_logs.py --strict-required-files
 	@python3 scripts/check_release_handoff_consistency.py --archive dist/JUDGE_ATLAS-main-final.zip
 	@echo "Canonical proof: artifacts/proof/current/release_gate.json"
 
@@ -175,6 +175,7 @@ proof-static:
 # release-zip: create a distributable archive excluding development artifacts
 release-zip:
 	@VERSION=$$(date +%Y%m%d-%H%M%S); \
-	OUTFILE="judge_atlas_$${VERSION}.zip"; \
-	bash scripts/create_release_zip.sh --output "$${OUTFILE}"; \
-	echo "Release archive: $${OUTFILE}"
+	OUTFILE="judge_atlas_source_snapshot_$${VERSION}.zip"; \
+	bash scripts/create_release_zip.sh --allow-non-authoritative --output "$${OUTFILE}"; \
+	echo "Non-authoritative source snapshot archive: $${OUTFILE}"; \
+	echo "For distributable releases use: make release-package-proof-local"

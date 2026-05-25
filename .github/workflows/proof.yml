@@ -52,6 +52,9 @@ jobs:
       - name: Run check-generated
         run: make check-generated
 
+      - name: Check release naming drift
+        run: python3 scripts/check_release_naming_drift.py
+
       - name: Run backend tests (Phase 3-11)
         working-directory: ./backend
         run: |
@@ -155,6 +158,11 @@ jobs:
         run: |
           source backend/.venv/bin/activate
           python scripts/check_duplicate_docs.py
+
+      - name: Check release naming drift
+        run: |
+          source backend/.venv/bin/activate
+          python scripts/check_release_naming_drift.py
 
       - name: Upload release gate artifacts
         if: always()

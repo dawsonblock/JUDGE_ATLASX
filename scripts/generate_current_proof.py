@@ -29,7 +29,14 @@ def main() -> int:
         ("release_gate", [sys.executable, "scripts/release_gate.py"]),
         ("proof_consistency", [sys.executable, "scripts/check_proof_consistency.py"]),
         ("proof_freshness", [sys.executable, "scripts/check_proof_freshness.py"]),
-        ("required_proof_logs", [sys.executable, "scripts/check_required_proof_logs.py"]),
+        (
+            "required_proof_logs",
+            [
+                sys.executable,
+                "scripts/check_required_proof_logs.py",
+                "--strict-required-files",
+            ],
+        ),
     ]
 
     failures: list[str] = []

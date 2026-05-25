@@ -16,7 +16,7 @@ Exit codes:
 
 Usage::
 
-    python3 scripts/verify_archive_proof_freshness.py --archive dist/JUDGE_ATLASX-main.clean.zip
+    python3 scripts/verify_archive_proof_freshness.py --archive dist/JUDGE_ATLAS-main-final.zip
 """
 
 from __future__ import annotations

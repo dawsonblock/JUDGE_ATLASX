@@ -48,6 +48,9 @@ jobs:
           docker version
           docker info
 
+      - name: Check release naming drift
+        run: python3 scripts/check_release_naming_drift.py
+
       - name: Run full alpha release proof gate (Docker/PostGIS required)
         run: |
           bash scripts/package_and_validate_release_archive.sh \
