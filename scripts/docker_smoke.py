@@ -7,6 +7,7 @@ Writes canonical output to .validation_logs/docker_smoke.log.
 from __future__ import annotations
 
 import subprocess
+import time
 from pathlib import Path
 
 
@@ -86,6 +87,7 @@ def _wait_http(lines: list[str], url: str, attempts: int, timeout: int) -> bool:
         if cp.returncode == 0:
             _append(lines, f"http_ready:{url}:attempt={attempt}")
             return True
+        time.sleep(2)
     return False
 
 
@@ -97,28 +99,37 @@ def main() -> int:
     try:
         _run(lines, ["docker", "compose", "down", "-v"], timeout=20, allow_failure=True)
 
-        _run(lines, ["docker", "compose", "build", "--no-cache"], timeout=300)
+        _run(lines, ["docker", "compose", "build"], timeout=300)
         _append(lines, "docker compose build: PASS")
 
         _run(lines, ["docker", "compose", "up", "-d", "db", "redis", "minio"], timeout=300)
 
         # Postgres (db service)
-        _run(
-            lines,
-            [
-                "docker",
-                "compose",
-                "exec",
-                "-T",
-                "db",
-                "pg_isready",
-                "-U",
-                "judgetracker",
-                "-d",
-                "judgetracker",
-            ],
-            timeout=30,
-        )
+        postgres_ok = False
+        for attempt in range(1, 31):
+            cp = _run(
+                lines,
+                [
+                    "docker",
+                    "compose",
+                    "exec",
+                    "-T",
+                    "db",
+                    "pg_isready",
+                    "-U",
+                    "judgetracker",
+                    "-d",
+                    "judgetracker",
+                ],
+                timeout=10,
+                allow_failure=True,
+            )
+            if cp.returncode == 0:
+                postgres_ok = True
+                break
+            time.sleep(2)
+        if not postgres_ok:
+            raise SmokeError("postgres_not_healthy")
         _append(lines, "postgres health: PASS")
 
         # Redis

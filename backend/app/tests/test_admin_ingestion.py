@@ -734,8 +734,6 @@ class TestResponseFieldValidation:
 
     def test_source_registry_truth_table_lifecycle(self) -> None:
         """Test that truth-table generation includes lifecycle_state in runnable check."""
-        from scripts.generate_source_registry_truth_table import generate_truth_table_json
-        from app.models.entities import SourceRegistry
 
         with SessionLocal() as db:
             # Create a source that appears runnable but lifecycle is not

@@ -47,7 +47,7 @@ def _policy_visible(db: Session, entity_type: str, entity) -> bool:
 
 @router.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "OK"}
+    return {"status": "healthy"}
 
 
 @router.get("/api/events", response_model=list[EventOut])
