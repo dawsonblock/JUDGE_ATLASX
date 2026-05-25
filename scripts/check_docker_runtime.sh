@@ -64,20 +64,17 @@ run_docker_check() {
     local label="$1"
     shift
 
-    local tmp
-    tmp="$(mktemp)"
-    if run_with_timeout "$DOCKER_TIMEOUT_SECONDS" "$@" >"$tmp" 2>&1; then
-        cat "$tmp"
-        rm -f "$tmp"
+    local rc output
+    set +e
+    output="$(run_with_timeout "$DOCKER_TIMEOUT_SECONDS" "$@" 2>&1)"
+    rc="$?"
+    set -e
+    printf '%s\n' "$output"
+
+    if [ "$rc" -eq 0 ]; then
         echo "[docker_runtime] PASS: ${label} completed"
         return 0
     fi
-
-    local rc="$?"
-    local output
-    output="$(cat "$tmp")"
-    cat "$tmp"
-    rm -f "$tmp"
 
     if [ "$rc" -eq 124 ]; then
         echo "[docker_runtime] FAIL: ${label} timed out after ${DOCKER_TIMEOUT_SECONDS}s"
