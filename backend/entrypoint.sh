@@ -15,6 +15,9 @@ for i in range(30):
         with engine.connect() as conn:
             print('Database connection successful!')
             sys.exit(0)
+    except (ImportError, ModuleNotFoundError) as e:
+        print(f'FATAL: Database driver missing or invalid configuration: {e}')
+        sys.exit(1)
     except Exception as e:
         print(f'Database connection failed: {e}. Retrying in 2 seconds ({i+1}/30)...')
         time.sleep(2)
