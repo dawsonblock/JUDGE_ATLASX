@@ -1,7 +1,7 @@
 # REPAIR_REPORT
 
-- generated_at_utc: 2026-05-25T20:52:09.954918+00:00
-- commit_hash: 12c1a720ec79f9e5ff9190a0c6335b51fe7fcc11
+- generated_at_utc: 2026-05-25T21:52:15.729005+00:00
+- commit_hash: b4107a42a39ec190ba87efa83cd19dcf861a2ce9
 - alpha_gate_passed: false
 
 ## Phase Results
@@ -14,7 +14,7 @@
 - 6. Proof Policy Generated: PASS (artifacts/proof/current/PROOF_POLICY.md)
 - 7. Evidence Store Integrity: PASS (artifacts/proof/current/verify_evidence_store.log)
 - 8. Audit Chain Integrity: PASS (artifacts/proof/current/verify_audit_chain.log)
-- 9. Justice XML Proof Coverage: PASS (artifacts/proof/current/backend_pytest.log)
+- 9. Justice XML Proof Coverage: FAIL (artifacts/proof/current/backend_pytest.log)
 - 10. Public Review Gate Coverage: PASS (artifacts/proof/current/public_api_boundary.log)
 - 11. Derivative Memory Boundary Coverage: PASS (artifacts/proof/current/public_api_boundary.log)
 - 12. Frontend Node 20 Gate: PASS (artifacts/proof/current/frontend_node_gate.log)
@@ -23,6 +23,7 @@
 
 ## Remaining Blockers
 
-- docker_runtime_preflight
+- backend_pytest
 - docker_smoke
-- postgis_proof
+- archive_validation
+- validation_summary_failed:docker_smoke,runtime_smoke

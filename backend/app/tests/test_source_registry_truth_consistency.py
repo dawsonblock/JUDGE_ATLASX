@@ -18,6 +18,10 @@ import json
 from app.ingestion.source_registry import get_source_registry
 
 
+def _get_repo_root() -> Path:
+    return Path(__file__).resolve().parents[3]
+
+
 def test_source_registry_authority_over_docs():
     """Test that source registry is authoritative over documentation.
 
@@ -60,7 +64,7 @@ def test_enabled_source_has_adapter():
         lifecycle_state = source_info.get("lifecycle_state")
         if lifecycle_state == "enabled_runnable":
             # Check if adapter exists in the codebase
-            adapter_path = Path(f"backend/app/ingestion/adapters/{source_key}.py")
+            adapter_path = _get_repo_root() / "backend" / "app" / "ingestion" / "adapters" / f"{source_key}.py"
             assert adapter_path.exists(), f"Enabled source {source_key} is missing adapter"
 
 
@@ -75,7 +79,7 @@ def test_enabled_source_has_fixture():
         lifecycle_state = source_info.get("lifecycle_state")
         if lifecycle_state == "enabled_runnable":
             # Check if fixture exists
-            fixture_path = Path(f"backend/app/ingestion/fixtures/{source_key}.json")
+            fixture_path = _get_repo_root() / "backend" / "app" / "ingestion" / "fixtures" / f"{source_key}.json"
             assert fixture_path.exists(), f"Enabled source {source_key} is missing fixture"
 
 
@@ -154,7 +158,7 @@ def test_source_registry_proof_freshness():
 
     This checks that the generated source registry is recent.
     """
-    registry_path = Path("artifacts/proof/current/source_registry_status.json")
+    registry_path = _get_repo_root() / "artifacts" / "proof" / "current" / "source_registry_status.json"
 
     assert registry_path.exists(), "Source registry proof not found"
 
@@ -182,7 +186,7 @@ def test_docs_vs_registry_consistency():
     registry = get_source_registry()
 
     # Read ingestion system docs
-    docs_path = Path("docs/runtime/INGESTION_SYSTEM.md")
+    docs_path = _get_repo_root() / "docs" / "runtime" / "INGESTION_SYSTEM.md"
     assert docs_path.exists(), "INGESTION_SYSTEM.md not found"
 
     with open(docs_path, "r") as f:

@@ -12,7 +12,7 @@ fail() {
 
 echo "=== Docker Verification ==="
 echo "1. Building images..."
-docker compose build --no-cache
+docker compose build
 
 echo "2. Starting services..."
 docker compose up -d

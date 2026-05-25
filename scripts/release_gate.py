@@ -152,6 +152,8 @@ def _validation_summary_gate(repo_root: Path) -> dict[str, object]:
     if overall_status == "failed":
         suffix = ",".join(failed_phases) if failed_phases else "unknown"
         result["blockers"] = [f"validation_summary_failed:{suffix}"]
+    elif overall_status != "passed":
+        result["blockers"] = [f"validation_summary_not_passed:{overall_status}"]
 
     return result
 
@@ -285,6 +287,7 @@ def _run(
             cwd=repo_root,
             stdout=fh,
             stderr=subprocess.STDOUT,
+            stdin=subprocess.DEVNULL,
             text=True,
             start_new_session=True,
         )
@@ -2917,6 +2920,8 @@ def main() -> int:
 
     validation_summary = _validation_summary_gate(repo_root)
     validation_blockers = list(validation_summary.get("blockers", []))
+    if not validation_summary.get("exists", False):
+        validation_blockers.append("validation_summary_missing")
 
     missing_logs = _missing_logs(repo_root, results)
     ok = (
@@ -2971,8 +2976,31 @@ def main() -> int:
     current_alpha_status_rel = _write_current_alpha_status_md(
         repo_root, out_dir, payload
     )
+    source_registry_status_md_rel = _write_source_registry_status_md(
+        repo_root,
+        out_dir,
+        payload,
+        source_registry_summary,
+    )
+    proof_policy_rel = _write_proof_policy_md(repo_root, out_dir, payload)
+    repair_report_rel = _write_repair_report_md(
+        repo_root,
+        out_dir,
+        payload,
+        source_registry_summary,
+    )
+    fix_verification_report_rel = _write_fix_verification_report_md(
+        repo_root,
+        out_dir,
+        payload,
+    )
+
     payload["logs"]["current_proof"] = current_proof_rel
     payload["logs"]["current_alpha_status"] = current_alpha_status_rel
+    payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
+    payload["logs"]["proof_policy"] = proof_policy_rel
+    payload["logs"]["repair_report"] = repair_report_rel
+    payload["logs"]["fix_verification_report"] = fix_verification_report_rel
 
     final_manifest = _build_proof_manifest(
         repo_root, out_dir, payload, results

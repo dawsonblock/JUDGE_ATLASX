@@ -31,7 +31,7 @@ For production deployments, implement:
 Returns:
 
 ```json
-{ "status": "OK" }
+{ "status": "healthy" }
 ```
 
 ## Map Events
