@@ -198,6 +198,13 @@ ALLOWED_POLICY_FILES: dict[str, AllowedPolicyPhrase] = {
         ),
         phrases=("production-ready",),
     ),
+    "REPAIR_STATUS.md": AllowedPolicyPhrase(
+        reason=(
+            "Repair status document explicitly states the build is NOT "
+            "production-ready; phrase appears in prohibitory/blocked context."
+        ),
+        phrases=("production-ready",),
+    ),
     "backend/app/llm/reviewer_assistant.py": AllowedPolicyPhrase(
         reason=(
             "Last-resort output guard: defines the list of "

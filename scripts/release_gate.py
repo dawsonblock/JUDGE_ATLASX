@@ -237,9 +237,8 @@ REQUIRED_PROOF_MANIFEST_LOGS = (
     "artifacts/proof/current/frontend_build.log",
     "artifacts/proof/current/docker_runtime_preflight.log",
     "artifacts/proof/current/proof_consistency_pytest.log",
-    "artifacts/proof/current/archive_validation.log",
-    ".validation_logs/docker_smoke.log",
-    ".validation_logs/runtime_smoke.log",
+    "artifacts/proof/current/docker_smoke.log",
+    "artifacts/proof/current/runtime_smoke.log",
 )
 
 

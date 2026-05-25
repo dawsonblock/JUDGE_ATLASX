@@ -1,18 +1,18 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-25T21:52:15.729005+00:00
-- commit_hash: b4107a42a39ec190ba87efa83cd19dcf861a2ce9
-- alpha_gate_status: BLOCKED
-- alpha_gate_passed: false
+- generated_at_utc: 2026-05-25T22:41:06.406156+00:00
+- commit_hash: 13d92f7113451062d4d6815941b747d1f565c65b
+- alpha_gate_status: PASS
+- alpha_gate_passed: true
 - release_gate_check_count: 49
 - docker_available: true
 - postgis_proof_result: PASS
 - egress_proxy_proof_result: PASS
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
-- archive_validation_result: FAIL
-- proof_input_tree_hash: 55b3299f4724cb8f813264b4bd47095df0445ca24125f77deb591361e831279c
-- proof_input_file_count: 1070
+- archive_validation_result: PASS
+- proof_input_tree_hash: 2b9bb61ef5d147525d7257203e72dbc42a1f7b27da9972e2f6ba3700dded62eb
+- proof_input_file_count: 1071
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
@@ -46,7 +46,7 @@
 - Dedicated egress proxy proof passed in the current release gate.
 - Dedicated synthetic demo proof passed in the current release gate.
 - Proof freshness passed against the stored proof-input file list and tree hash.
-- Archive validation has not yet been recorded for this run.
+- Archive validation passed against the final distributable archive shape.
 - archive_validation_log: artifacts/proof/current/archive_validation.log
 - archive_validation_supported_shapes:
   - JUDGE-main/
@@ -59,7 +59,7 @@
 
 ## Current Proof Facts
 
-- backend pytest: 2526 passed, 1 skipped
+- backend pytest: 3420 passed, 2 skipped
 - backend import proof: PASS (107 routes)
 - frontend contracts: 49 passed
 - public API boundary: 55 passed
@@ -69,14 +69,7 @@
 - demo proof: PASS
 - CanLII staging proof: PASS
 - mutation fail-closed coverage: PASS
-- Alembic migrations: 71
-
-## Failed Checks
-
-- backend_pytest
-- docker_smoke
-- archive_validation
-- validation_summary_failed:docker_smoke,runtime_smoke
+- Alembic migrations: 72
 
 ## Egress Proxy Coverage
 
