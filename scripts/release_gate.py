@@ -1654,7 +1654,11 @@ def main() -> int:
         "sqlite" if proof_db_url.startswith("sqlite://") else "unknown"
     )
     docker_check_timeout_seconds = int(
-        os.getenv("JTA_DOCKER_CHECK_TIMEOUT", "60")
+        os.getenv("JTA_DOCKER_CHECK_TIMEOUT", "180")
+    )
+    # Allow release-gate step timeout to exceed the internal docker check timeout.
+    docker_preflight_timeout_seconds = max(
+        docker_check_timeout_seconds + 30, 180
     )
     postgis_timeout_seconds = int(
         os.getenv("JTA_POSTGIS_PROOF_TIMEOUT", "900")
@@ -1765,7 +1769,7 @@ def main() -> int:
             "docker_runtime_preflight",
             "docker_runtime_preflight.log",
             ["bash", "scripts/check_docker_runtime.sh"],
-            timeout_seconds=120,
+            timeout_seconds=docker_preflight_timeout_seconds,
         ),
         GateStepSpec(
             "postgis_proof",
