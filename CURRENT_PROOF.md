@@ -1,18 +1,18 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-26T05:12:04.330903+00:00
-- commit_hash: 2806dd0676acbcfb608d73700ea55643414aa9e7
-- alpha_gate_status: PASS
-- alpha_gate_passed: true
+- generated_at_utc: 2026-05-26T06:50:46.546565+00:00
+- commit_hash: 0c8e0e5eb4705bc5e0144859e0154f9e4f8ae17a
+- alpha_gate_status: BLOCKED
+- alpha_gate_passed: false
 - release_gate_check_count: 49
-- docker_available: true
-- postgis_proof_result: PASS
+- docker_available: false
+- postgis_proof_result: BLOCKED
 - egress_proxy_proof_result: PASS
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
-- archive_validation_result: PASS
-- proof_input_tree_hash: 2a3329f6a096764b6553fa089affc4a4cb1fe661d852dfc4c0a9162e04a94090
-- proof_input_file_count: 1082
+- archive_validation_result: FAIL
+- proof_input_tree_hash: 1039a51997629b4b11b69eee77415297120ec35d286510dce40cbf88fb9b3033
+- proof_input_file_count: 1085
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
@@ -42,11 +42,11 @@
 - make verify = local no-Docker quality checks.
 - make release-proof-local = Docker/PostGIS alpha release gate.
 - Current alpha release is blocked if Docker/PostGIS proof fails.
-- Docker/PostGIS proof passed in the current release gate.
+- Docker/PostGIS proof did not pass in the current release gate.
 - Dedicated egress proxy proof passed in the current release gate.
 - Dedicated synthetic demo proof passed in the current release gate.
 - Proof freshness passed against the stored proof-input file list and tree hash.
-- Archive validation passed against the final distributable archive shape.
+- Archive validation has not yet been recorded for this run.
 - archive_validation_log: artifacts/proof/current/archive_validation.log
 - archive_validation_supported_shapes:
   - JUDGE-main/
@@ -59,17 +59,29 @@
 
 ## Current Proof Facts
 
-- backend pytest: 3448 passed, 2 skipped
+- backend pytest: 2528 passed, 0 skipped
 - backend import proof: PASS (107 routes)
 - frontend contracts: 49 passed
 - public API boundary: 55 passed
-- Docker runtime preflight: PASS
-- PostGIS proof: PASS
+- Docker runtime preflight: FAIL
+- PostGIS proof: BLOCKED
 - egress proxy proof: PASS
 - demo proof: PASS
 - CanLII staging proof: PASS
 - mutation fail-closed coverage: PASS
 - Alembic migrations: 72
+
+## Failed Checks
+
+- docker_runtime_preflight
+- docker_smoke
+- postgis_proof
+- check_node_policy
+- archive_validation
+
+## Blocked Checks
+
+- postgis_proof: docker_runtime_preflight failed
 
 ## Egress Proxy Coverage
 
