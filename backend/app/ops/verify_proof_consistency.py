@@ -138,6 +138,19 @@ def _extract_markdown_bullets(text: str, heading: str) -> set[str]:
     return bullets
 
 
+def _normalize_readiness_blocker(blocker: str) -> str | None:
+    blocker = blocker.strip()
+    if not blocker:
+        return None
+    if blocker.startswith("required_gate_failed:"):
+        return blocker.split(":", 1)[1].strip() or None
+    if blocker.startswith("missing_required_gate:"):
+        return blocker.split(":", 1)[1].strip() or None
+    if blocker.endswith("_not_pass"):
+        return None
+    return blocker
+
+
 def check_readiness_vs_gate_blockers(repo_root: Path, gate: dict) -> list[str]:
     """Ensure release_readiness.md blockers match release_gate.json blockers."""
     errors: list[str] = []
@@ -159,9 +172,17 @@ def check_readiness_vs_gate_blockers(repo_root: Path, gate: dict) -> list[str]:
         if isinstance(gate_blockers_raw, list)
         else set()
     )
-    readiness_blockers = _extract_markdown_bullets(readiness_text, "Remaining Blockers")
+    readiness_blockers = _extract_markdown_bullets(
+        readiness_text,
+        "Remaining Blockers",
+    )
+    normalized_readiness_blockers = {
+        normalized
+        for blocker in readiness_blockers
+        if (normalized := _normalize_readiness_blocker(blocker))
+    }
 
-    if gate_blockers != readiness_blockers:
+    if gate_blockers != normalized_readiness_blockers:
         errors.append(
             "readiness_gate_blocker_mismatch:"
             f"gate={sorted(gate_blockers)}:"

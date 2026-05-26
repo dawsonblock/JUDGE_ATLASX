@@ -308,6 +308,19 @@ def _extract_markdown_bullets(text: str, heading: str) -> list[str]:
     return bullets
 
 
+def _normalize_readiness_blocker(blocker: str) -> str | None:
+    blocker = blocker.strip()
+    if not blocker:
+        return None
+    if blocker.startswith("required_gate_failed:"):
+        return blocker.split(":", 1)[1].strip() or None
+    if blocker.startswith("missing_required_gate:"):
+        return blocker.split(":", 1)[1].strip() or None
+    if blocker.endswith("_not_pass"):
+        return None
+    return blocker
+
+
 def check_hash_sync_across_all_sources(
     manifest: dict,
     gate: dict,
@@ -367,12 +380,9 @@ def check_readiness_vs_release_gate_consistency(
     )
     normalized_readiness_blockers: set[str] = set()
     for blocker in readiness_blocker_set:
-        if blocker.startswith("required_gate_failed:"):
-            normalized_readiness_blockers.add(
-                blocker.split(":", 1)[1].strip()
-            )
-            continue
-        normalized_readiness_blockers.add(blocker)
+        normalized = _normalize_readiness_blocker(blocker)
+        if normalized:
+            normalized_readiness_blockers.add(normalized)
 
     if gate_blocker_set != normalized_readiness_blockers:
         errors.append(

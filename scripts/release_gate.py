@@ -2408,11 +2408,6 @@ def main() -> int:
         _local_path_hygiene_spec.log_name,
         "proof_consistency_pytest.log",
         "release_gate.log",
-        "release_gate.json",
-        "proof_manifest.json",
-        "required_log_index.json",
-        "release_readiness.md",
-        "archive_validation.md",
         "proof.db",
         "SOURCE_REGISTRY_STATUS.json",
         "source_registry_status.json",
@@ -3051,17 +3046,6 @@ def main() -> int:
     )
     results.append(check_proof_manifest_step)
 
-    check_proof_consistency_step = _run(
-        repo_root,
-        out_dir,
-        _check_proof_consistency_spec.name,
-        _check_proof_consistency_spec.log_name,
-        list(_check_proof_consistency_spec.command),
-        timeout_seconds=_check_proof_consistency_spec.timeout_seconds,
-        required=_check_proof_consistency_spec.required,
-    )
-    results.append(check_proof_consistency_step)
-
     _sanitize_current_proof_artifacts(repo_root, out_dir)
 
     local_path_hygiene_step = _run(
@@ -3074,6 +3058,17 @@ def main() -> int:
         required=_local_path_hygiene_spec.required,
     )
     results.append(local_path_hygiene_step)
+
+    check_proof_consistency_step = _run(
+        repo_root,
+        out_dir,
+        _check_proof_consistency_spec.name,
+        _check_proof_consistency_spec.log_name,
+        list(_check_proof_consistency_spec.command),
+        timeout_seconds=_check_proof_consistency_spec.timeout_seconds,
+        required=_check_proof_consistency_spec.required,
+    )
+    results.append(check_proof_consistency_step)
 
     validation_summary = _validation_summary_gate(repo_root)
     blockers_raw = validation_summary.get("blockers", [])
