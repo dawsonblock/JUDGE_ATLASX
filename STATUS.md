@@ -1,7 +1,7 @@
 # STATUS
 
 **Repository**: JUDGE_ATLASX-main  
-**Current release status**: proof-hardened alpha  
+**Current release status**: alpha release posture; see canonical gate  
 **Alpha gate checks**: see artifacts/proof/current/release_gate.json  
 **Production ready**: false
 Production ready: FALSE
@@ -25,15 +25,13 @@ This repository is an alpha/research-grade platform, not a production legal syst
 - Source ingestion is disabled by default.
 - Manual review is required before public publication.
 - Source coverage is incomplete.
+- Alpha proof status: derive from artifacts/proof/current/release_gate.json.
+- Alpha readiness status: derive from artifacts/proof/current/release_readiness.md.
 
 ## What's Tested
 
-- Backend import proof and pytest suite
-- Frontend install, lint, typecheck, and build
-- Public API boundaries
-- Docker runtime and PostGIS proof
-- Source registry validation
-- Release archive validation
+- The canonical test/proof inventory is recorded in artifacts/proof/current/CURRENT_PROOF.md.
+- Do not treat this file as a substitute for release_gate.json or release_readiness.md.
 
 ## What's Not Ready for Production
 
@@ -44,8 +42,9 @@ This repository is an alpha/research-grade platform, not a production legal syst
 
 ## Gate Interpretation
 
-- Alpha gate checks passing means release-proof checks are currently satisfied.
-- Alpha gate checks passing does not mean production readiness.
+- Alpha gate truth is defined only by artifacts/proof/current/release_gate.json.
+- Release readiness truth is defined only by artifacts/proof/current/release_readiness.md.
+- Human-readable summaries must not override the canonical proof artifacts.
 - Production readiness remains false by design for this alpha scope.
 
 ## Known Constraints

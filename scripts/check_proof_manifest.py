@@ -38,6 +38,16 @@ def _required_logs_from_manifest(manifest: dict) -> list[str]:
     return list(DEFAULT_REQUIRED_LOGS)
 
 
+def _entry_path(entry: dict) -> str | None:
+    path = entry.get("path")
+    if isinstance(path, str) and path:
+        return path
+    log_path = entry.get("log_path")
+    if isinstance(log_path, str) and log_path:
+        return log_path
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default=str(REPO_ROOT), help="Repository root")
@@ -65,12 +75,57 @@ def main() -> int:
         if path.stat().st_size <= 0:
             empty.append(rel_path)
 
-    if missing or empty:
+    proof_commands = manifest.get("proof_commands")
+    bad_entries: list[str] = []
+    if isinstance(proof_commands, list):
+        for entry in proof_commands:
+            if not isinstance(entry, dict):
+                bad_entries.append("non_dict_entry")
+                continue
+            entry_path = _entry_path(entry)
+            if not entry_path:
+                bad_entries.append(f"missing_path:{entry.get('name', 'unknown')}")
+                continue
+            file_path = repo_root / entry_path
+            if not file_path.exists():
+                bad_entries.append(f"missing_file:{entry_path}")
+                continue
+            if file_path.stat().st_size <= 0:
+                bad_entries.append(f"empty_file:{entry_path}")
+                continue
+            if not isinstance(entry.get("required"), bool):
+                bad_entries.append(f"missing_required_flag:{entry_path}")
+            if not isinstance(entry.get("size_bytes"), int):
+                bad_entries.append(f"missing_size_bytes:{entry_path}")
+            elif entry["size_bytes"] != file_path.stat().st_size:
+                bad_entries.append(f"size_mismatch:{entry_path}")
+            if not isinstance(entry.get("sha256"), str) or not entry.get("sha256"):
+                bad_entries.append(f"missing_sha256:{entry_path}")
+            if not (
+                isinstance(entry.get("captured_at"), str)
+                and entry.get("captured_at")
+            ) and not (
+                isinstance(entry.get("created_at"), str)
+                and entry.get("created_at")
+            ):
+                bad_entries.append(f"missing_timestamp:{entry_path}")
+            if not (
+                isinstance(entry.get("command"), str)
+                and entry.get("command")
+            ) and not (
+                isinstance(entry.get("proof_source"), str)
+                and entry.get("proof_source")
+            ):
+                bad_entries.append(f"missing_command_or_source:{entry_path}")
+
+    if missing or empty or bad_entries:
         print("CHECK_PROOF_MANIFEST: FAIL")
         for rel_path in missing:
             print(f"- missing:{rel_path}")
         for rel_path in empty:
             print(f"- empty:{rel_path}")
+        for rel_path in bad_entries:
+            print(f"- bad:{rel_path}")
         return 1
 
     print("CHECK_PROOF_MANIFEST: PASS")

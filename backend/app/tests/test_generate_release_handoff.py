@@ -118,3 +118,6 @@ def test_generate_release_handoff_writes_proof_complete_status(tmp_path: Path) -
     assert ret == 0
     contents = output_path.read_text(encoding="utf-8")
     assert "- proof_complete: true" in contents
+    assert "- release_classification: proof-hardened alpha release candidate" in contents
+    assert "- This is a proof-hardened alpha release candidate." in contents
+    assert "- It is not ready for production deployment." in contents

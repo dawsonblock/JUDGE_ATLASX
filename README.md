@@ -62,6 +62,6 @@ Evidence is authoritative. AI and memory outputs are derivative only. Public vis
 ```bash
 make proof
 bash scripts/package_and_validate_release_archive.sh \
-	--archive-path dist/JUDGE_ATLAS-main-final.zip \
-	--package-root-name JUDGE_ATLAS-main
+  --archive-path dist/JUDGE_ATLAS-main-final.zip \
+  --package-root-name JUDGE_ATLAS-main
 ```

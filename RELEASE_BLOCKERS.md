@@ -8,20 +8,12 @@
 - Canonical current proof summary is artifacts/proof/current/CURRENT_PROOF.md.
 - Alpha gate pass/fail is not a production readiness claim.
 
-## Completed Resolution Summary
+## Current Blocker Policy
 
-- Phase 2: generated/runtime junk removal -> PASS
-- Phase 3: env/release-surface cleanup -> PASS
-- Phase 4: canonical current proof present -> PASS
-- Phase 5: builder/validator proof contract alignment -> PASS
-- Phase 6: false-claim scanner hardening -> PASS
-- Phase 7: Node baseline standardized to 20.x -> PASS
-- Phase 8: Python baseline standardized to 3.11 -> PASS
-- Phase 9: experimental route modules remain unmounted -> PASS
-- Phase 10: source registry regeneration/validation -> PASS
-- Phase 11: proof regeneration from current tree -> PASS
-- Phase 12: clean archive build + validator -> PASS
-- Phase 13: status and proof docs synchronized -> PASS
+- Treat release_gate.json as the only authoritative blocker source.
+- Treat release_readiness.md as the only authoritative blocker narrative.
+- Manual summaries in this file must never mark phases PASS unless the canonical artifacts say so for the current run.
+- If artifacts/proof/current/release_gate.json and this file disagree, the gate wins.
 
 ## Deferred by Plan (Non-Blocking)
 
@@ -29,11 +21,11 @@
 
 ## Status Assertion
 
-- release_status: proof-hardened alpha
+- release_status: derive from artifacts/proof/current/release_gate.json
 - production_ready: false
 - operational_posture: alpha
 
 ## Interpretation
 
-- Current alpha release may be unblocked while production_ready remains false.
-- Deferred scope items are non-blocking for alpha gate completion.
+- Current alpha release state must be read from the canonical gate artifacts for the current run.
+- Deferred scope items are non-blocking only when the current canonical gate artifacts say the alpha gate passed.

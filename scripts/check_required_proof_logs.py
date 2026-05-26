@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from hashlib import sha256
 from pathlib import Path
 
 
@@ -90,6 +91,18 @@ def check_required_proof_logs(repo_root: Path) -> tuple[list[str], int, int]:
 
     missing: list[str] = []
     seen: set[str] = set()
+    manifest_missing: list[str] = []
+    hash_mismatches: list[str] = []
+    size_mismatches: list[str] = []
+
+    manifest_path = repo_root / "artifacts" / "proof" / "current" / "proof_manifest.json"
+    manifest: dict | None = None
+    if manifest_path.exists():
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            manifest = None
+    proof_entry_map = _proof_entry_map(manifest or {}) if manifest else {}
 
     # Primary source: checks array (each entry has a log_path field)
     for entry in payload.get("checks", []):
@@ -102,10 +115,25 @@ def check_required_proof_logs(repo_root: Path) -> tuple[list[str], int, int]:
         abs_path = repo_root / log_path
         if not abs_path.exists():
             missing.append(log_path)
+            continue
+        entry = proof_entry_map.get(log_path)
+        if entry is None:
+            manifest_missing.append(log_path)
+            continue
+        expected_size = entry.get("size_bytes")
+        if isinstance(expected_size, int) and expected_size != abs_path.stat().st_size:
+            size_mismatches.append(log_path)
+        expected_hash = entry.get("sha256") or entry.get("log_sha256")
+        if isinstance(expected_hash, str) and expected_hash:
+            actual_hash = _sha256_path(abs_path)
+            if actual_hash != expected_hash:
+                hash_mismatches.append(log_path)
 
     # Secondary source: top-level logs map
     for _check_name, log_path in payload.get("logs", {}).items():
         if not log_path or not isinstance(log_path, str):
+            continue
+        if not log_path.endswith(".log"):
             continue
         if log_path in seen:
             continue
@@ -117,10 +145,29 @@ def check_required_proof_logs(repo_root: Path) -> tuple[list[str], int, int]:
         abs_path = repo_root / log_path
         if not abs_path.exists():
             missing.append(log_path)
+            continue
+        entry = proof_entry_map.get(log_path)
+        if entry is None:
+            manifest_missing.append(log_path)
+            continue
+        expected_size = entry.get("size_bytes")
+        if isinstance(expected_size, int) and expected_size != abs_path.stat().st_size:
+            size_mismatches.append(log_path)
+        expected_hash = entry.get("sha256") or entry.get("log_sha256")
+        if isinstance(expected_hash, str) and expected_hash:
+            actual_hash = _sha256_path(abs_path)
+            if actual_hash != expected_hash:
+                hash_mismatches.append(log_path)
+
+    if manifest_missing or hash_mismatches or size_mismatches:
+        missing.extend(manifest_missing)
+        missing.extend(size_mismatches)
+        missing.extend(hash_mismatches)
 
     referenced_total = len(seen)
-    present_total = referenced_total - len(missing)
-    return sorted(missing), referenced_total, present_total
+    missing_unique = sorted(set(missing))
+    present_total = max(referenced_total - len(missing_unique), 0)
+    return missing_unique, referenced_total, present_total
 
 
 def _missing_required_proof_files(repo_root: Path) -> list[str]:
@@ -137,6 +184,38 @@ def _missing_required_proof_logs(repo_root: Path) -> list[str]:
         if not (repo_root / rel_path).exists():
             missing.append(rel_path)
     return sorted(missing)
+
+
+def _sha256_path(path: Path) -> str:
+    digest = sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _entry_path(entry: dict) -> str | None:
+    path = entry.get("path")
+    if isinstance(path, str) and path:
+        return path
+    log_path = entry.get("log_path")
+    if isinstance(log_path, str) and log_path:
+        return log_path
+    return None
+
+
+def _proof_entry_map(manifest: dict) -> dict[str, dict]:
+    entry_map: dict[str, dict] = {}
+    proof_commands = manifest.get("proof_commands")
+    if not isinstance(proof_commands, list):
+        return entry_map
+    for entry in proof_commands:
+        if not isinstance(entry, dict):
+            continue
+        entry_path = _entry_path(entry)
+        if entry_path:
+            entry_map[entry_path] = entry
+    return entry_map
 
 
 def _format_proof_incomplete_message(

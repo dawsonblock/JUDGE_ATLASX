@@ -23,7 +23,21 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _write_handoff(path: Path, archive_rel: str, sha256: str) -> None:
+def _write_handoff(
+    path: Path,
+    archive_rel: str,
+    sha256: str,
+    *,
+    alpha_gate_passed: bool = True,
+    release_candidate: bool = True,
+    production_ready: bool = False,
+    classification: str = "proof-hardened alpha release candidate",
+    notes: list[str] | None = None,
+) -> None:
+    note_lines = notes or [
+        "- This is a proof-hardened alpha release candidate.",
+        "- It is not ready for production deployment.",
+    ]
     path.write_text(
         "\n".join(
             [
@@ -31,6 +45,12 @@ def _write_handoff(path: Path, archive_rel: str, sha256: str) -> None:
                 "",
                 "- Path: " + archive_rel,
                 "- SHA-256: " + sha256,
+                "- release_classification: " + classification,
+                f"- alpha_gate_passed: {str(alpha_gate_passed).lower()}",
+                f"- release_candidate: {str(release_candidate).lower()}",
+                f"- production_ready: {str(production_ready).lower()}",
+                "",
+                *note_lines,
                 "",
             ]
         ),
@@ -50,8 +70,13 @@ def _module():
 def test_handoff_consistency_passes(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     (repo_root / "dist").mkdir(parents=True, exist_ok=True)
+    (repo_root / "artifacts" / "proof" / "current").mkdir(parents=True, exist_ok=True)
     archive = repo_root / "dist" / "JUDGE_ATLAS-main-final.zip"
     archive.write_bytes(b"archive-bytes")
+    (repo_root / "artifacts" / "proof" / "current" / "release_gate.json").write_text(
+        '{"alpha_gate_passed": true, "release_candidate": true, "production_ready": false}',
+        encoding="utf-8",
+    )
     handoff = repo_root / "FINAL_RELEASE_HANDOFF.md"
     _write_handoff(
         handoff,
@@ -68,8 +93,13 @@ def test_handoff_consistency_passes(tmp_path: Path) -> None:
 def test_handoff_consistency_fails_on_sha_mismatch(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     (repo_root / "dist").mkdir(parents=True, exist_ok=True)
+    (repo_root / "artifacts" / "proof" / "current").mkdir(parents=True, exist_ok=True)
     archive = repo_root / "dist" / "JUDGE_ATLAS-main-final.zip"
     archive.write_bytes(b"archive-bytes")
+    (repo_root / "artifacts" / "proof" / "current" / "release_gate.json").write_text(
+        '{"alpha_gate_passed": true, "release_candidate": true, "production_ready": false}',
+        encoding="utf-8",
+    )
     handoff = repo_root / "FINAL_RELEASE_HANDOFF.md"
     _write_handoff(
         handoff,
@@ -86,8 +116,13 @@ def test_handoff_consistency_fails_on_sha_mismatch(tmp_path: Path) -> None:
 def test_handoff_consistency_fails_on_path_mismatch(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     (repo_root / "dist").mkdir(parents=True, exist_ok=True)
+    (repo_root / "artifacts" / "proof" / "current").mkdir(parents=True, exist_ok=True)
     archive = repo_root / "dist" / "JUDGE_ATLAS-main-final.zip"
     archive.write_bytes(b"archive-bytes")
+    (repo_root / "artifacts" / "proof" / "current" / "release_gate.json").write_text(
+        '{"alpha_gate_passed": true, "release_candidate": true, "production_ready": false}',
+        encoding="utf-8",
+    )
     handoff = repo_root / "FINAL_RELEASE_HANDOFF.md"
     _write_handoff(handoff, "dist/other.zip", _sha256(archive))
 
@@ -100,8 +135,13 @@ def test_handoff_consistency_fails_on_path_mismatch(tmp_path: Path) -> None:
 def test_handoff_consistency_fails_on_missing_claims(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     (repo_root / "dist").mkdir(parents=True, exist_ok=True)
+    (repo_root / "artifacts" / "proof" / "current").mkdir(parents=True, exist_ok=True)
     archive = repo_root / "dist" / "JUDGE_ATLAS-main-final.zip"
     archive.write_bytes(b"archive-bytes")
+    (repo_root / "artifacts" / "proof" / "current" / "release_gate.json").write_text(
+        '{"alpha_gate_passed": true, "release_candidate": true, "production_ready": false}',
+        encoding="utf-8",
+    )
     handoff = repo_root / "FINAL_RELEASE_HANDOFF.md"
     handoff.write_text("# Final Release Handoff\n", encoding="utf-8")
 
@@ -110,3 +150,35 @@ def test_handoff_consistency_fails_on_missing_claims(tmp_path: Path) -> None:
     assert not ok
     assert "missing_claimed_path" in errors
     assert "missing_claimed_sha256" in errors
+
+
+def test_handoff_consistency_fails_on_status_and_alpha_wording_mismatch(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    (repo_root / "dist").mkdir(parents=True, exist_ok=True)
+    (repo_root / "artifacts" / "proof" / "current").mkdir(parents=True, exist_ok=True)
+    archive = repo_root / "dist" / "JUDGE_ATLAS-main-final.zip"
+    archive.write_bytes(b"archive-bytes")
+    (repo_root / "artifacts" / "proof" / "current" / "release_gate.json").write_text(
+        '{"alpha_gate_passed": true, "release_candidate": true, "production_ready": false}',
+        encoding="utf-8",
+    )
+    handoff = repo_root / "FINAL_RELEASE_HANDOFF.md"
+    _write_handoff(
+        handoff,
+        "dist/JUDGE_ATLAS-main-final.zip",
+        _sha256(archive),
+        alpha_gate_passed=False,
+        release_candidate=False,
+        classification="production release",
+        notes=["- Ship only the archive listed above."],
+    )
+
+    module = _module()
+    ok, errors = module.validate_handoff(repo_root, archive, handoff)
+    assert not ok
+    assert any(err.startswith("alpha_gate_passed_mismatch:") for err in errors)
+    assert any(err.startswith("release_candidate_mismatch:") for err in errors)
+    assert any(err.startswith("release_classification_mismatch:") for err in errors)
+    assert "missing_not_production_ready_note" in errors
+    assert "missing_alpha_wording" in errors
+

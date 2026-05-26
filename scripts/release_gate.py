@@ -326,6 +326,12 @@ def _run(
             except ProcessLookupError:
                 pass
             raise
+    if log_path.exists() and log_path.stat().st_size == 0:
+        log_path.write_text(
+            "[release_gate] "
+            f"step={name} exit_code={return_code} emitted no stdout/stderr.\n",
+            encoding="utf-8",
+        )
     finished_at = datetime.now(timezone.utc)
     duration = round(time.monotonic() - t0, 3)
     passed = return_code == 0
@@ -723,11 +729,16 @@ def _build_proof_manifest(
     for step in steps:
         log_abs = repo_root / step.log_path
         log_exists = log_abs.exists()
+        captured_at = step.finished_at_utc
+        size_bytes = log_abs.stat().st_size if log_exists else 0
         entry = {
             "name": step.name,
+            "path": step.log_path,
             "required": step.required,
             "cwd": step.cwd,
             "command": step.command,
+            "created_at": captured_at,
+            "captured_at": captured_at,
             "started_at": step.started_at_utc,
             "finished_at": step.finished_at_utc,
             "duration_seconds": step.duration_seconds,
@@ -736,9 +747,46 @@ def _build_proof_manifest(
             "log_path": step.log_path,
             "log_exists": log_exists,
             "log_sha256": _sha256_file(log_abs) if log_exists else None,
+            "sha256": _sha256_file(log_abs) if log_exists else None,
+            "size_bytes": size_bytes,
+            "proof_source": step.name,
             "failure_reason": step.failure_reason,
         }
         entries.append(entry)
+
+    seen_paths = {entry["path"] for entry in entries}
+    for proof_source, rel_path in (payload.get("logs") or {}).items():
+        if not isinstance(rel_path, str) or not rel_path.endswith(".log"):
+            continue
+        if rel_path in seen_paths:
+            continue
+        log_abs = repo_root / rel_path
+        log_exists = log_abs.exists()
+        size_bytes = log_abs.stat().st_size if log_exists else 0
+        entries.append(
+            {
+                "name": proof_source,
+                "path": rel_path,
+                "required": rel_path in REQUIRED_PROOF_MANIFEST_LOGS,
+                "cwd": _redact_local_paths_in_text(str(repo_root), repo_root),
+                "command": f"generated:{proof_source}",
+                "created_at": payload.get("timestamp_utc"),
+                "captured_at": payload.get("timestamp_utc"),
+                "started_at": payload.get("timestamp_utc"),
+                "finished_at": payload.get("timestamp_utc"),
+                "duration_seconds": 0.0,
+                "exit_code": 0,
+                "status": "PASS" if log_exists else "FAIL",
+                "log_path": rel_path,
+                "log_exists": log_exists,
+                "log_sha256": _sha256_file(log_abs) if log_exists else None,
+                "sha256": _sha256_file(log_abs) if log_exists else None,
+                "size_bytes": size_bytes,
+                "proof_source": proof_source,
+                "failure_reason": None if log_exists else "missing_file",
+            }
+        )
+        seen_paths.add(rel_path)
 
     manifest = {
         "generated_at": payload.get("timestamp_utc"),
@@ -1630,6 +1678,141 @@ def _write_current_proof_md(
         return str(current_proof_path)
 
 
+def _sync_release_artifacts(
+    repo_root: Path,
+    out_dir: Path,
+    payload: dict,
+    results: list[GateStep],
+    manifest_path: Path,
+    out_path: Path,
+    source_registry_summary: dict,
+    *,
+    static_guards_rel: str | None = None,
+    ensure_readiness_step: bool = False,
+) -> tuple[str, str]:
+    payload.setdefault("logs", {})
+
+    current_proof_rel = _write_current_proof_md(
+        repo_root,
+        out_dir,
+        payload,
+        check_count=len(results),
+    )
+    current_alpha_status_rel = _write_current_alpha_status_md(
+        repo_root, out_dir, payload
+    )
+    source_registry_status_md_rel = _write_source_registry_status_md(
+        repo_root,
+        out_dir,
+        payload,
+        source_registry_summary,
+    )
+    proof_policy_rel = _write_proof_policy_md(repo_root, out_dir, payload)
+    repair_report_rel = _write_repair_report_md(
+        repo_root,
+        out_dir,
+        payload,
+        source_registry_summary,
+    )
+    fix_verification_report_rel = _write_fix_verification_report_md(
+        repo_root,
+        out_dir,
+        payload,
+    )
+    grouped_artifacts = _write_grouped_proof_artifacts(
+        repo_root, out_dir, payload
+    )
+
+    payload["logs"]["current_proof"] = current_proof_rel
+    payload["logs"]["current_alpha_status"] = current_alpha_status_rel
+    payload["logs"]["source_registry_status_md"] = (
+        source_registry_status_md_rel
+    )
+    payload["logs"]["proof_policy"] = proof_policy_rel
+    payload["logs"]["repair_report"] = repair_report_rel
+    payload["logs"]["fix_verification_report"] = fix_verification_report_rel
+    payload["logs"] |= grouped_artifacts
+    if static_guards_rel is not None:
+        payload["logs"]["static_guards"] = static_guards_rel
+
+    final_manifest = _build_proof_manifest(
+        repo_root, out_dir, payload, results
+    )
+    _, readiness_rel = _generate_release_readiness_from_manifest(
+        repo_root,
+        out_dir,
+        final_manifest,
+        additional_blockers=payload.get("release_blockers_remaining", []),
+    )
+
+    if ensure_readiness_step:
+        readiness_now = datetime.now(timezone.utc).isoformat()
+        readiness_step = next(
+            (
+                step
+                for step in results
+                if step.name == "release_readiness_generation"
+            ),
+            None,
+        )
+        if readiness_step is None:
+            results.append(
+                GateStep(
+                    name="release_readiness_generation",
+                    command="generate from proof_manifest.json",
+                    status="PASS",
+                    exit_code=0,
+                    duration_seconds=0.0,
+                    log_path=readiness_rel,
+                    started_at_utc=readiness_now,
+                    finished_at_utc=readiness_now,
+                    required=True,
+                    cwd=_redact_local_paths_in_text(
+                        str(repo_root), repo_root
+                    ),
+                    failure_reason=None,
+                )
+            )
+        else:
+            readiness_step.status = "PASS"
+            readiness_step.exit_code = 0
+            readiness_step.duration_seconds = 0.0
+            readiness_step.log_path = readiness_rel
+            readiness_step.started_at_utc = readiness_now
+            readiness_step.finished_at_utc = readiness_now
+            readiness_step.required = True
+            readiness_step.cwd = _redact_local_paths_in_text(
+                str(repo_root), repo_root
+            )
+            readiness_step.failure_reason = None
+
+        final_manifest = _build_proof_manifest(
+            repo_root, out_dir, payload, results
+        )
+        _, readiness_rel = _generate_release_readiness_from_manifest(
+            repo_root,
+            out_dir,
+            final_manifest,
+            additional_blockers=payload.get(
+                "release_blockers_remaining", []
+            ),
+        )
+
+    final_manifest = _build_proof_manifest(
+        repo_root, out_dir, payload, results
+    )
+
+    manifest_path.write_text(
+        json.dumps(final_manifest, indent=2) + "\n", encoding="utf-8"
+    )
+    payload["logs"]["release_readiness"] = readiness_rel
+    payload["logs"]["proof_manifest"] = str(
+        manifest_path.relative_to(repo_root)
+    )
+    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    return current_proof_rel, readiness_rel
+
+
 def main() -> int:
     repo_root = Path(__file__).resolve().parents[1]
     out_dir = repo_root / "artifacts" / "proof" / "current"
@@ -2474,38 +2657,28 @@ def main() -> int:
     )
     results.append(pf_step)
 
-    # Phase 2c: update payload with the real proof_freshness result and recompute
-    # ok, failed_checks, release_blockers_remaining, alpha_gate_passed.
-    manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
     manifest_path = out_dir / "proof_manifest.json"
-    manifest_path.write_text(
-        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
-    )
 
     # Generate required policy/status artifacts before archive validation so
     # the packaged proof tree can be validated as a complete release candidate.
     source_registry_summary = _read_source_registry_summary(out_dir)
-    _write_current_alpha_status_md(repo_root, out_dir, payload)
-    _write_source_registry_status_md(
-        repo_root,
-        out_dir,
-        payload,
-        source_registry_summary,
-    )
-    _write_proof_policy_md(repo_root, out_dir, payload)
-    _write_current_proof_md(
-        repo_root,
-        out_dir,
-        payload,
-        check_count=len(results),
-    )
 
     static_guards_rel = _write_static_guards_log(repo_root, out_dir, results)
 
-    manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
-    manifest_path.write_text(
-        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+    single_proof_authority_step = _run(
+        repo_root,
+        out_dir,
+        "single_proof_authority",
+        "single_proof_authority.log",
+        [
+            python_exe,
+            "scripts/check_single_proof_authority.py",
+            "--root",
+            str(repo_root),
+        ],
+        timeout_seconds=60,
     )
+    results.append(single_proof_authority_step)
 
     missing_logs = _missing_logs(repo_root, results)
     remaining_required_steps = {
@@ -2552,91 +2725,17 @@ def main() -> int:
         )
         gate_log.write(f"alpha_gate_passed={str(ok).lower()}\n")
 
-    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-
-    current_proof_rel = _write_current_proof_md(
+    _sync_release_artifacts(
         repo_root,
         out_dir,
         payload,
-        check_count=len(results),
-    )
-    grouped_artifacts = _write_grouped_proof_artifacts(
-        repo_root, out_dir, payload
-    )
-    current_alpha_status_rel = _write_current_alpha_status_md(
-        repo_root, out_dir, payload
-    )
-    source_registry_status_md_rel = _write_source_registry_status_md(
-        repo_root,
-        out_dir,
-        payload,
+        results,
+        manifest_path,
+        out_path,
         source_registry_summary,
+        static_guards_rel=static_guards_rel,
+        ensure_readiness_step=True,
     )
-    proof_policy_rel = _write_proof_policy_md(repo_root, out_dir, payload)
-    repair_report_rel = _write_repair_report_md(
-        repo_root,
-        out_dir,
-        payload,
-        source_registry_summary,
-    )
-    payload["logs"]["current_proof"] = current_proof_rel
-    payload["logs"] |= grouped_artifacts
-
-    # Ensure required proof files exist before archive validation builds the
-    # clean archive snapshot.
-    fix_verification_report_rel = _write_fix_verification_report_md(
-        repo_root,
-        out_dir,
-        payload,
-    )
-    payload["logs"]["fix_verification_report"] = fix_verification_report_rel
-
-    payload["logs"]["current_alpha_status"] = current_alpha_status_rel
-    payload["logs"]["source_registry_status_md"] = (
-        source_registry_status_md_rel
-    )
-    payload["logs"]["proof_policy"] = proof_policy_rel
-    payload["logs"]["repair_report"] = repair_report_rel
-    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-
-    single_proof_authority_step = _run(
-        repo_root,
-        out_dir,
-        "single_proof_authority",
-        "single_proof_authority.log",
-        [
-            python_exe,
-            "scripts/check_single_proof_authority.py",
-            "--root",
-            str(repo_root),
-        ],
-        timeout_seconds=60,
-    )
-    results.append(single_proof_authority_step)
-
-    final_manifest = _build_proof_manifest(
-        repo_root, out_dir, payload, results
-    )
-    _, readiness_rel = _generate_release_readiness_from_manifest(
-        repo_root,
-        out_dir,
-        final_manifest,
-        additional_blockers=payload.get("release_blockers_remaining", []),
-    )
-    readiness_step = GateStep(
-        name="release_readiness_generation",
-        command="generate from proof_manifest.json",
-        status="PASS",
-        exit_code=0,
-        duration_seconds=0.0,
-        log_path=readiness_rel,
-        started_at_utc=datetime.now(timezone.utc).isoformat(),
-        finished_at_utc=datetime.now(timezone.utc).isoformat(),
-        required=True,
-        cwd=_redact_local_paths_in_text(str(repo_root), repo_root),
-        failure_reason=None,
-    )
-    results.append(readiness_step)
 
     missing_logs = _missing_logs(repo_root, results)
     remaining_required_steps = {
@@ -2671,60 +2770,16 @@ def main() -> int:
     )
     _refresh_release_payload_schema(payload, results)
 
-    current_proof_rel = _write_current_proof_md(
+    _sync_release_artifacts(
         repo_root,
         out_dir,
         payload,
-        check_count=len(results),
-    )
-    current_alpha_status_rel = _write_current_alpha_status_md(
-        repo_root, out_dir, payload
-    )
-    source_registry_status_md_rel = _write_source_registry_status_md(
-        repo_root,
-        out_dir,
-        payload,
+        results,
+        manifest_path,
+        out_path,
         source_registry_summary,
+        static_guards_rel=static_guards_rel,
     )
-    proof_policy_rel = _write_proof_policy_md(repo_root, out_dir, payload)
-    repair_report_rel = _write_repair_report_md(
-        repo_root,
-        out_dir,
-        payload,
-        source_registry_summary,
-    )
-    fix_verification_report_rel = _write_fix_verification_report_md(
-        repo_root,
-        out_dir,
-        payload,
-    )
-    payload["logs"]["current_proof"] = current_proof_rel
-    payload["logs"]["current_alpha_status"] = current_alpha_status_rel
-    payload["logs"]["source_registry_status_md"] = (
-        source_registry_status_md_rel
-    )
-    payload["logs"]["proof_policy"] = proof_policy_rel
-    payload["logs"]["repair_report"] = repair_report_rel
-    payload["logs"]["fix_verification_report"] = fix_verification_report_rel
-
-    final_manifest = _build_proof_manifest(
-        repo_root, out_dir, payload, results
-    )
-    _, readiness_rel = _generate_release_readiness_from_manifest(
-        repo_root,
-        out_dir,
-        final_manifest,
-        additional_blockers=payload.get("release_blockers_remaining", []),
-    )
-    manifest_path.write_text(
-        json.dumps(final_manifest, indent=2) + "\n", encoding="utf-8"
-    )
-    payload["logs"]["release_readiness"] = readiness_rel
-    payload["logs"]["proof_manifest"] = str(
-        manifest_path.relative_to(repo_root)
-    )
-
-    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
     # Run proof consistency only after release_gate.json, CURRENT_PROOF.md,
     # and release_readiness.md have been written.
@@ -2774,60 +2829,22 @@ def main() -> int:
     )
     _refresh_release_payload_schema(payload, results)
 
-    current_proof_rel = _write_current_proof_md(
+    current_proof_rel, readiness_rel = _sync_release_artifacts(
         repo_root,
         out_dir,
         payload,
-        check_count=len(results),
-    )
-    current_alpha_status_rel = _write_current_alpha_status_md(
-        repo_root, out_dir, payload
-    )
-    source_registry_status_md_rel = _write_source_registry_status_md(
-        repo_root,
-        out_dir,
-        payload,
+        results,
+        manifest_path,
+        out_path,
         source_registry_summary,
-    )
-    proof_policy_rel = _write_proof_policy_md(repo_root, out_dir, payload)
-    repair_report_rel = _write_repair_report_md(
-        repo_root,
-        out_dir,
-        payload,
-        source_registry_summary,
-    )
-    fix_verification_report_rel = _write_fix_verification_report_md(
-        repo_root,
-        out_dir,
-        payload,
-    )
-    payload["logs"]["current_proof"] = current_proof_rel
-    payload["logs"]["current_alpha_status"] = current_alpha_status_rel
-    payload["logs"]["source_registry_status_md"] = (
-        source_registry_status_md_rel
-    )
-    payload["logs"]["proof_policy"] = proof_policy_rel
-    payload["logs"]["repair_report"] = repair_report_rel
-    payload["logs"]["fix_verification_report"] = fix_verification_report_rel
-
-    final_manifest = _build_proof_manifest(
-        repo_root, out_dir, payload, results
-    )
-    _, readiness_rel = _generate_release_readiness_from_manifest(
-        repo_root,
-        out_dir,
-        final_manifest,
-        additional_blockers=payload.get("release_blockers_remaining", []),
-    )
-    manifest_path.write_text(
-        json.dumps(final_manifest, indent=2) + "\n", encoding="utf-8"
-    )
-    payload["logs"]["release_readiness"] = readiness_rel
-    payload["logs"]["proof_manifest"] = str(
-        manifest_path.relative_to(repo_root)
+        static_guards_rel=static_guards_rel,
     )
 
-    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    current_alpha_status_rel = payload["logs"]["current_alpha_status"]
+    source_registry_status_md_rel = payload["logs"]["source_registry_status_md"]
+    proof_policy_rel = payload["logs"]["proof_policy"]
+    repair_report_rel = payload["logs"]["repair_report"]
+    fix_verification_report_rel = payload["logs"]["fix_verification_report"]
 
     # Defensive consistency guard: a step must not report PASS with a missing
     # log file, because required_proof_logs validates on-disk presence.
@@ -2966,59 +2983,16 @@ def main() -> int:
     )
     _refresh_release_payload_schema(payload, results)
 
-    current_proof_rel = _write_current_proof_md(
+    _sync_release_artifacts(
         repo_root,
         out_dir,
         payload,
-        check_count=len(results),
-    )
-    current_alpha_status_rel = _write_current_alpha_status_md(
-        repo_root, out_dir, payload
-    )
-    source_registry_status_md_rel = _write_source_registry_status_md(
-        repo_root,
-        out_dir,
-        payload,
+        results,
+        manifest_path,
+        out_path,
         source_registry_summary,
+        static_guards_rel=static_guards_rel,
     )
-    proof_policy_rel = _write_proof_policy_md(repo_root, out_dir, payload)
-    repair_report_rel = _write_repair_report_md(
-        repo_root,
-        out_dir,
-        payload,
-        source_registry_summary,
-    )
-    fix_verification_report_rel = _write_fix_verification_report_md(
-        repo_root,
-        out_dir,
-        payload,
-    )
-
-    payload["logs"]["current_proof"] = current_proof_rel
-    payload["logs"]["current_alpha_status"] = current_alpha_status_rel
-    payload["logs"]["source_registry_status_md"] = source_registry_status_md_rel
-    payload["logs"]["proof_policy"] = proof_policy_rel
-    payload["logs"]["repair_report"] = repair_report_rel
-    payload["logs"]["fix_verification_report"] = fix_verification_report_rel
-
-    final_manifest = _build_proof_manifest(
-        repo_root, out_dir, payload, results
-    )
-    _, readiness_rel = _generate_release_readiness_from_manifest(
-        repo_root,
-        out_dir,
-        final_manifest,
-        additional_blockers=payload.get("release_blockers_remaining", []),
-    )
-    manifest_path.write_text(
-        json.dumps(final_manifest, indent=2) + "\n", encoding="utf-8"
-    )
-    payload["logs"]["release_readiness"] = readiness_rel
-    payload["logs"]["proof_manifest"] = str(
-        manifest_path.relative_to(repo_root)
-    )
-
-    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
     if ok:
         print(f"PASS: wrote {out_path.relative_to(repo_root)}")
