@@ -14,7 +14,6 @@ import re
 import urllib.parse
 from dataclasses import dataclass, field
 from typing import Any
-from unittest.mock import Mock
 
 from app.models.entities import SourceRegistry
 
@@ -371,30 +370,32 @@ def can_run_source(source: SourceRegistry) -> tuple[bool, list[str]]:
     This is the fail-closed runtime gate used by admin ingestion paths.  It is
     stricter than enablement: reference/manual/stub sources are never runnable.
     """
+    if not isinstance(source, SourceRegistry):
+        return False, ["invalid_source_type"]
+
     reasons: list[str] = []
-    is_test_double = isinstance(source, Mock) or not isinstance(source, SourceRegistry)
-    if not is_test_double and source.is_active is not True:
+    if source.is_active is not True:
         reasons.append("source_inactive")
     if source.source_class != "machine_ingest":
         reasons.append(f"source_class_not_runnable:{source.source_class!r}")
-    lifecycle_state = getattr(source, "lifecycle_state", None)
-    if isinstance(lifecycle_state, Mock):
-        lifecycle_state = "runnable"
-    if not is_test_double and lifecycle_state != "runnable":
-        reasons.append(f"lifecycle_state_not_runnable:{source.lifecycle_state!r}")
-    if not is_test_double and source.automation_status != "machine_ready_enabled":
-        reasons.append(f"automation_status_not_enabled:{source.automation_status!r}")
+    lifecycle_state = source.lifecycle_state
+    if lifecycle_state != "runnable":
+        reasons.append(
+            f"lifecycle_state_not_runnable:{source.lifecycle_state!r}"
+        )
+    if source.automation_status != "machine_ready_enabled":
+        reasons.append(
+            f"automation_status_not_enabled:{source.automation_status!r}"
+        )
     if not source.parser:
         reasons.append("missing_parser")
-    elif not is_test_double:
+    else:
         from app.ingestion.source_adapters import ADAPTER_REGISTRY
 
         if source.parser not in ADAPTER_REGISTRY:
             reasons.append(f"parser_not_registered:{source.parser}")
-    if not is_test_double and not source.parser_version:
+    if not source.parser_version:
         reasons.append("missing_parser_version")
-    if is_test_double:
-        return len(reasons) == 0, reasons
 
     if not source.allowed_domains or source.allowed_domains in ("[]", ""):
         reasons.append("missing_allowed_domains")
