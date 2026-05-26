@@ -17,6 +17,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi import HTTPException
 
+from app.models.entities import SourceRegistry
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -26,12 +28,21 @@ def _make_source(
     source_key: str = "test_src",
     is_active: bool = True,
     source_class: str | None = "machine_ingest",
-    parser: str = "csv_parser",
-) -> MagicMock:
-    src = MagicMock()
+    parser: str | None = None,
+) -> SourceRegistry:
+    if parser is None:
+        from app.ingestion.source_adapters import ADAPTER_REGISTRY
+
+        parser = next(iter(ADAPTER_REGISTRY.keys()))
+
+    src = SourceRegistry(
+        source_key=source_key,
+        source_name=f"Source {source_key}",
+    )
     src.source_key = source_key
     src.is_active = is_active
     src.source_class = source_class
+    src.lifecycle_state = "runnable" if is_active else "runnable_disabled"
     src.parser = parser
     src.parser_version = "1.0"
     src.allowed_domains = '["example.com"]'

@@ -11,7 +11,31 @@ from app.api.routes.admin_legacy_ingest import cl_bulk_import
 from app.api.routes.admin_ingestion import retry_ingestion_run
 from app.api.routes.ingestion import import_crime_incidents_manual_csv
 from app.api.routes.public_events import create_event
+from app.models.entities import SourceRegistry
 from app.schemas.api import EventCreate
+
+
+def _make_machine_source(
+    source_key: str = "demo_source",
+    parser: str | None = None,
+) -> SourceRegistry:
+    if parser is None:
+        from app.ingestion.source_adapters import ADAPTER_REGISTRY
+
+        parser = next(iter(ADAPTER_REGISTRY.keys()))
+
+    source = SourceRegistry(source_key=source_key, source_name=f"Source {source_key}")
+    source.source_class = "machine_ingest"
+    source.lifecycle_state = "runnable"
+    source.automation_status = "machine_ready_enabled"
+    source.parser = parser
+    source.parser_version = "1.0"
+    source.allowed_domains = '["example.com"]'
+    source.base_url = "https://example.com/feed"
+    source.requires_manual_review = True
+    source.public_publish_default = False
+    source.is_active = True
+    return source
 
 
 def _event_payload() -> EventCreate:
@@ -129,9 +153,7 @@ def test_ingestion_retry_fails_closed_when_audit_write_fails() -> None:
     db = MagicMock()
     actor = MagicMock(auth_method="jwt")
     existing_run = SimpleNamespace(id=11, source_name="demo_source", status="completed")
-    source = SimpleNamespace(
-        source_key="demo_source", source_class="machine_ingest", parser="demo"
-    )
+    source = _make_machine_source()
     result = SimpleNamespace(
         success=True,
         records_fetched=3,
@@ -194,9 +216,7 @@ def test_admin_ingestion_retry_adapter_failure_writes_audit_before_commit() -> N
     db = MagicMock()
     actor = MagicMock(auth_method="jwt")
     existing_run = SimpleNamespace(id=21, source_name="demo_source", status="completed")
-    source = SimpleNamespace(
-        source_key="demo_source", source_class="machine_ingest", parser="demo"
-    )
+    source = _make_machine_source()
 
     first_query = MagicMock()
     first_filter = first_query.filter.return_value
@@ -242,9 +262,7 @@ def test_admin_ingestion_retry_adapter_failure_audit_failure_rolls_back_failed_r
     db = MagicMock()
     actor = MagicMock(auth_method="jwt")
     existing_run = SimpleNamespace(id=22, source_name="demo_source", status="completed")
-    source = SimpleNamespace(
-        source_key="demo_source", source_class="machine_ingest", parser="demo"
-    )
+    source = _make_machine_source()
 
     first_query = MagicMock()
     first_filter = first_query.filter.return_value
@@ -290,9 +308,7 @@ def test_admin_ingestion_retry_adapter_failure_does_not_commit_without_audit() -
     db = MagicMock()
     actor = MagicMock(auth_method="jwt")
     existing_run = SimpleNamespace(id=23, source_name="demo_source", status="completed")
-    source = SimpleNamespace(
-        source_key="demo_source", source_class="machine_ingest", parser="demo"
-    )
+    source = _make_machine_source()
 
     first_query = MagicMock()
     first_filter = first_query.filter.return_value

@@ -186,6 +186,7 @@ PROOF_INPUT_PATTERNS = [
     "docs/security/LEGACY_AUTH_REMOVAL_PLAN.md",
     "docs/deployment-guide/DEPENDENCY_REMEDIATION_PLAN.md",
     "docs/security/FRONTEND_SECURITY_TRIAGE.md",
+    "docs/security/frontend_dependency_exceptions.md",
     "docs/schema_audit.md",
     "docs/REPAIR_PROOF.md",
     "docs/REPAIR_BASELINE.md",
@@ -811,6 +812,88 @@ def _build_proof_manifest(
         "proof_commands": entries,
     }
     return manifest
+
+
+def _manifest_entry_path(entry: dict) -> str | None:
+    path = entry.get("path")
+    if isinstance(path, str) and path:
+        return path
+    log_path = entry.get("log_path")
+    if isinstance(log_path, str) and log_path:
+        return log_path
+    return None
+
+
+def _write_required_log_index(
+    repo_root: Path,
+    out_dir: Path,
+    manifest: dict,
+) -> str:
+    required_logs = manifest.get("required_logs")
+    if not isinstance(required_logs, list):
+        required_logs = []
+
+    proof_commands = manifest.get("proof_commands")
+    if not isinstance(proof_commands, list):
+        proof_commands = []
+
+    entry_by_path: dict[str, dict] = {}
+    for entry in proof_commands:
+        if not isinstance(entry, dict):
+            continue
+        path = _manifest_entry_path(entry)
+        if path:
+            entry_by_path[path] = entry
+
+    index_entries: list[dict[str, object]] = []
+    for rel_path in required_logs:
+        if not isinstance(rel_path, str) or not rel_path:
+            continue
+
+        abs_path = repo_root / rel_path
+        exists = abs_path.is_file()
+        location_scope = (
+            "archive_internal"
+            if rel_path.startswith("artifacts/proof/current/")
+            else "external_evidence"
+        )
+        entry = entry_by_path.get(rel_path, {})
+        recorded_hash = entry.get("sha256") or entry.get("log_sha256")
+        recorded_size = entry.get("size_bytes")
+        actual_hash = _sha256_file(abs_path) if exists else None
+        actual_size = abs_path.stat().st_size if exists else None
+
+        index_entries.append(
+            {
+                "path": rel_path,
+                "location_scope": location_scope,
+                "exists": exists,
+                "recorded_sha256": recorded_hash,
+                "actual_sha256": actual_hash,
+                "recorded_size_bytes": recorded_size,
+                "actual_size_bytes": actual_size,
+                "status": "PASS"
+                if exists and (recorded_hash is None or recorded_hash == actual_hash)
+                else "FAIL",
+            }
+        )
+
+    required_index = {
+        "generated_at": manifest.get("generated_at"),
+        "proof_root": manifest.get("proof_root"),
+        "required_logs_total": len(index_entries),
+        "missing_required_logs": [
+            item["path"] for item in index_entries if not item.get("exists")
+        ],
+        "entries": index_entries,
+    }
+
+    output_path = out_dir / "required_log_index.json"
+    output_path.write_text(
+        json.dumps(required_index, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return str(output_path.relative_to(repo_root))
 
 
 def _generate_release_readiness_from_manifest(
@@ -1798,8 +1881,10 @@ def _sync_release_artifacts(
             ),
         )
 
-    final_manifest = _build_proof_manifest(
-        repo_root, out_dir, payload, results
+    required_log_index_rel = _write_required_log_index(
+        repo_root,
+        out_dir,
+        final_manifest,
     )
 
     manifest_path.write_text(
@@ -1809,6 +1894,7 @@ def _sync_release_artifacts(
     payload["logs"]["proof_manifest"] = str(
         manifest_path.relative_to(repo_root)
     )
+    payload["logs"]["required_log_index"] = required_log_index_rel
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     return current_proof_rel, readiness_rel
 
@@ -2305,6 +2391,7 @@ def main() -> int:
         "release_gate.log",
         "release_gate.json",
         "proof_manifest.json",
+        "required_log_index.json",
         "release_readiness.md",
         "archive_validation.md",
         "proof.db",

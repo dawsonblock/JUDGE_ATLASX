@@ -119,9 +119,20 @@ class LocalStorageClient(StorageClient):
         Returns:
             Filesystem path
         """
-        # Sanitize key to prevent directory traversal
-        safe_key = key.replace("..", "").replace("/", os.sep)
-        return self.base_path / safe_key
+        if not key:
+            raise ValueError("Storage key must be non-empty")
+
+        key_path = Path(key)
+        if key_path.is_absolute():
+            raise ValueError("Storage key must be relative")
+
+        base_resolved = self.base_path.resolve()
+        candidate = (base_resolved / key_path).resolve()
+        try:
+            candidate.relative_to(base_resolved)
+        except ValueError as exc:
+            raise ValueError("Storage key escapes storage root") from exc
+        return candidate
 
     def put(
         self,

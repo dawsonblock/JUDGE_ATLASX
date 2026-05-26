@@ -46,6 +46,7 @@ PROOF_INPUT_PATTERNS = [
     "docs/CURRENT_STATUS.md",
     "docs/DB_PROOF.md",
     "docs/security/FRONTEND_SECURITY_TRIAGE.md",
+    "docs/security/frontend_dependency_exceptions.md",
     "docs/schema_audit.md",
     "docs/security/LEGACY_AUTH_REMOVAL_PLAN.md",
     "docs/deployment-guide/DEPENDENCY_REMEDIATION_PLAN.md",

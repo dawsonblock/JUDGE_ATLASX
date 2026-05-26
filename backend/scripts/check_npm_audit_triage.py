@@ -13,10 +13,14 @@ import subprocess
 import sys
 from pathlib import Path
 import re
+from datetime import date
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FRONTEND_DIR = REPO_ROOT / "frontend"
 TRIAGE_DOC = REPO_ROOT / "docs" / "security" / "FRONTEND_SECURITY_TRIAGE.md"
+EXCEPTIONS_DOC = (
+    REPO_ROOT / "docs" / "security" / "frontend_dependency_exceptions.md"
+)
 
 
 def _triaged_packages(triage_text: str) -> set[str]:
@@ -28,6 +32,47 @@ def _triaged_packages(triage_text: str) -> set[str]:
     return set(re.findall(r"`([^`]+)`", triage_text))
 
 
+def _vulnerability_by_package(payload: dict) -> dict[str, dict]:
+    vulnerabilities = payload.get("vulnerabilities")
+    if not isinstance(vulnerabilities, dict):
+        return {}
+    return {
+        pkg: data
+        for pkg, data in vulnerabilities.items()
+        if isinstance(pkg, str) and isinstance(data, dict)
+    }
+
+
+def _severity_for_package(vuln: dict) -> str:
+    severity = vuln.get("severity")
+    if isinstance(severity, str):
+        return severity.strip().lower()
+    return "unknown"
+
+
+def _advisory_ids_for_package(vuln: dict) -> set[str]:
+    advisory_ids: set[str] = set()
+    via = vuln.get("via")
+    if not isinstance(via, list):
+        return advisory_ids
+    for item in via:
+        if isinstance(item, str):
+            advisory_ids.add(item)
+            continue
+        if not isinstance(item, dict):
+            continue
+        source = item.get("source")
+        if isinstance(source, int):
+            advisory_ids.add(str(source))
+        elif isinstance(source, str) and source:
+            advisory_ids.add(source)
+        for key in ("url", "name", "title"):
+            value = item.get(key)
+            if isinstance(value, str) and value:
+                advisory_ids.add(value)
+    return advisory_ids
+
+
 def _section_for_package(triage_text: str, package_name: str) -> str:
     pattern = re.compile(
         r"(^###\s+.*?`" + re.escape(package_name) + r"`.*?$)(.*?)(?=^###\s+|\Z)",
@@ -37,6 +82,42 @@ def _section_for_package(triage_text: str, package_name: str) -> str:
     if not m:
         return ""
     return (m.group(1) + "\n" + m.group(2)).strip()
+
+
+def _missing_exception_fields(section_text: str) -> list[str]:
+    required = {
+        "package": ["**package**", "package:"],
+        "version": ["**version**", "version:"],
+        "vulnerability_id": [
+            "**vulnerability id**",
+            "ghsa-",
+            "cve-",
+            "advisory",
+        ],
+        "reason_not_exploitable": [
+            "**reason it is not exploitable**",
+            "not exploitable",
+        ],
+        "mitigation": ["**mitigation**", "mitigation:"],
+        "expiry_date": ["**expiry date**", "expiry"],
+        "owner": ["**owner**", "owner:"],
+    }
+    text = section_text.lower()
+    missing: list[str] = []
+    for key, tokens in required.items():
+        if not any(token in text for token in tokens):
+            missing.append(key)
+    return missing
+
+
+def _extract_expiry_date(section_text: str) -> date | None:
+    match = re.search(r"(\d{4}-\d{2}-\d{2})", section_text)
+    if not match:
+        return None
+    try:
+        return date.fromisoformat(match.group(1))
+    except ValueError:
+        return None
 
 
 def _missing_required_fields(section_text: str) -> list[str]:
@@ -70,11 +151,13 @@ def main() -> int:
 
     total = 0
     vulnerable_packages: list[str] = []
+    vulnerability_by_package: dict[str, dict] = {}
     try:
         payload = json.loads(proc.stdout or "{}")
         meta = payload.get("metadata", {}).get("vulnerabilities", {})
         total = int(meta.get("total", 0))
-        vulnerable_packages = list(payload.get("vulnerabilities", {}).keys())
+        vulnerability_by_package = _vulnerability_by_package(payload)
+        vulnerable_packages = list(vulnerability_by_package.keys())
     except Exception:
         payload = {}
 
@@ -117,6 +200,55 @@ def main() -> int:
         for item in incomplete_sections:
             print(f"  - {item}")
         return 1
+
+    high_or_critical = [
+        pkg
+        for pkg, vuln in vulnerability_by_package.items()
+        if _severity_for_package(vuln) in {"high", "critical"}
+    ]
+    if high_or_critical:
+        if not EXCEPTIONS_DOC.exists():
+            print(
+                "RESULT: FAIL missing_frontend_dependency_exceptions="
+                f"{EXCEPTIONS_DOC.relative_to(REPO_ROOT)}"
+            )
+            return 1
+
+        exceptions_text = EXCEPTIONS_DOC.read_text(encoding="utf-8")
+        exception_failures: list[str] = []
+        today = date.today()
+        for pkg in high_or_critical:
+            section = _section_for_package(exceptions_text, pkg)
+            if not section:
+                exception_failures.append(f"{pkg}:missing_exception_section")
+                continue
+
+            missing_fields = _missing_exception_fields(section)
+            if missing_fields:
+                exception_failures.append(
+                    f"{pkg}:missing_exception_fields={','.join(missing_fields)}"
+                )
+
+            expiry = _extract_expiry_date(section)
+            if expiry is None:
+                exception_failures.append(f"{pkg}:invalid_or_missing_expiry_date")
+            elif expiry < today:
+                exception_failures.append(
+                    f"{pkg}:expired_exception={expiry.isoformat()}"
+                )
+
+            advisory_ids = _advisory_ids_for_package(vulnerability_by_package[pkg])
+            section_lower = section.lower()
+            if advisory_ids and not any(token.lower() in section_lower for token in advisory_ids):
+                exception_failures.append(
+                    f"{pkg}:missing_vulnerability_id_reference"
+                )
+
+        if exception_failures:
+            print("RESULT: FAIL invalid_frontend_dependency_exceptions")
+            for item in exception_failures:
+                print(f"  - {item}")
+            return 1
 
     print("RESULT: PASS all_packages_triaged")
     return 0
