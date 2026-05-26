@@ -35,7 +35,7 @@ jobs:
             - name: Backend compile gate
               run: |
                   source backend/.venv/bin/activate
-                  python -m compileall backend scripts
+                  python -m compileall backend/app backend/tools scripts
 
             - name: Backend tests
               run: |
