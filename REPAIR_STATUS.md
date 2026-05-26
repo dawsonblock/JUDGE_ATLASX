@@ -2,10 +2,12 @@
 
 > [!WARNING]
 > **WARNING:** Read the current truth from `artifacts/proof/current/release_gate.json` and `artifacts/proof/current/release_readiness.md`. Do not deploy as a production release; `production_ready` remains **false** for alpha scope.
+
 ## Repair Status Overview
 
 - **Branch**: `repair/proof-truth-hardening-main11`
 - **Target Gate State**:
+
   ```json
   {
     "alpha_gate_passed": true,
