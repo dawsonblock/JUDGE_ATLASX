@@ -1,0 +1,78 @@
+{
+  "generated_at": "2026-05-26T05:12:04.330903+00:00",
+  "proof_root": "artifacts/proof/current",
+  "required_logs_total": 7,
+  "missing_required_logs": [],
+  "entries": [
+    {
+      "path": "artifacts/proof/current/release_gate.log",
+      "location_scope": "archive_internal",
+      "exists": true,
+      "recorded_sha256": "789195b565181a95c9a3a656b4dfbe71a268804ea95a31da84a2a52adba56544",
+      "actual_sha256": "789195b565181a95c9a3a656b4dfbe71a268804ea95a31da84a2a52adba56544",
+      "recorded_size_bytes": 3985,
+      "actual_size_bytes": 3985,
+      "status": "PASS"
+    },
+    {
+      "path": "artifacts/proof/current/backend_pytest.log",
+      "location_scope": "archive_internal",
+      "exists": true,
+      "recorded_sha256": "f1466b4932fc9ed1ff1c11e6f3b2628b211db7504d5970d4f1f1aae5aea1d704",
+      "actual_sha256": "f1466b4932fc9ed1ff1c11e6f3b2628b211db7504d5970d4f1f1aae5aea1d704",
+      "recorded_size_bytes": 7907,
+      "actual_size_bytes": 7907,
+      "status": "PASS"
+    },
+    {
+      "path": "artifacts/proof/current/frontend_build.log",
+      "location_scope": "archive_internal",
+      "exists": true,
+      "recorded_sha256": "47aef45e83089014d566914acdaa079f5d71d7fd00cb88ef943bd86c97608dd7",
+      "actual_sha256": "47aef45e83089014d566914acdaa079f5d71d7fd00cb88ef943bd86c97608dd7",
+      "recorded_size_bytes": 4691,
+      "actual_size_bytes": 4691,
+      "status": "PASS"
+    },
+    {
+      "path": "artifacts/proof/current/docker_runtime_preflight.log",
+      "location_scope": "archive_internal",
+      "exists": true,
+      "recorded_sha256": "caf78bd7f73b33e2223d7f5c7bde5d03c6f29d1261c674d410a40414c8b8872f",
+      "actual_sha256": "caf78bd7f73b33e2223d7f5c7bde5d03c6f29d1261c674d410a40414c8b8872f",
+      "recorded_size_bytes": 4605,
+      "actual_size_bytes": 4605,
+      "status": "PASS"
+    },
+    {
+      "path": "artifacts/proof/current/proof_consistency_pytest.log",
+      "location_scope": "archive_internal",
+      "exists": true,
+      "recorded_sha256": "b6c7ffc9d80c78da811cf4c0f8da9b1721c6b323b8ab236716f7a65a8887a1ff",
+      "actual_sha256": "b6c7ffc9d80c78da811cf4c0f8da9b1721c6b323b8ab236716f7a65a8887a1ff",
+      "recorded_size_bytes": 110,
+      "actual_size_bytes": 110,
+      "status": "PASS"
+    },
+    {
+      "path": "artifacts/proof/current/docker_smoke.log",
+      "location_scope": "archive_internal",
+      "exists": true,
+      "recorded_sha256": "6f1897d462d759225bcbb3d2ff545aed47c27f7127f71590e6cf6340f7157348",
+      "actual_sha256": "6f1897d462d759225bcbb3d2ff545aed47c27f7127f71590e6cf6340f7157348",
+      "recorded_size_bytes": 4230,
+      "actual_size_bytes": 4230,
+      "status": "PASS"
+    },
+    {
+      "path": "artifacts/proof/current/runtime_smoke.log",
+      "location_scope": "archive_internal",
+      "exists": true,
+      "recorded_sha256": "561261d657b5b6b5bd99f9db4f716948b8a6188d16238c6259018c5ac421a7f3",
+      "actual_sha256": "561261d657b5b6b5bd99f9db4f716948b8a6188d16238c6259018c5ac421a7f3",
+      "recorded_size_bytes": 323,
+      "actual_size_bytes": 323,
+      "status": "PASS"
+    }
+  ]
+}
