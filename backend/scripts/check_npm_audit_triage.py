@@ -238,7 +238,8 @@ def main() -> int:
                 )
 
             advisory_ids = _advisory_ids_for_package(vulnerability_by_package[pkg])
-            if advisory_ids and not any(token in section for token in advisory_ids):
+            section_lower = section.lower()
+            if advisory_ids and not any(token.lower() in section_lower for token in advisory_ids):
                 exception_failures.append(
                     f"{pkg}:missing_vulnerability_id_reference"
                 )
