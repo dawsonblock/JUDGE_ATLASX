@@ -2,22 +2,16 @@
 
 ## Current Proof Gate Status
 
-| Check | Status | Log | Notes |
-|-------|--------|-----|-------|
-| Alpha gate | source-of-truth | artifacts/proof/current/release_gate.json | Canonical machine-readable gate output |
-| Docker proof | ✓ PASS | artifacts/proof/current/docker_runtime_preflight.log | Container runtime verified |
-| PostGIS proof | ✓ PASS | artifacts/proof/current/postgis_proof.log | Database integration verified |
-| Egress proxy proof | ✓ PASS | artifacts/proof/current/egress_proxy_proof.log | Network boundaries validated |
-| Demo proof | ✓ PASS | artifacts/proof/current/demo_proof.log | Synthetic scenario passed |
-| Proof freshness | ✓ PASS | artifacts/proof/current/proof_freshness.log | Artifacts match tree state |
-| Archive validation | ✓ PASS | artifacts/proof/current/archive_validation.log | Release archive format verified |
-| Proof consistency | ✓ PASS | artifacts/proof/current/proof_consistency_pytest.log | release_gate/current proof docs aligned |
+- Alpha gate: see artifacts/proof/current/release_gate.json.
+- Release readiness: see artifacts/proof/current/release_readiness.md.
+- Current proof summary: see artifacts/proof/current/CURRENT_PROOF.md.
+- Individual log files are evidence artifacts, not manual status claims.
 
 ## Authority Notes
 
 - Canonical machine truth is artifacts/proof/current/release_gate.json.
 - This file summarizes proof state and must not override release_gate.json.
-- Proof gate PASS indicates alpha proof-check completion only.
+- Proof gate PASS, if present in canonical artifacts, indicates alpha proof-check completion only.
 - production_ready remains false unless explicitly changed in canonical artifacts.
 
 ## Runtime Environment
@@ -27,12 +21,13 @@
 - **npm version**: 10.8.2
 - **Platform**: macOS-26.2-arm64
 - **Database**: SQLite (test), PostgreSQL (PostGIS proof)
-- **Docker**: Available and tested
+- **Docker**: See canonical proof logs for the current run state.
 - **production_ready**: false
 
 ## Proof Execution
 
 All proof artifacts are stored under `artifacts/proof/current/` with timestamped run metadata.
+Do not infer PASS from this file; read the canonical gate and current-proof outputs.
 
 **Required proof commands:**
 ```bash

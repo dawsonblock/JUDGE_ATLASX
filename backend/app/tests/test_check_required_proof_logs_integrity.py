@@ -56,3 +56,52 @@ def test_required_log_integrity_detects_hash_and_size_mismatch(tmp_path):
     assert "artifacts/proof/current/sample.log" in missing
     assert referenced_total == 1
     assert present_total == 0
+
+
+def test_required_log_integrity_ignores_non_log_payload_artifacts(tmp_path):
+    module = _load_check_required_module()
+    repo_root = tmp_path
+    proof_dir = repo_root / "artifacts" / "proof" / "current"
+    proof_dir.mkdir(parents=True, exist_ok=True)
+
+    log_path = proof_dir / "sample.log"
+    log_path.write_text("sample proof log\n", encoding="utf-8")
+    current_proof_path = proof_dir / "CURRENT_PROOF.md"
+    current_proof_path.write_text("derived summary\n", encoding="utf-8")
+
+    gate_payload = {
+        "checks": [
+            {
+                "name": "sample_check",
+                "log_path": "artifacts/proof/current/sample.log",
+            }
+        ],
+        "logs": {
+            "sample_check": "artifacts/proof/current/sample.log",
+            "current_proof": "artifacts/proof/current/CURRENT_PROOF.md",
+        },
+    }
+    manifest = {
+        "required_logs": ["artifacts/proof/current/sample.log"],
+        "proof_commands": [
+            {
+                "path": "artifacts/proof/current/sample.log",
+                "size_bytes": log_path.stat().st_size,
+                "sha256": module._sha256_path(log_path),
+                "required": True,
+                "command": "python -m pytest",
+                "captured_at": "2026-05-25T00:00:01Z",
+            }
+        ],
+    }
+
+    gate_path = proof_dir / "release_gate.json"
+    manifest_path = proof_dir / "proof_manifest.json"
+    gate_path.write_text(json.dumps(gate_payload), encoding="utf-8")
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    missing, referenced_total, present_total = module.check_required_proof_logs(repo_root)
+
+    assert missing == []
+    assert referenced_total == 1
+    assert present_total == 1

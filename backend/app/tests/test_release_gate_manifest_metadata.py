@@ -57,3 +57,46 @@ def test_build_proof_manifest_includes_required_metadata(tmp_path):
     assert entry["created_at"] == "2026-05-25T00:00:01Z"
     assert entry["command"] == "python -m pytest"
     assert entry["required"] is True
+
+
+def test_build_proof_manifest_includes_supplemental_log_artifacts(tmp_path):
+    module = _load_release_gate_module()
+    repo_root = tmp_path
+    out_dir = tmp_path / "artifacts" / "proof" / "current"
+    out_dir.mkdir(parents=True)
+    release_gate_log = out_dir / "release_gate.log"
+    release_gate_log.write_text("gate log\n", encoding="utf-8")
+
+    payload = {
+        "timestamp_utc": "2026-05-25T00:00:00Z",
+        "logs": {
+            "release_gate": "artifacts/proof/current/release_gate.log",
+            "current_proof": "artifacts/proof/current/CURRENT_PROOF.md",
+        },
+    }
+
+    manifest = module._build_proof_manifest(repo_root, out_dir, payload, [])
+    entry_map = {entry["path"]: entry for entry in manifest["proof_commands"]}
+
+    assert "artifacts/proof/current/release_gate.log" in entry_map
+    assert "artifacts/proof/current/CURRENT_PROOF.md" not in entry_map
+    assert entry_map["artifacts/proof/current/release_gate.log"]["proof_source"] == "release_gate"
+
+
+def test_run_backfills_empty_success_logs(tmp_path):
+    module = _load_release_gate_module()
+    repo_root = tmp_path
+    out_dir = tmp_path / "artifacts" / "proof" / "current"
+    out_dir.mkdir(parents=True)
+
+    step = module._run(
+        repo_root,
+        out_dir,
+        "quiet_step",
+        "quiet_step.log",
+        [sys.executable, "-c", ""],
+    )
+
+    log_path = repo_root / step.log_path
+    assert step.exit_code == 0
+    assert log_path.read_text(encoding="utf-8").strip()

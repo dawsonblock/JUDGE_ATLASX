@@ -2,7 +2,7 @@
 set -e
 
 echo "Waiting for database connection..."
-python3 -c "
+python3 - <<'PY'
 import os, sys, time
 from sqlalchemy import create_engine
 url = os.environ.get('JTA_DATABASE_URL')
@@ -23,7 +23,7 @@ for i in range(30):
         time.sleep(2)
 print('FATAL: Database did not become ready in time.')
 sys.exit(1)
-"
+PY
 
 echo "Running Alembic migrations..."
 alembic upgrade head || { echo "FATAL: alembic upgrade head failed — aborting startup"; exit 1; }

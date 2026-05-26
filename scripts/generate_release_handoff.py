@@ -225,7 +225,7 @@ def main() -> int:
             "",
             "## Notes",
             f"- This is a {release_classification}.",
-            "- It is not production-ready.",
+            "- It is not ready for production deployment.",
             "- Ship only the archive listed above.",
             "- Validation must run against a fresh extraction",
             "  of that archive.",

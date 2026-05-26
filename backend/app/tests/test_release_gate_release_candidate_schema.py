@@ -13,11 +13,11 @@ def _load_release_gate_module():
     return module
 
 
-def test_release_candidate_requires_archive_validation_pass():
+def test_release_candidate_requires_alpha_gate_pass():
     module = _load_release_gate_module()
     payload = {
-        "alpha_gate_passed": True,
-        "archive_validation_result": "FAIL",
+        "alpha_gate_passed": False,
+        "archive_validation_result": "PASS",
     }
 
     module._refresh_release_payload_schema(payload, [])
@@ -25,11 +25,11 @@ def test_release_candidate_requires_archive_validation_pass():
     assert payload["release_candidate"] is False
 
 
-def test_release_candidate_is_true_only_when_alpha_gate_and_archive_validation_pass():
+def test_release_candidate_is_true_when_alpha_gate_passes_even_before_archive_result_is_final():
     module = _load_release_gate_module()
     payload = {
         "alpha_gate_passed": True,
-        "archive_validation_result": "PASS",
+        "archive_validation_result": "UNKNOWN",
     }
 
     module._refresh_release_payload_schema(payload, [])

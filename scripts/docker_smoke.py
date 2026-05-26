@@ -6,6 +6,7 @@ Writes canonical output to .validation_logs/docker_smoke.log.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -14,6 +15,10 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LOG_DIR = REPO_ROOT / ".validation_logs"
 LOG_PATH = LOG_DIR / "docker_smoke.log"
+REUSABLE_IMAGE_TAGS = (
+    "judge_atlas-main2-backend:latest",
+    "judge_atlas-main2-frontend:latest",
+)
 
 
 class SmokeError(RuntimeError):
@@ -91,6 +96,27 @@ def _wait_http(lines: list[str], url: str, attempts: int, timeout: int) -> bool:
     return False
 
 
+def _reuse_existing_images_requested() -> bool:
+    return os.environ.get("JTA_DOCKER_SMOKE_REUSE_EXISTING_IMAGES", "").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
+def _reusable_images_present() -> bool:
+    cp = subprocess.run(
+        ["docker", "image", "inspect", *REUSABLE_IMAGE_TAGS],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+    return cp.returncode == 0
+
+
 def main() -> int:
     lines: list[str] = ["docker smoke", f"repo_root: {REPO_ROOT}"]
     _log(lines)
@@ -99,8 +125,11 @@ def main() -> int:
     try:
         _run(lines, ["docker", "compose", "down", "-v"], timeout=20, allow_failure=True)
 
-        _run(lines, ["docker", "compose", "build"], timeout=300)
-        _append(lines, "docker compose build: PASS")
+        if _reuse_existing_images_requested() and _reusable_images_present():
+            _append(lines, "docker compose build: SKIP (reusing existing backend/frontend images)")
+        else:
+            _run(lines, ["docker", "compose", "build"], timeout=300)
+            _append(lines, "docker compose build: PASS")
 
         _run(lines, ["docker", "compose", "up", "-d", "db", "redis", "minio"], timeout=300)
 

@@ -1,7 +1,7 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-25T22:41:06.406156+00:00
-- commit_hash: 13d92f7113451062d4d6815941b747d1f565c65b
+- generated_at_utc: 2026-05-26T01:19:47.382808+00:00
+- commit_hash: 413283e0b7d3891a902ca386a66df0ea90ce3d2e
 - alpha_gate_status: PASS
 - alpha_gate_passed: true
 - release_gate_check_count: 49
@@ -11,8 +11,8 @@
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
 - archive_validation_result: PASS
-- proof_input_tree_hash: 2b9bb61ef5d147525d7257203e72dbc42a1f7b27da9972e2f6ba3700dded62eb
-- proof_input_file_count: 1071
+- proof_input_tree_hash: 0d7df7392b537e353d9b6d65d10c88e78af6f715760d0fd459f42188668bb7ea
+- proof_input_file_count: 1079
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
@@ -59,7 +59,7 @@
 
 ## Current Proof Facts
 
-- backend pytest: 3420 passed, 2 skipped
+- backend pytest: 3442 passed, 2 skipped
 - backend import proof: PASS (107 routes)
 - frontend contracts: 49 passed
 - public API boundary: 55 passed

@@ -36,7 +36,7 @@ def _write_handoff(
 ) -> None:
     note_lines = notes or [
         "- This is a proof-hardened alpha release candidate.",
-        "- It is not production-ready.",
+        "- It is not ready for production deployment.",
     ]
     path.write_text(
         "\n".join(

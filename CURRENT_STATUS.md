@@ -1,6 +1,6 @@
 # CURRENT_STATUS
 
-**Status**: proof-hardened alpha  
+**Status**: alpha proof state tracked by canonical gate  
 **Production ready**: NO  
 **Last updated**: 2026-05-21
 
@@ -9,7 +9,8 @@
 - Gate status authority: artifacts/proof/current/release_gate.json
 - Human-readable proof summary: artifacts/proof/current/CURRENT_PROOF.md
 - Release readiness narrative: artifacts/proof/current/release_readiness.md
-- Alpha gate PASS, if present, applies only to release-proof checks.
+- Alpha proof status: derive from artifacts/proof/current/release_gate.json.
+- Alpha readiness status: derive from artifacts/proof/current/release_readiness.md.
 - Production readiness remains false for alpha scope.
 
 ## Platform Posture
@@ -29,6 +30,7 @@
 ## Current Release Truth
 
 - Canonical release status is sourced from artifacts/proof/current/release_gate.json.
+- Canonical blocker narrative is sourced from artifacts/proof/current/release_readiness.md.
 - Bi-temporal modeling is deferred until blocked alpha is resolved and clean alpha is achieved.
 - Experimental route modules exist but remain unmounted from the active API router.
 
@@ -40,8 +42,7 @@
 
 ## Clean-Alpha Exit Criteria
 
-- Archive build/validation passes with current-proof summary files only.
-- False-claim scanner passes with review-priority wording.
+- Archive build/validation must be confirmed by the current release gate and archive validators.
+- False-claim scanner, proof consistency, and proof freshness must be confirmed by regenerated artifacts.
 - Node baseline remains 20 in frontend and proof workflows.
 - Python baseline remains 3.11 in proof workflows.
-- Proof consistency and proof freshness both pass on regenerated artifacts.

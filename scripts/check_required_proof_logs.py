@@ -133,6 +133,8 @@ def check_required_proof_logs(repo_root: Path) -> tuple[list[str], int, int]:
     for _check_name, log_path in payload.get("logs", {}).items():
         if not log_path or not isinstance(log_path, str):
             continue
+        if not log_path.endswith(".log"):
+            continue
         if log_path in seen:
             continue
         # Only enforce logs inside artifacts/proof/current/ — other paths

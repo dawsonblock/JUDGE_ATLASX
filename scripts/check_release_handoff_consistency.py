@@ -142,7 +142,7 @@ def validate_handoff(
             )
 
         normalized_handoff = handoff_text.lower()
-        if "not production-ready" not in normalized_handoff:
+        if "not ready for production deployment" not in normalized_handoff:
             errors.append("missing_not_production_ready_note")
         if (
             (classification is None or "alpha" not in classification.lower())
