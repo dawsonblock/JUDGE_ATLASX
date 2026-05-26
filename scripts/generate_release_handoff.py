@@ -43,6 +43,14 @@ def _load_json(path: Path) -> dict:
     return data
 
 
+def _release_classification(release_gate: dict) -> str:
+    if bool(release_gate.get("release_candidate", False)):
+        return "proof-hardened alpha release candidate"
+    if bool(release_gate.get("alpha_gate_passed", False)):
+        return "proof-hardened alpha proof snapshot"
+    return "proof-blocked alpha proof snapshot"
+
+
 def _resolve_relative(repo_root: Path, candidate: Path) -> str:
     candidate_resolved = candidate.resolve()
     repo_root_resolved = repo_root.resolve()
@@ -164,11 +172,14 @@ def main() -> int:
     runtime_python = runtime.get("python", "unknown")
     runtime_node = runtime.get("node_version", "unknown")
     runtime_npm = runtime.get("npm_version", "unknown")
-    blockers = release_gate.get("blocked_release_checks")
+    blockers = release_gate.get("release_blockers_remaining")
+    if blockers is None:
+        blockers = release_gate.get("blocked_release_checks")
     if blockers is None:
         blocker_text = "none"
     else:
         blocker_text = json.dumps(blockers, ensure_ascii=True)
+    release_classification = _release_classification(release_gate)
 
     generated_at = datetime.now(timezone.utc).isoformat()
     commit = "unknown"
@@ -195,6 +206,7 @@ def main() -> int:
             f"- proof_manifest_sha256: {proof_manifest_hash}",
             "",
             "## Release Status",
+            f"- release_classification: {release_classification}",
             f"- alpha_gate_passed: {str(alpha_gate_passed).lower()}",
             f"- release_candidate: {str(release_candidate).lower()}",
             f"- production_ready: {str(production_ready).lower()}",
@@ -212,6 +224,8 @@ def main() -> int:
             (f"- npm: {runtime_npm}"),
             "",
             "## Notes",
+            f"- This is a {release_classification}.",
+            "- It is not production-ready.",
             "- Ship only the archive listed above.",
             "- Validation must run against a fresh extraction",
             "  of that archive.",

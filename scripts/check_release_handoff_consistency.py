@@ -5,12 +5,22 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import pathlib
 import re
 
 PATH_PATTERN = re.compile(r"^\s*-\s*Path:\s*(.+?)\s*$", re.IGNORECASE)
 SHA_PATTERN = re.compile(
     r"^\s*-\s*SHA-256:\s*([0-9a-fA-F]{64})\s*$",
+    re.IGNORECASE,
+)
+BOOLEAN_FIELD_PATTERNS = {
+    "alpha_gate_passed": re.compile(r"^\s*-\s*alpha_gate_passed:\s*(true|false)\s*$", re.IGNORECASE),
+    "release_candidate": re.compile(r"^\s*-\s*release_candidate:\s*(true|false)\s*$", re.IGNORECASE),
+    "production_ready": re.compile(r"^\s*-\s*production_ready:\s*(true|false)\s*$", re.IGNORECASE),
+}
+CLASSIFICATION_PATTERN = re.compile(
+    r"^\s*-\s*release_classification:\s*(.+?)\s*$",
     re.IGNORECASE,
 )
 
@@ -25,9 +35,11 @@ def _compute_sha256(path: pathlib.Path) -> str:
 
 def _extract_claims(
     handoff_path: pathlib.Path,
-) -> tuple[str | None, str | None]:
+) -> tuple[str | None, str | None, dict[str, bool], str | None, str]:
     claimed_path: str | None = None
     claimed_sha: str | None = None
+    boolean_claims: dict[str, bool] = {}
+    classification: str | None = None
     content = handoff_path.read_text(encoding="utf-8", errors="ignore")
     for line in content.splitlines():
         if claimed_path is None:
@@ -38,9 +50,25 @@ def _extract_claims(
             match = SHA_PATTERN.match(line)
             if match:
                 claimed_sha = match.group(1).lower()
-        if claimed_path and claimed_sha:
-            break
-    return claimed_path, claimed_sha
+        if classification is None:
+            match = CLASSIFICATION_PATTERN.match(line)
+            if match:
+                classification = match.group(1).strip()
+        for key, pattern in BOOLEAN_FIELD_PATTERNS.items():
+            if key in boolean_claims:
+                continue
+            match = pattern.match(line)
+            if match:
+                boolean_claims[key] = match.group(1).lower() == "true"
+    return claimed_path, claimed_sha, boolean_claims, classification, content
+
+
+def _expected_release_classification(release_gate: dict) -> str:
+    if bool(release_gate.get("release_candidate", False)):
+        return "proof-hardened alpha release candidate"
+    if bool(release_gate.get("alpha_gate_passed", False)):
+        return "proof-hardened alpha proof snapshot"
+    return "proof-blocked alpha proof snapshot"
 
 
 def validate_handoff(
@@ -58,7 +86,15 @@ def validate_handoff(
         errors.append(f"archive_not_found:{archive_path}")
         return False, errors
 
-    claimed_path, claimed_sha = _extract_claims(handoff_path)
+    release_gate_path = repo_root / "artifacts" / "proof" / "current" / "release_gate.json"
+    release_gate: dict | None = None
+    if release_gate_path.exists() and release_gate_path.is_file():
+        try:
+            release_gate = json.loads(release_gate_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            errors.append(f"release_gate_parse_error:{release_gate_path}")
+
+    claimed_path, claimed_sha, boolean_claims, classification, handoff_text = _extract_claims(handoff_path)
     if not claimed_path:
         errors.append("missing_claimed_path")
     if not claimed_sha:
@@ -86,6 +122,33 @@ def validate_handoff(
 
         if not claimed_archive.exists() or not claimed_archive.is_file():
             errors.append(f"claimed_archive_missing:{claimed_archive}")
+
+    if release_gate is not None:
+        for key in ("alpha_gate_passed", "release_candidate", "production_ready"):
+            if key not in boolean_claims:
+                errors.append(f"missing_claimed_{key}")
+                continue
+            if bool(release_gate.get(key, False)) != boolean_claims[key]:
+                errors.append(
+                    f"{key}_mismatch:claimed={boolean_claims[key]}:actual={bool(release_gate.get(key, False))}"
+                )
+
+        expected_classification = _expected_release_classification(release_gate)
+        if classification is None:
+            errors.append("missing_release_classification")
+        elif classification != expected_classification:
+            errors.append(
+                f"release_classification_mismatch:claimed={classification}:actual={expected_classification}"
+            )
+
+        normalized_handoff = handoff_text.lower()
+        if "not production-ready" not in normalized_handoff:
+            errors.append("missing_not_production_ready_note")
+        if (
+            (classification is None or "alpha" not in classification.lower())
+            and "proof-hardened alpha" not in normalized_handoff
+        ):
+            errors.append("missing_alpha_wording")
 
     return len(errors) == 0, errors
 

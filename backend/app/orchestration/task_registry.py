@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # Security constraints
 MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024  # 100MB
-ALLOWED_URL_SCHEMES = {"https", "http"}
+ALLOWED_URL_SCHEMES = {"https"}
 ALLOWED_URL_DOMAINS = {
     "laws-lois.justice.gc.ca",
     "justice.gc.ca",
@@ -65,6 +65,30 @@ def _validate_workspace_path(workspace_path: str, base_dir: Path) -> Path:
     except ValueError:
         raise ValueError(f"Workspace path '{workspace_path}' resolves outside base directory '{base_dir}'")
     
+    return resolved
+
+
+def _resolve_workspace_relative_path(workspace_path: str, relative_path: str) -> Path:
+    """Resolve a task-supplied path within the workspace root.
+
+    The returned path is guaranteed to stay inside the resolved workspace root
+    even if the user supplies a traversal segment or a symlink escape.
+    """
+    cleaned = (relative_path or "").strip()
+    if not cleaned:
+        raise ValueError("Path must not be empty")
+
+    if Path(cleaned).is_absolute() or re.match(r"^[A-Za-z]:[\\/]", cleaned):
+        raise ValueError(f"Path '{relative_path}' must be relative to the workspace")
+
+    workspace_root = Path(workspace_path).resolve()
+    resolved = (workspace_root / cleaned).resolve()
+    try:
+        resolved.relative_to(workspace_root)
+    except ValueError as exc:
+        raise ValueError(
+            f"Path '{relative_path}' resolves outside workspace '{workspace_path}'"
+        ) from exc
     return resolved
 
 
@@ -156,7 +180,6 @@ class TaskRegistry:
     ) -> Any:
         """Fetch data from a URL and save to workspace."""
         import httpx
-        from pathlib import Path
 
         url = params.get("url")
         if not url:
@@ -167,8 +190,11 @@ class TaskRegistry:
 
         headers = params.get("headers", {})
         timeout = params.get("timeout_seconds", 300)
+        output_relative_path = params.get("output_path", "raw/fetched_data.xml")
 
-        output_path = Path(workspace_path) / "raw" / "fetched_data.xml"
+        output_path = _resolve_workspace_relative_path(
+            workspace_path, output_relative_path
+        )
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         with httpx.Client(timeout=timeout) as client:
@@ -193,7 +219,6 @@ class TaskRegistry:
     ) -> Any:
         """Fetch data from an API endpoint and save to workspace."""
         import httpx
-        from pathlib import Path
 
         url = params.get("url")
         if not url:
@@ -204,8 +229,11 @@ class TaskRegistry:
 
         headers = params.get("headers", {})
         timeout = params.get("timeout_seconds", 300)
+        output_relative_path = params.get("output_path", "raw/api_response.json")
 
-        output_path = Path(workspace_path) / "raw" / "api_response.json"
+        output_path = _resolve_workspace_relative_path(
+            workspace_path, output_relative_path
+        )
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         with httpx.Client(timeout=timeout) as client:
@@ -280,12 +308,26 @@ class TaskRegistry:
 
         claim_types = params.get("claim_types", [])
         confidence_threshold = params.get("confidence_threshold", 0.7)
+        text = (
+            params.get("text")
+            or params.get("source_text")
+            or params.get("input_text")
+            or ""
+        )
 
-        # This would integrate with the existing claim extraction system
+        try:
+            claims = extract_claims_from_text(text)
+        except Exception as exc:
+            raise ValueError(f"claim extraction failed: {exc}") from exc
+
+        if not isinstance(claims, list):
+            raise ValueError("claim extraction failed: extractor returned non-list output")
+
         return {
             "claim_types": claim_types,
             "confidence_threshold": confidence_threshold,
-            "claims_extracted": 0,
+            "claims": claims,
+            "claims_extracted": len(claims),
         }
 
     def _task_resolve_entities(

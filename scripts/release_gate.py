@@ -553,6 +553,7 @@ def _refresh_release_payload_schema(
     payload["schema_version"] = "1.1.0"
     payload["release_candidate"] = bool(
         payload.get("alpha_gate_passed", False)
+        and payload.get("archive_validation_result") == "PASS"
     )
     payload["checks_summary"] = _canonical_checks_summary(results)
 
@@ -723,11 +724,16 @@ def _build_proof_manifest(
     for step in steps:
         log_abs = repo_root / step.log_path
         log_exists = log_abs.exists()
+        captured_at = step.finished_at_utc
+        size_bytes = log_abs.stat().st_size if log_exists else 0
         entry = {
             "name": step.name,
+            "path": step.log_path,
             "required": step.required,
             "cwd": step.cwd,
             "command": step.command,
+            "created_at": captured_at,
+            "captured_at": captured_at,
             "started_at": step.started_at_utc,
             "finished_at": step.finished_at_utc,
             "duration_seconds": step.duration_seconds,
@@ -736,6 +742,9 @@ def _build_proof_manifest(
             "log_path": step.log_path,
             "log_exists": log_exists,
             "log_sha256": _sha256_file(log_abs) if log_exists else None,
+            "sha256": _sha256_file(log_abs) if log_exists else None,
+            "size_bytes": size_bytes,
+            "proof_source": step.name,
             "failure_reason": step.failure_reason,
         }
         entries.append(entry)
