@@ -35,11 +35,11 @@ jobs:
       matrix:
         include:
           - component: backend
-            dockerfile: JUDGE-main/backend/Dockerfile.backend
-            context: JUDGE-main/backend
+            dockerfile: backend/Dockerfile.backend
+            context: backend
           - component: frontend
-            dockerfile: JUDGE-main/frontend/Dockerfile
-            context: JUDGE-main/frontend
+            dockerfile: frontend/Dockerfile
+            context: frontend
 
     steps:
       - name: Checkout repository
