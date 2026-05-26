@@ -4,7 +4,7 @@ from app.models.entities import SourceRegistry
 
 
 def _make_runnable_source(**overrides) -> SourceRegistry:
-    parser_name = next(iter(ADAPTER_REGISTRY.keys()))
+    parser_name = next(iter(ADAPTER_REGISTRY.keys()), "dummy_parser")
     source = SourceRegistry(
         source_key="unit_test_source",
         source_name="Unit Test Source",
