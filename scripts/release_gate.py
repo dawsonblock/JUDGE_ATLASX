@@ -222,9 +222,14 @@ REQUIRED_GATE_NAMES = {
     "frontend_typecheck",
     "frontend_contracts",
     "frontend_build",
+    "docker_runtime_preflight",
     "docker_smoke",
+    "postgis_proof",
+    "egress_proxy_proof",
+    "demo_proof",
     "canlii_staging_proof",
     "proof_consistency_pytest",
+    "check_proof_consistency",
     "release_readiness_generation",
     "required_proof_logs",
     "check_proof_manifest",
@@ -1881,6 +1886,12 @@ def _sync_release_artifacts(
             ),
         )
 
+    # release_readiness.md is generated from the manifest and changes its own
+    # file metadata. Rebuild the manifest after the final readiness write so
+    # proof_manifest.json and required_log_index.json describe the on-disk tree
+    # that later validators inspect.
+    final_manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
+
     required_log_index_rel = _write_required_log_index(
         repo_root,
         out_dir,
@@ -2073,7 +2084,7 @@ def main() -> int:
         GateStepSpec(
             "docker_smoke",
             "docker_smoke.log",
-            [python_exe, "scripts/docker_smoke.py"],
+            ["bash", "scripts/proof_docker_compose.sh"],
             timeout_seconds=1800,
         ),
         GateStepSpec(
@@ -2082,11 +2093,7 @@ def main() -> int:
             [
                 "bash",
                 "-lc",
-                (
-                    "bash scripts/proof_postgis.sh && cp "
-                    "artifacts/proof/postgis_proof.log "
-                    "artifacts/proof/current/postgis_proof.log"
-                ),
+                "bash scripts/proof_postgis.sh",
             ],
             timeout_seconds=postgis_timeout_seconds,
         ),
@@ -2368,6 +2375,14 @@ def main() -> int:
             str(repo_root),
         ],
     )
+    _check_proof_consistency_spec = GateStepSpec(
+        "check_proof_consistency",
+        "check_proof_consistency.log",
+        [
+            python_exe,
+            "scripts/check_proof_consistency.py",
+        ],
+    )
     _local_path_hygiene_spec = GateStepSpec(
         "check_no_local_paths_in_release_proof",
         "check_no_local_paths_in_release_proof.log",
@@ -2387,6 +2402,7 @@ def main() -> int:
         _proof_freshness_spec.log_name,
         _required_proof_logs_spec.log_name,
         _check_proof_manifest_spec.log_name,
+        _check_proof_consistency_spec.log_name,
         _local_path_hygiene_spec.log_name,
         "proof_consistency_pytest.log",
         "release_gate.log",
@@ -2426,14 +2442,23 @@ def main() -> int:
     }
     for spec in gate_steps:
         command = list(spec.command)
-        if spec.name == "postgis_proof" and docker_preflight_failed:
+        if spec.name in {"docker_smoke", "postgis_proof"} and docker_preflight_failed:
             blocked_log = out_dir / spec.log_name
+            preflight_log_rel = str(
+                (out_dir / "docker_runtime_preflight.log").relative_to(
+                    repo_root
+                )
+            )
             blocked_log.write_text(
-                "[release_gate] BLOCKED: postgis_proof skipped because "
-                "docker_runtime_preflight failed.\n",
+                (
+                    f"[release_gate] BLOCKED: {spec.name} skipped because "
+                    "docker_runtime_preflight failed.\n"
+                    "[release_gate] blocker: docker_runtime_preflight\n"
+                    f"[release_gate] blocker_log: {preflight_log_rel}\n"
+                ),
                 encoding="utf-8",
             )
-            blocked_checks["postgis_proof"] = "docker_runtime_preflight failed"
+            blocked_checks[spec.name] = "docker_runtime_preflight failed"
             results.append(
                 GateStep(
                     name=spec.name,
@@ -2773,6 +2798,7 @@ def main() -> int:
         "proof_consistency_pytest",
         "required_proof_logs",
         "check_proof_manifest",
+        "check_proof_consistency",
         "archive_validation",
     }
     ok = (
@@ -2829,6 +2855,7 @@ def main() -> int:
     remaining_required_steps = {
         "required_proof_logs",
         "check_proof_manifest",
+        "check_proof_consistency",
         "archive_validation",
     }
     ok = (
@@ -2989,6 +3016,17 @@ def main() -> int:
     _redact_file_local_paths(out_dir / "archive_validation.md", repo_root)
     _sanitize_current_proof_artifacts(repo_root, out_dir)
 
+    current_proof_rel, readiness_rel = _sync_release_artifacts(
+        repo_root,
+        out_dir,
+        payload,
+        results,
+        manifest_path,
+        out_path,
+        source_registry_summary,
+        static_guards_rel=static_guards_rel,
+    )
+
     required_proof_logs_step = _run(
         repo_root,
         out_dir,
@@ -3011,6 +3049,19 @@ def main() -> int:
     )
     results.append(check_proof_manifest_step)
 
+    check_proof_consistency_step = _run(
+        repo_root,
+        out_dir,
+        _check_proof_consistency_spec.name,
+        _check_proof_consistency_spec.log_name,
+        list(_check_proof_consistency_spec.command),
+        timeout_seconds=_check_proof_consistency_spec.timeout_seconds,
+        required=_check_proof_consistency_spec.required,
+    )
+    results.append(check_proof_consistency_step)
+
+    _sanitize_current_proof_artifacts(repo_root, out_dir)
+
     local_path_hygiene_step = _run(
         repo_root,
         out_dir,
@@ -3023,7 +3074,10 @@ def main() -> int:
     results.append(local_path_hygiene_step)
 
     validation_summary = _validation_summary_gate(repo_root)
-    validation_blockers = list(validation_summary.get("blockers", []))
+    blockers_raw = validation_summary.get("blockers", [])
+    validation_blockers = (
+        list(blockers_raw) if isinstance(blockers_raw, list) else []
+    )
     if not validation_summary.get("exists", False):
         validation_blockers.append("validation_summary_missing")
 

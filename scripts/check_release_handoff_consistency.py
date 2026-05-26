@@ -178,9 +178,17 @@ def main() -> int:
 
     ok, errors = validate_handoff(repo_root, archive_path, handoff_path)
     if ok:
+        try:
+            handoff_display = str(handoff_path.relative_to(repo_root))
+        except ValueError:
+            handoff_display = str(handoff_path)
+        try:
+            archive_display = str(archive_path.relative_to(repo_root))
+        except ValueError:
+            archive_display = str(archive_path)
         print("HANDOFF_CONSISTENCY: PASS")
-        print(f"handoff={handoff_path.relative_to(repo_root)}")
-        print(f"archive={archive_path.relative_to(repo_root)}")
+        print(f"handoff={handoff_display}")
+        print(f"archive={archive_display}")
         print(f"sha256={_compute_sha256(archive_path)}")
         return 0
 

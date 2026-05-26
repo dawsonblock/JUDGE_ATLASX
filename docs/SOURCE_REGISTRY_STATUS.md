@@ -1,7 +1,7 @@
 # SOURCE_REGISTRY_STATUS
 
-- generated_at_utc: 2026-05-26T08:42:25.230719+00:00
-- commit_hash: 409b7137dfeb1594a1dca484e39d243d02bbda34
+- generated_at_utc: 2026-05-26T20:25:25.616634+00:00
+- commit_hash: f22ed8f3a52ae673031ee0886dea92387564956c
 - total_sources: 26
 - machine_ingest_sources: 8
 - runnable_now: 1
@@ -9,7 +9,7 @@
 - deprecated: 3
 
 | source key | source name | jurisdiction | source class/type | lifecycle state | automation status | adapter state | parser key | adapter exists | runnable now | enable ready | blockers | review required before public visibility | current alpha status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | canada_justice_laws | Department of Justice Canada – Justice Laws Website (Deprecated Alias) | Canada | disabled_stub/aggregate_stats | deprecated | disabled_stub | missing_parser | None | no | no | no | non_machine_ingest_source, lifecycle_state=deprecated, automation_status=disabled_stub, adapter_missing, deprecated_source_noncanonical | yes | limited-alpha-source |
 | canada_open_data_crime | Open Government Canada – Crime & Justice Datasets | Canada | portal_reference/aggregate_stats | portal_reference | adapter_missing | found | ckan_api | yes | no | no | non_machine_ingest_source, lifecycle_state=portal_reference, automation_status=adapter_missing | yes | limited-alpha-source |
 | canlii_sk | CanLII – Saskatchewan Courts | Saskatchewan, Canada | portal_reference/court_record | portal_reference | adapter_missing | found | canlii_api | yes | no | no | non_machine_ingest_source, lifecycle_state=portal_reference, automation_status=adapter_missing | yes | limited-alpha-source |

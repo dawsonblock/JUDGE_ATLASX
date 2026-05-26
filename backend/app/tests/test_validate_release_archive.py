@@ -72,6 +72,56 @@ def test_validate_release_archive_accepts_valid_archive(tmp_path: Path) -> None:
     assert report["top_level_roots"] == ["JUDGE_ATLAS-main"]
 
 
+def test_validate_release_archive_allows_blocked_snapshot_with_warnings(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    archive = tmp_path / "blocked.zip"
+    files = _valid_files()
+    files["JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json"] = (
+        "{\n"
+        '  "alpha_gate_passed": false,\n'
+        '  "release_candidate": false,\n'
+        '  "production_ready": false\n'
+        "}\n"
+    )
+    _write_zip(archive, files)
+
+    report = module.inspect_archive(archive, expected_root="JUDGE_ATLAS-main")
+
+    assert report["valid"] is True
+    assert "release_gate_not_alpha_passed" in report["warnings"]
+    assert "release_gate_not_release_candidate" in report["warnings"]
+    assert "release_gate_not_alpha_passed" not in report["errors"]
+    assert "release_gate_not_release_candidate" not in report["errors"]
+
+
+def test_validate_release_archive_can_require_release_candidate(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    archive = tmp_path / "blocked-strict.zip"
+    files = _valid_files()
+    files["JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json"] = (
+        "{\n"
+        '  "alpha_gate_passed": false,\n'
+        '  "release_candidate": false,\n'
+        '  "production_ready": false\n'
+        "}\n"
+    )
+    _write_zip(archive, files)
+
+    report = module.inspect_archive(
+        archive,
+        expected_root="JUDGE_ATLAS-main",
+        require_release_candidate=True,
+    )
+
+    assert report["valid"] is False
+    assert "release_gate_not_alpha_passed" in report["errors"]
+    assert "release_gate_not_release_candidate" in report["errors"]
+
+
 def test_validate_release_archive_rejects_wrong_root(tmp_path: Path) -> None:
     module = _load_module()
     archive = tmp_path / "wrong-root.zip"

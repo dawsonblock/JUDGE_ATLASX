@@ -1,17 +1,17 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-26T08:42:25.230719+00:00
-- commit_hash: 409b7137dfeb1594a1dca484e39d243d02bbda34
+- generated_at_utc: 2026-05-26T20:25:25.616634+00:00
+- commit_hash: f22ed8f3a52ae673031ee0886dea92387564956c
 - alpha_gate_status: BLOCKED
 - alpha_gate_passed: false
-- release_gate_check_count: 49
+- release_gate_check_count: 50
 - docker_available: false
 - postgis_proof_result: BLOCKED
 - egress_proxy_proof_result: PASS
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
-- archive_validation_result: FAIL
-- proof_input_tree_hash: 18ee609b39167bc14cadf4b0af7cc4dd47dcbf818a13095a8b744393339325fd
+- archive_validation_result: PASS
+- proof_input_tree_hash: ff7caaba206ba4bb5720fcbe2bae03496b3eb5d41f65959cca7d81793c248056
 - proof_input_file_count: 1085
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
@@ -19,7 +19,7 @@
 ## Runtime Metadata
 
 - gate_runner_python_version: 3.11.7
-- gate_runner_python_executable: [REDACTED_LOCAL_PATH]/backend/.venv/bin/python
+- gate_runner_python_executable: [REDACTED_LOCAL_PATH]
 - backend_test_python_version: 3.11.7
 - backend_test_python_executable: [REDACTED_LOCAL_PATH]/backend/.venv/bin/python
 - backend_required_python: >=3.11
@@ -46,7 +46,7 @@
 - Dedicated egress proxy proof passed in the current release gate.
 - Dedicated synthetic demo proof passed in the current release gate.
 - Proof freshness passed against the stored proof-input file list and tree hash.
-- Archive validation has not yet been recorded for this run.
+- Archive validation passed against the final distributable archive shape.
 - archive_validation_log: artifacts/proof/current/archive_validation.log
 - archive_validation_supported_shapes:
   - JUDGE-main/
@@ -59,7 +59,7 @@
 
 ## Current Proof Facts
 
-- backend pytest: 3451 passed, 2 skipped
+- backend pytest: 3454 passed, 2 skipped
 - backend import proof: PASS (107 routes)
 - frontend contracts: 49 passed
 - public API boundary: 55 passed
@@ -76,10 +76,10 @@
 - docker_runtime_preflight
 - docker_smoke
 - postgis_proof
-- archive_validation
 
 ## Blocked Checks
 
+- docker_smoke: docker_runtime_preflight failed
 - postgis_proof: docker_runtime_preflight failed
 
 ## Egress Proxy Coverage

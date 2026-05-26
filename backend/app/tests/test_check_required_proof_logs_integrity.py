@@ -105,3 +105,21 @@ def test_required_log_integrity_ignores_non_log_payload_artifacts(tmp_path):
     assert missing == []
     assert referenced_total == 1
     assert present_total == 1
+
+
+def test_missing_required_logs_omits_archive_validation_for_packaged_archives(
+    tmp_path,
+):
+    module = _load_check_required_module()
+    repo_root = tmp_path
+    proof_dir = repo_root / "artifacts" / "proof" / "current"
+    proof_dir.mkdir(parents=True, exist_ok=True)
+
+    missing_default = module._missing_required_proof_logs(repo_root)
+    missing_packaged = module._missing_required_proof_logs(
+        repo_root,
+        packaged_archive=True,
+    )
+
+    assert "artifacts/proof/current/archive_validation.log" in missing_default
+    assert "artifacts/proof/current/archive_validation.log" not in missing_packaged

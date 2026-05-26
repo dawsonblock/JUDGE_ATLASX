@@ -10,8 +10,8 @@
 
   ```json
   {
-    "alpha_gate_passed": true,
-    "release_candidate": true,
+    "alpha_gate_passed": false,
+    "release_candidate": false,
     "production_ready": false
   }
   ```

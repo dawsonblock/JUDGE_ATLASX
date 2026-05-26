@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: judgetracker
       POSTGRES_PASSWORD: judgetracker
     ports:
-      - "5432:5432"
+      - "${JTA_DB_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +18,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "${JTA_REDIS_PORT:-6379}:6379"
 
   minio:
     image: minio/minio:latest
@@ -27,8 +27,8 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${JTA_MINIO_PORT:-9000}:9000"
+      - "${JTA_MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - minio-data:/data
 
@@ -57,7 +57,7 @@ services:
       JTA_STORAGE_MINIO_BUCKET: judge-atlasx
       JTA_STORAGE_MINIO_SECURE: "false"
     ports:
-      - "8000:8000"
+      - "${JTA_BACKEND_PORT:-8000}:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -74,7 +74,7 @@ services:
       NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
       BACKEND_INTERNAL_URL: http://backend:8000
     ports:
-      - "3000:3000"
+      - "${JTA_FRONTEND_PORT:-3000}:3000"
     depends_on:
       - backend
 

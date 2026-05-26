@@ -106,6 +106,7 @@ def _build_checks(
                 "--root",
                 ".",
                 "--strict-required-files",
+                "--packaged-archive",
             ],
             runtime_root,
         ),

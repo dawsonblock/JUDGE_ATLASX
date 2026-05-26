@@ -101,6 +101,40 @@ def test_archive_validation_files_excluded(tmp_path: Path) -> None:
     module = _load_module()
     root = tmp_path / "repo"
     _seed_repo(root)
+    _write_file(
+        root / "artifacts" / "proof" / "current" / "release_gate.json",
+        json.dumps(
+            {
+                "logs": {
+                    "archive_validation": "artifacts/proof/current/archive_validation.log",
+                },
+                "checks": [
+                    {
+                        "name": "archive_validation",
+                        "log_path": "artifacts/proof/current/archive_validation.log",
+                    }
+                ],
+            },
+            indent=2,
+        )
+        + "\n",
+    )
+    _write_file(
+        root / "artifacts" / "proof" / "current" / "proof_manifest.json",
+        json.dumps(
+            {
+                "proof_commands": [
+                    {
+                        "name": "archive_validation",
+                        "path": "artifacts/proof/current/archive_validation.log",
+                        "log_path": "artifacts/proof/current/archive_validation.log",
+                    }
+                ]
+            },
+            indent=2,
+        )
+        + "\n",
+    )
     _write_file(root / "artifacts" / "proof" / "current" / "archive_validation.md", "val output\n")
     _write_file(root / "artifacts" / "proof" / "current" / "archive_validation.log", "log output\n")
     module.REPO_ROOT = root
@@ -116,7 +150,26 @@ def test_archive_validation_files_excluded(tmp_path: Path) -> None:
     with zipfile.ZipFile(output, "r") as zf:
         names = set(zf.namelist())
         assert not any("archive_validation.md" in n for n in names)
-        assert "JUDGE_ATLAS-main/artifacts/proof/current/archive_validation.log" in names
+        assert "JUDGE_ATLAS-main/artifacts/proof/current/archive_validation.log" not in names
+
+        release_gate = json.loads(
+            zf.read("JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json").decode("utf-8")
+        )
+        assert "archive_validation" not in release_gate.get("logs", {})
+        assert not any(
+            entry.get("name") == "archive_validation"
+            for entry in release_gate.get("checks", [])
+            if isinstance(entry, dict)
+        )
+
+        proof_manifest = json.loads(
+            zf.read("JUDGE_ATLAS-main/artifacts/proof/current/proof_manifest.json").decode("utf-8")
+        )
+        assert not any(
+            entry.get("name") == "archive_validation"
+            for entry in proof_manifest.get("proof_commands", [])
+            if isinstance(entry, dict)
+        )
 
 
 def test_build_release_archive_fails_on_missing_release_gate_referenced_log(tmp_path: Path) -> None:
