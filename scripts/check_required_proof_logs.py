@@ -62,6 +62,10 @@ DEFAULT_REQUIRED_PROOF_LOGS = (
     "artifacts/proof/current/single_proof_authority.log",
     "artifacts/proof/current/archive_validation.log",
 )
+PACKAGED_ARCHIVE_OPTIONAL_REQUIRED_LOGS = {
+    "artifacts/proof/current/archive_validation.log",
+    "artifacts/proof/current/required_proof_logs.log",
+}
 PROOF_INCOMPLETE_PREFIX = "PROOF_INCOMPLETE:"
 
 
@@ -179,9 +183,13 @@ def _missing_required_proof_files(repo_root: Path) -> list[str]:
     return sorted(missing)
 
 
-def _missing_required_proof_logs(repo_root: Path) -> list[str]:
+def _missing_required_proof_logs(
+    repo_root: Path, *, packaged_archive: bool = False
+) -> list[str]:
     missing: list[str] = []
     for rel_path in DEFAULT_REQUIRED_PROOF_LOGS:
+        if packaged_archive and rel_path in PACKAGED_ARCHIVE_OPTIONAL_REQUIRED_LOGS:
+            continue
         if not (repo_root / rel_path).exists():
             missing.append(rel_path)
     return sorted(missing)
@@ -249,6 +257,14 @@ def main() -> int:
             "Also fail if canonical proof files required by archive packaging are missing"
         ),
     )
+    parser.add_argument(
+        "--packaged-archive",
+        action="store_true",
+        help=(
+            "Validate a packaged archive/extracted tree where self-referential archive"
+            " validation logs are intentionally omitted"
+        ),
+    )
     args = parser.parse_args()
 
     repo_root = Path(args.root).resolve()
@@ -261,7 +277,10 @@ def main() -> int:
     missing_required_logs: list[str] = []
     if args.strict_required_files:
         missing_required_files = _missing_required_proof_files(repo_root)
-        missing_required_logs = _missing_required_proof_logs(repo_root)
+        missing_required_logs = _missing_required_proof_logs(
+            repo_root,
+            packaged_archive=args.packaged_archive,
+        )
 
     if missing or missing_required_logs or missing_required_files:
         print(

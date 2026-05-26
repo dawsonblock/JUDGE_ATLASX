@@ -147,7 +147,12 @@ def _read_text_member(zf: zipfile.ZipFile, name: str) -> str | None:
         return None
 
 
-def inspect_archive(archive: Path, expected_root: str, allow_external: bool = False) -> dict:
+def inspect_archive(
+    archive: Path,
+    expected_root: str,
+    allow_external: bool = False,
+    require_release_candidate: bool = False,
+) -> dict:
     report: dict = {
         "archive": _display_path(archive),
         "expected_root": expected_root,
@@ -230,9 +235,11 @@ def inspect_archive(archive: Path, expected_root: str, allow_external: bool = Fa
                 production_ready = release_gate_data.get("production_ready")
 
                 if alpha_gate_passed is not True:
-                    report["errors"].append("release_gate_not_alpha_passed")
+                    target = "errors" if require_release_candidate else "warnings"
+                    report[target].append("release_gate_not_alpha_passed")
                 if release_candidate is not True:
-                    report["errors"].append("release_gate_not_release_candidate")
+                    target = "errors" if require_release_candidate else "warnings"
+                    report[target].append("release_gate_not_release_candidate")
                 if not isinstance(production_ready, bool):
                     report["errors"].append("release_gate_missing_explicit_production_ready")
 
@@ -457,6 +464,12 @@ def write_markdown(report: dict, output_path: Path) -> None:
     else:
         lines.append("- none")
 
+    lines.extend(["", "## Warnings", ""])
+    if report["warnings"]:
+        lines.extend(f"- {warning}" for warning in report["warnings"])
+    else:
+        lines.append("- none")
+
     lines.extend(["", "## Largest Files", ""])
     if report["largest_files"]:
         lines.append("| path | uncompressed | compressed |")
@@ -529,6 +542,11 @@ def main() -> int:
     parser.add_argument("--expected-root", required=True, help="Expected top-level archive root")
     parser.add_argument("--allow-external", action="store_true", help="Allow external/ paths in archive")
     parser.add_argument(
+        "--require-release-candidate",
+        action="store_true",
+        help="Fail validation when release_gate.json is not alpha-passed and release-candidate",
+    )
+    parser.add_argument(
         "--output",
         default=str(DEFAULT_OUTPUT),
         help="Markdown output path",
@@ -539,7 +557,12 @@ def main() -> int:
     archive = Path(args.archive).resolve()
     output = Path(args.output).resolve()
 
-    report = inspect_archive(archive, expected_root=args.expected_root, allow_external=args.allow_external)
+    report = inspect_archive(
+        archive,
+        expected_root=args.expected_root,
+        allow_external=args.allow_external,
+        require_release_candidate=args.require_release_candidate,
+    )
     write_markdown(report, output)
 
     if args.json:

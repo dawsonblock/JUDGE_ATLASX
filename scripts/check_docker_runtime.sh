@@ -18,40 +18,33 @@ run_with_timeout() {
     local timeout_seconds="$1"
     shift
 
-    python3 - "$timeout_seconds" "$@" <<'PY'
-import subprocess
-import sys
+    if command -v setsid >/dev/null 2>&1; then
+        setsid "$@" &
+    else
+        "$@" &
+    fi
+    local cmd_pid="$!"
 
-timeout_seconds = int(sys.argv[1])
-command = sys.argv[2:]
+    (
+        sleep "$timeout_seconds"
+        kill -TERM "-$cmd_pid" 2>/dev/null || kill -TERM "$cmd_pid" 2>/dev/null || exit 0
+        sleep 1
+        kill -KILL "-$cmd_pid" 2>/dev/null || kill -KILL "$cmd_pid" 2>/dev/null || true
+    ) &
+    local watchdog_pid="$!"
 
-try:
-    proc = subprocess.run(
-        command,
-        capture_output=True,
-        text=True,
-        timeout=timeout_seconds,
-        check=False,
-    )
-except subprocess.TimeoutExpired as exc:
-    if exc.stdout:
-        print(exc.stdout, end="")
-    if exc.stderr:
-        print(exc.stderr, end="", file=sys.stderr)
-    joined = " ".join(command)
-    print(
-        "[docker_runtime] ERROR: command timed out "
-        f"after {timeout_seconds}s: {joined}",
-        file=sys.stderr,
-    )
-    sys.exit(124)
+    local cmd_rc=0
+    if ! wait "$cmd_pid"; then
+        cmd_rc="$?"
+    fi
 
-if proc.stdout:
-    print(proc.stdout, end="")
-if proc.stderr:
-    print(proc.stderr, end="", file=sys.stderr)
-sys.exit(proc.returncode)
-PY
+    kill "$watchdog_pid" 2>/dev/null || true
+    wait "$watchdog_pid" 2>/dev/null || true
+
+    if [ "$cmd_rc" -eq 143 ] || [ "$cmd_rc" -eq 137 ]; then
+        return 142
+    fi
+    return "$cmd_rc"
 }
 
 classify_docker_failure() {
@@ -87,7 +80,7 @@ run_docker_check() {
         return 0
     fi
 
-    if [ "$rc" -eq 124 ]; then
+    if [ "$rc" -eq 124 ] || [ "$rc" -eq 142 ]; then
         echo "[docker_runtime] FAIL_CLASS=DOCKER_TIMEOUT"
         echo "[docker_runtime] FAIL: ${label} timed out after ${DOCKER_TIMEOUT_SECONDS}s"
         echo "[docker_runtime] HINT: start Docker Desktop or verify Docker daemon/socket access"
@@ -131,39 +124,76 @@ echo "[docker_runtime] PASS: docker CLI found: $(command -v docker)"
 echo "[docker_runtime] INFO: timeout=${DOCKER_TIMEOUT_SECONDS}s"
 echo "[docker_runtime] INFO: user=$(id -un) uid=$(id -u)"
 
-echo "[docker_runtime] Running docker --version..."
-if ! run_with_timeout "$DOCKER_TIMEOUT_SECONDS" docker --version; then
+echo "[docker_runtime] Running docker --version (client)..."
+if ! docker --version; then
     echo "[docker_runtime] FAIL_CLASS=DOCKER_GENERIC_FAILURE"
     echo "[docker_runtime] FAIL: docker --version failed"
     exit 1
 fi
 
 echo "[docker_runtime] Running docker context ls..."
-if ! run_with_timeout "$DOCKER_TIMEOUT_SECONDS" docker context ls; then
+if ! docker context ls; then
     echo "[docker_runtime] FAIL_CLASS=DOCKER_GENERIC_FAILURE"
     echo "[docker_runtime] FAIL: docker context ls failed"
     exit 1
 fi
 
-echo "[docker_runtime] Running docker compose version..."
-if ! run_with_timeout "$DOCKER_TIMEOUT_SECONDS" docker compose version; then
+echo "[docker_runtime] Resolving active Docker context endpoint..."
+CURRENT_CONTEXT="$(docker context show 2>/dev/null || true)"
+if [ -z "$CURRENT_CONTEXT" ]; then
     echo "[docker_runtime] FAIL_CLASS=DOCKER_GENERIC_FAILURE"
-    echo "[docker_runtime] FAIL: docker compose version failed"
+    echo "[docker_runtime] FAIL: unable to resolve active docker context"
     exit 1
 fi
 
-echo "[docker_runtime] Running docker version..."
-if ! run_docker_check "docker version" docker version; then
+DOCKER_ENDPOINT="$(docker context inspect "$CURRENT_CONTEXT" --format '{{(index .Endpoints "docker").Host}}' 2>/dev/null || true)"
+if [ -z "$DOCKER_ENDPOINT" ]; then
+    echo "[docker_runtime] FAIL_CLASS=DOCKER_GENERIC_FAILURE"
+    echo "[docker_runtime] FAIL: unable to resolve docker endpoint for context ${CURRENT_CONTEXT}"
     exit 1
 fi
-echo "[docker_runtime] PASS: docker version completed"
+echo "[docker_runtime] INFO: active_context=${CURRENT_CONTEXT}"
+echo "[docker_runtime] INFO: docker_endpoint=${DOCKER_ENDPOINT}"
 
-echo "[docker_runtime] Running docker info..."
-if ! run_docker_check "docker info" docker info; then
+if [[ "$DOCKER_ENDPOINT" == unix://* ]]; then
+    DOCKER_SOCK_PATH="${DOCKER_ENDPOINT#unix://}"
+    if [ ! -S "$DOCKER_SOCK_PATH" ]; then
+        echo "[docker_runtime] FAIL_CLASS=DOCKER_DAEMON_UNAVAILABLE"
+        echo "[docker_runtime] FAIL: docker daemon socket not found at ${DOCKER_SOCK_PATH}"
+        echo "[docker_runtime] HINT: start Docker Desktop and retry once daemon is healthy"
+        exit 1
+    fi
+
+    if ! python3 - "$DOCKER_SOCK_PATH" <<'PY'
+import socket
+import sys
+
+sock_path = sys.argv[1]
+client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+client.settimeout(3)
+try:
+    client.connect(sock_path)
+    client.sendall(b"GET /_ping HTTP/1.1\r\nHost: docker\r\nConnection: close\r\n\r\n")
+    payload = client.recv(256)
+    if b"OK" not in payload and b"200" not in payload:
+        raise RuntimeError("daemon ping did not return OK")
+finally:
+    client.close()
+PY
+    then
+        echo "[docker_runtime] FAIL_CLASS=DOCKER_DAEMON_UNAVAILABLE"
+        echo "[docker_runtime] FAIL: docker daemon socket is present but not responding"
+        echo "[docker_runtime] HINT: restart Docker Desktop and verify daemon health"
+        exit 1
+    fi
+elif [[ "$DOCKER_ENDPOINT" == tcp://* ]]; then
+    echo "[docker_runtime] INFO: tcp docker endpoint detected; skipping unix socket probe"
+else
+    echo "[docker_runtime] FAIL_CLASS=DOCKER_GENERIC_FAILURE"
+    echo "[docker_runtime] FAIL: unsupported docker endpoint scheme: ${DOCKER_ENDPOINT}"
     exit 1
 fi
 echo "[docker_runtime] PASS: docker daemon reachable"
-echo "[docker_runtime] PASS: docker info completed"
 
 echo "[docker_runtime] Checking postgis image metadata..."
 if run_with_timeout "$DOCKER_TIMEOUT_SECONDS" docker image inspect postgis/postgis:16-3.4 >/dev/null 2>&1; then

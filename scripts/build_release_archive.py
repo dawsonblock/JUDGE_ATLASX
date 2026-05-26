@@ -117,6 +117,10 @@ EXCLUDED_FILE_NAMES = {
     ".coverage",
 }
 TEXT_REDACT_SUFFIXES = {".md", ".json", ".txt", ".yml", ".yaml", ".toml"}
+PACKAGED_PROOF_EXCLUDED_PATHS = {
+    "artifacts/proof/current/archive_validation.log",
+    "artifacts/proof/current/archive_validation.md",
+}
 LOCAL_PATH_PATTERNS = (
     re.compile(r"/Users/[^\s\"'`]+"),
     re.compile(r"/home/[^\s\"'`]+"),
@@ -235,6 +239,8 @@ def _load_packaged_proof_paths(repo_root: Path) -> set[str]:
                 continue
             normalized = path.replace("\\", "/")
             if normalized.startswith("artifacts/proof/current/"):
+                if normalized in PACKAGED_PROOF_EXCLUDED_PATHS:
+                    continue
                 packaged.add(normalized)
 
     checks = payload.get("checks", [])
@@ -247,13 +253,61 @@ def _load_packaged_proof_paths(repo_root: Path) -> set[str]:
                 continue
             normalized = check_log_path.replace("\\", "/")
             if normalized.startswith("artifacts/proof/current/"):
+                if normalized in PACKAGED_PROOF_EXCLUDED_PATHS:
+                    continue
                 packaged.add(normalized)
 
     proof_logs_dir = repo_root / "artifacts" / "proof" / "current"
     if proof_logs_dir.exists():
         for log_file in proof_logs_dir.glob("*.log"):
-            packaged.add(_normalize(log_file.relative_to(repo_root)))
+            normalized = _normalize(log_file.relative_to(repo_root))
+            if normalized in PACKAGED_PROOF_EXCLUDED_PATHS:
+                continue
+            packaged.add(normalized)
     return packaged
+
+
+def _strip_packaged_archive_validation_metadata(rel: str, payload):
+    if rel.endswith("artifacts/proof/current/release_gate.json") and isinstance(payload, dict):
+        logs = payload.get("logs")
+        if isinstance(logs, dict):
+            payload["logs"] = {
+                key: value
+                for key, value in logs.items()
+                if value not in PACKAGED_PROOF_EXCLUDED_PATHS and key != "archive_validation"
+            }
+
+        checks = payload.get("checks")
+        if isinstance(checks, list):
+            payload["checks"] = [
+                entry
+                for entry in checks
+                if not (
+                    isinstance(entry, dict)
+                    and (
+                        entry.get("name") == "archive_validation"
+                        or entry.get("log_path") in PACKAGED_PROOF_EXCLUDED_PATHS
+                    )
+                )
+            ]
+
+    if rel.endswith("artifacts/proof/current/proof_manifest.json") and isinstance(payload, dict):
+        proof_commands = payload.get("proof_commands")
+        if isinstance(proof_commands, list):
+            payload["proof_commands"] = [
+                entry
+                for entry in proof_commands
+                if not (
+                    isinstance(entry, dict)
+                    and (
+                        entry.get("name") == "archive_validation"
+                        or entry.get("path") in PACKAGED_PROOF_EXCLUDED_PATHS
+                        or entry.get("log_path") in PACKAGED_PROOF_EXCLUDED_PATHS
+                    )
+                )
+            ]
+
+    return payload
 
 
 def _load_release_gate(repo_root: Path) -> dict:
@@ -404,6 +458,7 @@ def _write_archive(
                     except json.JSONDecodeError:
                         redacted_text = _redact_local_paths_in_string(text)
                     else:
+                        payload = _strip_packaged_archive_validation_metadata(rel, payload)
                         redacted_payload = _redact_json_value(payload)
                         redacted_text = json.dumps(redacted_payload, indent=2, sort_keys=True) + "\n"
                 else:
@@ -422,7 +477,7 @@ def build_archive(
     root_name: str,
     include_external: bool,
     include_proof_archive: bool,
-    require_release_candidate: bool,
+    require_release_candidate: bool = False,
 ) -> dict:
     output_display = (
         _normalize(output.relative_to(REPO_ROOT))

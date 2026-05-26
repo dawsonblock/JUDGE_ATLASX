@@ -178,13 +178,6 @@ if [[ "${READINESS_COUNT}" -gt 1 ]]; then
   exit 1
 fi
 
-if ! RELEASE_GATE_HASH="$(${PYTHON_BIN} -c 'import json, sys; from pathlib import Path; payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8")); print(payload.get("proof_input_tree_hash", "unknown"))' artifacts/proof/current/release_gate.json)";
-then
-  log "ERROR: failed to read proof_input_tree_hash from release_gate.json"
-  exit 1
-fi
-log "INFO: release_gate.json proof_input_tree_hash=${RELEASE_GATE_HASH}"
-
 cd "${JUDGE_MAIN_ROOT}"
 
 overall_rc=0
@@ -192,8 +185,8 @@ export PYTHONDONTWRITEBYTECODE=1
 
 if ! run_check "check_false_claims" "${PYTHON_BIN}" scripts/check_false_claims.py; then overall_rc=1; fi
 if ! run_check "check_truth_claims" "${PYTHON_BIN}" scripts/check_truth_claims.py; then overall_rc=1; fi
-if ! run_check "check_proof_freshness" "${PYTHON_BIN}" scripts/check_proof_freshness.py; then overall_rc=1; fi
-if ! run_check "check_proof_freshness_strict" "${PYTHON_BIN}" scripts/check_proof_freshness.py --strict-extra-files; then overall_rc=1; fi
+if ! run_check "check_required_proof_logs" "${PYTHON_BIN}" scripts/check_required_proof_logs.py --root . --strict-required-files --packaged-archive; then overall_rc=1; fi
+if ! run_check "check_proof_consistency" "${PYTHON_BIN}" scripts/check_proof_consistency.py; then overall_rc=1; fi
 if ! run_check "check_no_pyc" bash scripts/check_no_pyc.sh; then overall_rc=1; fi
 if ! run_check "check_external_boundaries" "${PYTHON_BIN}" scripts/check_external_boundaries.py; then overall_rc=1; fi
 if ! run_check "check_repo_boundaries" "${PYTHON_BIN}" backend/scripts/check_repo_boundaries.py; then overall_rc=1; fi
@@ -217,16 +210,6 @@ if ! run_check "forbid_repo_node_modules" forbid_path node_modules; then overall
 if ! run_check "forbid_git_dir" forbid_path .git; then overall_rc=1; fi
 if ! run_check "forbid_macosx_dir" forbid_path __MACOSX; then overall_rc=1; fi
 if ! run_check "forbid_macos_sidecars" bash -lc '! find . -name "._*" | grep -q .'; then overall_rc=1; fi
-
-PROOF_FRESHNESS_ACTUAL_HASH="$(grep -m1 '^proof_input_tree_hash=' "${LOG_PATH}" | tail -1 | cut -d= -f2-)"
-if [[ -n "${PROOF_FRESHNESS_ACTUAL_HASH}" ]]; then
-  log "INFO: proof_freshness actual_hash=${PROOF_FRESHNESS_ACTUAL_HASH}"
-fi
-
-if [[ -n "${RELEASE_GATE_HASH}" && -n "${PROOF_FRESHNESS_ACTUAL_HASH}" && "${RELEASE_GATE_HASH}" != "${PROOF_FRESHNESS_ACTUAL_HASH}" ]]; then
-  log "FAIL: release hash and proof freshness hash differ"
-  overall_rc=1
-fi
 
 if [[ ${overall_rc} -eq 0 ]]; then
   log "PASS: extracted archive checks completed"

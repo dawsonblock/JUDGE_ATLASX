@@ -1886,6 +1886,12 @@ def _sync_release_artifacts(
             ),
         )
 
+    # release_readiness.md is generated from the manifest and changes its own
+    # file metadata. Rebuild the manifest after the final readiness write so
+    # proof_manifest.json and required_log_index.json describe the on-disk tree
+    # that later validators inspect.
+    final_manifest = _build_proof_manifest(repo_root, out_dir, payload, results)
+
     required_log_index_rel = _write_required_log_index(
         repo_root,
         out_dir,
@@ -3010,6 +3016,17 @@ def main() -> int:
     _redact_file_local_paths(out_dir / "archive_validation.md", repo_root)
     _sanitize_current_proof_artifacts(repo_root, out_dir)
 
+    current_proof_rel, readiness_rel = _sync_release_artifacts(
+        repo_root,
+        out_dir,
+        payload,
+        results,
+        manifest_path,
+        out_path,
+        source_registry_summary,
+        static_guards_rel=static_guards_rel,
+    )
+
     required_proof_logs_step = _run(
         repo_root,
         out_dir,
@@ -3042,6 +3059,8 @@ def main() -> int:
         required=_check_proof_consistency_spec.required,
     )
     results.append(check_proof_consistency_step)
+
+    _sanitize_current_proof_artifacts(repo_root, out_dir)
 
     local_path_hygiene_step = _run(
         repo_root,
