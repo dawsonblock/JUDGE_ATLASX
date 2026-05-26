@@ -1,27 +1,27 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-26T21:23:24.498642+00:00
-- commit_hash: 64e142ddeca33f3a062126976a8ad730a8eeb9ad
+- generated_at_utc: 2026-05-26T21:53:59.055462+00:00
+- commit_hash: 438c99a1f17e32e1ed8ba93e1cc7e799a84e8030
 - alpha_gate_status: BLOCKED
 - alpha_gate_passed: false
-- release_gate_check_count: 50
+- release_gate_check_count: 37
 - docker_available: false
-- postgis_proof_result: BLOCKED
-- egress_proxy_proof_result: PASS
-- demo_proof_result: PASS
-- proof_freshness_result: PASS
-- archive_validation_result: FAIL
-- proof_input_tree_hash: 803d403b5e02281a59bf9f2be70c100b19b657b89bc18818e69f036afa6768a2
+- postgis_proof_result: UNKNOWN
+- egress_proxy_proof_result: UNKNOWN
+- demo_proof_result: UNKNOWN
+- proof_freshness_result: UNKNOWN
+- archive_validation_result: UNKNOWN
+- proof_input_tree_hash: 10b763e7e0d18795aefda45dcb02cf5f13d14d9d0b7269e33d1682bb0b1fd6af
 - proof_input_file_count: 1085
-- egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
-- demo_proof_log: artifacts/proof/current/demo_proof.log
+- egress_proxy_proof_log: unknown
+- demo_proof_log: unknown
 
 ## Runtime Metadata
 
 - gate_runner_python_version: 3.11.7
 - gate_runner_python_executable: [REDACTED_LOCAL_PATH]
 - backend_test_python_version: 3.11.7
-- backend_test_python_executable: [REDACTED_LOCAL_PATH]/backend/.venv/bin/python
+- backend_test_python_executable: [REDACTED_LOCAL_PATH]
 - backend_required_python: >=3.11
 - node_version: v20.20.2
 - npm_version: 10.8.2
@@ -43,46 +43,26 @@
 - make release-proof-local = Docker/PostGIS alpha release gate.
 - Current alpha release is blocked if Docker/PostGIS proof fails.
 - Docker/PostGIS proof did not pass in the current release gate.
-- Dedicated egress proxy proof passed in the current release gate.
-- Dedicated synthetic demo proof passed in the current release gate.
-- Proof freshness passed against the stored proof-input file list and tree hash.
+- Dedicated egress proxy proof did not pass in the current release gate.
+- Dedicated synthetic demo proof did not pass in the current release gate.
+- Proof freshness did not pass against the stored proof-input file list and tree hash.
 - Archive validation has not yet been recorded for this run.
-- archive_validation_log: artifacts/proof/current/archive_validation.log
+- archive_validation_log: unknown
 - archive_validation_supported_shapes:
   - JUDGE-main/
   - */JUDGE-main/
 
 ## Governance Status
 
-- legacy_shared_token_status: deprecated, removal plan documented
-- dependency_security_status: npm audit issues triaged for alpha; remediation plan documented
-
-## Current Proof Facts
-
-- backend pytest: 3454 passed, 2 skipped
-- backend import proof: PASS (107 routes)
-- frontend contracts: 49 passed
-- public API boundary: 55 passed
-- Docker runtime preflight: FAIL
-- PostGIS proof: BLOCKED
-- egress proxy proof: PASS
-- demo proof: PASS
-- CanLII staging proof: PASS
-- mutation fail-closed coverage: PASS
-- Alembic migrations: 72
+- legacy_shared_token_status: unknown
+- dependency_security_status: unknown
 
 ## Failed Checks
 
+- archive_validation
 - docker_runtime_preflight
 - docker_smoke
 - postgis_proof
-- archive_validation
-- check_proof_consistency
-
-## Blocked Checks
-
-- docker_smoke: docker_runtime_preflight failed
-- postgis_proof: docker_runtime_preflight failed
 
 ## Egress Proxy Coverage
 
