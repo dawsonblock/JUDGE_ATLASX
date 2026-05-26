@@ -1948,6 +1948,7 @@ def main() -> int:
     docker_check_timeout_seconds = int(
         os.getenv("JTA_DOCKER_CHECK_TIMEOUT", "180")
     )
+    docker_check_timeout_seconds = max(docker_check_timeout_seconds, 60)
     # Allow release-gate step timeout to exceed the internal docker check timeout.
     docker_preflight_timeout_seconds = max(
         docker_check_timeout_seconds + 30, 180

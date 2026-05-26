@@ -1,7 +1,7 @@
 # CURRENT_STATUS
 
-**Status**: alpha proof state tracked by canonical gate  
-**Production ready**: NO  
+**Status**: alpha proof state tracked by canonical gate
+**Production ready**: NO
 **Last updated**: 2026-05-21
 
 ## Canonical Authority

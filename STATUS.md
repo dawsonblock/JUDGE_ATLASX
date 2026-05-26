@@ -1,8 +1,8 @@
 # STATUS
 
-**Repository**: JUDGE_ATLASX-main  
-**Current release status**: alpha release posture; see canonical gate  
-**Alpha gate checks**: see artifacts/proof/current/release_gate.json  
+**Repository**: JUDGE_ATLASX-main
+**Current release status**: alpha release posture; see canonical gate
+**Alpha gate checks**: see artifacts/proof/current/release_gate.json
 **Production ready**: false
 Production ready: FALSE
 

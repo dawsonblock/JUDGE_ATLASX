@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-26T06:50:46.546565+00:00",
+  "generated_at": "2026-05-26T08:42:25.230719+00:00",
   "proof_root": "artifacts/proof/current",
   "required_logs_total": 7,
   "missing_required_logs": [],
@@ -8,20 +8,20 @@
       "path": "artifacts/proof/current/release_gate.log",
       "location_scope": "archive_internal",
       "exists": true,
-      "recorded_sha256": "c313634cc26bb873d17c7e4e37106c8166c32b77f0d0f75e733c3d07cd99ad1d",
-      "actual_sha256": "c313634cc26bb873d17c7e4e37106c8166c32b77f0d0f75e733c3d07cd99ad1d",
-      "recorded_size_bytes": 3986,
-      "actual_size_bytes": 3986,
+      "recorded_sha256": "78f4404143a6643df24cfb6bf8f5b80e631a707769beed9f33eeab01ca94a79c",
+      "actual_sha256": "78f4404143a6643df24cfb6bf8f5b80e631a707769beed9f33eeab01ca94a79c",
+      "recorded_size_bytes": 3984,
+      "actual_size_bytes": 3984,
       "status": "PASS"
     },
     {
       "path": "artifacts/proof/current/backend_pytest.log",
       "location_scope": "archive_internal",
       "exists": true,
-      "recorded_sha256": "18c6c3bd6dbeae56be3fd21a8c1ce8d43790392c499ed7a8f34396af6fb1c8f5",
-      "actual_sha256": "18c6c3bd6dbeae56be3fd21a8c1ce8d43790392c499ed7a8f34396af6fb1c8f5",
-      "recorded_size_bytes": 10040,
-      "actual_size_bytes": 10040,
+      "recorded_sha256": "f56ca4de041f25f8eff7e4f569e97f52e4678e5012eab666d4c02c17c7edcebb",
+      "actual_sha256": "f56ca4de041f25f8eff7e4f569e97f52e4678e5012eab666d4c02c17c7edcebb",
+      "recorded_size_bytes": 7907,
+      "actual_size_bytes": 7907,
       "status": "PASS"
     },
     {

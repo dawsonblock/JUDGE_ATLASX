@@ -1,7 +1,7 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-26T06:50:46.546565+00:00
-- commit_hash: 0c8e0e5eb4705bc5e0144859e0154f9e4f8ae17a
+- generated_at_utc: 2026-05-26T08:42:25.230719+00:00
+- commit_hash: 409b7137dfeb1594a1dca484e39d243d02bbda34
 - alpha_gate_status: BLOCKED
 - alpha_gate_passed: false
 - release_gate_check_count: 49
@@ -11,7 +11,7 @@
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
 - archive_validation_result: FAIL
-- proof_input_tree_hash: 1039a51997629b4b11b69eee77415297120ec35d286510dce40cbf88fb9b3033
+- proof_input_tree_hash: 18ee609b39167bc14cadf4b0af7cc4dd47dcbf818a13095a8b744393339325fd
 - proof_input_file_count: 1085
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
@@ -59,7 +59,7 @@
 
 ## Current Proof Facts
 
-- backend pytest: 2528 passed, 0 skipped
+- backend pytest: 3451 passed, 2 skipped
 - backend import proof: PASS (107 routes)
 - frontend contracts: 49 passed
 - public API boundary: 55 passed
@@ -76,7 +76,6 @@
 - docker_runtime_preflight
 - docker_smoke
 - postgis_proof
-- check_node_policy
 - archive_validation
 
 ## Blocked Checks

@@ -1,7 +1,7 @@
 # FIX_VERIFICATION_REPORT
 
-- generated_at_utc: 2026-05-26T06:50:46.546565+00:00
-- commit_hash: 0c8e0e5eb4705bc5e0144859e0154f9e4f8ae17a
+- generated_at_utc: 2026-05-26T08:42:25.230719+00:00
+- commit_hash: 409b7137dfeb1594a1dca484e39d243d02bbda34
 - alpha_gate_passed: false
 
 ## Required Gate Signals
@@ -22,7 +22,6 @@
 - docker_runtime_preflight
 - docker_smoke
 - postgis_proof
-- check_node_policy
 - archive_validation
 
 ## Canonical Artifacts

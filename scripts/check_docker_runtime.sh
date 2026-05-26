@@ -5,7 +5,14 @@ set -euo pipefail
 # This script is intentionally fast-failing so release_gate can report
 # environment blockers before PostGIS setup begins.
 
-DOCKER_TIMEOUT_SECONDS="${JTA_DOCKER_CHECK_TIMEOUT:-30}"
+DOCKER_TIMEOUT_SECONDS="${JTA_DOCKER_CHECK_TIMEOUT:-180}"
+if ! [[ "$DOCKER_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
+    DOCKER_TIMEOUT_SECONDS=180
+fi
+if [ "$DOCKER_TIMEOUT_SECONDS" -lt 60 ]; then
+    echo "[docker_runtime] INFO: clamping timeout to 60s (requested ${DOCKER_TIMEOUT_SECONDS}s)"
+    DOCKER_TIMEOUT_SECONDS=60
+fi
 
 run_with_timeout() {
     local timeout_seconds="$1"

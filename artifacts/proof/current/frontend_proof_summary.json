@@ -1,6 +1,6 @@
 {
   "group": "frontend_proof",
-  "status": "FAIL",
+  "status": "PASS",
   "checks": [
     {
       "name": "frontend_node_gate",
@@ -58,9 +58,9 @@
     },
     {
       "name": "check_node_policy",
-      "status": "FAIL",
+      "status": "PASS",
       "log": "artifacts/proof/current/check_node_policy.log",
-      "exit_code": 1
+      "exit_code": 0
     }
   ]
 }

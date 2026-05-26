@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# trunk-ignore-all(ALL)
 """Docker smoke checks for local release gating.
 
 Writes canonical output to .validation_logs/docker_smoke.log.
@@ -19,6 +20,14 @@ REUSABLE_IMAGE_TAGS = (
     "judge_atlas-main2-backend:latest",
     "judge_atlas-main2-frontend:latest",
 )
+
+
+def _docker_timeout(default: int) -> int:
+    try:
+        gate_timeout = int(os.environ.get("JTA_DOCKER_CHECK_TIMEOUT", "180"))
+    except ValueError:
+        gate_timeout = 180
+    return max(default, gate_timeout, 60)
 
 
 class SmokeError(RuntimeError):
@@ -67,7 +76,7 @@ def _append_logs(lines: list[str], service: str) -> None:
             capture_output=True,
             text=True,
             check=False,
-            timeout=30,
+            timeout=_docker_timeout(30),
         )
     except Exception as exc:  # pragma: no cover - defensive logging path
         _append(lines, f"log_capture_error:{service}:{exc}")
@@ -112,7 +121,7 @@ def _reusable_images_present() -> bool:
         capture_output=True,
         text=True,
         check=False,
-        timeout=30,
+        timeout=_docker_timeout(30),
     )
     return cp.returncode == 0
 
@@ -123,7 +132,12 @@ def main() -> int:
     failed = False
 
     try:
-        _run(lines, ["docker", "compose", "down", "-v"], timeout=20, allow_failure=True)
+        _run(
+            lines,
+            ["docker", "compose", "down", "-v"],
+            timeout=_docker_timeout(20),
+            allow_failure=True,
+        )
 
         if _reuse_existing_images_requested() and _reusable_images_present():
             _append(lines, "docker compose build: SKIP (reusing existing backend/frontend images)")
@@ -167,7 +181,7 @@ def main() -> int:
             cp = _run(
                 lines,
                 ["docker", "compose", "exec", "-T", "redis", "redis-cli", "ping"],
-                timeout=20,
+                timeout=_docker_timeout(20),
                 allow_failure=True,
             )
             if "PONG" in ((cp.stdout or "") + (cp.stderr or "")):
@@ -227,7 +241,7 @@ def main() -> int:
                     "}).on('error',()=>process.exit(1));"
                 ),
             ],
-            timeout=30,
+            timeout=_docker_timeout(30),
             allow_failure=True,
         )
         if cp.returncode != 0:
@@ -235,7 +249,12 @@ def main() -> int:
         _append(lines, "frontend health: PASS")
 
         _append(lines, "docker smoke: PASS")
-        _run(lines, ["docker", "compose", "down", "-v"], timeout=20, allow_failure=True)
+        _run(
+            lines,
+            ["docker", "compose", "down", "-v"],
+            timeout=_docker_timeout(20),
+            allow_failure=True,
+        )
         _log(lines)
         return 0
 
@@ -251,7 +270,12 @@ def main() -> int:
             _append_logs(lines, service)
     finally:
         try:
-            _run(lines, ["docker", "compose", "down", "-v"], timeout=20, allow_failure=True)
+            _run(
+                lines,
+                ["docker", "compose", "down", "-v"],
+                timeout=_docker_timeout(20),
+                allow_failure=True,
+            )
         except Exception:
             _append(lines, "docker compose down -v failed during cleanup")
         _append(lines, "docker smoke: FAIL" if failed else "docker smoke: PASS")

@@ -30,6 +30,7 @@ All proof artifacts are stored under `artifacts/proof/current/` with timestamped
 Do not infer PASS from this file; read the canonical gate and current-proof outputs.
 
 **Required proof commands:**
+
 ```bash
 python3 scripts/check_path_hygiene.py
 python3 scripts/check_no_generated_files.py --root .
@@ -40,6 +41,7 @@ python3 scripts/check_proof_freshness.py
 ```
 
 **Regenerate proof:**
+
 ```bash
 make proof
 ```
