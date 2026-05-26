@@ -12,9 +12,11 @@ Manual edits are not authoritative.
 ## Proof Anchors
 
 - release_gate_path: artifacts/proof/current/release_gate.json
-- release_gate_sha256: 196cfe9d69d6eb1a3061225237404abb3b6e9da77f14b6b38d4ea6a6b9a93e79
+- release_gate_sha256: a2812784600d2c7ae7d8071ef6ca66524d2fe23a786ffce989b05170e7f48439
 - proof_manifest_path: artifacts/proof/current/proof_manifest.json
-- proof_manifest_sha256: e35ca5c3c2df2479e2b1076bb781912a33d18a5eac1b587b7c1402222e75c299
+- proof_manifest_sha256: a644b4af2a6998428d92d149c07dafd921abb715dfa4e9755e91f2de941fc351
+- required_log_index_path: artifacts/proof/current/required_log_index.json
+- required_log_index_sha256: 4b471093e8069aa7b985673c762bdcd737b39054b8d2956bd294731030b6c83c
 
 ## Release Status
 
