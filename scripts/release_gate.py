@@ -1821,11 +1821,6 @@ def _sync_release_artifacts(
     final_manifest = _build_proof_manifest(
         repo_root, out_dir, payload, results
     )
-    required_log_index_rel = _write_required_log_index(
-        repo_root,
-        out_dir,
-        final_manifest,
-    )
     _, readiness_rel = _generate_release_readiness_from_manifest(
         repo_root,
         out_dir,
@@ -1877,11 +1872,6 @@ def _sync_release_artifacts(
         final_manifest = _build_proof_manifest(
             repo_root, out_dir, payload, results
         )
-        required_log_index_rel = _write_required_log_index(
-            repo_root,
-            out_dir,
-            final_manifest,
-        )
         _, readiness_rel = _generate_release_readiness_from_manifest(
             repo_root,
             out_dir,
@@ -1891,9 +1881,6 @@ def _sync_release_artifacts(
             ),
         )
 
-    final_manifest = _build_proof_manifest(
-        repo_root, out_dir, payload, results
-    )
     required_log_index_rel = _write_required_log_index(
         repo_root,
         out_dir,

@@ -203,7 +203,7 @@ if ! run_check "validate_workflows" "${PYTHON_BIN}" scripts/validate_workflows.p
 if ! run_check "required_proof_manifest" require_file artifacts/proof/current/proof_manifest.json; then overall_rc=1; fi
 if ! run_check "required_release_gate" require_file artifacts/proof/current/release_gate.json; then overall_rc=1; fi
 if ! run_check "required_release_readiness" require_file artifacts/proof/current/release_readiness.md; then overall_rc=1; fi
-if ! run_check "required_required_log_index" require_file artifacts/proof/current/required_log_index.json; then overall_rc=1; fi
+if ! run_check "required_log_index" require_file artifacts/proof/current/required_log_index.json; then overall_rc=1; fi
 if ! run_check "required_current_alpha_status" require_file artifacts/proof/current/CURRENT_ALPHA_STATUS.md; then overall_rc=1; fi
 if ! run_check "required_source_registry_status" require_file artifacts/proof/current/SOURCE_REGISTRY_STATUS.md; then overall_rc=1; fi
 if ! run_check "required_proof_policy" require_file artifacts/proof/current/PROOF_POLICY.md; then overall_rc=1; fi
