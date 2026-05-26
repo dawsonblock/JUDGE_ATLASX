@@ -114,6 +114,14 @@ def main() -> int:
         default="FINAL_RELEASE_HANDOFF.md",
         help="Handoff markdown path (absolute or repo-relative)",
     )
+    parser.add_argument(
+        "--allow-blocked-snapshot",
+        action="store_true",
+        help=(
+            "Allow generating handoff when release_candidate is false. "
+            "Without this flag, handoff generation requires release_candidate=true."
+        ),
+    )
     args = parser.parse_args()
 
     repo_root = Path(args.root).resolve()
@@ -166,7 +174,11 @@ def main() -> int:
     alpha_gate_passed = bool(release_gate.get("alpha_gate_passed", False))
     release_candidate = bool(release_gate.get("release_candidate", False))
     production_ready = bool(release_gate.get("production_ready", False))
-    proof_complete = True
+    proof_complete = bool(release_candidate)
+    if not release_candidate and not args.allow_blocked_snapshot:
+        raise SystemExit(
+            "release_candidate_false: refusing handoff generation without --allow-blocked-snapshot"
+        )
     runtime = release_gate.get("runtime", {})
     if not isinstance(runtime, dict):
         runtime = {}

@@ -2073,7 +2073,7 @@ def main() -> int:
         GateStepSpec(
             "docker_smoke",
             "docker_smoke.log",
-            [python_exe, "scripts/docker_smoke.py"],
+            ["bash", "scripts/proof_docker_compose.sh"],
             timeout_seconds=1800,
         ),
         GateStepSpec(
@@ -2082,11 +2082,7 @@ def main() -> int:
             [
                 "bash",
                 "-lc",
-                (
-                    "bash scripts/proof_postgis.sh && cp "
-                    "artifacts/proof/postgis_proof.log "
-                    "artifacts/proof/current/postgis_proof.log"
-                ),
+                "bash scripts/proof_postgis.sh",
             ],
             timeout_seconds=postgis_timeout_seconds,
         ),
@@ -3023,7 +3019,10 @@ def main() -> int:
     results.append(local_path_hygiene_step)
 
     validation_summary = _validation_summary_gate(repo_root)
-    validation_blockers = list(validation_summary.get("blockers", []))
+    blockers_raw = validation_summary.get("blockers", [])
+    validation_blockers = (
+        list(blockers_raw) if isinstance(blockers_raw, list) else []
+    )
     if not validation_summary.get("exists", False):
         validation_blockers.append("validation_summary_missing")
 

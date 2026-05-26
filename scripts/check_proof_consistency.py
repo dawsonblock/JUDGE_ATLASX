@@ -1,32 +1,26 @@
 #!/usr/bin/env python3
-"""Check consistency between proof artifacts.
-
-This script validates that proof_manifest.json and release_gate.json
-are consistent with each other to prevent internal contradictions.
-
-Key checks:
-- Node version consistency
-- Python version consistency  
-- Platform consistency
-- Timestamp sanity
-"""
+"""Check consistency between release_gate, proof_manifest, and required_log_index artifacts."""
 
 from __future__ import annotations
 
 import json
 import re
 import sys
+from hashlib import sha256
 from pathlib import Path
 
 
 def load_json_file(path: Path) -> dict:
     """Load and parse a JSON file."""
     if not path.exists():
-        print(f"ERROR: Proof artifact not found: {path}")
-        sys.exit(1)
-    
-    with open(path, "r") as f:
-        return json.load(f)
+        raise RuntimeError(f"Proof artifact not found: {path}")
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"Invalid JSON in {path}: {exc}") from exc
+    if not isinstance(data, dict):
+        raise RuntimeError(f"Expected JSON object in {path}")
+    return data
 
 
 def _parse_version(version: str) -> tuple[int, int, int] | None:
@@ -80,132 +74,357 @@ def _satisfies_range(version: str, spec: str) -> bool:
     return True
 
 
+def _sha256(path: Path) -> str:
+    digest = sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _entry_path(entry: dict) -> str | None:
+    path = entry.get("path")
+    if isinstance(path, str) and path:
+        return path
+    log_path = entry.get("log_path")
+    if isinstance(log_path, str) and log_path:
+        return log_path
+    return None
+
+
+def _manifest_entry_map(manifest: dict) -> dict[str, dict]:
+    mapping: dict[str, dict] = {}
+    proof_commands = manifest.get("proof_commands")
+    if not isinstance(proof_commands, list):
+        return mapping
+    for entry in proof_commands:
+        if not isinstance(entry, dict):
+            continue
+        path = _entry_path(entry)
+        if path:
+            mapping[path] = entry
+    return mapping
+
+
+def _check_file_and_manifest_entry(
+    *,
+    repo_root: Path,
+    rel_path: str,
+    manifest_map: dict[str, dict],
+    errors: list[str],
+    required: bool,
+) -> None:
+    abs_path = repo_root / rel_path
+    if not abs_path.is_file():
+        errors.append(f"missing_file:{rel_path}")
+        return
+
+    entry = manifest_map.get(rel_path)
+    if entry is None:
+        if required:
+            errors.append(f"missing_manifest_entry:{rel_path}")
+        return
+
+    expected_size = entry.get("size_bytes")
+    if isinstance(expected_size, int):
+        actual_size = abs_path.stat().st_size
+        if actual_size != expected_size:
+            errors.append(
+                f"size_mismatch:{rel_path}:expected={expected_size}:actual={actual_size}"
+            )
+
+    expected_hash = entry.get("sha256") or entry.get("log_sha256")
+    if required and (not isinstance(expected_hash, str) or not expected_hash):
+        errors.append(f"missing_hash:{rel_path}")
+        return
+
+    if isinstance(expected_hash, str) and expected_hash:
+        actual_hash = _sha256(abs_path)
+        if actual_hash != expected_hash:
+            errors.append(
+                f"hash_mismatch:{rel_path}:expected={expected_hash}:actual={actual_hash}"
+            )
+
+
+def _collect_referenced_paths(release_gate: dict) -> tuple[set[str], set[str]]:
+    required_paths: set[str] = set()
+    optional_paths: set[str] = set()
+
+    checks = release_gate.get("checks", [])
+    if isinstance(checks, list):
+        for check in checks:
+            if not isinstance(check, dict):
+                continue
+            path = check.get("log_path")
+            if not isinstance(path, str) or not path:
+                continue
+            if not path.startswith("artifacts/proof/current/"):
+                continue
+            if bool(check.get("required", True)):
+                required_paths.add(path)
+            else:
+                optional_paths.add(path)
+
+    logs = release_gate.get("logs", {})
+    if isinstance(logs, dict):
+        for path in logs.values():
+            if not isinstance(path, str) or not path:
+                continue
+            if not path.startswith("artifacts/proof/current/"):
+                continue
+            optional_paths.add(path)
+
+    optional_paths -= required_paths
+    return required_paths, optional_paths
+
+
 def check_node_version_consistency(manifest: dict, gate: dict) -> list[str]:
-    """Check Node version consistency between artifacts."""
     errors = []
-    
+
     manifest_node = manifest.get("gate_runner_node_version") or manifest.get("node_version")
     gate_node = gate.get("gate_runner_node_version") or gate.get("node_version")
-    
+
     if manifest_node != gate_node:
         errors.append(
-            f"Node version mismatch: proof_manifest.json has '{manifest_node}' "
-            f"but release_gate.json has '{gate_node}'"
+            f"node_version_mismatch:proof_manifest={manifest_node}:release_gate={gate_node}"
         )
-    
-    # Also check frontend node gate version
+
     manifest_frontend = manifest.get("frontend_node_gate_version")
     gate_frontend = gate.get("frontend_node_gate_version")
-    
-    if manifest_frontend is not None and gate_frontend is not None and manifest_frontend != gate_frontend:
+
+    if (
+        manifest_frontend is not None
+        and gate_frontend is not None
+        and manifest_frontend != gate_frontend
+    ):
         errors.append(
-            f"Frontend Node version mismatch: proof_manifest.json has '{manifest_frontend}' "
-            f"but release_gate.json has '{gate_frontend}'"
+            "frontend_node_version_mismatch:"
+            f"proof_manifest={manifest_frontend}:release_gate={gate_frontend}"
         )
-    
+
     return errors
 
 
 def check_python_version_consistency(manifest: dict, gate: dict) -> list[str]:
-    """Check Python version consistency between artifacts."""
     errors = []
-    
     manifest_python = manifest.get("python_version")
     gate_python = gate.get("python_version")
-    
     if manifest_python != gate_python:
         errors.append(
-            f"Python version mismatch: proof_manifest.json has '{manifest_python}' "
-            f"but release_gate.json has '{gate_python}'"
+            f"python_version_mismatch:proof_manifest={manifest_python}:release_gate={gate_python}"
         )
-    
     return errors
 
 
 def check_platform_consistency(manifest: dict, gate: dict) -> list[str]:
-    """Check platform consistency between artifacts."""
     errors = []
-    
     manifest_platform = manifest.get("platform")
     gate_platform = gate.get("platform")
-    
     if manifest_platform != gate_platform:
         errors.append(
-            f"Platform mismatch: proof_manifest.json has '{manifest_platform}' "
-            f"but release_gate.json has '{gate_platform}'"
+            f"platform_mismatch:proof_manifest={manifest_platform}:release_gate={gate_platform}"
         )
-    
     return errors
 
 
 def check_commit_hash_consistency(manifest: dict, gate: dict) -> list[str]:
-    """Check commit hash consistency between artifacts."""
     errors = []
-    
     manifest_hash = manifest.get("archive_hash")
     gate_hash = gate.get("commit_hash")
-    
     if manifest_hash and gate_hash and manifest_hash != gate_hash:
         errors.append(
-            f"Commit hash mismatch: proof_manifest.json has '{manifest_hash}' "
-            f"but release_gate.json has '{gate_hash}'"
+            f"commit_hash_mismatch:proof_manifest={manifest_hash}:release_gate={gate_hash}"
         )
-    
     return errors
 
 
 def check_proof_input_consistency(manifest: dict, gate: dict) -> list[str]:
-    """Check proof input hash metadata consistency between artifacts."""
     errors = []
 
     manifest_hash = manifest.get("proof_input_tree_hash")
     gate_hash = gate.get("proof_input_tree_hash")
     if gate_hash and not manifest_hash:
-        errors.append(
-            "Proof input hash missing in proof_manifest.json while present in release_gate.json"
-        )
+        errors.append("missing_proof_input_hash_in_manifest")
     if manifest_hash and gate_hash and manifest_hash != gate_hash:
         errors.append(
-            f"Proof input hash mismatch: proof_manifest.json has '{manifest_hash}' "
-            f"but release_gate.json has '{gate_hash}'"
+            f"proof_input_hash_mismatch:proof_manifest={manifest_hash}:release_gate={gate_hash}"
         )
 
     manifest_count = manifest.get("proof_input_file_count")
     gate_count = gate.get("proof_input_file_count")
     if gate_count is not None and manifest_count is None:
-        errors.append(
-            "Proof input file count missing in proof_manifest.json while present in release_gate.json"
-        )
+        errors.append("missing_proof_input_file_count_in_manifest")
     if (
         manifest_count is not None
         and gate_count is not None
         and manifest_count != gate_count
     ):
         errors.append(
-            f"Proof input file count mismatch: proof_manifest.json has '{manifest_count}' "
-            f"but release_gate.json has '{gate_count}'"
+            "proof_input_count_mismatch:"
+            f"proof_manifest={manifest_count}:release_gate={gate_count}"
         )
 
     return errors
 
 
-def check_production_ready_consistency(manifest: dict, gate: dict) -> list[str]:
-    """Check production_ready flag consistency between artifacts."""
-    errors = []
-    
-    # proof_manifest doesn't have production_ready, but release_gate does
-    # This is informational, not an error
-    gate_production_ready = gate.get("production_ready")
-    
-    if gate_production_ready is True:
-        print("WARNING: release_gate.json shows production_ready=True")
-        print("This should only be set after all production blockers are cleared.")
-    
+def check_required_index_consistency(
+    *,
+    repo_root: Path,
+    required_log_index: dict,
+    manifest_map: dict[str, dict],
+) -> list[str]:
+    errors: list[str] = []
+
+    entries = required_log_index.get("entries")
+    if not isinstance(entries, list):
+        return ["required_log_index_entries_missing_or_invalid"]
+
+    computed_missing: list[str] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            errors.append("required_log_index_invalid_entry")
+            continue
+        path = entry.get("path")
+        if not isinstance(path, str) or not path:
+            errors.append("required_log_index_entry_missing_path")
+            continue
+
+        exists = bool(entry.get("exists", False))
+        abs_path = repo_root / path
+        if exists and not abs_path.is_file():
+            errors.append(f"required_log_index_exists_but_missing_on_disk:{path}")
+        if not exists:
+            computed_missing.append(path)
+            if abs_path.is_file():
+                errors.append(f"required_log_index_marked_missing_but_present:{path}")
+            continue
+
+        manifest_entry = manifest_map.get(path)
+        if manifest_entry is None:
+            errors.append(f"required_log_index_missing_manifest_entry:{path}")
+            continue
+
+        recorded_sha = entry.get("recorded_sha256")
+        actual_sha = _sha256(abs_path)
+        if isinstance(recorded_sha, str) and recorded_sha and recorded_sha != actual_sha:
+            errors.append(f"required_log_index_recorded_sha_mismatch:{path}")
+
+        manifest_sha = manifest_entry.get("sha256") or manifest_entry.get("log_sha256")
+        if isinstance(manifest_sha, str) and manifest_sha and manifest_sha != actual_sha:
+            errors.append(f"required_log_index_manifest_sha_mismatch:{path}")
+
+        recorded_size = entry.get("recorded_size_bytes")
+        actual_size = abs_path.stat().st_size
+        if isinstance(recorded_size, int) and recorded_size != actual_size:
+            errors.append(f"required_log_index_recorded_size_mismatch:{path}")
+
+        manifest_size = manifest_entry.get("size_bytes")
+        if isinstance(manifest_size, int) and manifest_size != actual_size:
+            errors.append(f"required_log_index_manifest_size_mismatch:{path}")
+
+    listed_missing = required_log_index.get("missing_required_logs", [])
+    if isinstance(listed_missing, list):
+        listed_missing_sorted = sorted([item for item in listed_missing if isinstance(item, str)])
+        if sorted(computed_missing) != listed_missing_sorted:
+            errors.append(
+                "required_log_index_missing_required_logs_mismatch:"
+                f"computed={sorted(computed_missing)}:listed={listed_missing_sorted}"
+            )
+    else:
+        errors.append("required_log_index_missing_required_logs_invalid")
+
+    return errors
+
+
+def check_release_gate_proof_integrity(
+    *,
+    repo_root: Path,
+    release_gate: dict,
+    manifest: dict,
+    required_log_index: dict,
+) -> list[str]:
+    errors: list[str] = []
+    manifest_map = _manifest_entry_map(manifest)
+
+    required_paths, optional_paths = _collect_referenced_paths(release_gate)
+
+    for rel_path in sorted(required_paths):
+        _check_file_and_manifest_entry(
+            repo_root=repo_root,
+            rel_path=rel_path,
+            manifest_map=manifest_map,
+            errors=errors,
+            required=True,
+        )
+
+    for rel_path in sorted(optional_paths):
+        _check_file_and_manifest_entry(
+            repo_root=repo_root,
+            rel_path=rel_path,
+            manifest_map=manifest_map,
+            errors=errors,
+            required=False,
+        )
+
+    required_logs = manifest.get("required_logs", [])
+    if isinstance(required_logs, list):
+        for rel_path in required_logs:
+            if isinstance(rel_path, str) and rel_path:
+                _check_file_and_manifest_entry(
+                    repo_root=repo_root,
+                    rel_path=rel_path,
+                    manifest_map=manifest_map,
+                    errors=errors,
+                    required=True,
+                )
+    else:
+        errors.append("proof_manifest_required_logs_missing_or_invalid")
+
+    errors.extend(
+        check_required_index_consistency(
+            repo_root=repo_root,
+            required_log_index=required_log_index,
+            manifest_map=manifest_map,
+        )
+    )
+
+    alpha_gate_passed = bool(release_gate.get("alpha_gate_passed", False))
+    archive_validation = None
+    checks = release_gate.get("checks", [])
+    if isinstance(checks, list):
+        for check in checks:
+            if isinstance(check, dict) and check.get("name") == "archive_validation":
+                archive_validation = str(check.get("status", "")).upper()
+                break
+
+    missing_required_logs = required_log_index.get("missing_required_logs", [])
+    if not isinstance(missing_required_logs, list):
+        missing_required_logs = ["invalid_required_log_index_missing_required_logs"]
+
+    if alpha_gate_passed:
+        if missing_required_logs:
+            errors.append("alpha_gate_passed_with_missing_required_logs")
+
+        if archive_validation != "PASS":
+            errors.append("alpha_gate_passed_without_archive_validation_pass")
+
+        for rel_path in manifest.get("required_logs", []):
+            if not isinstance(rel_path, str) or not rel_path:
+                errors.append("alpha_gate_passed_with_invalid_required_log_entry")
+                continue
+            entry = manifest_map.get(rel_path)
+            if entry is None:
+                errors.append(f"alpha_gate_passed_missing_manifest_entry:{rel_path}")
+                continue
+            if not entry.get("sha256") and not entry.get("log_sha256"):
+                errors.append(f"alpha_gate_passed_missing_hash:{rel_path}")
+            if not (repo_root / rel_path).is_file():
+                errors.append(f"alpha_gate_passed_missing_file:{rel_path}")
+
     return errors
 
 
 def check_node_policy_alignment(repo_root: Path, manifest: dict, gate: dict) -> list[str]:
-    """Check that recorded proof metadata satisfies the declared frontend Node policy."""
     errors = []
 
     package_json = load_json_file(repo_root / "frontend" / "package.json")
@@ -219,69 +438,79 @@ def check_node_policy_alignment(repo_root: Path, manifest: dict, gate: dict) -> 
 
     policy_major = root_major or frontend_major
     if root_major is not None and frontend_major is not None and root_major != frontend_major:
-        errors.append(f".nvmrc mismatch: root={root_major} frontend={frontend_major}")
+        errors.append(f"nvmrc_mismatch:root={root_major}:frontend={frontend_major}")
     elif policy_major is None:
-        errors.append("Missing .nvmrc policy files in packaged archive")
+        errors.append("missing_nvmrc_policy_files")
 
     gate_node = gate.get("frontend_node_gate_version") or gate.get("node_version")
     manifest_node = manifest.get("frontend_node_gate_version") or manifest.get("node_version")
 
     for label, version in (("proof_manifest.json", manifest_node), ("release_gate.json", gate_node)):
         if not isinstance(version, str):
-            errors.append(f"{label} missing Node version for policy check")
+            errors.append(f"missing_node_version_for_policy_check:{label}")
             continue
         parsed = _parse_version(version)
         if parsed is None:
-            errors.append(f"{label} has unparsable Node version '{version}'")
+            errors.append(f"unparsable_node_version:{label}:{version}")
             continue
         if policy_major is not None and parsed[0] != int(policy_major):
-            errors.append(f"{label} records Node {version} but .nvmrc requires major {policy_major}")
+            errors.append(f"node_major_policy_mismatch:{label}:{version}:required={policy_major}")
         if not isinstance(node_range, str) or not _satisfies_range(version, node_range):
-            errors.append(f"{label} records Node {version} outside engines.node '{node_range}'")
+            errors.append(f"node_engines_policy_mismatch:{label}:{version}:engines={node_range}")
 
     return errors
 
 
-def main():
-    """Main entry point."""
+def main() -> int:
     script_dir = Path(__file__).parent
     repo_root = script_dir.parent
     proof_dir = repo_root / "artifacts" / "proof" / "current"
-    
+
     manifest_path = proof_dir / "proof_manifest.json"
     gate_path = proof_dir / "release_gate.json"
-    
-    print(f"Checking proof artifact consistency...")
+    required_log_index_path = proof_dir / "required_log_index.json"
+
+    print("Checking proof artifact consistency...")
     print(f"  proof_manifest.json: {manifest_path}")
     print(f"  release_gate.json: {gate_path}")
-    
-    # Load artifacts
-    manifest = load_json_file(manifest_path)
-    gate = load_json_file(gate_path)
-    
-    # Run consistency checks
-    all_errors = []
-    
+    print(f"  required_log_index.json: {required_log_index_path}")
+
+    all_errors: list[str] = []
+
+    try:
+        manifest = load_json_file(manifest_path)
+        gate = load_json_file(gate_path)
+        required_log_index = load_json_file(required_log_index_path)
+    except RuntimeError as exc:
+        print(f"ERROR: {exc}")
+        return 1
+
     all_errors.extend(check_node_version_consistency(manifest, gate))
     all_errors.extend(check_python_version_consistency(manifest, gate))
     all_errors.extend(check_platform_consistency(manifest, gate))
     all_errors.extend(check_commit_hash_consistency(manifest, gate))
     all_errors.extend(check_proof_input_consistency(manifest, gate))
-    all_errors.extend(check_production_ready_consistency(manifest, gate))
     all_errors.extend(check_node_policy_alignment(repo_root, manifest, gate))
-    
-    # Report results
+    all_errors.extend(
+        check_release_gate_proof_integrity(
+            repo_root=repo_root,
+            release_gate=gate,
+            manifest=manifest,
+            required_log_index=required_log_index,
+        )
+    )
+
     if all_errors:
-        print("\n❌ Proof artifact consistency check FAILED")
+        print("\nProof artifact consistency check FAILED")
         print("\nErrors found:")
-        for error in all_errors:
+        for error in sorted(set(all_errors)):
             print(f"  - {error}")
-        sys.exit(1)
-    else:
-        print("\n✅ Proof artifact consistency check PASSED")
-        print("All proof artifacts are consistent with each other.")
-        sys.exit(0)
+        return 1
+
+    print("\nProof artifact consistency check PASSED")
+    print("All proof artifacts are consistent with each other.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

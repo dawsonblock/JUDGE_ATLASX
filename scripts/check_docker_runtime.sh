@@ -56,15 +56,19 @@ PY
 
 classify_docker_failure() {
     local output="$1"
+    if printf '%s' "$output" | grep -Eiq 'timed out|context deadline exceeded|deadline exceeded'; then
+        echo "DOCKER_TIMEOUT"
+        return
+    fi
     if printf '%s' "$output" | grep -Eiq 'permission denied.*docker\.sock|got permission denied while trying to connect to the docker daemon socket'; then
-        echo "permission"
+        echo "DOCKER_PERMISSION_DENIED"
         return
     fi
     if printf '%s' "$output" | grep -Eiq 'cannot connect to the docker daemon|is the docker daemon running|error during connect|docker desktop.*(not running|stopped)|cannot connect to the docker daemon at'; then
-        echo "daemon"
+        echo "DOCKER_DAEMON_UNAVAILABLE"
         return
     fi
-    echo "generic"
+    echo "DOCKER_GENERIC_FAILURE"
 }
 
 run_docker_check() {
@@ -84,6 +88,7 @@ run_docker_check() {
     fi
 
     if [ "$rc" -eq 124 ]; then
+        echo "[docker_runtime] FAIL_CLASS=DOCKER_TIMEOUT"
         echo "[docker_runtime] FAIL: ${label} timed out after ${DOCKER_TIMEOUT_SECONDS}s"
         echo "[docker_runtime] HINT: start Docker Desktop or verify Docker daemon/socket access"
         echo "[docker_runtime] HINT: increase timeout with JTA_DOCKER_CHECK_TIMEOUT if daemon cold-start is slow"
@@ -91,15 +96,23 @@ run_docker_check() {
     fi
 
     case "$(classify_docker_failure "$output")" in
-        permission)
+        DOCKER_PERMISSION_DENIED)
+            echo "[docker_runtime] FAIL_CLASS=DOCKER_PERMISSION_DENIED"
             echo "[docker_runtime] FAIL: permission denied while accessing Docker daemon/socket"
             echo "[docker_runtime] HINT: verify user access to Docker socket and that Docker Desktop is running"
             ;;
-        daemon)
+        DOCKER_DAEMON_UNAVAILABLE)
+            echo "[docker_runtime] FAIL_CLASS=DOCKER_DAEMON_UNAVAILABLE"
             echo "[docker_runtime] FAIL: docker daemon unavailable"
             echo "[docker_runtime] HINT: start Docker Desktop and retry once daemon is healthy"
             ;;
+        DOCKER_TIMEOUT)
+            echo "[docker_runtime] FAIL_CLASS=DOCKER_TIMEOUT"
+            echo "[docker_runtime] FAIL: ${label} timed out after ${DOCKER_TIMEOUT_SECONDS}s"
+            echo "[docker_runtime] HINT: daemon may be cold-starting or unresponsive"
+            ;;
         *)
+            echo "[docker_runtime] FAIL_CLASS=DOCKER_GENERIC_FAILURE"
             echo "[docker_runtime] FAIL: ${label} failed"
             echo "[docker_runtime] HINT: inspect docker diagnostics and local daemon configuration"
             ;;
@@ -109,12 +122,35 @@ run_docker_check() {
 
 echo "[docker_runtime] Checking docker CLI availability..."
 if ! command -v docker >/dev/null 2>&1; then
+    echo "[docker_runtime] FAIL_CLASS=DOCKER_CLI_MISSING"
     echo "[docker_runtime] FAIL: docker command not found"
     echo "[docker_runtime] HINT: install Docker CLI and ensure it is on PATH"
     exit 1
 fi
 echo "[docker_runtime] PASS: docker CLI found: $(command -v docker)"
 echo "[docker_runtime] INFO: timeout=${DOCKER_TIMEOUT_SECONDS}s"
+echo "[docker_runtime] INFO: user=$(id -un) uid=$(id -u)"
+
+echo "[docker_runtime] Running docker --version..."
+if ! run_with_timeout "$DOCKER_TIMEOUT_SECONDS" docker --version; then
+    echo "[docker_runtime] FAIL_CLASS=DOCKER_GENERIC_FAILURE"
+    echo "[docker_runtime] FAIL: docker --version failed"
+    exit 1
+fi
+
+echo "[docker_runtime] Running docker context ls..."
+if ! run_with_timeout "$DOCKER_TIMEOUT_SECONDS" docker context ls; then
+    echo "[docker_runtime] FAIL_CLASS=DOCKER_GENERIC_FAILURE"
+    echo "[docker_runtime] FAIL: docker context ls failed"
+    exit 1
+fi
+
+echo "[docker_runtime] Running docker compose version..."
+if ! run_with_timeout "$DOCKER_TIMEOUT_SECONDS" docker compose version; then
+    echo "[docker_runtime] FAIL_CLASS=DOCKER_GENERIC_FAILURE"
+    echo "[docker_runtime] FAIL: docker compose version failed"
+    exit 1
+fi
 
 echo "[docker_runtime] Running docker version..."
 if ! run_docker_check "docker version" docker version; then

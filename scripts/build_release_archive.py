@@ -256,6 +256,19 @@ def _load_packaged_proof_paths(repo_root: Path) -> set[str]:
     return packaged
 
 
+def _load_release_gate(repo_root: Path) -> dict:
+    release_gate_path = repo_root / "artifacts" / "proof" / "current" / "release_gate.json"
+    if not release_gate_path.is_file():
+        raise SystemExit(f"Missing canonical release gate: {release_gate_path}")
+    try:
+        payload = json.loads(release_gate_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"Invalid release_gate.json: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise SystemExit(f"Invalid release_gate.json payload type: {type(payload).__name__}")
+    return payload
+
+
 def _collect_files(
     repo_root: Path,
     include_external: bool,
@@ -344,12 +357,9 @@ def _collect_files(
 
 
 def _load_proof_input_exempt_paths(repo_root: Path) -> set[str]:
-    release_gate_path = repo_root / "artifacts" / "proof" / "current" / "release_gate.json"
-    if not release_gate_path.exists():
-        return set()
     try:
-        payload = json.loads(release_gate_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        payload = _load_release_gate(repo_root)
+    except SystemExit:
         return set()
 
     listed = payload.get("proof_input_file_list", [])
@@ -407,12 +417,29 @@ def _write_archive(
         )
 
 
-def build_archive(output: Path, root_name: str, include_external: bool, include_proof_archive: bool) -> dict:
+def build_archive(
+    output: Path,
+    root_name: str,
+    include_external: bool,
+    include_proof_archive: bool,
+    require_release_candidate: bool,
+) -> dict:
     output_display = (
         _normalize(output.relative_to(REPO_ROOT))
         if output.is_absolute() and output.is_relative_to(REPO_ROOT)
         else output.name
     )
+
+    release_gate = _load_release_gate(REPO_ROOT)
+    alpha_gate_passed = bool(release_gate.get("alpha_gate_passed", False))
+    release_candidate = bool(release_gate.get("release_candidate", False))
+    production_ready = bool(release_gate.get("production_ready", False))
+
+    if require_release_candidate and not release_candidate:
+        raise SystemExit(
+            "Refusing archive build: release_candidate is false in canonical release gate "
+            "(use without --require-release-candidate only for blocked proof snapshots)."
+        )
 
     packaged_proof_paths = _load_packaged_proof_paths(REPO_ROOT)
 
@@ -465,6 +492,8 @@ def build_archive(output: Path, root_name: str, include_external: bool, include_
         command_parts.append("--include-external")
     if include_proof_archive:
         command_parts.append("--include-proof-archive")
+    if require_release_candidate:
+        command_parts.append("--require-release-candidate")
 
     manifest = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -473,8 +502,12 @@ def build_archive(output: Path, root_name: str, include_external: bool, include_
         "included_top_level_paths": sorted(included_top_level),
         "excluded_top_level_paths": sorted(excluded_top_level),
         "proof_path": "artifacts/proof/current",
-        "alpha_status": "PASS",
-        "production_ready": False,
+        "alpha_status": "PASS" if alpha_gate_passed else "BLOCKED",
+        "alpha_gate_passed": alpha_gate_passed,
+        "release_candidate": release_candidate,
+        "production_ready": production_ready,
+        "release_blockers_remaining": release_gate.get("release_blockers_remaining", []),
+        "failed_checks": release_gate.get("failed_checks", []),
         "archive_sha256": "computed_after_build",
         "validator_command": (
             f"python3 scripts/validate_release_archive.py --archive {output_display} --expected-root {root_name}"
@@ -517,6 +550,11 @@ def main() -> int:
     )
     parser.add_argument("--dry-run", action="store_true", help="List files that would be archived without writing")
     parser.add_argument("--json", action="store_true", help="Print JSON output")
+    parser.add_argument(
+        "--require-release-candidate",
+        action="store_true",
+        help="Fail unless artifacts/proof/current/release_gate.json has release_candidate=true",
+    )
     args = parser.parse_args()
 
     if args.dry_run:
@@ -548,6 +586,7 @@ def main() -> int:
         root_name=args.root_name,
         include_external=args.include_external,
         include_proof_archive=args.include_proof_archive,
+        require_release_candidate=args.require_release_candidate,
     )
 
     if args.json:
