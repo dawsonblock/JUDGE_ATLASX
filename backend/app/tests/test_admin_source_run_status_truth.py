@@ -27,6 +27,7 @@ from app.ingestion.statuses import (
     QUARANTINED,
 )
 from app.ingestion.automation_statuses import MACHINE_READY_ENABLED
+from app.models.entities import SourceRegistry
 
 
 # ---------------------------------------------------------------------------
@@ -38,13 +39,27 @@ def _make_source(
     source_key: str = "test_src",
     is_active: bool = True,
     source_class: str = "machine_ingest",
-    parser: str = "csv_parser",
-) -> MagicMock:
-    src = MagicMock()
+    parser: str | None = None,
+) -> SourceRegistry:
+    if parser is None:
+        from app.ingestion.source_adapters import ADAPTER_REGISTRY
+
+        parser = next(iter(ADAPTER_REGISTRY.keys()))
+
+    src = SourceRegistry(
+        source_key=source_key,
+        source_name=f"Source {source_key}",
+    )
     src.source_key = source_key
     src.is_active = is_active
     src.source_class = source_class
+    src.lifecycle_state = "runnable"
     src.parser = parser
+    src.parser_version = "1.0"
+    src.allowed_domains = '["example.com"]'
+    src.base_url = "https://example.com/feed"
+    src.requires_manual_review = True
+    src.public_publish_default = False
     src.automation_status = MACHINE_READY_ENABLED
     return src
 

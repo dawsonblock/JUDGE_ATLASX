@@ -11,13 +11,19 @@ from unittest.mock import MagicMock, patch
 
 from app.ingestion.adapters import IngestionResult
 from app.ingestion.source_runner import _validate_machine_ingest_contract
+from app.models.entities import SourceRegistry
 
 
-def _make_source(*, base_url: str | None = None) -> MagicMock:
-    source = MagicMock()
+def _make_source(*, base_url: str | None = None) -> SourceRegistry:
+    source = SourceRegistry(source_key="test_source", source_name="Test Source")
     source.base_url = base_url
     source.parser_version = "1.0"
     source.source_class = "machine_ingest"
+    source.lifecycle_state = "runnable"
+    source.allowed_domains = '["example.com"]'
+    source.requires_manual_review = True
+    source.public_publish_default = False
+    source.parser = "laws_justice_xml"
     source.source_key = "test_source"
     return source
 
@@ -45,7 +51,7 @@ def test_missing_fetch_url_uses_canonical_name() -> None:
 def test_admin_run_response_uses_canonical_violation_names() -> None:
     from app.api.routes.admin_sources import run_source_now
 
-    source = _make_source(base_url=None)
+    source = _make_source(base_url="https://example.com/feed")
     source.is_active = True
     source.automation_status = "machine_ready_enabled"
 
