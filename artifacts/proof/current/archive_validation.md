@@ -3,6 +3,9 @@
 - validated_at_utc: 2026-05-26T04:03:35.847229+00:00
 - archive: dist/JUDGE_ATLAS-main-final.zip
 - archive_sha256: 240121489c83e1824dee0fbe587bfcc9779d4e44ceb439d034657ddf9b96a42d
+- validated_at_utc: 2026-05-26T02:52:13.822443+00:00
+- archive: dist/JUDGE_ATLAS-main-final.zip
+- archive_sha256: 7f47b907ab39479a78b57b656d9a649becbee4209785fd7c0f3bc4438c6dbd4f
 - expected_root: JUDGE_ATLAS-main
 - actual_root: JUDGE_ATLAS-main
 - top_level_roots: JUDGE_ATLAS-main
@@ -10,6 +13,8 @@
 - valid: PASS
 - compressed_size_bytes: 2041342
 - uncompressed_size_bytes: 7771015
+- compressed_size_bytes: 2041373
+- uncompressed_size_bytes: 7771052
 
 ## Errors
 
@@ -25,6 +30,8 @@
 | JUDGE_ATLAS-main/backend/app/models/entities.py | 101799 | 16701 |
 | JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 90867 | 13392 |
 | JUDGE_ATLAS-main/artifacts/proof/current/proof_manifest.json | 51560 | 7027 |
+| JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 90872 | 13403 |
+| JUDGE_ATLAS-main/artifacts/proof/current/proof_manifest.json | 51565 | 7012 |
 | JUDGE_ATLAS-main/backend/app/memory/contradiction_engine.py | 48640 | 8977 |
 | JUDGE_ATLAS-main/backend/app/ingestion/sources/canada_saskatchewan_sources.yaml | 48464 | 6929 |
 | JUDGE_ATLAS-main/backend/app/tests/test_api.py | 43536 | 7488 |
@@ -49,6 +56,7 @@
 | scripts | 664175 |
 | docs | 358538 |
 | artifacts | 277796 |
+| artifacts | 277814 |
 | .github | 39644 |
 | demo | 26537 |
 | infra | 17264 |
