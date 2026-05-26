@@ -1,15 +1,15 @@
 # Archive Validation
 
-- validated_at_utc: 2026-05-26T01:20:06.816546+00:00
+- validated_at_utc: 2026-05-26T04:03:35.847229+00:00
 - archive: dist/JUDGE_ATLAS-main-final.zip
-- archive_sha256: 64fd69fa3f363e3feb7a34978c3f46fab01ca8557cb245c77667ec99f9b96032
+- archive_sha256: 240121489c83e1824dee0fbe587bfcc9779d4e44ceb439d034657ddf9b96a42d
 - expected_root: JUDGE_ATLAS-main
 - actual_root: JUDGE_ATLAS-main
 - top_level_roots: JUDGE_ATLAS-main
 - root_match: yes
 - valid: PASS
-- compressed_size_bytes: 2041043
-- uncompressed_size_bytes: 7769904
+- compressed_size_bytes: 2041342
+- uncompressed_size_bytes: 7771015
 
 ## Errors
 
@@ -23,8 +23,8 @@
 | JUDGE_ATLAS-main/frontend/package-lock.json | 393441 | 85051 |
 | JUDGE_ATLAS-main/scripts/release_gate.py | 107174 | 19956 |
 | JUDGE_ATLAS-main/backend/app/models/entities.py | 101799 | 16701 |
-| JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 90864 | 13396 |
-| JUDGE_ATLAS-main/artifacts/proof/current/proof_manifest.json | 51557 | 7024 |
+| JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 90867 | 13392 |
+| JUDGE_ATLAS-main/artifacts/proof/current/proof_manifest.json | 51560 | 7027 |
 | JUDGE_ATLAS-main/backend/app/memory/contradiction_engine.py | 48640 | 8977 |
 | JUDGE_ATLAS-main/backend/app/ingestion/sources/canada_saskatchewan_sources.yaml | 48464 | 6929 |
 | JUDGE_ATLAS-main/backend/app/tests/test_api.py | 43536 | 7488 |
@@ -35,7 +35,7 @@
 | JUDGE_ATLAS-main/backend/app/ingestion/courtlistener_bulk_normalizer.py | 29758 | 5588 |
 | JUDGE_ATLAS-main/backend/app/tests/test_admin_ingestion.py | 29007 | 4529 |
 | JUDGE_ATLAS-main/backend/app/tests/test_graph_layer.py | 28216 | 4765 |
-| JUDGE_ATLAS-main/artifacts/proof/current/source_registry_status.json | 27776 | 3325 |
+| JUDGE_ATLAS-main/artifacts/proof/current/source_registry_status.json | 27776 | 3324 |
 | JUDGE_ATLAS-main/backend/app/seed/sample_data.py | 25376 | 4657 |
 | JUDGE_ATLAS-main/backend/app/tests/test_memory_runtime.py | 24708 | 4490 |
 | JUDGE_ATLAS-main/backend/app/workers/postgres_queue.py | 24147 | 4457 |
@@ -46,9 +46,9 @@
 |---|---:|
 | backend | 5492756 |
 | frontend | 859320 |
-| scripts | 663055 |
+| scripts | 664175 |
 | docs | 358538 |
-| artifacts | 277788 |
+| artifacts | 277796 |
 | .github | 39644 |
 | demo | 26537 |
 | infra | 17264 |
@@ -59,8 +59,8 @@
 | docker-compose.yml | 2372 |
 | CURRENT_STATUS.md | 2035 |
 | PROOF_STATUS.md | 1939 |
-| README.md | 1908 |
+| README.md | 1910 |
 | RELEASE_BLOCKERS.md | 1291 |
-| RELEASE_MANIFEST.json | 1269 |
+| RELEASE_MANIFEST.json | 1250 |
 | Dockerfile.proof | 890 |
 | deploy | 389 |
