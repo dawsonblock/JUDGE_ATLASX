@@ -54,6 +54,7 @@ def _valid_files(root: str = "JUDGE_ATLAS-main") -> dict[str, str]:
         ),
         prefix + "artifacts/proof/current/release_gate.log": "gate log\n",
         prefix + "artifacts/proof/current/release_readiness.md": "current readiness\n",
+        prefix + "artifacts/proof/current/required_log_index.json": "{}\n",
         prefix + "artifacts/proof/current/source_registry_status.json": "{}\n",
         prefix + "README.md": "repo readme\n",
         prefix + "STATUS.md": "Production ready: FALSE\n",

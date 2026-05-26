@@ -220,6 +220,7 @@ def validate_archive_structure(extract_dir: Path, root: Path) -> tuple[bool, lis
         "scripts/release_gate.py",
         "artifacts/proof/current/release_readiness.md",
         "artifacts/proof/current/proof_manifest.json",
+        "artifacts/proof/current/required_log_index.json",
         "README.md",
     ]
     

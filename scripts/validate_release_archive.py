@@ -33,6 +33,7 @@ REQUIRED_PROOF_FILES = (
     "artifacts/proof/current/release_readiness.md",
     "artifacts/proof/current/release_gate.json",
     "artifacts/proof/current/proof_manifest.json",
+    "artifacts/proof/current/required_log_index.json",
     "artifacts/proof/current/source_registry_status.json",
 )
 REQUIRED_ROOT_FILES = (
