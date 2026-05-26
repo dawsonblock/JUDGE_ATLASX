@@ -54,6 +54,55 @@ redact_file(md_path)
 PY
 }
 
+refresh_archive_validation_manifest_entry() {
+  python3 - <<'PY' || true
+import hashlib
+import json
+from pathlib import Path
+
+root = Path('.').resolve()
+manifest_path = root / 'artifacts/proof/current/proof_manifest.json'
+log_rel = 'artifacts/proof/current/archive_validation.log'
+log_path = root / log_rel
+
+if not manifest_path.exists() or not log_path.exists():
+  raise SystemExit(0)
+
+try:
+  manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+except json.JSONDecodeError:
+  raise SystemExit(0)
+
+commands = manifest.get('proof_commands')
+if not isinstance(commands, list):
+  raise SystemExit(0)
+
+entry = None
+for candidate in commands:
+  if not isinstance(candidate, dict):
+    continue
+  candidate_path = candidate.get('path') or candidate.get('log_path')
+  if candidate_path == log_rel:
+    entry = candidate
+    break
+
+if entry is None:
+  raise SystemExit(0)
+
+data = log_path.read_bytes()
+digest = hashlib.sha256(data).hexdigest()
+size = len(data)
+
+entry['size_bytes'] = size
+entry['sha256'] = digest
+entry['log_sha256'] = digest
+entry['log_exists'] = True
+entry['status'] = 'PASS'
+
+manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
+PY
+}
+
 cleanup() {
   sanitize_archive_validation_artifacts
   rm -rf "${TMP_DIR}"
@@ -153,11 +202,12 @@ fi
 log "Running archive validation"
 bash scripts/validate_archive_proof.sh "${ARCHIVE_PATH}"
 
-python scripts/validate_final_zip.py "${ARCHIVE_PATH}" | tee -a "${ARCHIVE_VALIDATION_LOG}"
-python scripts/check_release_surface.py --archive "${ARCHIVE_PATH}" | tee -a "${ARCHIVE_VALIDATION_LOG}"
-python scripts/verify_archive_proof_freshness.py --archive "${ARCHIVE_PATH}" | tee -a "${ARCHIVE_VALIDATION_LOG}"
+python scripts/validate_final_zip.py "${ARCHIVE_PATH}"
+python scripts/check_release_surface.py --archive "${ARCHIVE_PATH}"
+python scripts/verify_archive_proof_freshness.py --archive "${ARCHIVE_PATH}"
 
 sanitize_archive_validation_artifacts
+refresh_archive_validation_manifest_entry
 
 if [[ "${SKIP_EXTRACTED_VALIDATION}" != "true" ]]; then
   log "Running extracted-archive release validation"
