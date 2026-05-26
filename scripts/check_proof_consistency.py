@@ -3,11 +3,14 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
-import sys
 from hashlib import sha256
 from pathlib import Path
+
+
+PROOF_INCOMPLETE_PREFIX = "PROOF_INCOMPLETE:"
 
 
 def load_json_file(path: Path) -> dict:
@@ -21,6 +24,13 @@ def load_json_file(path: Path) -> dict:
     if not isinstance(data, dict):
         raise RuntimeError(f"Expected JSON object in {path}")
     return data
+
+
+def load_text_file(path: Path) -> str:
+    """Load a UTF-8 text file with a structured missing-artifact error."""
+    if not path.exists():
+        raise RuntimeError(f"Proof artifact not found: {path}")
+    return path.read_text(encoding="utf-8")
 
 
 def _parse_version(version: str) -> tuple[int, int, int] | None:
@@ -267,6 +277,113 @@ def check_proof_input_consistency(manifest: dict, gate: dict) -> list[str]:
     return errors
 
 
+def _extract_markdown_scalar(text: str, key: str) -> str | None:
+    pattern = rf"(?m)^-\s+{re.escape(key)}:\s*(.+?)\s*$"
+    match = re.search(pattern, text)
+    if not match:
+        return None
+    return match.group(1).strip()
+
+
+def _extract_markdown_bullets(text: str, heading: str) -> list[str]:
+    lines = text.splitlines()
+    header = heading.strip().lower()
+    in_section = False
+    bullets: list[str] = []
+
+    for raw_line in lines:
+        line = raw_line.strip()
+        if line.startswith("## "):
+            in_section = line.lower() == f"## {header}"
+            continue
+        if not in_section:
+            continue
+        if line.startswith("### "):
+            break
+        if line.startswith("- "):
+            value = line[2:].strip()
+            if value:
+                bullets.append(value)
+
+    return bullets
+
+
+def check_hash_sync_across_all_sources(
+    manifest: dict,
+    gate: dict,
+    current_proof_text: str,
+) -> list[str]:
+    errors: list[str] = []
+    manifest_hash = manifest.get("proof_input_tree_hash")
+    gate_hash = gate.get("proof_input_tree_hash")
+    current_proof_hash = _extract_markdown_scalar(
+        current_proof_text,
+        "proof_input_tree_hash",
+    )
+
+    if gate_hash and not current_proof_hash:
+        errors.append("current_proof_missing_proof_input_tree_hash")
+
+    hash_sources = {
+        "proof_manifest": manifest_hash,
+        "release_gate": gate_hash,
+        "current_proof": current_proof_hash,
+    }
+    present = {
+        key: value
+        for key, value in hash_sources.items()
+        if isinstance(value, str) and value
+    }
+    if len(set(present.values())) > 1:
+        errors.append(
+            "proof_input_hash_mismatch_across_sources:" + json.dumps(present, sort_keys=True)
+        )
+    return errors
+
+
+def check_readiness_vs_release_gate_consistency(
+    gate: dict,
+    release_readiness_text: str,
+) -> list[str]:
+    errors: list[str] = []
+
+    readiness_status = _extract_markdown_scalar(release_readiness_text, "overall_status")
+    if isinstance(readiness_status, str):
+        gate_passed = bool(gate.get("alpha_gate_passed", False))
+        normalized = readiness_status.strip().lower()
+        if gate_passed and normalized == "blocked":
+            errors.append("release_readiness_status_mismatch:gate_passed_but_readiness_blocked")
+        if (not gate_passed) and normalized == "alpha-proof-pass":
+            errors.append("release_readiness_status_mismatch:gate_blocked_but_readiness_pass")
+
+    gate_blockers = gate.get("release_blockers_remaining", [])
+    gate_blocker_set = (
+        {item for item in gate_blockers if isinstance(item, str) and item}
+        if isinstance(gate_blockers, list)
+        else set()
+    )
+    readiness_blocker_set = set(
+        _extract_markdown_bullets(release_readiness_text, "Remaining Blockers")
+    )
+    normalized_readiness_blockers: set[str] = set()
+    for blocker in readiness_blocker_set:
+        if blocker.startswith("required_gate_failed:"):
+            normalized_readiness_blockers.add(
+                blocker.split(":", 1)[1].strip()
+            )
+            continue
+        normalized_readiness_blockers.add(blocker)
+
+    if gate_blocker_set != normalized_readiness_blockers:
+        errors.append(
+            "release_readiness_blockers_mismatch:"
+            f"release_gate={sorted(gate_blocker_set)}:"
+            f"release_readiness={sorted(readiness_blocker_set)}"
+        )
+
+    return errors
+
+
 def check_required_index_consistency(
     *,
     repo_root: Path,
@@ -462,27 +579,49 @@ def check_node_policy_alignment(repo_root: Path, manifest: dict, gate: dict) -> 
 
 
 def main() -> int:
-    script_dir = Path(__file__).parent
-    repo_root = script_dir.parent
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--root",
+        default=str(Path(__file__).resolve().parents[1]),
+        help="Repository root",
+    )
+    args = parser.parse_args()
+
+    repo_root = Path(args.root).resolve()
     proof_dir = repo_root / "artifacts" / "proof" / "current"
 
     manifest_path = proof_dir / "proof_manifest.json"
     gate_path = proof_dir / "release_gate.json"
     required_log_index_path = proof_dir / "required_log_index.json"
+    current_proof_path = proof_dir / "CURRENT_PROOF.md"
+    release_readiness_path = proof_dir / "release_readiness.md"
 
     print("Checking proof artifact consistency...")
     print(f"  proof_manifest.json: {manifest_path}")
     print(f"  release_gate.json: {gate_path}")
     print(f"  required_log_index.json: {required_log_index_path}")
+    print(f"  CURRENT_PROOF.md: {current_proof_path}")
+    print(f"  release_readiness.md: {release_readiness_path}")
 
     all_errors: list[str] = []
+    missing_artifacts: list[str] = []
 
     try:
         manifest = load_json_file(manifest_path)
         gate = load_json_file(gate_path)
         required_log_index = load_json_file(required_log_index_path)
+        current_proof_text = load_text_file(current_proof_path)
+        release_readiness_text = load_text_file(release_readiness_path)
     except RuntimeError as exc:
         print(f"ERROR: {exc}")
+        message = str(exc)
+        if message.startswith("Proof artifact not found: "):
+            missing_artifacts.append(message.replace("Proof artifact not found: ", "", 1))
+        print(
+            PROOF_INCOMPLETE_PREFIX
+            + "missing_proof_artifacts="
+            + ",".join(sorted(missing_artifacts))
+        )
         return 1
 
     all_errors.extend(check_node_version_consistency(manifest, gate))
@@ -490,13 +629,29 @@ def main() -> int:
     all_errors.extend(check_platform_consistency(manifest, gate))
     all_errors.extend(check_commit_hash_consistency(manifest, gate))
     all_errors.extend(check_proof_input_consistency(manifest, gate))
-    all_errors.extend(check_node_policy_alignment(repo_root, manifest, gate))
+    try:
+        all_errors.extend(check_node_policy_alignment(repo_root, manifest, gate))
+    except RuntimeError as exc:
+        all_errors.append(f"node_policy_alignment_error:{exc}")
     all_errors.extend(
         check_release_gate_proof_integrity(
             repo_root=repo_root,
             release_gate=gate,
             manifest=manifest,
             required_log_index=required_log_index,
+        )
+    )
+    all_errors.extend(
+        check_hash_sync_across_all_sources(
+            manifest,
+            gate,
+            current_proof_text,
+        )
+    )
+    all_errors.extend(
+        check_readiness_vs_release_gate_consistency(
+            gate,
+            release_readiness_text,
         )
     )
 

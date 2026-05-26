@@ -1,7 +1,7 @@
 # REPAIR_REPORT
 
-- generated_at_utc: 2026-05-26T20:25:25.616634+00:00
-- commit_hash: f22ed8f3a52ae673031ee0886dea92387564956c
+- generated_at_utc: 2026-05-26T21:23:24.498642+00:00
+- commit_hash: 64e142ddeca33f3a062126976a8ad730a8eeb9ad
 - alpha_gate_passed: false
 
 ## Phase Results
@@ -26,3 +26,5 @@
 - docker_runtime_preflight
 - docker_smoke
 - postgis_proof
+- archive_validation
+- check_proof_consistency

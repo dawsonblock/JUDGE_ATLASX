@@ -2381,6 +2381,8 @@ def main() -> int:
         [
             python_exe,
             "scripts/check_proof_consistency.py",
+            "--root",
+            str(repo_root),
         ],
     )
     _local_path_hygiene_spec = GateStepSpec(
