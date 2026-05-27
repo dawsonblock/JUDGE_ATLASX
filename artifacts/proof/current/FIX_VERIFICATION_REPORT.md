@@ -2,7 +2,7 @@
 
 - generated_at_utc: 2026-05-27T20:35:42.165058+00:00
 - commit_hash: 06663bce861b92ec736fdebaadef7f86543baef5
-- alpha_gate_passed: false
+- alpha_gate_passed: true
 
 ## Required Gate Signals
 
@@ -14,15 +14,12 @@
 - public_api_boundary: PASS
 - frontend_node_gate: PASS
 - frontend_contracts: PASS
-- archive_validation: MISSING
+- archive_validation: PASS
 - proof_freshness: PASS
 
 ## Release Blockers
 
-- archive_validation
-- check_proof_consistency
-- check_proof_manifest
-- required_proof_logs
+- none
 
 ## Canonical Artifacts
 

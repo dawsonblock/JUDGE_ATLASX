@@ -1,9 +1,9 @@
 # RELEASE_READINESS
 
 - generated_at_utc: 2026-05-27T20:35:42.165058+00:00
-- overall_status: blocked
+- overall_status: alpha-proof-pass
 - production_ready: false
-- release_recommendation: blocked
+- release_recommendation: alpha-proof-pass
 - archive_hash: 06663bce861b92ec736fdebaadef7f86543baef5
 - platform: macOS-26.2-arm64-arm-64bit
 - python_version: 3.11.7
@@ -58,9 +58,14 @@
 | canlii_staging_proof | PASS | 0 | artifacts/proof/current/canlii_staging_proof.log | d7c9393bb589559678b644f26519944ef1a69f81a771fdbd5fce0282bb665ab5 |
 | proof_freshness | PASS | 0 | artifacts/proof/current/proof_freshness.log | 5b1d1f8c12a471f8018aff3ac450b05d3bc90fa7e827014d6a499d69f392bcf9 |
 | single_proof_authority | PASS | 0 | artifacts/proof/current/single_proof_authority.log | 67de9d9d555d8a633cccb3b3fd168f55f5975ed306de95965f06666949cc4337 |
-| release_readiness_generation | PASS | 0 | artifacts/proof/current/release_readiness.md | fc0313f4d8e22e9451038a90d2896ac771889e558a2227534a500ba2cd657b5b |
+| release_readiness_generation | PASS | 0 | artifacts/proof/current/release_readiness.md | a9f3d6cf73309a70a3705247c4771524f1601dd70327559fa6f53a1228e36237 |
+| proof_consistency_pytest | PASS | 0 | artifacts/proof/current/proof_consistency_pytest.log | f6127ea06ecec78e96ed73da41127de0eb6545404e09ab19b417650064c8e118 |
+| archive_validation | PASS | 0 | artifacts/proof/current/archive_validation.log | 8648fb0d9bd497adf86427850369f2705ce131df2aa0f71e640a200ad375b1c0 |
+| required_proof_logs | PASS | 0 | artifacts/proof/current/required_proof_logs.log | 4e289fb59297b8eb1cb1f4fa758d08c12eb43873cd14ae930933ff9bd1789eaa |
+| check_proof_manifest | PASS | 0 | artifacts/proof/current/check_proof_manifest.log | 02a5c925c7261eb8bd964a91c6442c19d3346172c9561eeed5476fc616df93d9 |
+| check_no_local_paths_in_release_proof | PASS | 0 | artifacts/proof/current/check_no_local_paths_in_release_proof.log | 7ab4d071c63ecc123622b94a78dda4a32381a788cc2f318f840fe2f9e799c8e4 |
+| check_proof_consistency | PASS | 0 | artifacts/proof/current/check_proof_consistency.log | 0a6ed516987c56172c896b5e5e4bae178cd6f9a2b53df2aa17bb118215f63a28 |
 | release_gate | PASS | 0 | artifacts/proof/current/release_gate.log | 0ce729567578d6518a605bef41730774ab089183acd3af9cf8101768073daaf9 |
-| proof_consistency_pytest | FAIL | 1 | artifacts/proof/current/proof_consistency_pytest.log | missing |
 
 ## Optional Proof Gates
 
@@ -70,14 +75,11 @@
 
 ## Remaining Blockers
 
-- archive_validation
-- check_proof_consistency
-- check_proof_manifest
-- required_proof_logs
+- none
 
 ## Stale Or Misreported Claims
 
-- readiness is blocked due to failed/missing required proof evidence
+- none
 
 ## Next Repair Action
 

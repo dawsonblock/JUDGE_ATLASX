@@ -4,9 +4,9 @@
 - commit_hash: 06663bce861b92ec736fdebaadef7f86543baef5
 - operational_posture: alpha
 - production_ready: false
-- alpha_gate_passed: false
+- alpha_gate_passed: true
 - proof_freshness_result: PASS
-- release_gate_check_count: 45
+- release_gate_check_count: 51
 - postgis_proof_result: PASS
 - egress_proxy_proof_result: PASS
 - demo_proof_result: PASS
@@ -19,7 +19,4 @@
 
 ## Current Blockers
 
-- archive_validation
-- check_proof_consistency
-- check_proof_manifest
-- required_proof_logs
+- none

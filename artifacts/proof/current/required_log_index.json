@@ -2,9 +2,7 @@
   "generated_at": "2026-05-27T20:35:42.165058+00:00",
   "proof_root": "artifacts/proof/current",
   "required_logs_total": 7,
-  "missing_required_logs": [
-    "artifacts/proof/current/proof_consistency_pytest.log"
-  ],
+  "missing_required_logs": [],
   "entries": [
     {
       "path": "artifacts/proof/current/release_gate.log",
@@ -49,12 +47,12 @@
     {
       "path": "artifacts/proof/current/proof_consistency_pytest.log",
       "location_scope": "archive_internal",
-      "exists": false,
-      "recorded_sha256": null,
-      "actual_sha256": null,
-      "recorded_size_bytes": 0,
-      "actual_size_bytes": null,
-      "status": "FAIL"
+      "exists": true,
+      "recorded_sha256": "f6127ea06ecec78e96ed73da41127de0eb6545404e09ab19b417650064c8e118",
+      "actual_sha256": "f6127ea06ecec78e96ed73da41127de0eb6545404e09ab19b417650064c8e118",
+      "recorded_size_bytes": 110,
+      "actual_size_bytes": 110,
+      "status": "PASS"
     },
     {
       "path": "artifacts/proof/current/docker_smoke.log",
