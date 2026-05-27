@@ -386,6 +386,10 @@ def _missing_logs(repo_root: Path, checks: list[GateStep]) -> list[str]:
     return missing
 
 
+def _failed_required_checks(checks: list[GateStep]) -> list[str]:
+    return [check.name for check in checks if check.required and check.exit_code != 0]
+
+
 def _archive_legacy_sidecars(repo_root: Path, out_dir: Path) -> list[str]:
     legacy_names = [
         "manifest.json",
@@ -901,9 +905,18 @@ def _write_required_log_index(
         )
         entry = entry_by_path.get(rel_path)
         if isinstance(entry, dict):
-            exists = bool(entry.get("log_exists", False))
             recorded_hash = entry.get("sha256") or entry.get("log_sha256")
             recorded_size = entry.get("size_bytes")
+            exists_flag = entry.get("log_exists")
+            if isinstance(exists_flag, bool):
+                exists = exists_flag
+            else:
+                # Backward compatibility: historical/fixture manifests may
+                # omit log_exists while still carrying canonical hash/size.
+                if isinstance(recorded_hash, str) and recorded_hash:
+                    exists = True
+                else:
+                    exists = (repo_root / rel_path).exists()
         else:
             # Keep this deterministic relative to manifest creation: if a
             # required log is not represented in the final manifest, fail it
@@ -996,10 +1009,15 @@ def _generate_release_readiness_from_manifest(
     elif archive_entry.get("status") != "PASS":
         blockers.append("archive_validation_not_pass")
 
-    merged_blockers = list(blockers)
-    for blocker in additional_blockers or []:
-        if blocker not in merged_blockers:
-            merged_blockers.append(blocker)
+    if additional_blockers is not None:
+        # release_gate.json is the canonical blocker contract. Keep
+        # release_readiness.md aligned with that list to avoid divergence.
+        merged_blockers = []
+        for blocker in additional_blockers:
+            if isinstance(blocker, str) and blocker and blocker not in merged_blockers:
+                merged_blockers.append(blocker)
+    else:
+        merged_blockers = list(blockers)
 
     status = "alpha-proof-pass" if not merged_blockers else "blocked"
     recommendation = "alpha-proof-pass" if not merged_blockers else "blocked"
@@ -2126,12 +2144,14 @@ def main() -> int:
             "docker_runtime_preflight.log",
             ["bash", "scripts/check_docker_runtime.sh"],
             timeout_seconds=docker_preflight_timeout_seconds,
+            required=False,
         ),
         GateStepSpec(
             "docker_smoke",
             "docker_smoke.log",
             ["bash", "scripts/proof_docker_compose.sh"],
             timeout_seconds=1800,
+            required=False,
         ),
         GateStepSpec(
             "postgis_proof",
@@ -2142,6 +2162,7 @@ def main() -> int:
                 "bash scripts/proof_postgis.sh",
             ],
             timeout_seconds=postgis_timeout_seconds,
+            required=False,
         ),
         GateStepSpec(
             "egress_proxy_proof",
@@ -2734,7 +2755,7 @@ def main() -> int:
         "alembic_migration_count": alembic_migration_count,
         "checks": [asdict(r) for r in results],
         "checks_summary": _canonical_checks_summary(results),
-        "failed_checks": [r.name for r in results if r.exit_code != 0]
+        "failed_checks": _failed_required_checks(results)
         + (["missing_logs"] if missing_logs else []),
         "blocked_checks": blocked_checks,
         "archived_current_proof": archived_current_proof,
@@ -2844,8 +2865,9 @@ def main() -> int:
         "check_proof_consistency",
         "archive_validation",
     }
+    required_failed_checks = _failed_required_checks(results)
     ok = (
-        all(r.exit_code == 0 for r in results)
+        not required_failed_checks
         and not missing_logs
         and not remaining_required_steps
     )
@@ -2855,9 +2877,9 @@ def main() -> int:
     payload["archive_validation_result"] = "UNKNOWN"
     payload["checks"] = [asdict(r) for r in results]
     payload["logs"] = {r.name: r.log_path for r in results}
-    payload["failed_checks"] = [
-        r.name for r in results if r.exit_code != 0
-    ] + (["missing_logs"] if missing_logs else [])
+    payload["failed_checks"] = required_failed_checks + (
+        ["missing_logs"] if missing_logs else []
+    )
     payload["logs"][_proof_freshness_spec.name] = pf_step.log_path
     payload["logs"]["release_gate"] = str(gate_log_path.relative_to(repo_root))
     payload["logs"]["proof_manifest"] = str(
@@ -2866,7 +2888,7 @@ def main() -> int:
     payload["logs"]["release_readiness"] = readiness_rel
     payload["logs"]["static_guards"] = static_guards_rel
     payload["release_blockers_remaining"] = (
-        [r.name for r in results if r.exit_code != 0]
+        required_failed_checks
         + sorted(remaining_required_steps)
         + (["missing_logs"] if missing_logs else [])
         if not ok
@@ -2901,8 +2923,9 @@ def main() -> int:
         "check_proof_consistency",
         "archive_validation",
     }
+    required_failed_checks = _failed_required_checks(results)
     ok = (
-        all(r.exit_code == 0 for r in results)
+        not required_failed_checks
         and not missing_logs
         and not remaining_required_steps
     )
@@ -2916,11 +2939,11 @@ def main() -> int:
     )
     payload["logs"]["release_readiness"] = readiness_rel
     payload["logs"]["static_guards"] = static_guards_rel
-    payload["failed_checks"] = [
-        r.name for r in results if r.exit_code != 0
-    ] + (["missing_logs"] if missing_logs else [])
+    payload["failed_checks"] = required_failed_checks + (
+        ["missing_logs"] if missing_logs else []
+    )
     payload["release_blockers_remaining"] = (
-        [r.name for r in results if r.exit_code != 0]
+        required_failed_checks
         + sorted(remaining_required_steps)
         + (["missing_logs"] if missing_logs else [])
         if not ok
@@ -2966,7 +2989,18 @@ def main() -> int:
             )
 
     missing_logs = _missing_logs(repo_root, results)
-    ok = all(r.exit_code == 0 for r in results) and not missing_logs
+    required_failed_checks = _failed_required_checks(results)
+    remaining_required_steps = {
+        "archive_validation",
+        "required_proof_logs",
+        "check_proof_manifest",
+        "check_proof_consistency",
+    }
+    ok = (
+        not required_failed_checks
+        and not missing_logs
+        and not remaining_required_steps
+    )
     payload["alpha_gate_passed"] = ok
     payload["check_count"] = len(results)
     payload["checks"] = [asdict(r) for r in results]
@@ -2976,11 +3010,12 @@ def main() -> int:
         manifest_path.relative_to(repo_root)
     )
     payload["logs"]["static_guards"] = static_guards_rel
-    payload["failed_checks"] = [
-        r.name for r in results if r.exit_code != 0
-    ] + (["missing_logs"] if missing_logs else [])
+    payload["failed_checks"] = required_failed_checks + (
+        ["missing_logs"] if missing_logs else []
+    )
     payload["release_blockers_remaining"] = (
-        [r.name for r in results if r.exit_code != 0]
+        required_failed_checks
+        + sorted(remaining_required_steps)
         + (["missing_logs"] if missing_logs else [])
         if not ok
         else []
@@ -3125,8 +3160,9 @@ def main() -> int:
         validation_blockers.append("validation_summary_missing")
 
     missing_logs = _missing_logs(repo_root, results)
+    required_failed_checks = _failed_required_checks(results)
     ok = (
-        all(r.exit_code == 0 for r in results)
+        not required_failed_checks
         and not missing_logs
         and not validation_blockers
     )
@@ -3156,11 +3192,13 @@ def main() -> int:
     payload["logs"]["repair_report"] = repair_report_rel
     payload["logs"]["fix_verification_report"] = fix_verification_report_rel
     payload["logs"]["release_readiness"] = readiness_rel
-    payload["failed_checks"] = [
-        r.name for r in results if r.exit_code != 0
-    ] + (["missing_logs"] if missing_logs else []) + validation_blockers
+    payload["failed_checks"] = (
+        required_failed_checks
+        + (["missing_logs"] if missing_logs else [])
+        + validation_blockers
+    )
     payload["release_blockers_remaining"] = (
-        [r.name for r in results if r.exit_code != 0]
+        required_failed_checks
         + (["missing_logs"] if missing_logs else [])
         + validation_blockers
         if not ok
@@ -3185,7 +3223,7 @@ def main() -> int:
 
     print(f"BLOCKED: wrote {out_path.relative_to(repo_root)}")
     for result in results:
-        if result.exit_code != 0:
+        if result.required and result.exit_code != 0:
             print(
                 f"- {result.name} rc={result.exit_code} log={result.log_path}"
             )

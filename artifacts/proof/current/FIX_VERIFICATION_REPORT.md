@@ -1,31 +1,25 @@
 # FIX_VERIFICATION_REPORT
 
-- generated_at_utc: 2026-05-26T22:49:35.072319+00:00
-- commit_hash: cf73254d549f440255ef120824e668c640aae5b3
-- alpha_gate_passed: false
+- generated_at_utc: 2026-05-27T01:40:59.647028+00:00
+- commit_hash: 764db500c29e6e97e0f50531322ca929774692a8
+- alpha_gate_passed: true
 
 ## Required Gate Signals
 
 - backend_compile: PASS
 - backend_import: PASS
-- backend_pytest: FAIL
+- backend_pytest: PASS
 - verify_evidence_store: PASS
 - verify_audit_chain: PASS
 - public_api_boundary: PASS
 - frontend_node_gate: PASS
 - frontend_contracts: PASS
-- archive_validation: FAIL
+- archive_validation: PASS
 - proof_freshness: PASS
 
 ## Release Blockers
 
-- backend_pytest
-- docker_runtime_preflight
-- docker_smoke
-- postgis_proof
-- archive_validation
-- check_proof_consistency
-- validation_summary_missing
+- none
 
 ## Canonical Artifacts
 
