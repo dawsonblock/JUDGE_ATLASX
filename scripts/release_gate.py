@@ -807,6 +807,7 @@ def _build_proof_manifest(
         log_abs = repo_root / rel_path
         log_exists = log_abs.exists()
         size_bytes = log_abs.stat().st_size if log_exists else 0
+        log_hash = _sha256_file(log_abs) if log_exists else None
         captured_at_raw = payload.get("timestamp_utc")
         captured_at = (
             captured_at_raw
@@ -829,8 +830,8 @@ def _build_proof_manifest(
                 "status": "PASS" if log_exists else "FAIL",
                 "log_path": rel_path,
                 "log_exists": log_exists,
-                "log_sha256": _sha256_file(log_abs) if log_exists else None,
-                "sha256": _sha256_file(log_abs) if log_exists else None,
+                "log_sha256": log_hash,
+                "sha256": log_hash,
                 "size_bytes": size_bytes,
                 "proof_source": "required_proof_manifest",
                 "failure_reason": None if log_exists else "missing_file",
@@ -2863,7 +2864,7 @@ def main() -> int:
         "check_proof_manifest",
         "check_proof_consistency",
         "archive_validation",
-    }
+    } - {r.name for r in results}
     required_failed_checks = _failed_required_checks(results)
     ok = (
         not required_failed_checks
@@ -2921,7 +2922,7 @@ def main() -> int:
         "check_proof_manifest",
         "check_proof_consistency",
         "archive_validation",
-    }
+    } - {r.name for r in results}
     required_failed_checks = _failed_required_checks(results)
     ok = (
         not required_failed_checks
