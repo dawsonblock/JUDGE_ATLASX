@@ -1,13 +1,14 @@
 """
 Crime-to-Statute Linking Service for Public Platform
 
-This service uses Claude AI to automatically link crime incidents to relevant
-Canadian federal statutes. Each link includes a confidence score and explanation
-of why the statute is relevant to the specific crime.
+This service uses an LLM (via abstracted provider) to automatically link crime 
+incidents to relevant Canadian federal statutes. Each link includes a confidence 
+score and explanation of why the statute is relevant to the specific crime.
 
 Usage:
-    service = CrimeStatuteLinker()
-    links = await service.link_incident_to_statutes(
+    service = CrimeStatuteLinker(llm_provider)
+    links = service.link_incident_to_statutes(
+        session=db_session,
         incident_id="crime-12345",
         crime_type="assault",
         description="Physical altercation...",
@@ -18,29 +19,35 @@ Usage:
 import logging
 from datetime import datetime
 
-from anthropic import Anthropic
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.entities import LegalInstrument, LegalSection, StatuteIncidentLink
-from app.db.session import get_async_session
+from app.db.session import get_db
 from app.services.public_link_statuses import LINK_REVIEW_STATUS_PENDING
+from app.llm.provider import LLMProvider
+from app.llm.schemas import LLMRequest, TaskType
 
 logger = logging.getLogger(__name__)
 
-# Initialize Anthropic client
-client = Anthropic()
-
 
 class CrimeStatuteLinker:
-    """Links crimes to relevant Canadian statutes using AI."""
+    """Links crimes to relevant Canadian statutes using an LLM provider."""
 
-    MODEL = "claude-3-5-sonnet-20241022"
     AI_MODEL_VERSION = "1.0"
 
-    async def link_incident_to_statutes(
+    def __init__(self, llm_provider: LLMProvider):
+        """Initialize with an LLM provider.
+
+        Args:
+            llm_provider: Configured LLMProvider instance (e.g., OpenAI, Ollama)
+        """
+        self.llm = llm_provider
+        logger.info(f"[v0] CrimeStatuteLinker initialized with {self.llm.provider_name}")
+
+    def link_incident_to_statutes(
         self,
-        session: AsyncSession,
+        session: Session,
         incident_id: str,
         crime_type: str,
         description: str,
@@ -66,7 +73,7 @@ class CrimeStatuteLinker:
         )
 
         # Fetch all Canadian federal statutes from database
-        result = await session.execute(
+        result = session.execute(
             select(LegalInstrument).filter_by(jurisdiction="CA", public_visibility="public")
         )
         statutes = result.scalars().all()
