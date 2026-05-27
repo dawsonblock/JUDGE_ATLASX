@@ -1,10 +1,10 @@
 # CURRENT_ALPHA_STATUS
 
-- generated_at_utc: 2026-05-27T01:40:59.647028+00:00
-- commit_hash: 764db500c29e6e97e0f50531322ca929774692a8
+- generated_at_utc: 2026-05-27T02:42:41.610411+00:00
+- commit_hash: fec0518d326e12f955dc8dc2e49ed1537551a87e
 - operational_posture: alpha
 - production_ready: false
-- alpha_gate_passed: true
+- alpha_gate_passed: false
 - proof_freshness_result: PASS
 - release_gate_check_count: 50
 - postgis_proof_result: BLOCKED
@@ -19,4 +19,6 @@
 
 ## Current Blockers
 
-- none
+- docker_runtime_preflight
+- docker_smoke
+- postgis_proof

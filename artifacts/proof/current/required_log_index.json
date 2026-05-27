@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-27T01:40:59.647028+00:00",
+  "generated_at": "2026-05-27T02:42:41.610411+00:00",
   "proof_root": "artifacts/proof/current",
   "required_logs_total": 7,
   "missing_required_logs": [],
@@ -8,20 +8,20 @@
       "path": "artifacts/proof/current/release_gate.log",
       "location_scope": "archive_internal",
       "exists": true,
-      "recorded_sha256": "ec0c1056aa6c9fa02df5ef1246a7745f71374fe7dd7f4123e192a9d8b14cd3c8",
-      "actual_sha256": "ec0c1056aa6c9fa02df5ef1246a7745f71374fe7dd7f4123e192a9d8b14cd3c8",
-      "recorded_size_bytes": 3984,
-      "actual_size_bytes": 3984,
+      "recorded_sha256": "937338ea3ffe14ee3b87e330ec71cd9e557314664f6988832252315c160642b7",
+      "actual_sha256": "937338ea3ffe14ee3b87e330ec71cd9e557314664f6988832252315c160642b7",
+      "recorded_size_bytes": 3985,
+      "actual_size_bytes": 3985,
       "status": "PASS"
     },
     {
       "path": "artifacts/proof/current/backend_pytest.log",
       "location_scope": "archive_internal",
       "exists": true,
-      "recorded_sha256": "6645ec3b576213e807a6c2aef2488e90e9c167cc895bee612de29d4c00f74a45",
-      "actual_sha256": "6645ec3b576213e807a6c2aef2488e90e9c167cc895bee612de29d4c00f74a45",
-      "recorded_size_bytes": 7907,
-      "actual_size_bytes": 7907,
+      "recorded_sha256": "62b1c3a6a73a052fac71fc28e303f1b0997c2e19957dd9642262f998ead464cf",
+      "actual_sha256": "62b1c3a6a73a052fac71fc28e303f1b0997c2e19957dd9642262f998ead464cf",
+      "recorded_size_bytes": 7917,
+      "actual_size_bytes": 7917,
       "status": "PASS"
     },
     {
@@ -48,8 +48,8 @@
       "path": "artifacts/proof/current/proof_consistency_pytest.log",
       "location_scope": "archive_internal",
       "exists": true,
-      "recorded_sha256": "f6127ea06ecec78e96ed73da41127de0eb6545404e09ab19b417650064c8e118",
-      "actual_sha256": "f6127ea06ecec78e96ed73da41127de0eb6545404e09ab19b417650064c8e118",
+      "recorded_sha256": "dce821e26b65efde885da85ddc85e756e7332d437815e8f90fbe1933be0c87b8",
+      "actual_sha256": "dce821e26b65efde885da85ddc85e756e7332d437815e8f90fbe1933be0c87b8",
       "recorded_size_bytes": 110,
       "actual_size_bytes": 110,
       "status": "PASS"

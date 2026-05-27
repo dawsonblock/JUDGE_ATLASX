@@ -2163,6 +2163,7 @@ def main() -> int:
                 "bash scripts/proof_postgis.sh",
             ],
             timeout_seconds=postgis_timeout_seconds,
+            required=True,
         ),
         GateStepSpec(
             "egress_proxy_proof",
