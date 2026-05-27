@@ -15,9 +15,9 @@ from datetime import datetime
 
 from fastapi import APIRouter, Query, Depends, HTTPException
 from sqlalchemy import select, and_, func
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
-from app.db.session import get_async_session
+from app.db.session import get_db
 from app.models.geo_legal_event import GeoLegalEvent
 from app.models.entities import (
     StatuteIncidentLink,
@@ -47,7 +47,7 @@ router = APIRouter(prefix="/api/public", tags=["public"])
 
 
 @router.get("/map/incidents")
-async def get_map_incidents(
+def get_map_incidents(
     bbox_min_lat: float = Query(-90, description="Bounding box min latitude"),
     bbox_min_lng: float = Query(-180, description="Bounding box min longitude"),
     bbox_max_lat: float = Query(90, description="Bounding box max latitude"),
@@ -59,7 +59,7 @@ async def get_map_incidents(
         None, description="Filter by jurisdictions"
     ),
     limit: int = Query(500, ge=1, le=1000, description="Max results"),
-    session: AsyncSession = Depends(get_async_session),
+    session: Session = Depends(get_db),
 ) -> dict:
     """
     Get crime incidents for map visualization.
@@ -79,7 +79,26 @@ async def get_map_incidents(
         f"{bbox_max_lat},{bbox_max_lng})"
     )
 
+    # Validate bounding box
+    if bbox_min_lat > bbox_max_lat or bbox_min_lng > bbox_max_lng:
+        raise HTTPException(status_code=400, detail="Invalid bounding box: min must be <= max")
+
     try:
+        # Validate date formats early
+        date_from_dt = None
+        if date_from:
+            try:
+                date_from_dt = datetime.fromisoformat(date_from)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid date_from format (use YYYY-MM-DD)")
+
+        date_to_dt = None
+        if date_to:
+            try:
+                date_to_dt = datetime.fromisoformat(date_to)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid date_to format (use YYYY-MM-DD)")
+
         # Build query
         query = select(GeoLegalEvent).filter(
             and_(
@@ -92,19 +111,11 @@ async def get_map_incidents(
         )
 
         # Apply date filter
-        if date_from:
-            try:
-                date_from_dt = datetime.fromisoformat(date_from)
-                query = query.filter(GeoLegalEvent.occurred_at >= date_from_dt)
-            except ValueError:
-                logger.warning(f"[v0] Invalid date_from: {date_from}")
+        if date_from_dt:
+            query = query.filter(GeoLegalEvent.occurred_at >= date_from_dt)
 
-        if date_to:
-            try:
-                date_to_dt = datetime.fromisoformat(date_to)
-                query = query.filter(GeoLegalEvent.occurred_at <= date_to_dt)
-            except ValueError:
-                logger.warning(f"[v0] Invalid date_to: {date_to}")
+        if date_to_dt:
+            query = query.filter(GeoLegalEvent.occurred_at <= date_to_dt)
 
         # Apply crime type filter
         if crime_types:
@@ -116,21 +127,21 @@ async def get_map_incidents(
 
         query = query.limit(limit).order_by(GeoLegalEvent.occurred_at.desc())
 
-        result = await session.execute(query)
+        result = session.execute(query)
         incidents = result.scalars().all()
 
         # Filter to only publicly releasable incidents
         policy = PublicReleasePolicy()
         public_incidents = []
         for incident in incidents:
-            if await policy.is_incident_publicly_releasable(session, incident):
+            if policy.is_incident_publicly_releasable(session, incident):
                 public_incidents.append(incident)
 
         # Transform to response schema
         features = []
         for incident in public_incidents:
             # Count linked resources
-            statute_result = await session.execute(
+            statute_result = session.execute(
                 select(func.count(StatuteIncidentLink.id)).where(
                     StatuteIncidentLink.incident_id == incident.id,
                     StatuteIncidentLink.review_status == "approved",
@@ -138,7 +149,7 @@ async def get_map_incidents(
             )
             statute_count = statute_result.scalar() or 0
 
-            news_result = await session.execute(
+            news_result = session.execute(
                 select(func.count(IncidentNewsLink.id)).where(
                     IncidentNewsLink.incident_id == incident.id
                 )
@@ -181,7 +192,7 @@ async def get_map_incidents(
 
 
 @router.get("/incident/{incident_id}")
-async def get_incident_detail(
+def get_incident_detail(
     incident_id: str,
     session: AsyncSession = Depends(get_async_session),
 ) -> dict:
@@ -198,7 +209,7 @@ async def get_incident_detail(
 
     try:
         # Fetch incident
-        result = await session.execute(
+        result = session.execute(
             select(GeoLegalEvent).filter_by(id=incident_id)
         )
         incident = result.scalar()
@@ -207,7 +218,7 @@ async def get_incident_detail(
             raise HTTPException(status_code=404, detail="Incident not found")
 
         # Fetch linked statutes
-        statute_links_result = await session.execute(
+        statute_links_result = session.execute(
             select(StatuteIncidentLink)
             .filter_by(incident_id=incident_id, review_status="approved")
             .order_by(StatuteIncidentLink.confidence_score.desc())
@@ -216,12 +227,12 @@ async def get_incident_detail(
 
         statutes = []
         for link in statute_links:
-            section_result = await session.execute(
+            section_result = session.execute(
                 select(LegalSection).filter_by(id=link.legal_section_id)
             )
             section = section_result.scalar()
 
-            instrument_result = await session.execute(
+            instrument_result = session.execute(
                 select(LegalInstrument).filter_by(id=section.legal_instrument_id)
             )
             instrument = instrument_result.scalar()
@@ -241,7 +252,7 @@ async def get_incident_detail(
                 )
 
         # Fetch linked news
-        news_result = await session.execute(
+        news_result = session.execute(
             select(IncidentNewsLink)
             .filter_by(incident_id=incident_id)
             .order_by(IncidentNewsLink.published_date.desc())
@@ -297,7 +308,7 @@ async def get_incident_detail(
 
 
 @router.get("/statutes")
-async def search_statutes(
+def search_statutes(
     search: str | None = Query(None, description="Search term"),
     sort_by: str = Query(
         "frequency", description="Sort: frequency, title, or recent"
@@ -354,10 +365,10 @@ async def search_statutes(
 
         # Paginate
         total_query = query.statement.with_only_columns(func.count())
-        total = (await session.execute(total_query)).scalar() or 0
+        total = (session.execute(total_query)).scalar() or 0
 
         query = query.offset(offset).limit(limit)
-        result = await session.execute(query)
+        result = session.execute(query)
         statutes = result.scalars().unique().all()
 
         items = [
@@ -392,7 +403,7 @@ async def search_statutes(
 
 
 @router.get("/statute/{statute_id}")
-async def get_statute_detail(
+def get_statute_detail(
     statute_id: int,
     limit_incidents: int = Query(20, ge=1, le=100),
     session: AsyncSession = Depends(get_async_session),
@@ -409,7 +420,7 @@ async def get_statute_detail(
 
     try:
         # Fetch statute
-        result = await session.execute(
+        result = session.execute(
             select(LegalInstrument).filter_by(id=statute_id)
         )
         statute = result.scalar()
@@ -418,13 +429,13 @@ async def get_statute_detail(
             raise HTTPException(status_code=404, detail="Statute not found")
 
         # Fetch sections
-        sections_result = await session.execute(
+        sections_result = session.execute(
             select(LegalSection).filter_by(legal_instrument_id=statute_id)
         )
         sections = sections_result.scalars().all()
 
         # Fetch linked incidents
-        incidents_result = await session.execute(
+        incidents_result = session.execute(
             select(StatuteIncidentLink)
             .filter_by(review_status="approved")
             .join(LegalSection)
@@ -439,7 +450,7 @@ async def get_statute_detail(
         # Fetch incident details
         incidents = []
         for link in incident_links:
-            incident_result = await session.execute(
+            incident_result = session.execute(
                 select(GeoLegalEvent).filter_by(id=link.incident_id)
             )
             incident = incident_result.scalar()

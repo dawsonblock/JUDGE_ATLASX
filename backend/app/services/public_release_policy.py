@@ -14,7 +14,7 @@ import logging
 from datetime import datetime
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.geo_legal_event import GeoLegalEvent
 from app.models.entities import StatuteIncidentLink, IncidentNewsLink
@@ -30,8 +30,8 @@ class PublicReleasePolicy:
     """Enforces public release eligibility for incidents and links."""
 
     @staticmethod
-    async def is_incident_publicly_releasable(
-        session: AsyncSession,
+    def is_incident_publicly_releasable(
+        session: Session,
         incident: GeoLegalEvent,
     ) -> bool:
         """
@@ -115,7 +115,7 @@ class PublicReleasePolicy:
         return True
 
     @staticmethod
-    async def is_statute_link_publicly_releasable(
+    def is_statute_link_publicly_releasable(
         link: StatuteIncidentLink,
     ) -> bool:
         """
@@ -147,7 +147,7 @@ class PublicReleasePolicy:
         return True
 
     @staticmethod
-    async def is_news_link_publicly_releasable(
+    def is_news_link_publicly_releasable(
         link: IncidentNewsLink,
     ) -> bool:
         """
