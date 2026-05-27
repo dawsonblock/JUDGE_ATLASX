@@ -42,6 +42,27 @@ REQUIRED_DERIVED_METRICS = (
 
 REQUIRED_DOC_METRICS = REQUIRED_SUMMARY_METRICS + REQUIRED_DERIVED_METRICS
 
+SOURCE_REGISTRY_HEADER_ALIASES: dict[str, tuple[str, ...]] = {
+    "source key": ("source key", "source_key"),
+    "lifecycle state": ("lifecycle state", "lifecycle"),
+    "automation status": ("automation status", "automation"),
+    "adapter state": ("adapter state",),
+    "adapter exists": ("adapter exists",),
+    "runnable now": ("runnable now",),
+    "enable ready": ("enable ready",),
+    "review required": ("review required",),
+}
+
+REQUIRED_SOURCE_REGISTRY_HEADERS = (
+    "source key",
+    "lifecycle state",
+    "automation status",
+    "adapter state",
+    "runnable now",
+    "enable ready",
+    "review required",
+)
+
 
 def _load_yaml_sources() -> list[dict]:
     yaml_path = (
@@ -171,6 +192,39 @@ def _parse_bool_cell(value: str) -> bool | None:
     return None
 
 
+def _normalize_header(value: str) -> str:
+    return " ".join(value.strip().strip("`").lower().split())
+
+
+def _extract_source_registry_header_map(text: str) -> dict[str, int]:
+    for line in text.splitlines():
+        if not line.startswith("|"):
+            continue
+        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        normalized = [_normalize_header(cell) for cell in cells]
+        if "source key" not in normalized:
+            continue
+        return {header: idx for idx, header in enumerate(normalized) if header}
+    return {}
+
+
+def _resolve_source_registry_headers(header_map: dict[str, int]) -> dict[str, int]:
+    resolved: dict[str, int] = {}
+    for canonical, aliases in SOURCE_REGISTRY_HEADER_ALIASES.items():
+        for alias in aliases:
+            if alias in header_map:
+                resolved[canonical] = header_map[alias]
+                break
+        if canonical in resolved:
+            continue
+        if canonical == "review required":
+            for header, idx in header_map.items():
+                if header.startswith("review required"):
+                    resolved[canonical] = idx
+                    break
+    return resolved
+
+
 def _validate_doc_metrics(doc_path: Path, summary_counts: dict[str, int]) -> list[str]:
     errors: list[str] = []
     if not doc_path.exists():
@@ -266,16 +320,22 @@ def _validate_governance_docs(
     return errors
 
 
-def _validate_source_registry_row(source_key: str, cells: list[str], truth: dict) -> list[str]:
+def _validate_source_registry_row(
+    source_key: str,
+    cells: list[str],
+    truth: dict,
+    resolved_header_map: dict[str, int],
+) -> list[str]:
     errors: list[str] = []
-    required_cells = 10
-    if len(cells) < required_cells:
+    required_headers = ("lifecycle state", "automation status", "runnable now", "enable ready")
+    max_required_index = max(resolved_header_map[header] for header in required_headers)
+    if len(cells) <= max_required_index:
         return [f"docs/SOURCE_REGISTRY_STATUS.md:row_malformed:{source_key}"]
 
-    lifecycle_doc = cells[5].strip("`").strip()
-    automation_doc = cells[6].strip("`").strip()
-    runnable_doc = _parse_bool_cell(cells[8])
-    enable_ready_doc = _parse_bool_cell(cells[9])
+    lifecycle_doc = cells[resolved_header_map["lifecycle state"]].strip("`").strip()
+    automation_doc = cells[resolved_header_map["automation status"]].strip("`").strip()
+    runnable_doc = _parse_bool_cell(cells[resolved_header_map["runnable now"]])
+    enable_ready_doc = _parse_bool_cell(cells[resolved_header_map["enable ready"]])
 
     lifecycle_truth = str(truth.get("lifecycle_state") or "")
     automation_truth = str(truth.get("automation_status") or "")
@@ -338,6 +398,14 @@ def _parse_source_registry_rows(text: str) -> tuple[set[str], dict[str, list[str
     return row_keys, row_cells_by_key
 
 
+def _validate_source_registry_headers(resolved_header_map: dict[str, int]) -> list[str]:
+    missing = [header for header in REQUIRED_SOURCE_REGISTRY_HEADERS if header not in resolved_header_map]
+    if not missing:
+        return []
+    joined = ",".join(sorted(missing))
+    return [f"docs/SOURCE_REGISTRY_STATUS.md:required_headers_missing:{joined}"]
+
+
 def _validate_source_registry_keyset(
     yaml_keys: set[str],
     row_keys: set[str],
@@ -383,19 +451,24 @@ def _validate_source_registry_status_doc(sources: list[dict], source_truth_by_ke
 
     text = doc_path.read_text(encoding="utf-8", errors="ignore")
     yaml_keys = {str(source.get("source_key")) for source in sources}
+    header_map = _extract_source_registry_header_map(text)
+    resolved_header_map = _resolve_source_registry_headers(header_map)
     row_keys, row_cells_by_key = _parse_source_registry_rows(text)
 
+    errors.extend(_validate_source_registry_headers(resolved_header_map))
     errors.extend(_validate_source_registry_keyset(yaml_keys=yaml_keys, row_keys=row_keys))
     errors.extend(_validate_source_registry_declared_count(text, len(sources)))
 
-    for source_key in sorted(row_keys & set(source_truth_by_key.keys())):
-        errors.extend(
-            _validate_source_registry_row(
-                source_key=source_key,
-                cells=row_cells_by_key.get(source_key, []),
-                truth=source_truth_by_key[source_key],
+    if not errors:
+        for source_key in sorted(row_keys & set(source_truth_by_key.keys())):
+            errors.extend(
+                _validate_source_registry_row(
+                    source_key=source_key,
+                    cells=row_cells_by_key.get(source_key, []),
+                    truth=source_truth_by_key[source_key],
+                    resolved_header_map=resolved_header_map,
+                )
             )
-        )
 
     return errors
 
