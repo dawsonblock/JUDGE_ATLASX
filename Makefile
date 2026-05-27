@@ -1,4 +1,4 @@
-.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof release-proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup release-zip build-clean-release validate-release-zip proof-static validate-archive-freshness validate-handoff-consistency saskatoon-staging-proof canlii-staging-contract statscan-boundary-proof validate-smoke-workspace validate-full-workspace validate-docker-workspace
+.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof release-proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup release-zip build-clean-release validate-release-zip proof-static validate-archive-freshness validate-handoff-consistency saskatoon-staging-proof canlii-staging-contract statscan-boundary-proof validate-smoke-workspace validate-full-workspace validate-docker-workspace check-route-contract
 
 backend-install:
 	cd backend && python -m pip install -e ".[test]"
@@ -119,6 +119,7 @@ release-proof:
 	@python3 scripts/check_frontend_node_gate.py --expected-major 20
 	@python3 scripts/check_false_claims.py
 	@python3 scripts/check_api_contracts.py
+	@python3 scripts/check_frontend_backend_route_contract.py
 	@python3 scripts/check_map_route.py
 	@python3 scripts/check_proof_freshness.py
 	@python3 scripts/verify_proof_hash_sync.py --root .
@@ -131,6 +132,9 @@ release-proof:
 	@python3 scripts/validate_final_zip.py dist/JUDGE_ATLAS-main-final.zip
 	@python3 scripts/check_release_surface.py --archive dist/JUDGE_ATLAS-main-final.zip
 	@python3 scripts/validate_extracted_release.py --archive dist/JUDGE_ATLAS-main-final.zip --expected-root JUDGE_ATLAS-main
+
+check-route-contract:
+	@python3 scripts/check_frontend_backend_route_contract.py
 
 validate-handoff-consistency:
 	@python3 scripts/check_release_handoff_consistency.py --archive dist/JUDGE_ATLAS-main-final.zip

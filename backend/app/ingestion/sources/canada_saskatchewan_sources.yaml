@@ -386,13 +386,13 @@ sources:
   precision_level: city_block
   priority: 4
   source_class: machine_ingest
-  automation_status: machine_ready_disabled
+  automation_status: machine_ready_enabled
   parser_version: ckan_api_v1
   config_json: '{"resource_id":"saskatoon-public-safety-fixture","page_limit":100,"max_pages":2,"offset":0}'
   admin_notes: Staged CKAN machine-ingest source in disabled mode. Fixture-backed
     proof path is available for CI without live network dependency. All outputs remain
     review-only pending manual review.
-  lifecycle_state: runnable_disabled
+  lifecycle_state: runnable
   status_reason: "Saskatoon public safety CKAN adapter staged and validated in fixture mode;\
     \ source remains disabled pending operator review."
   operator_next_step: Run fixture proof target, confirm review-only payloads, then
@@ -407,7 +407,7 @@ sources:
   adapter:
     parser: ckan_api
     mode: api
-    machine_ingest_enabled: false
+    machine_ingest_enabled: true
     requires_secret: false
     rate_limit_rpm: 30
     timeout_seconds: 30

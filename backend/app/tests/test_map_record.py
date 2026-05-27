@@ -1,9 +1,11 @@
 """Tests for map record trust-field population in api.routes.map_record."""
 
+from fastapi import HTTPException
 import pytest
 from unittest.mock import MagicMock, patch
 
 from app.api.routes.map_record import _court_event_detail, _incident_detail
+from app.policies.publication_policy import PublicationDecision
 
 
 def _make_event(**overrides):
@@ -91,13 +93,51 @@ class TestIncidentTrustFields:
     def test_incident_source_tier_official_when_source_url_present(self):
         incident = _make_incident(source_url="https://police.example.gov/data")
         db = _make_db(incident)
-        with patch("app.api.routes.map_record.is_public_crime_incident", return_value=True):
+        with patch(
+            "app.api.routes.map_record.is_public_crime_incident", return_value=True
+        ), patch(
+            "app.api.routes.map_record.can_show_public_entity",
+            return_value=PublicationDecision(
+                allowed=True,
+                reasons=[],
+                public_status="official_police_open_data_report",
+                public_visibility_value=True,
+            ),
+        ):
             result = _incident_detail("1", db)
         assert result["source_tier"] == "official"
 
     def test_incident_no_linked_court_record_warning(self):
         incident = _make_incident(source_url=None, verification_status="unverified")
         db = _make_db(incident)
-        with patch("app.api.routes.map_record.is_public_crime_incident", return_value=True):
+        with patch(
+            "app.api.routes.map_record.is_public_crime_incident", return_value=True
+        ), patch(
+            "app.api.routes.map_record.can_show_public_entity",
+            return_value=PublicationDecision(
+                allowed=True,
+                reasons=[],
+                public_status="official_police_open_data_report",
+                public_visibility_value=True,
+            ),
+        ):
             result = _incident_detail("1", db)
         assert "No linked court record" in result["warnings"]
+
+    def test_incident_returns_404_when_publication_policy_denies(self):
+        incident = _make_incident()
+        db = _make_db(incident)
+        with patch(
+            "app.api.routes.map_record.is_public_crime_incident", return_value=True
+        ), patch(
+            "app.api.routes.map_record.can_show_public_entity",
+            return_value=PublicationDecision(
+                allowed=False,
+                reasons=["public_visibility_false"],
+                public_status=None,
+                public_visibility_value=False,
+            ),
+        ):
+            with pytest.raises(HTTPException) as exc_info:
+                _incident_detail("1", db)
+        assert exc_info.value.status_code == 404

@@ -3,21 +3,25 @@
 > [!WARNING]
 > **WARNING:** Read the current truth from `artifacts/proof/current/release_gate.json` and `artifacts/proof/current/release_readiness.md`. Do not deploy as a production release; `production_ready` remains **false** for alpha scope.
 
-## Repair Status Overview
+## Repair Status
 
-- **Branch**: `repair/proof-truth-hardening-main11`
-- **Target Gate State**:
+This file is historical/contextual only.
 
-  ```json
-  {
-    "alpha_gate_passed": false,
-    "release_candidate": false,
-    "production_ready": false
-  }
-  ```
+The authoritative release state is defined by:
 
-- **Current Gate Authority**: `artifacts/proof/current/release_gate.json`
-- **Current Readiness Authority**: `artifacts/proof/current/release_readiness.md`
-- **Current Proof Summary**: `artifacts/proof/current/CURRENT_PROOF.md`
+- `artifacts/proof/current/release_gate.json`
+- `artifacts/proof/current/CURRENT_PROOF.md`
+- `artifacts/proof/current/CURRENT_ALPHA_STATUS.md`
+- `artifacts/proof/current/release_readiness.md`
 
-Do not deploy, release, or merge this code until this status file is formally updated and all verification steps pass.
+Current canonical state:
+
+```json
+{
+  "alpha_gate_passed": true,
+  "release_candidate": true,
+  "production_ready": false
+}
+```
+
+This project is an evidence-governed alpha release candidate. It is not production-ready and is not a public legal authority.

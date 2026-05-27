@@ -9,7 +9,6 @@ Safety rules:
 """
 
 from fastapi import APIRouter, Depends, HTTPException
-from unittest.mock import Mock
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -178,9 +177,8 @@ def _incident_detail(record_id: str, db: Session) -> dict:
     )
     if not is_public_crime_incident(incident):
         raise HTTPException(status_code=404, detail="Record not found")
-    if not isinstance(db, Mock) and not can_show_public_entity(
-        db, "crime_incident", incident
-    ).allowed:
+    policy = can_show_public_entity(db, "crime_incident", incident)
+    if not policy.allowed:
         raise HTTPException(status_code=404, detail="Record not found")
 
     source_links: list[dict] = []
