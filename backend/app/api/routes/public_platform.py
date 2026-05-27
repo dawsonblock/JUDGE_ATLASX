@@ -25,6 +25,16 @@ from app.models.entities import (
     LegalInstrument,
     LegalSection,
 )
+from app.services.public_release_policy import PublicReleasePolicy
+from app.api.schemas.public_schemas import (
+    PublicIncidentMapItem,
+    PublicMapIncidentsResponse,
+    PublicStatuteLink,
+    PublicNewsLink,
+    PublicIncidentWithLinks,
+    PublicStatuteItem,
+    ErrorResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -109,30 +119,56 @@ async def get_map_incidents(
         result = await session.execute(query)
         incidents = result.scalars().all()
 
-        # Transform to GeoJSON-like format for map
-        features = []
+        # Filter to only publicly releasable incidents
+        policy = PublicReleasePolicy()
+        public_incidents = []
         for incident in incidents:
-            features.append(
-                {
-                    "id": incident.id,
-                    "title": incident.title,
-                    "type": incident.event_type,
-                    "lat": incident.lat,
-                    "lng": incident.lng,
-                    "location": incident.location_name,
-                    "date": incident.occurred_at.isoformat()
-                    if incident.occurred_at
-                    else None,
-                    "jurisdiction": incident.jurisdiction,
-                }
-            )
+            if await policy.is_incident_publicly_releasable(session, incident):
+                public_incidents.append(incident)
 
-        logger.info(f"[v0] Returning {len(features)} incidents")
-        return {
-            "type": "FeatureCollection",
-            "features": features,
-            "count": len(features),
-        }
+        # Transform to response schema
+        features = []
+        for incident in public_incidents:
+            # Count linked resources
+            statute_result = await session.execute(
+                select(func.count(StatuteIncidentLink.id)).where(
+                    StatuteIncidentLink.incident_id == incident.id,
+                    StatuteIncidentLink.review_status == "approved",
+                )
+            )
+            statute_count = statute_result.scalar() or 0
+
+            news_result = await session.execute(
+                select(func.count(IncidentNewsLink.id)).where(
+                    IncidentNewsLink.incident_id == incident.id
+                )
+            )
+            news_count = news_result.scalar() or 0
+
+            item = PublicIncidentMapItem(
+                id=incident.id,
+                title=incident.title,
+                event_type=incident.event_type,
+                lat=incident.lat,
+                lng=incident.lng,
+                location_name=incident.location_name,
+                occurred_at=incident.occurred_at,
+                jurisdiction=incident.jurisdiction,
+                confidence=incident.confidence,
+                evidence_count=statute_count + news_count,
+            )
+            features.append(item)
+
+        logger.info(f"[v0] Returning {len(features)} publicly releasable incidents")
+        return PublicMapIncidentsResponse(
+            incidents=features,
+            bbox_min_lat=bbox_min_lat,
+            bbox_min_lng=bbox_min_lng,
+            bbox_max_lat=bbox_max_lat,
+            bbox_max_lng=bbox_max_lng,
+            total_count=len(incidents),
+            returned_count=len(features),
+        )
 
     except Exception as e:
         logger.error(f"[v0] Error fetching map incidents: {str(e)}")
