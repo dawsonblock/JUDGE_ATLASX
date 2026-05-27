@@ -18,14 +18,13 @@ from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_async_session
+from app.models.geo_legal_event import GeoLegalEvent
 from app.models.entities import (
-    GeoLegalEvent,
     StatuteIncidentLink,
     IncidentNewsLink,
     LegalInstrument,
     LegalSection,
 )
-from app.models.geo_legal_event import GeoLegalEvent as GeoLegalEventModel
 
 logger = logging.getLogger(__name__)
 

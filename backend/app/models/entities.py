@@ -2526,6 +2526,3 @@ class IncidentNewsLink(Base, TimestampMixin):
     __mapper_args__ = {
         "polymorphic_identity": "incident_news_link",
     }
-    ip_hash: Mapped[str | None] = mapped_column(String(128), nullable=True)
-
-    user: Mapped["User"] = relationship("User", back_populates="sessions")

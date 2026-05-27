@@ -24,6 +24,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.entities import IncidentNewsLink
+from app.services.public_link_statuses import LINK_METHOD_MANUAL
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +142,7 @@ class NewsIncidentLinker:
                 published_date=published_date.date() if published_date else None,
                 excerpt=excerpt,
                 relevance_score=relevance_score,
-                link_method="manual",
+                link_method=LINK_METHOD_MANUAL,
             )
 
             session.add(link)

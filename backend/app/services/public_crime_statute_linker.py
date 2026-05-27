@@ -24,6 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.entities import LegalInstrument, LegalSection, StatuteIncidentLink
 from app.db.session import get_async_session
+from app.services.public_link_statuses import LINK_REVIEW_STATUS_PENDING
 
 logger = logging.getLogger(__name__)
 
@@ -233,7 +234,7 @@ Return ONLY the JSON object, no markdown, no explanation."""
                         link_reason=reason,
                         confidence_score=confidence,
                         ai_model_version=self.AI_MODEL_VERSION,
-                        review_status="pending",
+                        review_status=LINK_REVIEW_STATUS_PENDING,
                     )
                     session.add(link)
                     links.append(

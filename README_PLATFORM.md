@@ -2,11 +2,11 @@
 
 ## Executive Summary
 
-A complete civic education platform built for Saskatchewan residents to understand crime through interactive maps, relevant laws, and news context. Fully implemented and ready to deploy.
+An alpha-stage civic education platform built for Saskatchewan residents to explore crime through interactive maps, relevant laws, and news context. This platform demonstrates the core architecture and can be tested locally; production deployment requires review of proof artifacts, public-boundary validation, and security hardening.
 
-**Status**: Production-Ready ✓  
-**Implementation**: 100% Complete  
-**Deployment Time**: 15 minutes (local) to 4 hours (production)
+**Status**: Alpha - Ready for Local Testing  
+**Implementation**: Core architecture complete, subject to code review  
+**Deployment Time**: 15 minutes (local, for testing) to 4 hours (production, requires hardening)
 
 ---
 
@@ -33,12 +33,13 @@ cd frontend && npm run dev
 ### 3️⃣ Open Browser
 Visit: **http://localhost:3000**
 
-✓ Interactive map appears  
-✓ Click incidents to see statute links  
-✓ Search laws in statute browser  
-✓ View explanations & news coverage  
+Verify basic functionality:  
+- Interactive map loads with test incidents  
+- Click incidents to view statute links  
+- Search laws in statute browser  
+- View explanations & news coverage  
 
-**Done!** Your platform is live locally.
+**Alpha Testing Complete.** Platform is functional for local testing. Before production deployment, follow the hardening steps in PRODUCTION_DEPLOYMENT.md.
 
 ---
 
