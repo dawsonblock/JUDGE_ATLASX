@@ -22,6 +22,20 @@ REUSABLE_IMAGE_TAGS = (
 )
 
 
+def _compose_command() -> list[str]:
+    if subprocess.run(
+        ["docker", "compose", "version"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=_docker_timeout(20),
+    ).returncode == 0:
+        return ["docker", "compose"]
+
+    raise SmokeError("docker_compose_plugin_missing")
+
+
 def _docker_timeout(default: int) -> int:
     try:
         gate_timeout = int(os.environ.get("JTA_DOCKER_CHECK_TIMEOUT", "180"))
@@ -70,8 +84,9 @@ def _run(
 
 def _append_logs(lines: list[str], service: str) -> None:
     try:
+        compose_cmd = _compose_command()
         cp = subprocess.run(
-            ["docker", "compose", "logs", service, "--tail", "200"],
+            [*compose_cmd, "logs", service, "--tail", "200"],
             cwd=REPO_ROOT,
             capture_output=True,
             text=True,
@@ -88,7 +103,12 @@ def _append_logs(lines: list[str], service: str) -> None:
         _append(lines, cp.stderr.rstrip())
 
 
-def _wait_http(lines: list[str], url: str, attempts: int, timeout: int) -> bool:
+def _wait_http(
+    lines: list[str],
+    url: str,
+    attempts: int,
+    timeout: int,
+) -> bool:
     for attempt in range(1, attempts + 1):
         cp = subprocess.run(
             ["curl", "-fsS", url],
@@ -106,7 +126,10 @@ def _wait_http(lines: list[str], url: str, attempts: int, timeout: int) -> bool:
 
 
 def _reuse_existing_images_requested() -> bool:
-    return os.environ.get("JTA_DOCKER_SMOKE_REUSE_EXISTING_IMAGES", "").lower() in {
+    return os.environ.get(
+        "JTA_DOCKER_SMOKE_REUSE_EXISTING_IMAGES",
+        "",
+    ).lower() in {
         "1",
         "true",
         "yes",
@@ -130,22 +153,33 @@ def main() -> int:
     lines: list[str] = ["docker smoke", f"repo_root: {REPO_ROOT}"]
     _log(lines)
     failed = False
+    compose_cmd = _compose_command()
 
     try:
         _run(
             lines,
-            ["docker", "compose", "down", "-v"],
+            [*compose_cmd, "down", "-v"],
             timeout=_docker_timeout(20),
             allow_failure=True,
         )
 
         if _reuse_existing_images_requested() and _reusable_images_present():
-            _append(lines, "docker compose build: SKIP (reusing existing backend/frontend images)")
+            _append(
+                lines,
+                (
+                    "docker compose build: SKIP "
+                    "(reusing existing backend/frontend images)"
+                ),
+            )
         else:
-            _run(lines, ["docker", "compose", "build"], timeout=300)
+            _run(lines, [*compose_cmd, "build"], timeout=300)
             _append(lines, "docker compose build: PASS")
 
-        _run(lines, ["docker", "compose", "up", "-d", "db", "redis", "minio"], timeout=300)
+        _run(
+            lines,
+            [*compose_cmd, "up", "-d", "db", "redis", "minio"],
+            timeout=300,
+        )
 
         # Postgres (db service)
         postgres_ok = False
@@ -153,8 +187,7 @@ def main() -> int:
             cp = _run(
                 lines,
                 [
-                    "docker",
-                    "compose",
+                    *compose_cmd,
                     "exec",
                     "-T",
                     "db",
@@ -180,7 +213,7 @@ def main() -> int:
         for _ in range(20):
             cp = _run(
                 lines,
-                ["docker", "compose", "exec", "-T", "redis", "redis-cli", "ping"],
+                [*compose_cmd, "exec", "-T", "redis", "redis-cli", "ping"],
                 timeout=_docker_timeout(20),
                 allow_failure=True,
             )
@@ -192,15 +225,30 @@ def main() -> int:
         _append(lines, "redis health: PASS")
 
         # MinIO
-        if not _wait_http(lines, "http://localhost:9000/minio/health/live", attempts=30, timeout=5):
+        if not _wait_http(
+            lines,
+            "http://localhost:9000/minio/health/live",
+            attempts=30,
+            timeout=5,
+        ):
             raise SmokeError("minio_not_healthy")
         _append(lines, "minio health: PASS")
 
-        _run(lines, ["docker", "compose", "up", "-d", "backend"], timeout=300)
+        _run(lines, [*compose_cmd, "up", "-d", "backend"], timeout=300)
 
-        backend_ready = _wait_http(lines, "http://localhost:8000/health", attempts=40, timeout=5)
+        backend_ready = _wait_http(
+            lines,
+            "http://localhost:8000/health",
+            attempts=40,
+            timeout=5,
+        )
         if not backend_ready:
-            backend_ready = _wait_http(lines, "http://localhost:8000/api/health", attempts=10, timeout=5)
+            backend_ready = _wait_http(
+                lines,
+                "http://localhost:8000/api/health",
+                attempts=10,
+                timeout=5,
+            )
         if not backend_ready:
             raise SmokeError("backend_health_endpoint_failed")
         _append(lines, "backend health: PASS")
@@ -208,7 +256,7 @@ def main() -> int:
         # Verify migrations are healthy in container
         cp = _run(
             lines,
-            ["docker", "compose", "exec", "-T", "backend", "alembic", "heads"],
+            [*compose_cmd, "exec", "-T", "backend", "alembic", "heads"],
             timeout=60,
             allow_failure=True,
         )
@@ -218,16 +266,20 @@ def main() -> int:
         if "head" not in heads_output:
             raise SmokeError("backend_alembic_heads_missing")
 
-        _run(lines, ["docker", "compose", "up", "-d", "frontend"], timeout=300)
-        if not _wait_http(lines, "http://localhost:3000", attempts=40, timeout=5):
+        _run(lines, [*compose_cmd, "up", "-d", "frontend"], timeout=300)
+        if not _wait_http(
+            lines,
+            "http://localhost:3000",
+            attempts=40,
+            timeout=5,
+        ):
             raise SmokeError("frontend_http_failed")
 
         # Frontend -> backend reachability from container using node runtime.
         cp = _run(
             lines,
             [
-                "docker",
-                "compose",
+                *compose_cmd,
                 "exec",
                 "-T",
                 "frontend",
@@ -236,7 +288,8 @@ def main() -> int:
                 (
                     "const http=require('http');"
                     "http.get('http://backend:8000/health',res=>{"
-                    "if(res.statusCode>=200&&res.statusCode<400){process.exit(0);}"
+                    "if(res.statusCode>=200&&res.statusCode<400){"
+                    "process.exit(0);}"
                     "process.exit(1);"
                     "}).on('error',()=>process.exit(1));"
                 ),
@@ -251,7 +304,7 @@ def main() -> int:
         _append(lines, "docker smoke: PASS")
         _run(
             lines,
-            ["docker", "compose", "down", "-v"],
+            [*compose_cmd, "down", "-v"],
             timeout=_docker_timeout(20),
             allow_failure=True,
         )
@@ -272,13 +325,16 @@ def main() -> int:
         try:
             _run(
                 lines,
-                ["docker", "compose", "down", "-v"],
+                [*compose_cmd, "down", "-v"],
                 timeout=_docker_timeout(20),
                 allow_failure=True,
             )
         except Exception:
             _append(lines, "docker compose down -v failed during cleanup")
-        _append(lines, "docker smoke: FAIL" if failed else "docker smoke: PASS")
+        _append(
+            lines,
+            "docker smoke: FAIL" if failed else "docker smoke: PASS",
+        )
         _log(lines)
         print("\n".join(lines))
 

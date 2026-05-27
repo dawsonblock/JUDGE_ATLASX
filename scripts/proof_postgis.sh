@@ -122,6 +122,27 @@ require_docker() {
     fi
 }
 
+normalize_database_url() {
+    local raw_url="${1:-}"
+    raw_url="${raw_url#${raw_url%%[![:space:]]*}}"
+    raw_url="${raw_url%${raw_url##*[![:space:]]}}"
+
+    if [ -z "$raw_url" ]; then
+        raw_url="postgresql+psycopg://${DB_USER}:${DB_PASS}@localhost:${DB_PORT}/${DB_NAME}"
+    fi
+
+    case "$raw_url" in
+        postgres://*)
+            raw_url="postgresql+psycopg://${raw_url#postgres://}"
+            ;;
+        postgresql://*)
+            raw_url="postgresql+psycopg://${raw_url#postgresql://}"
+            ;;
+    esac
+
+    printf '%s' "$raw_url"
+}
+
 cleanup() {
     if [ "$CLEANUP_DONE" -eq 1 ]; then
         return 0
@@ -181,23 +202,19 @@ if [ "$pg_ready" -ne 1 ]; then
 fi
 echo "[proof_postgis] PASS: pg_isready"
 
-export DATABASE_URL="postgresql+psycopg://${DB_USER}:${DB_PASS}@localhost:${DB_PORT}/${DB_NAME}"
+DATABASE_URL="$(normalize_database_url "${JTA_DATABASE_URL:-${DATABASE_URL:-}}")"
+export DATABASE_URL
 export JTA_DATABASE_URL="$DATABASE_URL"
+echo "[proof_postgis] INFO: normalized DATABASE_URL=${DATABASE_URL}"
 
 echo "[proof_postgis] Stage: host connectivity wait loop"
 host_ready=0
 for i in $(seq 1 90); do
-    if DB_HOST="localhost" DB_PORT="$DB_PORT" DB_USER="$DB_USER" DB_PASS="$DB_PASS" DB_NAME="$DB_NAME" "$BACKEND_PYTHON" - <<'PY' >/dev/null 2>&1
+    if DATABASE_URL="$DATABASE_URL" "$BACKEND_PYTHON" - <<'PY' >/dev/null 2>&1
 import os
 import psycopg
 
-conn = psycopg.connect(
-    host=os.environ["DB_HOST"],
-    port=int(os.environ["DB_PORT"]),
-    user=os.environ["DB_USER"],
-    password=os.environ["DB_PASS"],
-    dbname=os.environ["DB_NAME"],
-)
+conn = psycopg.connect(os.environ["DATABASE_URL"])
 with conn.cursor() as cur:
     cur.execute("SELECT 1")
 conn.close()
@@ -229,6 +246,25 @@ if run_with_timeout 15 docker exec "$CONTAINER" psql -U "$DB_USER" -d "$DB_NAME"
     echo "[proof_postgis] PASS: postgis extension present"
 else
     fail_with_reason "postgis extension missing"
+fi
+
+echo "[proof_postgis] Stage: spatial query smoke"
+if DATABASE_URL="$DATABASE_URL" "$BACKEND_PYTHON" - <<'PY'
+import os
+import psycopg
+
+conn = psycopg.connect(os.environ["DATABASE_URL"])
+with conn.cursor() as cur:
+    cur.execute("SELECT ST_AsText(ST_SetSRID(ST_MakePoint(-79.3832, 43.6532), 4326))")
+    value = cur.fetchone()[0]
+    if value != "POINT(-79.3832 43.6532)":
+        raise SystemExit(f"unexpected spatial value: {value!r}")
+conn.close()
+PY
+then
+    echo "[proof_postgis] PASS: spatial query smoke"
+else
+    fail_with_reason "spatial query smoke"
 fi
 
 echo "[proof_postgis] Stage: Alembic upgrade"

@@ -47,6 +47,30 @@ run_with_timeout() {
     return "$cmd_rc"
 }
 
+resolve_compose_command() {
+    if docker compose version >/dev/null 2>&1; then
+        echo "[docker_runtime] INFO: compose_command=docker compose"
+        return 0
+    fi
+
+    echo "[docker_runtime] FAIL_CLASS=DOCKER_COMPOSE_MISSING"
+    echo "[docker_runtime] FAIL: docker compose plugin is not available"
+    echo "[docker_runtime] HINT: install Docker Desktop or the Docker Compose plugin"
+    return 1
+}
+
+print_docker_diagnostics() {
+    echo "[docker_runtime] INFO: uname=$(uname -srm)"
+    echo "[docker_runtime] INFO: shell_user=$(id -un) uid=$(id -u) groups=$(id -Gn)"
+    echo "[docker_runtime] INFO: docker_bin=$(command -v docker)"
+    echo "[docker_runtime] INFO: docker_version_client_start"
+    docker --version || true
+    echo "[docker_runtime] INFO: docker_version_client_end"
+    echo "[docker_runtime] INFO: docker_info_start"
+    run_with_timeout "$DOCKER_TIMEOUT_SECONDS" docker info || true
+    echo "[docker_runtime] INFO: docker_info_end"
+}
+
 classify_docker_failure() {
     local output="$1"
     if printf '%s' "$output" | grep -Eiq 'timed out|context deadline exceeded|deadline exceeded'; then
@@ -122,7 +146,8 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 echo "[docker_runtime] PASS: docker CLI found: $(command -v docker)"
 echo "[docker_runtime] INFO: timeout=${DOCKER_TIMEOUT_SECONDS}s"
-echo "[docker_runtime] INFO: user=$(id -un) uid=$(id -u)"
+print_docker_diagnostics
+resolve_compose_command || exit 1
 
 echo "[docker_runtime] Running docker --version (client)..."
 if ! docker --version; then
@@ -154,9 +179,16 @@ if [ -z "$DOCKER_ENDPOINT" ]; then
 fi
 echo "[docker_runtime] INFO: active_context=${CURRENT_CONTEXT}"
 echo "[docker_runtime] INFO: docker_endpoint=${DOCKER_ENDPOINT}"
+if [[ -n "${DOCKER_HOST:-}" ]]; then
+    echo "[docker_runtime] INFO: docker_host_env=${DOCKER_HOST}"
+fi
 
 if [[ "$DOCKER_ENDPOINT" == unix://* ]]; then
     DOCKER_SOCK_PATH="${DOCKER_ENDPOINT#unix://}"
+    echo "[docker_runtime] INFO: docker_socket_path=${DOCKER_SOCK_PATH}"
+    if [ -e "$DOCKER_SOCK_PATH" ]; then
+        ls -l "$DOCKER_SOCK_PATH" || true
+    fi
     if [ ! -S "$DOCKER_SOCK_PATH" ]; then
         echo "[docker_runtime] FAIL_CLASS=DOCKER_DAEMON_UNAVAILABLE"
         echo "[docker_runtime] FAIL: docker daemon socket not found at ${DOCKER_SOCK_PATH}"
@@ -200,6 +232,14 @@ if run_with_timeout "$DOCKER_TIMEOUT_SECONDS" docker image inspect postgis/postg
     echo "[docker_runtime] PASS: postgis image present locally"
 else
     echo "[docker_runtime] INFO: postgis image not found locally"
+    if run_with_timeout "$DOCKER_TIMEOUT_SECONDS" docker manifest inspect postgis/postgis:16-3.4 >/dev/null 2>&1; then
+        echo "[docker_runtime] PASS: postgis image manifest is reachable"
+    else
+        echo "[docker_runtime] FAIL_CLASS=DOCKER_IMAGE_UNAVAILABLE"
+        echo "[docker_runtime] FAIL: unable to inspect or resolve postgis/postgis:16-3.4"
+        echo "[docker_runtime] HINT: verify registry access or retry when network access is available"
+        exit 1
+    fi
 fi
 
 echo "[docker_runtime] SUCCESS: Docker runtime preflight completed"

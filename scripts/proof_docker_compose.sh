@@ -22,19 +22,35 @@ export JTA_ADMIN_REVIEW_TOKEN="${JTA_ADMIN_REVIEW_TOKEN:-proof-review-token-ci}"
 
 log() { echo "[proof_docker] $*"; }
 
+resolve_compose_command() {
+    if docker compose version >/dev/null 2>&1; then
+        COMPOSE_CMD=(docker compose)
+        log "Using compose command: docker compose"
+        return 0
+    fi
+
+    log "ERROR: docker compose plugin is not available"
+    log "HINT: install Docker Desktop or the Docker Compose plugin"
+    return 1
+}
+
+compose() {
+    "${COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" "$@"
+}
+
 dump_diagnostics() {
-    log "Diagnostics: docker compose version"
-    docker compose version || true
-    log "Diagnostics: docker compose config"
-    docker compose -f "$COMPOSE_FILE" config || true
-    log "Diagnostics: docker compose ps"
-    docker compose -f "$COMPOSE_FILE" ps || true
+    log "Diagnostics: compose version"
+    "${COMPOSE_CMD[@]}" version || true
+    log "Diagnostics: compose config"
+    compose config || true
+    log "Diagnostics: compose ps"
+    compose ps || true
     log "Diagnostics: backend logs"
-    docker compose -f "$COMPOSE_FILE" logs backend || true
+    compose logs backend || true
     log "Diagnostics: frontend logs"
-    docker compose -f "$COMPOSE_FILE" logs frontend || true
+    compose logs frontend || true
     log "Diagnostics: db logs"
-    docker compose -f "$COMPOSE_FILE" logs db || true
+    compose logs db || true
 }
 
 cleanup() {
@@ -45,15 +61,17 @@ cleanup() {
 }
 trap cleanup EXIT
 
+resolve_compose_command
+
 log "Step 1: Tearing down any existing stack..."
-docker compose -f "$COMPOSE_FILE" down -v 2>/dev/null || true
+compose down -v 2>/dev/null || true
 
 log "Step 2: Building images..."
-docker compose version
-docker compose -f "$COMPOSE_FILE" build
+"${COMPOSE_CMD[@]}" version
+compose build
 
 log "Step 3: Starting stack..."
-docker compose -f "$COMPOSE_FILE" up -d
+compose up -d
 
 log "Step 4: Waiting for backend health..."
 for i in $(seq 1 60); do
