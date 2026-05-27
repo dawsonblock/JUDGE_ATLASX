@@ -28,6 +28,9 @@ class GeoLegalEvent(Base):
     # Content
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    public_summary: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # AI-generated plain-English summary for public viewing
 
     # Location
     lat: Mapped[float | None] = mapped_column(Float, nullable=True)

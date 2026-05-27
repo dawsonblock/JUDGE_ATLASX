@@ -21,6 +21,7 @@ from app.api.routes import (
     map,
     map_record,
     public_events,
+    public_platform,
     snapshots,
     sources,
     status,
@@ -33,6 +34,7 @@ from fastapi import APIRouter
 router = APIRouter()
 router.include_router(auth.router)
 router.include_router(public_events.router)
+router.include_router(public_platform.router)  # Public platform API
 settings = get_settings()
 if settings.enable_experimental_live_map:
     router.include_router(live_map.router)
