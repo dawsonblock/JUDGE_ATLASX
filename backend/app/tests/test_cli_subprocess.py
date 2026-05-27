@@ -206,7 +206,7 @@ def test_subprocess_ingest_portal_reference_blocked() -> None:
 
 def test_subprocess_ingest_disabled_stub_blocked() -> None:
     """Ingesting a disabled_stub source must exit non-zero with SOURCE_NOT_RUNNABLE."""
-    proc, data = _run_json("ingest", "run", "web_monitor_saskatoon_police_news")
+    proc, data = _run_json("ingest", "run", "canada_justice_laws")
     assert proc.returncode != 0, "Expected non-zero exit for disabled_stub source"
     assert data["ok"] is False
     assert data["error_code"] == "SOURCE_NOT_RUNNABLE"

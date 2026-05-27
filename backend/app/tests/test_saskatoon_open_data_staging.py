@@ -25,7 +25,7 @@ def _load_sources_yaml() -> dict:
     return payload
 
 
-def test_saskatoon_source_is_machine_ingest_staged_disabled() -> None:
+def test_saskatoon_source_is_machine_ingest_runnable() -> None:
     data = _load_sources_yaml()
     sources = data.get("sources", [])
     assert isinstance(sources, list)
@@ -37,8 +37,8 @@ def test_saskatoon_source_is_machine_ingest_staged_disabled() -> None:
     assert entry is not None
     assert entry["parser"] == "ckan_api"
     assert entry["source_class"] == "machine_ingest"
-    assert entry["automation_status"] == "machine_ready_disabled"
-    assert entry["lifecycle_state"] == "runnable_disabled"
+    assert entry["automation_status"] == "machine_ready_enabled"
+    assert entry["lifecycle_state"] == "runnable"
     assert entry["enabled_default"] is False
 
 

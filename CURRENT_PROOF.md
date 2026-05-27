@@ -1,18 +1,18 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-27T07:57:47.289351+00:00
-- commit_hash: 435817cb8573d8962d8cf26a3a5c43e04a4afb7c
-- alpha_gate_status: PASS
-- alpha_gate_passed: true
-- release_gate_check_count: 50
+- generated_at_utc: 2026-05-27T20:35:42.165058+00:00
+- commit_hash: 06663bce861b92ec736fdebaadef7f86543baef5
+- alpha_gate_status: BLOCKED
+- alpha_gate_passed: false
+- release_gate_check_count: 45
 - docker_available: true
 - postgis_proof_result: PASS
 - egress_proxy_proof_result: PASS
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
-- archive_validation_result: PASS
-- proof_input_tree_hash: 04b9c205984ec2a52d4784e212c3ee35097d2bd996fd4f21066450e49719764f
-- proof_input_file_count: 1086
+- archive_validation_result: UNKNOWN
+- proof_input_tree_hash: 15adee844944c869850e761d2ea874aec45ce24c8fe78d80bbab26fff40aa460
+- proof_input_file_count: 1091
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
@@ -46,7 +46,7 @@
 - Dedicated egress proxy proof passed in the current release gate.
 - Dedicated synthetic demo proof passed in the current release gate.
 - Proof freshness passed against the stored proof-input file list and tree hash.
-- Archive validation passed against the final distributable archive shape.
+- Archive validation has not yet been recorded for this run.
 - archive_validation_log: artifacts/proof/current/archive_validation.log
 - archive_validation_supported_shapes:
   - JUDGE-main/
@@ -59,9 +59,9 @@
 
 ## Current Proof Facts
 
-- backend pytest: 3454 passed, 2 skipped
-- backend import proof: PASS (107 routes)
-- frontend contracts: 49 passed
+- backend pytest: 3455 passed, 2 skipped
+- backend import proof: PASS (108 routes)
+- frontend contracts: 51 passed
 - public API boundary: 55 passed
 - Docker runtime preflight: PASS
 - PostGIS proof: PASS
@@ -100,6 +100,7 @@
 - artifacts/proof/current/frontend_contracts.log
 - artifacts/proof/current/frontend_build.log
 - artifacts/proof/current/check_api_contracts.log
+- artifacts/proof/current/frontend_backend_route_contract.log
 - artifacts/proof/current/static_guards.log
 - artifacts/proof/current/map_route_check.log
 - artifacts/proof/current/public_api_boundary.log
