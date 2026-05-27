@@ -51,6 +51,10 @@ def _has_positive_production_ready_claim(text: str) -> bool:
     lowered = text.lower()
     if "production ready: false" in lowered:
         lowered = lowered.replace("production ready: false", "")
+    if "production_ready: false" in lowered:
+        lowered = lowered.replace("production_ready: false", "")
+    if "production-ready=false until all production gates pass." in lowered:
+        lowered = lowered.replace("production-ready=false until all production gates pass.", "")
     if "not ready for production deployment" in lowered:
         lowered = lowered.replace("not ready for production deployment", "")
     if "not production ready" in lowered:

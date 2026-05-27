@@ -15,9 +15,20 @@
 - Manual summaries in this file must never mark phases PASS unless the canonical artifacts say so for the current run.
 - If artifacts/proof/current/release_gate.json and this file disagree, the gate wins.
 
-## Deferred by Plan (Non-Blocking)
+Production-ready=false until all production gates pass.
 
-- Phase 14 bi-temporal foundation remains deferred until after clean-alpha gate completion.
+## Status Matrix
+
+- authority: artifacts/proof/current/release_gate.json
+- alpha_ready: true
+- production_ready: false
+- public_release_safe: false
+- ingestion_coverage: 1/26 runnable sources (from canonical source-registry proof)
+- AI_answering_enabled: true (derivative, evidence-cited alpha mode)
+- workflow_admin_enabled: false (gated/experimental)
+- live_map_enabled: false (gated)
+
+Historical repair/blocker notes were moved to docs/history/2026-05-27-repair-blocker-notes.md.
 
 ## Status Assertion
 

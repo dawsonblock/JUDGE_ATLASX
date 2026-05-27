@@ -13,6 +13,7 @@
 - This file summarizes proof state and must not override release_gate.json.
 - Proof gate PASS, if present in canonical artifacts, indicates alpha proof-check completion only.
 - production_ready remains false unless explicitly changed in canonical artifacts.
+- Production-ready=false until all production gates pass.
 
 ## Runtime Environment
 
@@ -51,6 +52,17 @@ make proof
 - Current release truth is derived from `artifacts/proof/current/release_gate.json`.
 - Historical counts and phase narratives are non-authoritative if they conflict with canonical artifacts.
 - Canonical repository posture is summarized in `STATUS.md`.
+
+## Status Matrix
+
+- authority: artifacts/proof/current/release_gate.json
+- alpha_ready: true
+- production_ready: false
+- public_release_safe: false
+- ingestion_coverage: 1/26 runnable sources (from canonical source-registry proof)
+- AI_answering_enabled: true (derivative, evidence-cited alpha mode)
+- workflow_admin_enabled: false (gated/experimental)
+- live_map_enabled: false (gated)
 
 ---
 

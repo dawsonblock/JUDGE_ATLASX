@@ -62,6 +62,7 @@ stop:
 
 truth-check:
 	python3 scripts/check_truth_claims.py --root .
+	python3 scripts/check_status_truth_consistency.py --root .
 	python3 scripts/validate_workflows.py
 	python3 scripts/check_source_keys.py
 	python3 scripts/check_statuses.py
@@ -107,6 +108,7 @@ proof:
 	@echo "=== Running canonical proof generation ==="
 	@$(MAKE) release-proof-local
 	@python3 scripts/check_single_proof_authority.py
+	@python3 scripts/check_status_truth_consistency.py --root .
 	@python3 scripts/check_proof_consistency.py
 	@python3 scripts/check_proof_freshness.py
 	@python3 scripts/verify_proof_hash_sync.py --root .
@@ -118,6 +120,7 @@ release-proof:
 	@python3 scripts/check_node_policy.py
 	@python3 scripts/check_frontend_node_gate.py --expected-major 20
 	@python3 scripts/check_false_claims.py
+	@python3 scripts/check_status_truth_consistency.py --root .
 	@python3 scripts/check_api_contracts.py
 	@python3 scripts/check_frontend_backend_route_contract.py
 	@python3 scripts/check_map_route.py
