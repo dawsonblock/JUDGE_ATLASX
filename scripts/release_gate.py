@@ -2144,14 +2144,14 @@ def main() -> int:
             "docker_runtime_preflight.log",
             ["bash", "scripts/check_docker_runtime.sh"],
             timeout_seconds=docker_preflight_timeout_seconds,
-            required=False,
+            required=True,
         ),
         GateStepSpec(
             "docker_smoke",
             "docker_smoke.log",
             ["bash", "scripts/proof_docker_compose.sh"],
             timeout_seconds=1800,
-            required=False,
+            required=True,
         ),
         GateStepSpec(
             "postgis_proof",
