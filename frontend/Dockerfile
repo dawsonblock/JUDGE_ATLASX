@@ -9,7 +9,7 @@ COPY . .
 RUN npm run build
 
 ENV NODE_ENV=production
-RUN groupadd --system --gid 999 nodejs && useradd --system --uid 999 --gid nodejs nextjs && chown -R nextjs:nodejs /app
+RUN groupadd --system --gid 999 nodejs && useradd --system --uid 999 --gid nodejs nextjs
 USER nextjs
 
 EXPOSE 3000

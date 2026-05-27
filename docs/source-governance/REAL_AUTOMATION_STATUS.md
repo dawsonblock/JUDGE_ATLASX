@@ -13,17 +13,18 @@ JUDGE ATLAS currently has **26 total registered sources**, with **1 source runna
 | Status | Count | Description |
 |---|---|---|
 | `machine_ready_enabled` | 1 | Adapter exists, automation enabled, runs in production |
-| `machine_ready_disabled` | 5 | Adapter exists and validated but intentionally disabled (alpha scope) |
-| `adapter_missing` | 17 | Source defined in registry; no adapter implemented yet |
+| `machine_ready_disabled` | 6 | Adapter exists and validated but intentionally disabled (alpha scope) |
+| `adapter_missing` | 16 | Source defined in registry; no adapter implemented yet |
 | `deprecated` | 3 | Source removed from active scope |
 | `disabled_stub` | 1 | Placeholder only; not intended for near-term automation |
 
 Additional generated summary fields from `source_registry_status.json`:
 
 - `total_sources`: 26
-- `machine_ingest_sources`: 7
+- `machine_ingest_sources`: 8
 - `runnable_now`: 1
-- `enable_ready`: 5
+- `enable_ready`: 6
+- `deprecated`: 3
 
 ---
 
@@ -43,6 +44,7 @@ These sources have working adapters and have passed validation. They are disable
 |---|---|
 | `scc_decisions` | Alpha scope reduction |
 | `federal_court_canada` | Alpha scope reduction |
+| `saskatoon_open_data_public_safety` | Alpha scope reduction |
 | `sk_courts_qb_decisions` | Alpha scope reduction |
 | `sk_courts_ca_decisions` | Alpha scope reduction |
 | `sk_legislature_hansard` | Alpha scope reduction |
@@ -51,9 +53,9 @@ These sources have working adapters and have passed validation. They are disable
 
 ## Adapter Not Yet Implemented
 
-17 sources are defined in the source registry but have no adapter code. These exist to document intent and future roadmap, not to claim automation capability.
+16 sources are defined in the source registry but have no adapter code. These exist to document intent and future roadmap, not to claim automation capability.
 
-See `backend/app/ingestion/sources/` for the registry definitions and `backend/app/ingestion/adapters/` for existing adapters.
+See `backend/app/ingestion/sources/` for the registry definitions and `backend/app/ingestion/source_adapters/` for existing adapters.
 
 ---
 
@@ -61,7 +63,7 @@ See `backend/app/ingestion/sources/` for the registry definitions and `backend/a
 
 A source is `machine_ready_enabled` only when ALL of the following hold:
 
-1. An adapter class exists in `backend/app/ingestion/adapters/`
+1. An adapter class exists in `backend/app/ingestion/source_adapters/`
 2. The adapter passes its contract test (`tests/backend/test_machine_ingest_contract.py`)
 3. The source's `ingestion_mode` is `machine_ingest` in the source registry
 4. The `automation_status` field is `machine_ready_enabled`

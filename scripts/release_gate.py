@@ -338,6 +338,8 @@ def _run(
             f"step={name} exit_code={return_code} emitted no stdout/stderr.\n",
             encoding="utf-8",
         )
+    if log_path.exists():
+        _redact_file_local_paths(log_path, repo_root)
     finished_at = datetime.now(timezone.utc)
     duration = round(time.monotonic() - t0, 3)
     passed = return_code == 0
@@ -2070,11 +2072,6 @@ def main() -> int:
             ],
         ),
         GateStepSpec(
-            "check_source_registry_docs",
-            "check_source_registry_docs.log",
-            [python_exe, "scripts/check_source_registry_docs.py"],
-        ),
-        GateStepSpec(
             "check_external_boundaries",
             "check_external_boundaries.log",
             [python_exe, "scripts/check_external_boundaries.py"],
@@ -2204,6 +2201,11 @@ def main() -> int:
                 "scripts/generate_source_registry_truth_table.py",
                 "--proof-mode",
             ],
+        ),
+        GateStepSpec(
+            "check_source_registry_docs",
+            "check_source_registry_docs.log",
+            [python_exe, "scripts/check_source_registry_docs.py"],
         ),
         GateStepSpec(
             "prepare_proof_db",

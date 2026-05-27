@@ -68,7 +68,8 @@ compose down -v 2>/dev/null || true
 
 log "Step 2: Building images..."
 "${COMPOSE_CMD[@]}" version
-compose build
+compose build backend
+compose build frontend
 
 log "Step 3: Starting stack..."
 compose up -d

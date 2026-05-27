@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -26,6 +27,21 @@ ROOT_MD_EXCLUDE = {
     "PROOF_POLICY.md",
 }
 
+REQUIRED_SUMMARY_METRICS = (
+    "total_sources",
+    "machine_ingest_sources",
+    "runnable_now",
+    "enable_ready",
+    "deprecated",
+)
+
+REQUIRED_DERIVED_METRICS = (
+    "machine_ready_disabled",
+    "adapter_missing",
+)
+
+REQUIRED_DOC_METRICS = REQUIRED_SUMMARY_METRICS + REQUIRED_DERIVED_METRICS
+
 
 def _load_yaml_sources() -> list[dict]:
     yaml_path = (
@@ -38,6 +54,48 @@ def _load_yaml_sources() -> list[dict]:
     )
     data = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
     return list(data.get("sources", []))
+
+
+def _load_source_truth() -> tuple[dict[str, int], set[str], set[str], dict[str, dict]]:
+    truth_path = REPO_ROOT / "artifacts" / "proof" / "current" / "source_registry_status.json"
+    payload = json.loads(truth_path.read_text(encoding="utf-8"))
+    summary = payload.get("summary") or {}
+
+    summary_counts: dict[str, int] = {}
+    for metric in REQUIRED_SUMMARY_METRICS:
+        value = summary.get(metric)
+        if isinstance(value, int):
+            summary_counts[metric] = value
+
+    sources = payload.get("sources") or []
+    source_truth_by_key = {
+        str(source.get("source_key")): source
+        for source in sources
+        if source.get("source_key")
+    }
+
+    derived_counts = {
+        "machine_ready_disabled": sum(
+            1 for source in sources if source.get("automation_status") == "machine_ready_disabled"
+        ),
+        "adapter_missing": sum(
+            1 for source in sources if source.get("automation_status") == "adapter_missing"
+        ),
+    }
+    summary_counts.update(derived_counts)
+
+    enable_ready_ids = {
+        str(source.get("source_key"))
+        for source in sources
+        if source.get("enable_ready") is True and source.get("source_key")
+    }
+    runnable_ids = {
+        str(source.get("source_key"))
+        for source in sources
+        if source.get("runnable_now") is True and source.get("source_key")
+    }
+
+    return summary_counts, enable_ready_ids, runnable_ids, source_truth_by_key
 
 
 def _collect_doc_texts() -> list[tuple[Path, str]]:
@@ -54,17 +112,215 @@ def _collect_doc_texts() -> list[tuple[Path, str]]:
     return out
 
 
-def _validate_source_registry_status_doc(sources: list[dict]) -> list[str]:
+def _extract_metric_value(text: str, metric: str) -> int | None:
+    patterns = (
+        rf"-\s*`?{re.escape(metric)}`?\s*:\s*(\d+)",
+        rf"\|\s*`?{re.escape(metric)}`?\s*\|\s*(\d+)\s*\|",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            return int(match.group(1))
+    return None
+
+
+def _extract_h2_section(text: str, heading: str) -> str:
+    lines = text.splitlines()
+    start_index: int | None = None
+    for idx, line in enumerate(lines):
+        if line.strip() == f"## {heading}":
+            start_index = idx + 1
+            break
+    if start_index is None:
+        return ""
+
+    end_index = len(lines)
+    for idx in range(start_index, len(lines)):
+        if lines[idx].startswith("## "):
+            end_index = idx
+            break
+
+    return "\n".join(lines[start_index:end_index])
+
+
+def _extract_table_source_keys(section_text: str) -> set[str]:
+    keys: set[str] = set()
+    for line in section_text.splitlines():
+        match = re.match(r"^\|\s*`([^`]+)`\s*\|", line.strip())
+        if match:
+            key = match.group(1).strip()
+            if key:
+                keys.add(key)
+    return keys
+
+
+def _extract_checklist_source_keys(text: str) -> set[str]:
+    return {
+        match.group(1).strip()
+        for match in re.finditer(r"^###\s+`([^`]+)`\s*$", text, re.MULTILINE)
+        if match.group(1).strip()
+    }
+
+
+def _parse_bool_cell(value: str) -> bool | None:
+    cell = value.strip().strip("`").lower()
+    if "✓" in cell or cell in {"true", "yes", "y", "1"}:
+        return True
+    if "✗" in cell or cell in {"false", "no", "n", "0"}:
+        return False
+    return None
+
+
+def _validate_doc_metrics(doc_path: Path, summary_counts: dict[str, int]) -> list[str]:
     errors: list[str] = []
-    doc_path = REPO_ROOT / "docs" / "SOURCE_REGISTRY_STATUS.md"
     if not doc_path.exists():
-        errors.append("docs/SOURCE_REGISTRY_STATUS.md:missing")
-        return errors
+        return [f"{doc_path.relative_to(REPO_ROOT)}:missing"]
 
     text = doc_path.read_text(encoding="utf-8", errors="ignore")
-    yaml_keys = {str(source.get("source_key")) for source in sources}
+    rel = doc_path.relative_to(REPO_ROOT)
+    for metric in REQUIRED_DOC_METRICS:
+        expected = summary_counts.get(metric)
+        if expected is None:
+            errors.append(
+                "artifacts/proof/current/source_registry_status.json"
+                f":missing_summary_metric:{metric}"
+            )
+            continue
+        observed = _extract_metric_value(text, metric)
+        if observed is None:
+            errors.append(f"{rel}:metric_missing:{metric}")
+        elif observed != expected:
+            errors.append(f"{rel}:metric_mismatch:{metric}:{observed}!={expected}")
+    return errors
 
-    row_keys = set()
+
+def _check_id_set_diff(
+    rel: Path,
+    field: str,
+    expected_ids: set[str],
+    documented_ids: set[str],
+) -> list[str]:
+    errors: list[str] = []
+    missing_ids = sorted(expected_ids - documented_ids)
+    extra_ids = sorted(documented_ids - expected_ids)
+    if missing_ids:
+        errors.append(f"{rel}:{field}_missing:{','.join(missing_ids)}")
+    if extra_ids:
+        errors.append(f"{rel}:{field}_extra:{','.join(extra_ids)}")
+    return errors
+
+
+def _validate_governance_docs(
+    summary_counts: dict[str, int],
+    enable_ready_ids: set[str],
+    runnable_ids: set[str],
+) -> list[str]:
+    errors: list[str] = []
+
+    real_doc = REPO_ROOT / "docs" / "source-governance" / "REAL_AUTOMATION_STATUS.md"
+    checklist_doc = REPO_ROOT / "docs" / "source-governance" / "SOURCE_ENABLEMENT_CHECKLIST.md"
+
+    for doc_path in (real_doc, checklist_doc):
+        errors.extend(_validate_doc_metrics(doc_path, summary_counts))
+
+    if real_doc.exists():
+        text = real_doc.read_text(encoding="utf-8", errors="ignore")
+        rel = real_doc.relative_to(REPO_ROOT)
+
+        enabled_section = _extract_h2_section(text, "Enabled Source (Production)")
+        ready_disabled_section = _extract_h2_section(text, "Ready But Disabled (Alpha Scope)")
+
+        documented_runnable = _extract_table_source_keys(enabled_section)
+        documented_enable_ready = _extract_table_source_keys(ready_disabled_section)
+
+        errors.extend(
+            _check_id_set_diff(
+                rel=rel,
+                field="runnable_now_ids",
+                expected_ids=runnable_ids,
+                documented_ids=documented_runnable,
+            )
+        )
+        errors.extend(
+            _check_id_set_diff(
+                rel=rel,
+                field="enable_ready_ids",
+                expected_ids=enable_ready_ids,
+                documented_ids=documented_enable_ready,
+            )
+        )
+
+    if checklist_doc.exists():
+        text = checklist_doc.read_text(encoding="utf-8", errors="ignore")
+        rel = checklist_doc.relative_to(REPO_ROOT)
+        checklist_ids = _extract_checklist_source_keys(text)
+        errors.extend(
+            _check_id_set_diff(
+                rel=rel,
+                field="enable_ready_ids",
+                expected_ids=enable_ready_ids,
+                documented_ids=checklist_ids,
+            )
+        )
+
+    return errors
+
+
+def _validate_source_registry_row(source_key: str, cells: list[str], truth: dict) -> list[str]:
+    errors: list[str] = []
+    required_cells = 10
+    if len(cells) < required_cells:
+        return [f"docs/SOURCE_REGISTRY_STATUS.md:row_malformed:{source_key}"]
+
+    lifecycle_doc = cells[5].strip("`").strip()
+    automation_doc = cells[6].strip("`").strip()
+    runnable_doc = _parse_bool_cell(cells[8])
+    enable_ready_doc = _parse_bool_cell(cells[9])
+
+    lifecycle_truth = str(truth.get("lifecycle_state") or "")
+    automation_truth = str(truth.get("automation_status") or "")
+    runnable_truth = bool(truth.get("runnable_now"))
+    enable_ready_truth = bool(truth.get("enable_ready"))
+
+    if lifecycle_doc != lifecycle_truth:
+        errors.append(
+            "docs/SOURCE_REGISTRY_STATUS.md:lifecycle_mismatch:"
+            f"{source_key}:{lifecycle_doc}!={lifecycle_truth}"
+        )
+    if automation_doc != automation_truth:
+        errors.append(
+            "docs/SOURCE_REGISTRY_STATUS.md:automation_mismatch:"
+            f"{source_key}:{automation_doc}!={automation_truth}"
+        )
+    if runnable_doc is None:
+        errors.append(
+            "docs/SOURCE_REGISTRY_STATUS.md:runnable_cell_unparseable:"
+            f"{source_key}"
+        )
+    elif runnable_doc != runnable_truth:
+        errors.append(
+            "docs/SOURCE_REGISTRY_STATUS.md:runnable_mismatch:"
+            f"{source_key}:{int(runnable_doc)}!={int(runnable_truth)}"
+        )
+    if enable_ready_doc is None:
+        errors.append(
+            "docs/SOURCE_REGISTRY_STATUS.md:enable_ready_cell_unparseable:"
+            f"{source_key}"
+        )
+    elif enable_ready_doc != enable_ready_truth:
+        errors.append(
+            "docs/SOURCE_REGISTRY_STATUS.md:enable_ready_mismatch:"
+            f"{source_key}:{int(enable_ready_doc)}!={int(enable_ready_truth)}"
+        )
+
+    return errors
+
+
+def _parse_source_registry_rows(text: str) -> tuple[set[str], dict[str, list[str]]]:
+    row_keys: set[str] = set()
+    row_cells_by_key: dict[str, list[str]] = {}
+    skip_keys = {"source key", "source_key", "---"}
+
     for line in text.splitlines():
         if not line.startswith("|"):
             continue
@@ -73,34 +329,73 @@ def _validate_source_registry_status_doc(sources: list[dict]) -> list[str]:
             continue
         first = cells[0].strip("`").strip()
         first_lower = first.lower()
-        if first_lower in {"source key", "source_key", "---"}:
-            continue
-        if first.startswith(":"):
-            continue
-        if first in {"↳", "->"}:
+        if first_lower in skip_keys or first.startswith(":") or first in {"↳", "->"}:
             continue
         if first:
             row_keys.add(first)
+            row_cells_by_key[first] = cells
 
-    if row_keys:
-        missing = sorted(yaml_keys - row_keys)
-        extra = sorted(row_keys - yaml_keys)
-        if missing:
-            errors.append(
-                f"docs/SOURCE_REGISTRY_STATUS.md:missing_source_keys:{','.join(missing)}"
-            )
-        if extra:
-            errors.append(
-                f"docs/SOURCE_REGISTRY_STATUS.md:unknown_source_keys:{','.join(extra)}"
-            )
+    return row_keys, row_cells_by_key
 
+
+def _validate_source_registry_keyset(
+    yaml_keys: set[str],
+    row_keys: set[str],
+) -> list[str]:
+    errors: list[str] = []
+    if not row_keys:
+        return errors
+
+    missing = sorted(yaml_keys - row_keys)
+    extra = sorted(row_keys - yaml_keys)
+    if missing:
+        errors.append(
+            f"docs/SOURCE_REGISTRY_STATUS.md:missing_source_keys:{','.join(missing)}"
+        )
+    if extra:
+        errors.append(
+            f"docs/SOURCE_REGISTRY_STATUS.md:unknown_source_keys:{','.join(extra)}"
+        )
+    return errors
+
+
+def _validate_source_registry_declared_count(text: str, expected_count: int) -> list[str]:
+    errors: list[str] = []
     count_match = re.search(r"-\s*total_sources:\s*(\d+)", text)
-    if count_match:
-        documented_count = int(count_match.group(1))
-        if documented_count != len(sources):
-            errors.append(
-                f"docs/SOURCE_REGISTRY_STATUS.md:source_count_mismatch:{documented_count}!={len(sources)}"
+    if not count_match:
+        return errors
+
+    documented_count = int(count_match.group(1))
+    if documented_count != expected_count:
+        errors.append(
+            "docs/SOURCE_REGISTRY_STATUS.md:source_count_mismatch:"
+            f"{documented_count}!={expected_count}"
+        )
+    return errors
+
+
+def _validate_source_registry_status_doc(sources: list[dict], source_truth_by_key: dict[str, dict]) -> list[str]:
+    errors: list[str] = []
+    doc_path = REPO_ROOT / "docs" / "SOURCE_REGISTRY_STATUS.md"
+    if not doc_path.exists():
+        errors.append("docs/SOURCE_REGISTRY_STATUS.md:missing")
+        return errors
+
+    text = doc_path.read_text(encoding="utf-8", errors="ignore")
+    yaml_keys = {str(source.get("source_key")) for source in sources}
+    row_keys, row_cells_by_key = _parse_source_registry_rows(text)
+
+    errors.extend(_validate_source_registry_keyset(yaml_keys=yaml_keys, row_keys=row_keys))
+    errors.extend(_validate_source_registry_declared_count(text, len(sources)))
+
+    for source_key in sorted(row_keys & set(source_truth_by_key.keys())):
+        errors.extend(
+            _validate_source_registry_row(
+                source_key=source_key,
+                cells=row_cells_by_key.get(source_key, []),
+                truth=source_truth_by_key[source_key],
             )
+        )
 
     return errors
 
@@ -110,6 +405,7 @@ def main() -> int:
     warnings: list[str] = []
 
     sources = _load_yaml_sources()
+    truth_summary, truth_enable_ready_ids, truth_runnable_ids, truth_sources_by_key = _load_source_truth()
     sources_by_key = {str(source.get("source_key")): source for source in sources}
 
     adapter_files = {
@@ -142,7 +438,14 @@ def main() -> int:
     if "laws_justice_xml.py" not in adapter_files:
         errors.append("backend/app/ingestion/source_adapters/laws_justice_xml.py:missing")
 
-    errors.extend(_validate_source_registry_status_doc(sources))
+    errors.extend(_validate_source_registry_status_doc(sources, truth_sources_by_key))
+    errors.extend(
+        _validate_governance_docs(
+            summary_counts=truth_summary,
+            enable_ready_ids=truth_enable_ready_ids,
+            runnable_ids=truth_runnable_ids,
+        )
+    )
 
     if errors:
         print("SOURCE REGISTRY DOCS: FAIL")

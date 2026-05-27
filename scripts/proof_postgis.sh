@@ -207,14 +207,23 @@ export DATABASE_URL
 export JTA_DATABASE_URL="$DATABASE_URL"
 echo "[proof_postgis] INFO: normalized DATABASE_URL=${DATABASE_URL}"
 
+PSYCOPG_DATABASE_URL="$DATABASE_URL"
+case "$PSYCOPG_DATABASE_URL" in
+    postgresql+psycopg://*)
+        PSYCOPG_DATABASE_URL="postgresql://${PSYCOPG_DATABASE_URL#postgresql+psycopg://}"
+        ;;
+esac
+export PSYCOPG_DATABASE_URL
+echo "[proof_postgis] INFO: normalized PSYCOPG_DATABASE_URL=${PSYCOPG_DATABASE_URL}"
+
 echo "[proof_postgis] Stage: host connectivity wait loop"
 host_ready=0
 for i in $(seq 1 90); do
-    if DATABASE_URL="$DATABASE_URL" "$BACKEND_PYTHON" - <<'PY' >/dev/null 2>&1
+    if PSYCOPG_DATABASE_URL="$PSYCOPG_DATABASE_URL" "$BACKEND_PYTHON" - <<'PY' >/dev/null 2>&1
 import os
 import psycopg
 
-conn = psycopg.connect(os.environ["DATABASE_URL"])
+conn = psycopg.connect(os.environ["PSYCOPG_DATABASE_URL"])
 with conn.cursor() as cur:
     cur.execute("SELECT 1")
 conn.close()
@@ -249,11 +258,11 @@ else
 fi
 
 echo "[proof_postgis] Stage: spatial query smoke"
-if DATABASE_URL="$DATABASE_URL" "$BACKEND_PYTHON" - <<'PY'
+if PSYCOPG_DATABASE_URL="$PSYCOPG_DATABASE_URL" "$BACKEND_PYTHON" - <<'PY'
 import os
 import psycopg
 
-conn = psycopg.connect(os.environ["DATABASE_URL"])
+conn = psycopg.connect(os.environ["PSYCOPG_DATABASE_URL"])
 with conn.cursor() as cur:
     cur.execute("SELECT ST_AsText(ST_SetSRID(ST_MakePoint(-79.3832, 43.6532), 4326))")
     value = cur.fetchone()[0]

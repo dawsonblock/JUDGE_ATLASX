@@ -5,10 +5,14 @@ This checklist is for enablement planning only. It does not auto-enable any sour
 Current verified counts must remain unchanged during this checklist phase:
 
 - total_sources: 26
+- machine_ingest_sources: 8
 - runnable_now: 1
-- enable_ready: 5
+- enable_ready: 6
+- deprecated: 3
+- machine_ready_disabled: 6
+- adapter_missing: 16
 
-All five sources below are intentionally disabled in alpha and require explicit governance sign-off before enablement.
+All six sources below are intentionally disabled in alpha and require explicit governance sign-off before enablement.
 
 ## Global Preconditions (Required For Any Enablement)
 
@@ -52,6 +56,22 @@ All five sources below are intentionally disabled in alpha and require explicit 
 - Test files:
   - `backend/app/tests/test_federal_court_html_adapter.py`
 - Fixture: `backend/app/tests/fixtures/sources/federal_court_index.html`
+- Config flags: None (uses source registry enablement)
+
+### `saskatoon_open_data_public_safety`
+
+- [ ] Endpoint reachable and stable over repeated fetch windows.
+- [ ] Terms reviewed for ingest/caching/republication constraints.
+- [ ] Adapter contract + replay tests green.
+- [ ] Dry run evidence snapshot captured and indexed.
+- [ ] Governance approval documented for alpha scope expansion.
+
+**Implementation Details:**
+- Adapter: `backend/app/ingestion/source_adapters/ckan_api.py`
+- Test files:
+  - `backend/app/tests/ingestion/test_ckan_adapter.py`
+  - `backend/app/tests/test_adapter_evidence_contract.py` (TestCKANApiAdapterContract)
+- Fixture: `backend/app/tests/fixtures/sources/saskatoon_open_data_public_safety/sample.json`
 - Config flags: None (uses source registry enablement)
 
 ### `sk_courts_qb_decisions`

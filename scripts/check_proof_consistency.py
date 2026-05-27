@@ -497,6 +497,7 @@ def check_release_gate_proof_integrity(
     release_gate: dict,
     manifest: dict,
     required_log_index: dict,
+    packaged_archive: bool = False,
 ) -> list[str]:
     errors: list[str] = []
     manifest_map = _manifest_entry_map(manifest)
@@ -560,7 +561,7 @@ def check_release_gate_proof_integrity(
         if missing_required_logs:
             errors.append("alpha_gate_passed_with_missing_required_logs")
 
-        if archive_validation != "PASS":
+        if not packaged_archive and archive_validation != "PASS":
             errors.append("alpha_gate_passed_without_archive_validation_pass")
 
         for rel_path in manifest.get("required_logs", []):
@@ -622,6 +623,14 @@ def main() -> int:
         "--root",
         default=str(Path(__file__).resolve().parents[1]),
         help="Repository root",
+    )
+    parser.add_argument(
+        "--packaged-archive",
+        action="store_true",
+        help=(
+            "Relax consistency checks for extracted packaged archives where "
+            "archive_validation is not re-run inside the extracted tree."
+        ),
     )
     args = parser.parse_args()
 
@@ -752,6 +761,7 @@ def main() -> int:
             release_gate=gate,
             manifest=manifest,
             required_log_index=required_log_index,
+            packaged_archive=bool(args.packaged_archive),
         )
     )
     all_errors.extend(

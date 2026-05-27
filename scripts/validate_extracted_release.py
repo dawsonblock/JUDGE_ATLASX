@@ -112,7 +112,11 @@ def _build_checks(
         ),
         (
             "check_proof_consistency",
-            ["python3", "scripts/check_proof_consistency.py"],
+            [
+                "python3",
+                "scripts/check_proof_consistency.py",
+                "--packaged-archive",
+            ],
             runtime_root,
         ),
         (

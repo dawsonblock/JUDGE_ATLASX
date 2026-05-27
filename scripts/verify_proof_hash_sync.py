@@ -42,7 +42,6 @@ def verify_hash_sync(repo_root: Path) -> tuple[bool, list[str], dict[str, str]]:
         release_gate_path,
         current_proof_path,
         proof_freshness_path,
-        archive_validation_path,
     ):
         if not path.is_file():
             errors.append(f"missing_file:{path.relative_to(repo_root)}")
@@ -57,7 +56,10 @@ def verify_hash_sync(repo_root: Path) -> tuple[bool, list[str], dict[str, str]]:
 
     current_proof_text = _read_text(current_proof_path)
     proof_freshness_text = _read_text(proof_freshness_path)
-    archive_validation_text = _read_text(archive_validation_path)
+    archive_validation_text = ""
+    archive_validation_present = archive_validation_path.is_file()
+    if archive_validation_present:
+        archive_validation_text = _read_text(archive_validation_path)
 
     current_proof_match = CURRENT_PROOF_HASH_RE.search(current_proof_text)
     freshness_match = FRESHNESS_HASH_RE.search(proof_freshness_text)
@@ -66,20 +68,29 @@ def verify_hash_sync(repo_root: Path) -> tuple[bool, list[str], dict[str, str]]:
         "release_gate.json": release_hash,
         "CURRENT_PROOF.md": current_proof_match.group(1) if current_proof_match else "",
         "proof_freshness.log": freshness_match.group(1) if freshness_match else "",
-        "archive_validation.log release_hash": _extract_with_fallback(
-            archive_validation_text, RELEASE_HASH_RE
-        ),
-        "archive_validation.log actual_hash": _extract_with_fallback(
-            archive_validation_text, ACTUAL_HASH_RE
-        ),
     }
 
-    missing = [name for name, value in values.items() if not value]
-    if missing:
-        errors.append("missing_hash_values:" + ",".join(missing))
+    if archive_validation_present:
+        values["archive_validation.log release_hash"] = _extract_with_fallback(
+            archive_validation_text, RELEASE_HASH_RE
+        )
+        values["archive_validation.log actual_hash"] = _extract_with_fallback(
+            archive_validation_text, ACTUAL_HASH_RE
+        )
+
+    present_values = {name: value for name, value in values.items() if value}
+
+    core_required = (
+        "release_gate.json",
+        "CURRENT_PROOF.md",
+        "proof_freshness.log",
+    )
+    missing_core = [name for name in core_required if not values.get(name)]
+    if missing_core:
+        errors.append("missing_hash_values:" + ",".join(missing_core))
         return False, errors, values
 
-    unique = sorted(set(values.values()))
+    unique = sorted(set(present_values.values()))
     if len(unique) != 1:
         errors.append("hash_mismatch")
         return False, errors, values

@@ -66,9 +66,12 @@ print_docker_diagnostics() {
     echo "[docker_runtime] INFO: docker_version_client_start"
     docker --version || true
     echo "[docker_runtime] INFO: docker_version_client_end"
-    echo "[docker_runtime] INFO: docker_info_start"
-    run_with_timeout "$DOCKER_TIMEOUT_SECONDS" docker info || true
-    echo "[docker_runtime] INFO: docker_info_end"
+    echo "[docker_runtime] INFO: docker_server_version_start"
+    run_with_timeout 20 docker version --format '{{.Server.Version}}' || true
+    echo "[docker_runtime] INFO: docker_server_version_end"
+    echo "[docker_runtime] INFO: docker_server_details_start"
+    run_with_timeout 20 docker version --format '{{json .Server}}' || true
+    echo "[docker_runtime] INFO: docker_server_details_end"
 }
 
 classify_docker_failure() {
