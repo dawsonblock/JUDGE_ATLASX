@@ -1,15 +1,15 @@
 # Archive Validation
 
-- validated_at_utc: 2026-05-27T20:35:50.306824+00:00
-- archive: [REDACTED_LOCAL_PATH]/judge_atlas_archive.zip
-- archive_sha256: 022bb2db3f966c38ef4e6886ec949574b8e250ff0cbd5c428c0fa1a13c04ccc8
+- validated_at_utc: 2026-05-27T20:36:14.606963+00:00
+- archive: dist/JUDGE_ATLAS-main-final.zip
+- archive_sha256: 936000f2b2e81af514d251d0b46ea4270f1e23798cdb60a9c1570c50a04618cd
 - expected_root: JUDGE_ATLAS-main
 - actual_root: JUDGE_ATLAS-main
 - top_level_roots: JUDGE_ATLAS-main
 - root_match: yes
 - valid: PASS
-- compressed_size_bytes: 2074434
-- uncompressed_size_bytes: 7925052
+- compressed_size_bytes: 2075566
+- uncompressed_size_bytes: 7933001
 
 ## Errors
 
@@ -17,8 +17,7 @@
 
 ## Warnings
 
-- release_gate_not_alpha_passed
-- release_gate_not_release_candidate
+- none
 
 ## Largest Files
 
@@ -28,9 +27,9 @@
 | JUDGE_ATLAS-main/frontend/package-lock.json | 393441 | 85051 |
 | JUDGE_ATLAS-main/scripts/release_gate.py | 115660 | 21441 |
 | JUDGE_ATLAS-main/backend/app/models/entities.py | 101799 | 16701 |
-| JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 89628 | 13396 |
+| JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 92267 | 13610 |
+| JUDGE_ATLAS-main/artifacts/proof/current/proof_manifest.json | 52553 | 7123 |
 | JUDGE_ATLAS-main/backend/app/memory/contradiction_engine.py | 48640 | 8977 |
-| JUDGE_ATLAS-main/artifacts/proof/current/proof_manifest.json | 48510 | 6651 |
 | JUDGE_ATLAS-main/backend/app/ingestion/sources/canada_saskatchewan_sources.yaml | 48453 | 6929 |
 | JUDGE_ATLAS-main/artifacts/proof/current/docker_smoke.log | 48435 | 9102 |
 | JUDGE_ATLAS-main/backend/app/tests/test_api.py | 43536 | 7488 |
@@ -52,8 +51,8 @@
 | backend | 5517350 |
 | frontend | 864407 |
 | scripts | 739565 |
-| docs | 362967 |
-| artifacts | 314179 |
+| docs | 362881 |
+| artifacts | 322317 |
 | .github | 47294 |
 | demo | 26537 |
 | infra | 17264 |
@@ -65,7 +64,7 @@
 | CURRENT_STATUS.md | 2031 |
 | PROOF_STATUS.md | 1941 |
 | README.md | 1910 |
-| RELEASE_MANIFEST.json | 1476 |
+| RELEASE_MANIFEST.json | 1373 |
 | RELEASE_BLOCKERS.md | 1291 |
 | Dockerfile.proof | 890 |
 | deploy | 389 |

@@ -1002,9 +1002,9 @@
       "status": "PASS",
       "log_path": "artifacts/proof/current/archive_validation.log",
       "log_exists": true,
-      "log_sha256": "8648fb0d9bd497adf86427850369f2705ce131df2aa0f71e640a200ad375b1c0",
-      "sha256": "8648fb0d9bd497adf86427850369f2705ce131df2aa0f71e640a200ad375b1c0",
-      "size_bytes": 3537,
+      "log_sha256": "4c55046c4a3292edb438055a94a60413a70563224cd30479c40c3621e823f029",
+      "sha256": "4c55046c4a3292edb438055a94a60413a70563224cd30479c40c3621e823f029",
+      "size_bytes": 3359,
       "proof_source": "archive_validation",
       "failure_reason": null
     },
