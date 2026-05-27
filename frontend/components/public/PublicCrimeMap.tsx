@@ -21,6 +21,21 @@ interface IncidentFeature {
   location: string;
   date: string;
   jurisdiction: string;
+  evidence_count?: number;
+}
+
+// Helper function to validate coordinates
+function isValidCoordinate(lat: number, lng: number): boolean {
+  return (
+    typeof lat === "number" &&
+    typeof lng === "number" &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180 &&
+    !isNaN(lat) &&
+    !isNaN(lng)
+  );
 }
 
 export default function PublicCrimeMap({ filters }: { filters: Filters }) {
@@ -81,8 +96,19 @@ export default function PublicCrimeMap({ filters }: { filters: Filters }) {
       if (!response.ok) throw new Error("Failed to fetch incidents");
 
       const data = await response.json();
-      const features: IncidentFeature[] = data.features || [];
+      // Filter to only incidents with valid coordinates
+      const features: IncidentFeature[] = (data.incidents || []).filter(
+        (incident: IncidentFeature) =>
+          isValidCoordinate(incident.lat, incident.lng)
+      );
 
+      console.log(
+        "[v0] Loaded",
+        features.length,
+        "valid incidents (filtered from",
+        data.incidents?.length || 0,
+        ")"
+      );
       setIncidents(features);
 
       // Add GeoJSON source to map
