@@ -92,6 +92,20 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _safe_sha256(path: Path) -> tuple[str | None, str | None]:
+    try:
+        return _sha256(path), None
+    except OSError as exc:
+        return None, str(exc)
+
+
+def _safe_size(path: Path) -> tuple[int | None, str | None]:
+    try:
+        return path.stat().st_size, None
+    except OSError as exc:
+        return None, str(exc)
+
+
 def _entry_path(entry: dict) -> str | None:
     path = entry.get("path")
     if isinstance(path, str) and path:
@@ -137,7 +151,10 @@ def _check_file_and_manifest_entry(
 
     expected_size = entry.get("size_bytes")
     if isinstance(expected_size, int):
-        actual_size = abs_path.stat().st_size
+        actual_size, size_error = _safe_size(abs_path)
+        if size_error is not None or actual_size is None:
+            errors.append(f"unreadable_file_size:{rel_path}:{size_error}")
+            return
         if actual_size != expected_size:
             errors.append(
                 f"size_mismatch:{rel_path}:expected={expected_size}:actual={actual_size}"
@@ -149,7 +166,10 @@ def _check_file_and_manifest_entry(
         return
 
     if isinstance(expected_hash, str) and expected_hash:
-        actual_hash = _sha256(abs_path)
+        actual_hash, hash_error = _safe_sha256(abs_path)
+        if hash_error is not None or actual_hash is None:
+            errors.append(f"unreadable_file_hash:{rel_path}:{hash_error}")
+            return
         if actual_hash != expected_hash:
             errors.append(
                 f"hash_mismatch:{rel_path}:expected={expected_hash}:actual={actual_hash}"
@@ -312,6 +332,8 @@ def _normalize_readiness_blocker(blocker: str) -> str | None:
     blocker = blocker.strip()
     if not blocker:
         return None
+    if blocker.lower() == "none":
+        return None
     if blocker.startswith("required_gate_failed:"):
         return blocker.split(":", 1)[1].strip() or None
     if blocker.startswith("missing_required_gate:"):
@@ -432,7 +454,10 @@ def check_required_index_consistency(
             continue
 
         recorded_sha = entry.get("recorded_sha256")
-        actual_sha = _sha256(abs_path)
+        actual_sha, hash_error = _safe_sha256(abs_path)
+        if hash_error is not None or actual_sha is None:
+            errors.append(f"required_log_index_unreadable_file_hash:{path}:{hash_error}")
+            continue
         if isinstance(recorded_sha, str) and recorded_sha and recorded_sha != actual_sha:
             errors.append(f"required_log_index_recorded_sha_mismatch:{path}")
 
@@ -441,7 +466,10 @@ def check_required_index_consistency(
             errors.append(f"required_log_index_manifest_sha_mismatch:{path}")
 
         recorded_size = entry.get("recorded_size_bytes")
-        actual_size = abs_path.stat().st_size
+        actual_size, size_error = _safe_size(abs_path)
+        if size_error is not None or actual_size is None:
+            errors.append(f"required_log_index_unreadable_file_size:{path}:{size_error}")
+            continue
         if isinstance(recorded_size, int) and recorded_size != actual_size:
             errors.append(f"required_log_index_recorded_size_mismatch:{path}")
 
@@ -614,24 +642,99 @@ def main() -> int:
     print(f"  release_readiness.md: {release_readiness_path}")
 
     all_errors: list[str] = []
-    missing_artifacts: list[str] = []
+
+    json_artifacts = [manifest_path, gate_path, required_log_index_path]
+    text_artifacts = [current_proof_path, release_readiness_path]
+
+    missing_json_artifacts = [
+        str(path.relative_to(repo_root))
+        for path in json_artifacts
+        if not path.exists()
+    ]
+    missing_text_artifacts = [
+        str(path.relative_to(repo_root))
+        for path in text_artifacts
+        if not path.exists()
+    ]
+    if missing_json_artifacts or missing_text_artifacts:
+        parts: list[str] = []
+        if missing_json_artifacts:
+            parts.append(
+                "missing_json_artifacts="
+                + ",".join(sorted(missing_json_artifacts))
+            )
+        if missing_text_artifacts:
+            parts.append(
+                "missing_text_artifacts="
+                + ",".join(sorted(missing_text_artifacts))
+            )
+        print(PROOF_INCOMPLETE_PREFIX + "|".join(parts))
+        return 1
+
+    json_load_errors: list[str] = []
+    text_load_errors: list[str] = []
 
     try:
         manifest = load_json_file(manifest_path)
+    except RuntimeError as exc:
+        json_load_errors.append(f"{manifest_path.relative_to(repo_root)}:{exc}")
+        manifest = {}
+    try:
         gate = load_json_file(gate_path)
+    except RuntimeError as exc:
+        json_load_errors.append(f"{gate_path.relative_to(repo_root)}:{exc}")
+        gate = {}
+    try:
         required_log_index = load_json_file(required_log_index_path)
+    except RuntimeError as exc:
+        json_load_errors.append(
+            f"{required_log_index_path.relative_to(repo_root)}:{exc}"
+        )
+        required_log_index = {}
+    try:
         current_proof_text = load_text_file(current_proof_path)
+    except RuntimeError as exc:
+        text_load_errors.append(f"{current_proof_path.relative_to(repo_root)}:{exc}")
+        current_proof_text = ""
+    try:
         release_readiness_text = load_text_file(release_readiness_path)
     except RuntimeError as exc:
-        print(f"ERROR: {exc}")
-        message = str(exc)
-        if message.startswith("Proof artifact not found: "):
-            missing_artifacts.append(message.replace("Proof artifact not found: ", "", 1))
-        print(
-            PROOF_INCOMPLETE_PREFIX
-            + "missing_proof_artifacts="
-            + ",".join(sorted(missing_artifacts))
+        text_load_errors.append(
+            f"{release_readiness_path.relative_to(repo_root)}:{exc}"
         )
+        release_readiness_text = ""
+
+    if json_load_errors or text_load_errors:
+        for error in json_load_errors + text_load_errors:
+            print(f"ERROR: {error}")
+        parts = []
+        if json_load_errors:
+            parts.append(
+                "invalid_json_artifacts="
+                + ",".join(
+                    sorted(
+                        {
+                            item.split(":", 1)[0]
+                            for item in json_load_errors
+                            if ":" in item
+                        }
+                    )
+                )
+            )
+        if text_load_errors:
+            parts.append(
+                "unreadable_text_artifacts="
+                + ",".join(
+                    sorted(
+                        {
+                            item.split(":", 1)[0]
+                            for item in text_load_errors
+                            if ":" in item
+                        }
+                    )
+                )
+            )
+        print(PROOF_INCOMPLETE_PREFIX + "|".join(parts))
         return 1
 
     all_errors.extend(check_node_version_consistency(manifest, gate))

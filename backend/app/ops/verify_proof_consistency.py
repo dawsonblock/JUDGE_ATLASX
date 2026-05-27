@@ -142,6 +142,8 @@ def _normalize_readiness_blocker(blocker: str) -> str | None:
     blocker = blocker.strip()
     if not blocker:
         return None
+    if blocker.lower() == "none":
+        return None
     if blocker.startswith("required_gate_failed:"):
         return blocker.split(":", 1)[1].strip() or None
     if blocker.startswith("missing_required_gate:"):

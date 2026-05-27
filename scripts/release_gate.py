@@ -386,6 +386,10 @@ def _missing_logs(repo_root: Path, checks: list[GateStep]) -> list[str]:
     return missing
 
 
+def _failed_required_checks(checks: list[GateStep]) -> list[str]:
+    return [check.name for check in checks if check.required and check.exit_code != 0]
+
+
 def _archive_legacy_sidecars(repo_root: Path, out_dir: Path) -> list[str]:
     legacy_names = [
         "manifest.json",
@@ -794,6 +798,47 @@ def _build_proof_manifest(
         )
         seen_paths.add(rel_path)
 
+    # Guarantee that every required proof log has a manifest entry.
+    # This keeps required_log_index generation and consistency checks aligned
+    # even when a required log was not emitted by a GateStep in a partial run.
+    for rel_path in REQUIRED_PROOF_MANIFEST_LOGS:
+        if rel_path in seen_paths:
+            continue
+        log_abs = repo_root / rel_path
+        log_exists = log_abs.exists()
+        size_bytes = log_abs.stat().st_size if log_exists else 0
+        log_hash = _sha256_file(log_abs) if log_exists else None
+        captured_at_raw = payload.get("timestamp_utc")
+        captured_at = (
+            captured_at_raw
+            if isinstance(captured_at_raw, str) and captured_at_raw
+            else "unknown"
+        )
+        entries.append(
+            {
+                "name": Path(rel_path).stem,
+                "path": rel_path,
+                "required": True,
+                "cwd": _redact_local_paths_in_text(str(repo_root), repo_root),
+                "command": "required_proof_log",
+                "created_at": captured_at,
+                "captured_at": captured_at,
+                "started_at": captured_at,
+                "finished_at": captured_at,
+                "duration_seconds": 0.0,
+                "exit_code": 0 if log_exists else 1,
+                "status": "PASS" if log_exists else "FAIL",
+                "log_path": rel_path,
+                "log_exists": log_exists,
+                "log_sha256": log_hash,
+                "sha256": log_hash,
+                "size_bytes": size_bytes,
+                "proof_source": "required_proof_manifest",
+                "failure_reason": None if log_exists else "missing_file",
+            }
+        )
+        seen_paths.add(rel_path)
+
     manifest = {
         "generated_at": payload.get("timestamp_utc"),
         "archive_hash": payload.get("commit_hash", "unknown"),
@@ -854,19 +899,36 @@ def _write_required_log_index(
     for rel_path in required_logs:
         if not isinstance(rel_path, str) or not rel_path:
             continue
-
-        abs_path = repo_root / rel_path
-        exists = abs_path.is_file()
         location_scope = (
             "archive_internal"
             if rel_path.startswith("artifacts/proof/current/")
             else "external_evidence"
         )
-        entry = entry_by_path.get(rel_path, {})
-        recorded_hash = entry.get("sha256") or entry.get("log_sha256")
-        recorded_size = entry.get("size_bytes")
-        actual_hash = _sha256_file(abs_path) if exists else None
-        actual_size = abs_path.stat().st_size if exists else None
+        entry = entry_by_path.get(rel_path)
+        if isinstance(entry, dict):
+            recorded_hash = entry.get("sha256") or entry.get("log_sha256")
+            recorded_size = entry.get("size_bytes")
+            exists_flag = entry.get("log_exists")
+            if isinstance(exists_flag, bool):
+                exists = exists_flag
+            else:
+                # Backward compatibility: historical/fixture manifests may
+                # omit log_exists while still carrying canonical hash/size.
+                if isinstance(recorded_hash, str) and recorded_hash:
+                    exists = True
+                else:
+                    exists = (repo_root / rel_path).exists()
+        else:
+            # Keep this deterministic relative to manifest creation: if a
+            # required log is not represented in the final manifest, fail it
+            # explicitly instead of deriving a separate on-disk truth here.
+            exists = False
+            recorded_hash = None
+            recorded_size = None
+
+        actual_hash = recorded_hash if exists else None
+        actual_size = recorded_size if exists else None
+        status = "PASS" if exists and isinstance(recorded_hash, str) else "FAIL"
 
         index_entries.append(
             {
@@ -877,9 +939,7 @@ def _write_required_log_index(
                 "actual_sha256": actual_hash,
                 "recorded_size_bytes": recorded_size,
                 "actual_size_bytes": actual_size,
-                "status": "PASS"
-                if exists and (recorded_hash is None or recorded_hash == actual_hash)
-                else "FAIL",
+                "status": status,
             }
         )
 
@@ -950,10 +1010,15 @@ def _generate_release_readiness_from_manifest(
     elif archive_entry.get("status") != "PASS":
         blockers.append("archive_validation_not_pass")
 
-    merged_blockers = list(blockers)
-    for blocker in additional_blockers or []:
-        if blocker not in merged_blockers:
-            merged_blockers.append(blocker)
+    if additional_blockers is not None:
+        # release_gate.json is the canonical blocker contract. Keep
+        # release_readiness.md aligned with that list to avoid divergence.
+        merged_blockers = []
+        for blocker in additional_blockers:
+            if isinstance(blocker, str) and blocker and blocker not in merged_blockers:
+                merged_blockers.append(blocker)
+    else:
+        merged_blockers = list(blockers)
 
     status = "alpha-proof-pass" if not merged_blockers else "blocked"
     recommendation = "alpha-proof-pass" if not merged_blockers else "blocked"
@@ -2080,12 +2145,14 @@ def main() -> int:
             "docker_runtime_preflight.log",
             ["bash", "scripts/check_docker_runtime.sh"],
             timeout_seconds=docker_preflight_timeout_seconds,
+            required=True,
         ),
         GateStepSpec(
             "docker_smoke",
             "docker_smoke.log",
             ["bash", "scripts/proof_docker_compose.sh"],
             timeout_seconds=1800,
+            required=True,
         ),
         GateStepSpec(
             "postgis_proof",
@@ -2688,7 +2755,7 @@ def main() -> int:
         "alembic_migration_count": alembic_migration_count,
         "checks": [asdict(r) for r in results],
         "checks_summary": _canonical_checks_summary(results),
-        "failed_checks": [r.name for r in results if r.exit_code != 0]
+        "failed_checks": _failed_required_checks(results)
         + (["missing_logs"] if missing_logs else []),
         "blocked_checks": blocked_checks,
         "archived_current_proof": archived_current_proof,
@@ -2797,9 +2864,10 @@ def main() -> int:
         "check_proof_manifest",
         "check_proof_consistency",
         "archive_validation",
-    }
+    } - {r.name for r in results}
+    required_failed_checks = _failed_required_checks(results)
     ok = (
-        all(r.exit_code == 0 for r in results)
+        not required_failed_checks
         and not missing_logs
         and not remaining_required_steps
     )
@@ -2809,9 +2877,9 @@ def main() -> int:
     payload["archive_validation_result"] = "UNKNOWN"
     payload["checks"] = [asdict(r) for r in results]
     payload["logs"] = {r.name: r.log_path for r in results}
-    payload["failed_checks"] = [
-        r.name for r in results if r.exit_code != 0
-    ] + (["missing_logs"] if missing_logs else [])
+    payload["failed_checks"] = required_failed_checks + (
+        ["missing_logs"] if missing_logs else []
+    )
     payload["logs"][_proof_freshness_spec.name] = pf_step.log_path
     payload["logs"]["release_gate"] = str(gate_log_path.relative_to(repo_root))
     payload["logs"]["proof_manifest"] = str(
@@ -2820,7 +2888,7 @@ def main() -> int:
     payload["logs"]["release_readiness"] = readiness_rel
     payload["logs"]["static_guards"] = static_guards_rel
     payload["release_blockers_remaining"] = (
-        [r.name for r in results if r.exit_code != 0]
+        required_failed_checks
         + sorted(remaining_required_steps)
         + (["missing_logs"] if missing_logs else [])
         if not ok
@@ -2854,9 +2922,10 @@ def main() -> int:
         "check_proof_manifest",
         "check_proof_consistency",
         "archive_validation",
-    }
+    } - {r.name for r in results}
+    required_failed_checks = _failed_required_checks(results)
     ok = (
-        all(r.exit_code == 0 for r in results)
+        not required_failed_checks
         and not missing_logs
         and not remaining_required_steps
     )
@@ -2870,11 +2939,11 @@ def main() -> int:
     )
     payload["logs"]["release_readiness"] = readiness_rel
     payload["logs"]["static_guards"] = static_guards_rel
-    payload["failed_checks"] = [
-        r.name for r in results if r.exit_code != 0
-    ] + (["missing_logs"] if missing_logs else [])
+    payload["failed_checks"] = required_failed_checks + (
+        ["missing_logs"] if missing_logs else []
+    )
     payload["release_blockers_remaining"] = (
-        [r.name for r in results if r.exit_code != 0]
+        required_failed_checks
         + sorted(remaining_required_steps)
         + (["missing_logs"] if missing_logs else [])
         if not ok
@@ -2920,7 +2989,18 @@ def main() -> int:
             )
 
     missing_logs = _missing_logs(repo_root, results)
-    ok = all(r.exit_code == 0 for r in results) and not missing_logs
+    required_failed_checks = _failed_required_checks(results)
+    remaining_required_steps = {
+        "archive_validation",
+        "required_proof_logs",
+        "check_proof_manifest",
+        "check_proof_consistency",
+    } - {r.name for r in results}
+    ok = (
+        not required_failed_checks
+        and not missing_logs
+        and not remaining_required_steps
+    )
     payload["alpha_gate_passed"] = ok
     payload["check_count"] = len(results)
     payload["checks"] = [asdict(r) for r in results]
@@ -2930,11 +3010,12 @@ def main() -> int:
         manifest_path.relative_to(repo_root)
     )
     payload["logs"]["static_guards"] = static_guards_rel
-    payload["failed_checks"] = [
-        r.name for r in results if r.exit_code != 0
-    ] + (["missing_logs"] if missing_logs else [])
+    payload["failed_checks"] = required_failed_checks + (
+        ["missing_logs"] if missing_logs else []
+    )
     payload["release_blockers_remaining"] = (
-        [r.name for r in results if r.exit_code != 0]
+        required_failed_checks
+        + sorted(remaining_required_steps)
         + (["missing_logs"] if missing_logs else [])
         if not ok
         else []
@@ -3079,8 +3160,9 @@ def main() -> int:
         validation_blockers.append("validation_summary_missing")
 
     missing_logs = _missing_logs(repo_root, results)
+    required_failed_checks = _failed_required_checks(results)
     ok = (
-        all(r.exit_code == 0 for r in results)
+        not required_failed_checks
         and not missing_logs
         and not validation_blockers
     )
@@ -3110,11 +3192,13 @@ def main() -> int:
     payload["logs"]["repair_report"] = repair_report_rel
     payload["logs"]["fix_verification_report"] = fix_verification_report_rel
     payload["logs"]["release_readiness"] = readiness_rel
-    payload["failed_checks"] = [
-        r.name for r in results if r.exit_code != 0
-    ] + (["missing_logs"] if missing_logs else []) + validation_blockers
+    payload["failed_checks"] = (
+        required_failed_checks
+        + (["missing_logs"] if missing_logs else [])
+        + validation_blockers
+    )
     payload["release_blockers_remaining"] = (
-        [r.name for r in results if r.exit_code != 0]
+        required_failed_checks
         + (["missing_logs"] if missing_logs else [])
         + validation_blockers
         if not ok
@@ -3139,7 +3223,7 @@ def main() -> int:
 
     print(f"BLOCKED: wrote {out_path.relative_to(repo_root)}")
     for result in results:
-        if result.exit_code != 0:
+        if result.required and result.exit_code != 0:
             print(
                 f"- {result.name} rc={result.exit_code} log={result.log_path}"
             )

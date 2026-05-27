@@ -23,6 +23,31 @@ CLASSIFICATION_PATTERN = re.compile(
     r"^\s*-\s*release_classification:\s*(.+?)\s*$",
     re.IGNORECASE,
 )
+PROOF_ANCHOR_PATH_PATTERNS = {
+    "release_gate_path": re.compile(
+        r"^\s*-\s*release_gate_path:\s*(.+?)\s*$", re.IGNORECASE
+    ),
+    "proof_manifest_path": re.compile(
+        r"^\s*-\s*proof_manifest_path:\s*(.+?)\s*$", re.IGNORECASE
+    ),
+    "required_log_index_path": re.compile(
+        r"^\s*-\s*required_log_index_path:\s*(.+?)\s*$", re.IGNORECASE
+    ),
+}
+PROOF_ANCHOR_SHA_PATTERNS = {
+    "release_gate_sha256": re.compile(
+        r"^\s*-\s*release_gate_sha256:\s*([0-9a-fA-F]{64})\s*$",
+        re.IGNORECASE,
+    ),
+    "proof_manifest_sha256": re.compile(
+        r"^\s*-\s*proof_manifest_sha256:\s*([0-9a-fA-F]{64})\s*$",
+        re.IGNORECASE,
+    ),
+    "required_log_index_sha256": re.compile(
+        r"^\s*-\s*required_log_index_sha256:\s*([0-9a-fA-F]{64})\s*$",
+        re.IGNORECASE,
+    ),
+}
 
 
 def _compute_sha256(path: pathlib.Path) -> str:
@@ -35,11 +60,21 @@ def _compute_sha256(path: pathlib.Path) -> str:
 
 def _extract_claims(
     handoff_path: pathlib.Path,
-) -> tuple[str | None, str | None, dict[str, bool], str | None, str]:
+) -> tuple[
+    str | None,
+    str | None,
+    dict[str, bool],
+    str | None,
+    dict[str, str],
+    dict[str, str],
+    str,
+]:
     claimed_path: str | None = None
     claimed_sha: str | None = None
     boolean_claims: dict[str, bool] = {}
     classification: str | None = None
+    anchor_paths: dict[str, str] = {}
+    anchor_shas: dict[str, str] = {}
     content = handoff_path.read_text(encoding="utf-8", errors="ignore")
     for line in content.splitlines():
         if claimed_path is None:
@@ -60,7 +95,27 @@ def _extract_claims(
             match = pattern.match(line)
             if match:
                 boolean_claims[key] = match.group(1).lower() == "true"
-    return claimed_path, claimed_sha, boolean_claims, classification, content
+        for key, pattern in PROOF_ANCHOR_PATH_PATTERNS.items():
+            if key in anchor_paths:
+                continue
+            match = pattern.match(line)
+            if match:
+                anchor_paths[key] = match.group(1).strip()
+        for key, pattern in PROOF_ANCHOR_SHA_PATTERNS.items():
+            if key in anchor_shas:
+                continue
+            match = pattern.match(line)
+            if match:
+                anchor_shas[key] = match.group(1).lower()
+    return (
+        claimed_path,
+        claimed_sha,
+        boolean_claims,
+        classification,
+        anchor_paths,
+        anchor_shas,
+        content,
+    )
 
 
 def _expected_release_classification(release_gate: dict) -> str:
@@ -94,7 +149,15 @@ def validate_handoff(
         except json.JSONDecodeError:
             errors.append(f"release_gate_parse_error:{release_gate_path}")
 
-    claimed_path, claimed_sha, boolean_claims, classification, handoff_text = _extract_claims(handoff_path)
+    (
+        claimed_path,
+        claimed_sha,
+        boolean_claims,
+        classification,
+        anchor_paths,
+        anchor_shas,
+        handoff_text,
+    ) = _extract_claims(handoff_path)
     if not claimed_path:
         errors.append("missing_claimed_path")
     if not claimed_sha:
@@ -122,6 +185,38 @@ def validate_handoff(
 
         if not claimed_archive.exists() or not claimed_archive.is_file():
             errors.append(f"claimed_archive_missing:{claimed_archive}")
+
+    anchor_pairs = (
+        ("release_gate_path", "release_gate_sha256"),
+        ("proof_manifest_path", "proof_manifest_sha256"),
+        ("required_log_index_path", "required_log_index_sha256"),
+    )
+    for path_key, sha_key in anchor_pairs:
+        rel_path = anchor_paths.get(path_key)
+        claimed_anchor_sha = anchor_shas.get(sha_key)
+        if not rel_path:
+            errors.append(f"missing_proof_anchor:{path_key}")
+            continue
+        if not claimed_anchor_sha:
+            errors.append(f"missing_proof_anchor:{sha_key}")
+            continue
+
+        anchor_path = pathlib.Path(rel_path)
+        if not anchor_path.is_absolute():
+            anchor_path = (repo_root / anchor_path).resolve()
+        else:
+            anchor_path = anchor_path.resolve()
+
+        if not anchor_path.exists() or not anchor_path.is_file():
+            errors.append(f"proof_anchor_missing:{path_key}:{anchor_path}")
+            continue
+
+        actual_anchor_sha = _compute_sha256(anchor_path)
+        if actual_anchor_sha != claimed_anchor_sha:
+            errors.append(
+                "proof_anchor_sha_mismatch:"
+                f"{sha_key}:claimed={claimed_anchor_sha}:actual={actual_anchor_sha}"
+            )
 
     if release_gate is not None:
         for key in ("alpha_gate_passed", "release_candidate", "production_ready"):

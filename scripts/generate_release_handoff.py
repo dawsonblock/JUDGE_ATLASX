@@ -138,10 +138,15 @@ def main() -> int:
     proof_manifest_path = (
         repo_root / "artifacts" / "proof" / "current" / "proof_manifest.json"
     )
+    required_log_index_path = (
+        repo_root / "artifacts" / "proof" / "current" / "required_log_index.json"
+    )
     if not release_gate_path.exists():
         raise SystemExit(f"release_gate_not_found:{release_gate_path}")
     if not proof_manifest_path.exists():
         raise SystemExit(f"proof_manifest_not_found:{proof_manifest_path}")
+    if not required_log_index_path.exists():
+        raise SystemExit(f"required_log_index_not_found:{required_log_index_path}")
 
     release_gate = _load_json(release_gate_path)
     _load_json(proof_manifest_path)
@@ -170,6 +175,7 @@ def main() -> int:
     archive_hash = _sha256(archive_path)
     release_gate_hash = _sha256(release_gate_path)
     proof_manifest_hash = _sha256(proof_manifest_path)
+    required_log_index_hash = _sha256(required_log_index_path)
 
     alpha_gate_passed = bool(release_gate.get("alpha_gate_passed", False))
     release_candidate = bool(release_gate.get("release_candidate", False))
@@ -217,6 +223,11 @@ def main() -> int:
                 "artifacts/proof/current/proof_manifest.json"
             ),
             f"- proof_manifest_sha256: {proof_manifest_hash}",
+            (
+                "- required_log_index_path: "
+                "artifacts/proof/current/required_log_index.json"
+            ),
+            f"- required_log_index_sha256: {required_log_index_hash}",
             "",
             "## Release Status",
             f"- release_classification: {release_classification}",
