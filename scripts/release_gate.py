@@ -2994,7 +2994,7 @@ def main() -> int:
         "required_proof_logs",
         "check_proof_manifest",
         "check_proof_consistency",
-    }
+    } - {r.name for r in results}
     ok = (
         not required_failed_checks
         and not missing_logs
