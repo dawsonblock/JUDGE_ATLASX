@@ -32,3 +32,12 @@ inside the package-and-validate flow, followed by:
 - scripts/verify_archive_proof_freshness.py
 
 Manual re-zipping of the workspace is not a supported release path.
+
+Release publication must upload only:
+
+- dist/JUDGE_ATLAS-main-final.zip
+- dist/JUDGE_ATLAS-main-final.zip.sha256
+- FINAL_RELEASE_HANDOFF.md
+
+Wildcard archive renaming (for example, `mv dist/*.zip ...`) is not permitted in
+release workflows because it can mask non-canonical wrapper archives.

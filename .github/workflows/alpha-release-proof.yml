@@ -54,16 +54,17 @@ jobs:
       - name: Run full alpha release proof gate (Docker/PostGIS required)
         run: |
           bash scripts/package_and_validate_release_archive.sh \
-            --archive-path "${RUNNER_TEMP}/JUDGE_ATLAS-main-final.zip"
+            --archive-path "dist/JUDGE_ATLAS-main-final.zip"
 
       - name: Assert authoritative release archive and checksum
         run: |
-          test -f "${RUNNER_TEMP}/JUDGE_ATLAS-main-final.zip"
+          test -f dist/JUDGE_ATLAS-main-final.zip
+          test -f dist/JUDGE_ATLAS-main-final.zip.sha256
+          test -f FINAL_RELEASE_HANDOFF.md
           python scripts/validate_release_archive.py \
-            --archive "${RUNNER_TEMP}/JUDGE_ATLAS-main-final.zip" \
+            --archive dist/JUDGE_ATLAS-main-final.zip \
             --expected-root JUDGE_ATLAS-main
-          sha256sum "${RUNNER_TEMP}/JUDGE_ATLAS-main-final.zip" \
-            > "${RUNNER_TEMP}/JUDGE_ATLAS-main-final.zip.sha256"
+          python scripts/validate_final_zip.py dist/JUDGE_ATLAS-main-final.zip
 
       - name: Upload current proof artifacts
         if: always()
@@ -78,7 +79,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: JUDGE_ATLAS-main-final
-          path: ${{ runner.temp }}/JUDGE_ATLAS-main-final.zip
+          path: dist/JUDGE_ATLAS-main-final.zip
           retention-days: 30
 
       - name: Upload final distributable checksum
@@ -86,7 +87,15 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: JUDGE_ATLAS-main-final-sha256
-          path: ${{ runner.temp }}/JUDGE_ATLAS-main-final.zip.sha256
+          path: dist/JUDGE_ATLAS-main-final.zip.sha256
+          retention-days: 30
+
+      - name: Upload authoritative handoff
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: JUDGE_ATLAS-main-final-handoff
+          path: FINAL_RELEASE_HANDOFF.md
           retention-days: 30
 
   fresh-extract-proof:
@@ -105,8 +114,24 @@ jobs:
           name: JUDGE_ATLAS-main-final
           path: dist/
 
-      - name: Rename to canonical archive name
-        run: mv dist/*.zip dist/JUDGE_ATLAS-main-final.zip 2>/dev/null || true
+      - name: Assert downloaded canonical archive name
+        run: |
+          shopt -s nullglob
+          archives=(dist/*.zip)
+          test "${#archives[@]}" -eq 1
+          test "${archives[0]}" = "dist/JUDGE_ATLAS-main-final.zip"
+
+      - name: Download release checksum
+        uses: actions/download-artifact@v4
+        with:
+          name: JUDGE_ATLAS-main-final-sha256
+          path: dist/
+
+      - name: Download authoritative handoff
+        uses: actions/download-artifact@v4
+        with:
+          name: JUDGE_ATLAS-main-final-handoff
+          path: ./
 
       - name: Set up Python
         uses: actions/setup-python@v5

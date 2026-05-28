@@ -1,6 +1,6 @@
 {
-  "started_at": "2026-05-28T20:26:39.652509+00:00",
-  "finished_at": "2026-05-28T20:27:50.475845+00:00",
+  "started_at": "2026-05-28T21:21:05.139891+00:00",
+  "finished_at": "2026-05-28T21:22:22.924550+00:00",
   "collect_exit_code": 0,
   "batch_exit_code": 0,
   "batch_size": 40,
@@ -8,75 +8,75 @@
   "batches": [
     {
       "index": 1,
-      "started_at": "2026-05-28T20:26:42.766231+00:00",
-      "finished_at": "2026-05-28T20:26:55.468968+00:00",
+      "started_at": "2026-05-28T21:21:08.666040+00:00",
+      "finished_at": "2026-05-28T21:21:22.873111+00:00",
       "exit_code": 0,
       "file_count": 40,
-      "first_file": "[REDACTED_LOCAL_PATH]/backend/app/tests/ingestion/test_ckan_adapter.py",
-      "last_file": "[REDACTED_LOCAL_PATH]/backend/app/tests/test_auth_sessions.py"
+      "first_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/ingestion/test_ckan_adapter.py",
+      "last_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_auth_sessions.py"
     },
     {
       "index": 2,
-      "started_at": "2026-05-28T20:26:55.469056+00:00",
-      "finished_at": "2026-05-28T20:27:11.212505+00:00",
+      "started_at": "2026-05-28T21:21:22.873218+00:00",
+      "finished_at": "2026-05-28T21:21:39.709127+00:00",
       "exit_code": 0,
       "file_count": 40,
-      "first_file": "[REDACTED_LOCAL_PATH]/backend/app/tests/test_auto_review.py",
-      "last_file": "[REDACTED_LOCAL_PATH]/backend/app/tests/test_crawlee_safety.py"
+      "first_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_auto_review.py",
+      "last_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_crawlee_safety.py"
     },
     {
       "index": 3,
-      "started_at": "2026-05-28T20:27:11.212597+00:00",
-      "finished_at": "2026-05-28T20:27:16.116726+00:00",
+      "started_at": "2026-05-28T21:21:39.709211+00:00",
+      "finished_at": "2026-05-28T21:21:44.698422+00:00",
       "exit_code": 0,
       "file_count": 40,
-      "first_file": "[REDACTED_LOCAL_PATH]/backend/app/tests/test_crime_source_ingestion.py",
-      "last_file": "[REDACTED_LOCAL_PATH]/backend/app/tests/test_ingestion_identity_uniqueness.py"
+      "first_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_crime_source_ingestion.py",
+      "last_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_ingestion_identity_uniqueness.py"
     },
     {
       "index": 4,
-      "started_at": "2026-05-28T20:27:16.116799+00:00",
-      "finished_at": "2026-05-28T20:27:20.378964+00:00",
+      "started_at": "2026-05-28T21:21:44.698496+00:00",
+      "finished_at": "2026-05-28T21:21:49.163438+00:00",
       "exit_code": 0,
       "file_count": 40,
-      "first_file": "[REDACTED_LOCAL_PATH]/backend/app/tests/test_ingestion_pipeline.py",
-      "last_file": "[REDACTED_LOCAL_PATH]/backend/app/tests/test_memory_graph_bridge.py"
+      "first_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_ingestion_pipeline.py",
+      "last_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_memory_graph_bridge.py"
     },
     {
       "index": 5,
-      "started_at": "2026-05-28T20:27:20.379027+00:00",
-      "finished_at": "2026-05-28T20:27:31.720865+00:00",
+      "started_at": "2026-05-28T21:21:49.163527+00:00",
+      "finished_at": "2026-05-28T21:22:02.932107+00:00",
       "exit_code": 0,
       "file_count": 40,
-      "first_file": "[REDACTED_LOCAL_PATH]/backend/app/tests/test_memory_invalidation.py",
-      "last_file": "[REDACTED_LOCAL_PATH]/backend/app/tests/test_public_graph_api_safety.py"
+      "first_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_memory_invalidation.py",
+      "last_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_public_graph_api_safety.py"
     },
     {
       "index": 6,
-      "started_at": "2026-05-28T20:27:31.720937+00:00",
-      "finished_at": "2026-05-28T20:27:36.806543+00:00",
+      "started_at": "2026-05-28T21:22:02.932211+00:00",
+      "finished_at": "2026-05-28T21:22:08.499501+00:00",
       "exit_code": 0,
       "file_count": 40,
-      "first_file": "[REDACTED_LOCAL_PATH]/backend/app/tests/test_public_map_reviewed_only.py",
-      "last_file": "[REDACTED_LOCAL_PATH]/backend/app/tests/test_saskatoon_ingest_endpoint.py"
+      "first_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_public_map_reviewed_only.py",
+      "last_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_saskatoon_ingest_endpoint.py"
     },
     {
       "index": 7,
-      "started_at": "2026-05-28T20:27:36.806613+00:00",
-      "finished_at": "2026-05-28T20:27:44.901726+00:00",
+      "started_at": "2026-05-28T21:22:08.499580+00:00",
+      "finished_at": "2026-05-28T21:22:17.098832+00:00",
       "exit_code": 0,
       "file_count": 40,
-      "first_file": "[REDACTED_LOCAL_PATH]/backend/app/tests/test_saskatoon_open_data_staging.py",
-      "last_file": "[REDACTED_LOCAL_PATH]/backend/app/tests/test_source_visibility_endpoints.py"
+      "first_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_saskatoon_open_data_staging.py",
+      "last_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_source_visibility_endpoints.py"
     },
     {
       "index": 8,
-      "started_at": "2026-05-28T20:27:44.901803+00:00",
-      "finished_at": "2026-05-28T20:27:50.475718+00:00",
+      "started_at": "2026-05-28T21:22:17.098922+00:00",
+      "finished_at": "2026-05-28T21:22:22.924497+00:00",
       "exit_code": 0,
       "file_count": 18,
-      "first_file": "[REDACTED_LOCAL_PATH]/backend/app/tests/test_statscan.py",
-      "last_file": "[REDACTED_LOCAL_PATH]/backend/app/tests/test_workflow_admin_security.py"
+      "first_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_statscan.py",
+      "last_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_workflow_admin_security.py"
     }
   ],
   "status": "PASS"

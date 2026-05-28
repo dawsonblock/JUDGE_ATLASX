@@ -4,8 +4,8 @@ on:
   pull_request:
   push:
     tags:
-      - "release-*"
-      - "v*"
+      - release-*
+      - v*
   workflow_dispatch:
 
 permissions:
@@ -208,7 +208,14 @@ jobs:
       - name: Build and validate authoritative archive
         run: |
           bash scripts/package_and_validate_release_archive.sh \
-            --archive-path "${RUNNER_TEMP}/JUDGE_ATLAS-main-final.zip"
+            --archive-path "dist/JUDGE_ATLAS-main-final.zip"
+
+      - name: Assert canonical final archive surface
+        run: |
+          test -f dist/JUDGE_ATLAS-main-final.zip
+          test -f dist/JUDGE_ATLAS-main-final.zip.sha256
+          test -f FINAL_RELEASE_HANDOFF.md
+          python scripts/validate_final_zip.py dist/JUDGE_ATLAS-main-final.zip
 
       - name: Upload release proof artifacts
         if: always()
@@ -223,7 +230,23 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-integrity-archive
-          path: ${{ runner.temp }}/JUDGE_ATLAS-main-final.zip
+          path: dist/JUDGE_ATLAS-main-final.zip
+          retention-days: 30
+
+      - name: Upload release archive checksum
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-integrity-archive-sha256
+          path: dist/JUDGE_ATLAS-main-final.zip.sha256
+          retention-days: 30
+
+      - name: Upload authoritative handoff
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-integrity-handoff
+          path: FINAL_RELEASE_HANDOFF.md
           retention-days: 30
 
   fresh-extract-proof:
@@ -241,8 +264,24 @@ jobs:
           name: release-integrity-archive
           path: dist/
 
-      - name: Rename to canonical archive name
-        run: mv dist/*.zip dist/JUDGE_ATLAS-main-final.zip 2>/dev/null || true
+      - name: Assert downloaded canonical archive name
+        run: |
+          shopt -s nullglob
+          archives=(dist/*.zip)
+          test "${#archives[@]}" -eq 1
+          test "${archives[0]}" = "dist/JUDGE_ATLAS-main-final.zip"
+
+      - name: Download release checksum
+        uses: actions/download-artifact@v4
+        with:
+          name: release-integrity-archive-sha256
+          path: dist/
+
+      - name: Download authoritative handoff
+        uses: actions/download-artifact@v4
+        with:
+          name: release-integrity-handoff
+          path: ./
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -272,5 +311,6 @@ jobs:
           name: release-integrity-final-distributable
           path: |
             dist/JUDGE_ATLAS-main-final.zip
+            dist/JUDGE_ATLAS-main-final.zip.sha256
             FINAL_RELEASE_HANDOFF.md
           retention-days: 90
