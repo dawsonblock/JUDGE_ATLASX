@@ -1,0 +1,83 @@
+{
+  "started_at": "2026-05-28T05:08:26.134833+00:00",
+  "finished_at": "2026-05-28T05:09:42.166771+00:00",
+  "collect_exit_code": 0,
+  "batch_exit_code": 0,
+  "batch_size": 40,
+  "discovered_files": 296,
+  "batches": [
+    {
+      "index": 1,
+      "started_at": "2026-05-28T05:08:29.482660+00:00",
+      "finished_at": "2026-05-28T05:08:42.491401+00:00",
+      "exit_code": 0,
+      "file_count": 40,
+      "first_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/ingestion/test_ckan_adapter.py",
+      "last_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_auto_review.py"
+    },
+    {
+      "index": 2,
+      "started_at": "2026-05-28T05:08:42.491472+00:00",
+      "finished_at": "2026-05-28T05:08:59.752885+00:00",
+      "exit_code": 0,
+      "file_count": 40,
+      "first_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_backend_import.py",
+      "last_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_crime_source_ingestion.py"
+    },
+    {
+      "index": 3,
+      "started_at": "2026-05-28T05:08:59.752990+00:00",
+      "finished_at": "2026-05-28T05:09:05.303279+00:00",
+      "exit_code": 0,
+      "file_count": 40,
+      "first_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_dashboard_metrics.py",
+      "last_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_ingestion_pipeline.py"
+    },
+    {
+      "index": 4,
+      "started_at": "2026-05-28T05:09:05.303360+00:00",
+      "finished_at": "2026-05-28T05:09:09.342189+00:00",
+      "exit_code": 0,
+      "file_count": 40,
+      "first_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_ingestion_queue_backend.py",
+      "last_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_memory_invalidation.py"
+    },
+    {
+      "index": 5,
+      "started_at": "2026-05-28T05:09:09.342244+00:00",
+      "finished_at": "2026-05-28T05:09:22.076981+00:00",
+      "exit_code": 0,
+      "file_count": 40,
+      "first_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_memory_public_boundary.py",
+      "last_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_public_map_reviewed_only.py"
+    },
+    {
+      "index": 6,
+      "started_at": "2026-05-28T05:09:22.077068+00:00",
+      "finished_at": "2026-05-28T05:09:27.632523+00:00",
+      "exit_code": 0,
+      "file_count": 40,
+      "first_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_public_safety_enhanced.py",
+      "last_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_saskatoon_pipeline_wiring.py"
+    },
+    {
+      "index": 7,
+      "started_at": "2026-05-28T05:09:27.632598+00:00",
+      "finished_at": "2026-05-28T05:09:35.756282+00:00",
+      "exit_code": 0,
+      "file_count": 40,
+      "first_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_scheduler.py",
+      "last_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_statscan_table_adapter_boundary.py"
+    },
+    {
+      "index": 8,
+      "started_at": "2026-05-28T05:09:35.756379+00:00",
+      "finished_at": "2026-05-28T05:09:42.166714+00:00",
+      "exit_code": 0,
+      "file_count": 16,
+      "first_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_status_consistency.py",
+      "last_file": "/Users/dawsonblock/Downloads/JUDGE_ATLAS-main 2/backend/app/tests/test_workflow_admin_security.py"
+    }
+  ],
+  "status": "PASS"
+}

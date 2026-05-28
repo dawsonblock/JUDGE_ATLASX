@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from datetime import datetime
 from hashlib import sha256
 from pathlib import Path
 
@@ -84,6 +85,15 @@ def _satisfies_range(version: str, spec: str) -> bool:
     return True
 
 
+def _policy_major(value: str | None) -> int | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    parsed = _parse_version(value.strip())
+    if parsed is None:
+        return None
+    return parsed[0]
+
+
 def _sha256(path: Path) -> str:
     digest = sha256()
     with path.open("rb") as fh:
@@ -130,6 +140,18 @@ def _manifest_entry_map(manifest: dict) -> dict[str, dict]:
     return mapping
 
 
+def _parse_iso8601(value: object) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = value.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        return datetime.fromisoformat(text)
+    except ValueError:
+        return None
+
+
 def _check_file_and_manifest_entry(
     *,
     repo_root: Path,
@@ -142,6 +164,15 @@ def _check_file_and_manifest_entry(
     if not abs_path.is_file():
         errors.append(f"missing_file:{rel_path}")
         return
+
+    if rel_path.endswith(".log"):
+        actual_size, size_error = _safe_size(abs_path)
+        if size_error is not None or actual_size is None:
+            errors.append(f"unreadable_file_size:{rel_path}:{size_error}")
+            return
+        if actual_size <= 0:
+            errors.append(f"empty_log:{rel_path}")
+            return
 
     entry = manifest_map.get(rel_path)
     if entry is None:
@@ -297,6 +328,31 @@ def check_proof_input_consistency(manifest: dict, gate: dict) -> list[str]:
     return errors
 
 
+def check_proof_timestamp_consistency(manifest: dict, gate: dict) -> list[str]:
+    errors: list[str] = []
+
+    manifest_time = _parse_iso8601(manifest.get("generated_at"))
+    gate_time = _parse_iso8601(gate.get("generated_at") or gate.get("timestamp_utc"))
+
+    if manifest_time is None:
+        errors.append("missing_or_invalid_proof_manifest_generated_at")
+    if gate_time is None:
+        errors.append("missing_or_invalid_release_gate_generated_at")
+    if manifest_time is None or gate_time is None:
+        return errors
+
+    drift_seconds = abs((manifest_time - gate_time).total_seconds())
+    if drift_seconds > 1.0:
+        errors.append(
+            "proof_timestamp_mismatch:"
+            f"proof_manifest={manifest.get('generated_at')}:"
+            f"release_gate={gate.get('generated_at') or gate.get('timestamp_utc')}:"
+            f"drift_seconds={drift_seconds:.3f}"
+        )
+
+    return errors
+
+
 def _extract_markdown_scalar(text: str, key: str) -> str | None:
     pattern = rf"(?m)^-\s+{re.escape(key)}:\s*(.+?)\s*$"
     match = re.search(pattern, text)
@@ -402,9 +458,9 @@ def check_readiness_vs_release_gate_consistency(
     )
     normalized_readiness_blockers: set[str] = set()
     for blocker in readiness_blocker_set:
-        normalized = _normalize_readiness_blocker(blocker)
-        if normalized:
-            normalized_readiness_blockers.add(normalized)
+        normalized_blocker = _normalize_readiness_blocker(blocker)
+        if normalized_blocker:
+            normalized_readiness_blockers.add(normalized_blocker)
 
     if gate_blocker_set != normalized_readiness_blockers:
         errors.append(
@@ -469,6 +525,9 @@ def check_required_index_consistency(
         actual_size, size_error = _safe_size(abs_path)
         if size_error is not None or actual_size is None:
             errors.append(f"required_log_index_unreadable_file_size:{path}:{size_error}")
+            continue
+        if actual_size <= 0:
+            errors.append(f"required_log_index_empty_log:{path}")
             continue
         if isinstance(recorded_size, int) and recorded_size != actual_size:
             errors.append(f"required_log_index_recorded_size_mismatch:{path}")
@@ -592,11 +651,14 @@ def check_node_policy_alignment(repo_root: Path, manifest: dict, gate: dict) -> 
         frontend_nvmrc.read_text(encoding="utf-8").strip() if frontend_nvmrc.exists() else None
     )
 
-    policy_major = root_major or frontend_major
+    policy_selector = root_major or frontend_major
+    policy_major = _policy_major(policy_selector)
     if root_major is not None and frontend_major is not None and root_major != frontend_major:
         errors.append(f"nvmrc_mismatch:root={root_major}:frontend={frontend_major}")
-    elif policy_major is None:
+    elif policy_selector is None:
         errors.append("missing_nvmrc_policy_files")
+    elif policy_major is None:
+        errors.append(f"invalid_nvmrc_value:{policy_selector}")
 
     gate_node = gate.get("frontend_node_gate_version") or gate.get("node_version")
     manifest_node = manifest.get("frontend_node_gate_version") or manifest.get("node_version")
@@ -609,7 +671,7 @@ def check_node_policy_alignment(repo_root: Path, manifest: dict, gate: dict) -> 
         if parsed is None:
             errors.append(f"unparsable_node_version:{label}:{version}")
             continue
-        if policy_major is not None and parsed[0] != int(policy_major):
+        if policy_major is not None and parsed[0] != policy_major:
             errors.append(f"node_major_policy_mismatch:{label}:{version}:required={policy_major}")
         if not isinstance(node_range, str) or not _satisfies_range(version, node_range):
             errors.append(f"node_engines_policy_mismatch:{label}:{version}:engines={node_range}")
@@ -751,6 +813,7 @@ def main() -> int:
     all_errors.extend(check_platform_consistency(manifest, gate))
     all_errors.extend(check_commit_hash_consistency(manifest, gate))
     all_errors.extend(check_proof_input_consistency(manifest, gate))
+    all_errors.extend(check_proof_timestamp_consistency(manifest, gate))
     try:
         all_errors.extend(check_node_policy_alignment(repo_root, manifest, gate))
     except RuntimeError as exc:

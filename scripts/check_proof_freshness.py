@@ -18,6 +18,7 @@ import fnmatch
 import hashlib
 import importlib.util
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 PROOF_INPUT_PATTERNS = [
@@ -224,6 +225,55 @@ def _release_gate_payload(repo_root: Path) -> dict:
     return json.loads(release_gate_path.read_text(encoding="utf-8"))
 
 
+def _parse_iso8601_to_epoch(value: object) -> float | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = value.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.timestamp()
+
+
+def _check_referenced_logs_fresh(repo_root: Path, payload: dict) -> tuple[list[str], list[str]]:
+    stale_logs: list[str] = []
+    empty_logs: list[str] = []
+
+    checks = payload.get("checks", [])
+    if not isinstance(checks, list):
+        return stale_logs, empty_logs
+
+    for entry in checks:
+        if not isinstance(entry, dict):
+            continue
+        log_path = entry.get("log_path")
+        if not isinstance(log_path, str) or not log_path:
+            continue
+        if not log_path.startswith("artifacts/proof/current/"):
+            continue
+
+        abs_path = repo_root / log_path
+        if not abs_path.is_file():
+            continue
+        size = abs_path.stat().st_size
+        if size <= 0:
+            empty_logs.append(log_path)
+            continue
+
+        started_epoch = _parse_iso8601_to_epoch(entry.get("started_at_utc"))
+        if started_epoch is None:
+            continue
+        if abs_path.stat().st_mtime + 1.0 < started_epoch:
+            stale_logs.append(log_path)
+
+    return sorted(set(stale_logs)), sorted(set(empty_logs))
+
+
 def validate_stored_manifest(
     repo_root: Path,
     strict_extra_files: bool = False,
@@ -268,6 +318,8 @@ def validate_stored_manifest(
         "discovered_file_list": discovered_file_list,
         "changed_files": [],
         "changed_file_count": 0,
+        "stale_logs": [],
+        "empty_logs": [],
         "message": "proof artifacts are fresh",
     }
 
@@ -349,6 +401,18 @@ def validate_stored_manifest(
         result["message"] = (
             "proof artifacts are fresh, but new proof-relevant files were discovered"
         )
+
+    stale_logs, empty_logs = _check_referenced_logs_fresh(repo_root, payload)
+    if stale_logs or empty_logs:
+        result["status"] = "FAIL"
+        result["stale_logs"] = stale_logs
+        result["empty_logs"] = empty_logs
+        parts: list[str] = []
+        if stale_logs:
+            parts.append("stale_referenced_logs=" + ",".join(stale_logs))
+        if empty_logs:
+            parts.append("empty_referenced_logs=" + ",".join(empty_logs))
+        result["message"] = "proof log freshness failed: " + "|".join(parts)
 
     return result
 
@@ -484,6 +548,10 @@ def main() -> int:
         print("removed_files=" + ",".join(result["removed_files"]))
     if result.get("added_files"):
         print("added_files=" + ",".join(result["added_files"]))
+    if result.get("stale_logs"):
+        print("stale_referenced_logs=" + ",".join(result["stale_logs"]))
+    if result.get("empty_logs"):
+        print("empty_referenced_logs=" + ",".join(result["empty_logs"]))
     if result["extra_files"]:
         print("extra_discovered_files=" + ",".join(result["extra_files"]))
     return 1

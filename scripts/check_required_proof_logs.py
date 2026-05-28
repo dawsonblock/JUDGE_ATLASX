@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
 
@@ -36,6 +37,7 @@ DEFAULT_REQUIRED_PROOF_FILES = (
 )
 DEFAULT_REQUIRED_PROOF_LOGS = (
     "artifacts/proof/current/backend_pytest.log",
+    "artifacts/proof/current/backend_pytest_collect.log",
     "artifacts/proof/current/backend_compile.log",
     "artifacts/proof/current/backend_import.log",
     "artifacts/proof/current/frontend_install.log",
@@ -69,7 +71,26 @@ PACKAGED_ARCHIVE_OPTIONAL_REQUIRED_LOGS = {
 PROOF_INCOMPLETE_PREFIX = "PROOF_INCOMPLETE:"
 
 
-def check_required_proof_logs(repo_root: Path) -> tuple[list[str], int, int]:
+def _parse_iso8601_to_epoch(value: object) -> float | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = value.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.timestamp()
+
+
+def _check_required_proof_logs_detailed(
+    repo_root: Path,
+    *,
+    packaged_archive: bool = False,
+) -> tuple[list[str], list[str], list[str], int, int]:
     """Return missing log paths plus referenced/present totals.
 
     Reads ``artifacts/proof/current/release_gate.json`` and inspects every
@@ -86,15 +107,17 @@ def check_required_proof_logs(repo_root: Path) -> tuple[list[str], int, int]:
     if not gate_json.exists():
         print(f"ERROR: release_gate.json not found at {gate_json}", file=sys.stderr)
         missing_paths = [str(gate_json.relative_to(repo_root))]
-        return missing_paths, len(missing_paths), 0
+        return missing_paths, [], [], len(missing_paths), 0
 
     try:
         payload = json.loads(gate_json.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         print(f"ERROR: failed to parse release_gate.json: {exc}", file=sys.stderr)
-        return ["release_gate.json:parse_error"], 1, 0
+        return ["release_gate.json:parse_error"], [], [], 1, 0
 
     missing: list[str] = []
+    empty_logs: list[str] = []
+    stale_logs: list[str] = []
     seen: set[str] = set()
     manifest_missing: list[str] = []
     hash_mismatches: list[str] = []
@@ -108,6 +131,18 @@ def check_required_proof_logs(repo_root: Path) -> tuple[list[str], int, int]:
         except json.JSONDecodeError:
             manifest = None
     proof_entry_map = _proof_entry_map(manifest or {}) if manifest else {}
+    started_at_by_log: dict[str, float] = {}
+    checks = payload.get("checks", [])
+    if isinstance(checks, list):
+        for check in checks:
+            if not isinstance(check, dict):
+                continue
+            rel = check.get("log_path")
+            if not isinstance(rel, str) or not rel:
+                continue
+            started_epoch = _parse_iso8601_to_epoch(check.get("started_at_utc"))
+            if started_epoch is not None:
+                started_at_by_log[rel] = started_epoch
 
     # Primary source: checks array (each entry has a log_path field)
     for entry in payload.get("checks", []):
@@ -121,6 +156,14 @@ def check_required_proof_logs(repo_root: Path) -> tuple[list[str], int, int]:
         if not abs_path.exists():
             missing.append(log_path)
             continue
+        if abs_path.stat().st_size <= 0:
+            empty_logs.append(log_path)
+            continue
+        if not packaged_archive:
+            started_epoch = started_at_by_log.get(log_path)
+            if started_epoch is not None and abs_path.stat().st_mtime + 1.0 < started_epoch:
+                stale_logs.append(log_path)
+                continue
         entry = proof_entry_map.get(log_path)
         if entry is None:
             manifest_missing.append(log_path)
@@ -151,6 +194,14 @@ def check_required_proof_logs(repo_root: Path) -> tuple[list[str], int, int]:
         if not abs_path.exists():
             missing.append(log_path)
             continue
+        if abs_path.stat().st_size <= 0:
+            empty_logs.append(log_path)
+            continue
+        if not packaged_archive:
+            started_epoch = started_at_by_log.get(log_path)
+            if started_epoch is not None and abs_path.stat().st_mtime + 1.0 < started_epoch:
+                stale_logs.append(log_path)
+                continue
         entry = proof_entry_map.get(log_path)
         if entry is None:
             manifest_missing.append(log_path)
@@ -172,7 +223,28 @@ def check_required_proof_logs(repo_root: Path) -> tuple[list[str], int, int]:
     referenced_total = len(seen)
     missing_unique = sorted(set(missing))
     present_total = max(referenced_total - len(missing_unique), 0)
-    return missing_unique, referenced_total, present_total
+    return (
+        missing_unique,
+        sorted(set(empty_logs)),
+        sorted(set(stale_logs)),
+        referenced_total,
+        present_total,
+    )
+
+
+def check_required_proof_logs(
+    repo_root: Path,
+    *,
+    packaged_archive: bool = False,
+) -> tuple[list[str], int, int]:
+    """Backward-compatible wrapper returning missing/referenced/present totals."""
+    missing, _empty_logs, _stale_logs, referenced_total, present_total = (
+        _check_required_proof_logs_detailed(
+            repo_root,
+            packaged_archive=packaged_archive,
+        )
+    )
+    return missing, referenced_total, present_total
 
 
 def _missing_required_proof_files(repo_root: Path) -> list[str]:
@@ -230,12 +302,18 @@ def _proof_entry_map(manifest: dict) -> dict[str, dict]:
 def _format_proof_incomplete_message(
     *,
     missing_logs: list[str],
+    empty_logs: list[str],
+    stale_logs: list[str],
     missing_required_logs: list[str],
     missing_required_files: list[str],
 ) -> str:
     parts: list[str] = []
     if missing_logs:
         parts.append("missing_referenced_logs=" + ",".join(missing_logs))
+    if empty_logs:
+        parts.append("empty_referenced_logs=" + ",".join(empty_logs))
+    if stale_logs:
+        parts.append("stale_referenced_logs=" + ",".join(stale_logs))
     if missing_required_logs:
         parts.append(
             "missing_required_proof_logs=" + ",".join(missing_required_logs)
@@ -270,9 +348,14 @@ def main() -> int:
     repo_root = Path(args.root).resolve()
     (
         missing,
+        empty_logs,
+        stale_logs,
         referenced_total,
         present_total,
-    ) = check_required_proof_logs(repo_root)
+    ) = _check_required_proof_logs_detailed(
+        repo_root,
+        packaged_archive=args.packaged_archive,
+    )
     missing_required_files: list[str] = []
     missing_required_logs: list[str] = []
     if args.strict_required_files:
@@ -282,7 +365,7 @@ def main() -> int:
             packaged_archive=args.packaged_archive,
         )
 
-    if missing or missing_required_logs or missing_required_files:
+    if missing or empty_logs or stale_logs or missing_required_logs or missing_required_files:
         print(
             "REQUIRED_PROOF_LOGS: FAIL "
             f"({len(missing)} missing of {referenced_total} referenced)"
@@ -290,6 +373,8 @@ def main() -> int:
         print(
             _format_proof_incomplete_message(
                 missing_logs=missing,
+                empty_logs=empty_logs,
+                stale_logs=stale_logs,
                 missing_required_logs=missing_required_logs,
                 missing_required_files=missing_required_files,
             )
@@ -309,6 +394,22 @@ def main() -> int:
                 print(f"  MISSING: {path} (exists_on_disk size={size} bytes)")
             else:
                 print(f"  MISSING: {path}")
+
+        if empty_logs:
+            print(
+                "REQUIRED_PROOF_LOGS: DEBUG "
+                f"empty_logs={len(empty_logs)}"
+            )
+            for path in empty_logs:
+                print(f"  EMPTY_LOG: {path}")
+
+        if stale_logs:
+            print(
+                "REQUIRED_PROOF_LOGS: DEBUG "
+                f"stale_logs={len(stale_logs)}"
+            )
+            for path in stale_logs:
+                print(f"  STALE_LOG: {path}")
 
         if missing_required_files:
             print(

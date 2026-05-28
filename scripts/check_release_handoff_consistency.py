@@ -253,7 +253,7 @@ def main() -> int:
     parser.add_argument("--root", default=".", help="Repository root")
     parser.add_argument(
         "--archive",
-        required=True,
+        default="dist/JUDGE_ATLAS-main-final.zip",
         help="Archive path to verify",
     )
     parser.add_argument(

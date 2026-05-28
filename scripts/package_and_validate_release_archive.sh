@@ -152,6 +152,9 @@ log() {
 
 cd "${ROOT_DIR}"
 
+log "Validating toolchain versions"
+python scripts/check_toolchain_versions.py --root .
+
 if [[ "${SKIP_RELEASE_GATE}" != "true" ]]; then
   log "Running release proof gate"
   make release-proof-local

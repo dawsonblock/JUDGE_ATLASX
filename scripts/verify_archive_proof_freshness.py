@@ -25,6 +25,7 @@ import argparse
 import json
 import sys
 import zipfile
+from datetime import datetime
 from pathlib import Path
 
 
@@ -61,6 +62,80 @@ def _find_gate_json(zf: zipfile.ZipFile) -> dict | None:
             return None
 
 
+def _find_member_by_suffix(zf: zipfile.ZipFile, suffix: str) -> str | None:
+    candidates = [name for name in zf.namelist() if name.endswith(suffix)]
+    if not candidates:
+        return None
+    return candidates[0]
+
+
+def _load_json_by_suffix(zf: zipfile.ZipFile, suffix: str) -> dict | None:
+    member = _find_member_by_suffix(zf, suffix)
+    if member is None:
+        return None
+    with zf.open(member) as fh:
+        try:
+            payload = json.loads(fh.read().decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return None
+    if not isinstance(payload, dict):
+        return None
+    return payload
+
+
+def _parse_iso8601(value: object) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = value.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        return datetime.fromisoformat(text)
+    except ValueError:
+        return None
+
+
+def _resolve_member_for_rel_path(names: list[str], rel_path: str) -> str | None:
+    for name in names:
+        if name == rel_path or name.endswith("/" + rel_path):
+            return name
+    return None
+
+
+def _referenced_log_paths(
+    release_gate: dict,
+    proof_manifest: dict | None,
+    required_log_index: dict | None,
+) -> set[str]:
+    refs: set[str] = set()
+
+    checks = release_gate.get("checks", [])
+    if isinstance(checks, list):
+        for entry in checks:
+            if not isinstance(entry, dict):
+                continue
+            rel = entry.get("log_path")
+            if isinstance(rel, str) and rel.startswith("artifacts/proof/current/"):
+                refs.add(rel)
+
+    if isinstance(proof_manifest, dict):
+        for rel in proof_manifest.get("required_logs", []):
+            if isinstance(rel, str) and rel.startswith("artifacts/proof/current/"):
+                refs.add(rel)
+
+    if isinstance(required_log_index, dict):
+        entries = required_log_index.get("entries", [])
+        if isinstance(entries, list):
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    continue
+                rel = entry.get("path")
+                if isinstance(rel, str) and rel.startswith("artifacts/proof/current/"):
+                    refs.add(rel)
+
+    return refs
+
+
 def verify_archive(archive_path: Path) -> list[str]:
     """Run all checks against a release archive ZIP.
 
@@ -89,6 +164,20 @@ def verify_archive(archive_path: Path) -> list[str]:
                 "<root>/artifacts/proof/current/release_gate.json)"
             )
         else:
+            manifest = _load_json_by_suffix(
+                zf,
+                "artifacts/proof/current/proof_manifest.json",
+            )
+            required_log_index = _load_json_by_suffix(
+                zf,
+                "artifacts/proof/current/required_log_index.json",
+            )
+
+            if manifest is None:
+                failures.append("proof_manifest.json not found or invalid in archive")
+            if required_log_index is None:
+                failures.append("required_log_index.json not found or invalid in archive")
+
             # 2. alpha_gate_passed must be true
             if not payload.get("alpha_gate_passed"):
                 failures.append(
@@ -96,27 +185,86 @@ def verify_archive(archive_path: Path) -> list[str]:
                     f"(got: {payload.get('alpha_gate_passed')!r})"
                 )
 
+            if isinstance(manifest, dict):
+                gate_commit = payload.get("commit_hash")
+                manifest_commit = manifest.get("archive_hash")
+                if (
+                    isinstance(gate_commit, str)
+                    and isinstance(manifest_commit, str)
+                    and gate_commit
+                    and manifest_commit
+                    and gate_commit != manifest_commit
+                ):
+                    failures.append(
+                        "commit hash mismatch between release_gate.json and proof_manifest.json"
+                    )
+
+                gate_input_hash = payload.get("proof_input_tree_hash")
+                manifest_input_hash = manifest.get("proof_input_tree_hash")
+                if (
+                    isinstance(gate_input_hash, str)
+                    and isinstance(manifest_input_hash, str)
+                    and gate_input_hash
+                    and manifest_input_hash
+                    and gate_input_hash != manifest_input_hash
+                ):
+                    failures.append(
+                        "proof input tree hash mismatch between release_gate.json and proof_manifest.json"
+                    )
+
+                gate_python = payload.get("python_version")
+                manifest_python = manifest.get("python_version")
+                if gate_python != manifest_python:
+                    failures.append(
+                        "python version mismatch between release_gate.json and proof_manifest.json"
+                    )
+
+                gate_node = payload.get("gate_runner_node_version") or payload.get("node_version")
+                manifest_node = manifest.get("gate_runner_node_version") or manifest.get("node_version")
+                if gate_node != manifest_node:
+                    failures.append(
+                        "node version mismatch between release_gate.json and proof_manifest.json"
+                    )
+
+                gate_time = _parse_iso8601(payload.get("generated_at") or payload.get("timestamp_utc"))
+                manifest_time = _parse_iso8601(manifest.get("generated_at"))
+                if gate_time is None or manifest_time is None:
+                    failures.append(
+                        "missing or invalid proof timestamp in release_gate.json/proof_manifest.json"
+                    )
+                else:
+                    drift_seconds = abs((gate_time - manifest_time).total_seconds())
+                    if drift_seconds > 1.0:
+                        failures.append(
+                            "proof timestamp mismatch between release_gate.json and proof_manifest.json"
+                        )
+
             # 3. Every referenced log_path must exist in the archive
             missing_logs: list[str] = []
-            for entry in payload.get("checks", []):
-                log_path = entry.get("log_path")
-                if not log_path or not isinstance(log_path, str):
-                    continue
-                # The archive nests under a root dir name, so look for any
-                # name that ends with the expected relative path.
-                found = any(
-                    n.endswith("/" + log_path) or n == log_path
-                    for n in names_set
-                )
-                if not found:
+            empty_logs: list[str] = []
+            for log_path in sorted(
+                _referenced_log_paths(payload, manifest, required_log_index)
+            ):
+                member_name = _resolve_member_for_rel_path(names, log_path)
+                if member_name is None:
                     missing_logs.append(log_path)
+                    continue
+                info = zf.getinfo(member_name)
+                if info.file_size <= 0:
+                    empty_logs.append(log_path)
             if missing_logs:
                 failures.append(
                     f"{len(missing_logs)} proof log(s) referenced in "
-                    f"release_gate.json checks are absent from the archive:"
+                    f"release_gate/proof_manifest/required_log_index are absent from the archive:"
                 )
                 for p in sorted(missing_logs):
                     failures.append(f"  missing: {p}")
+            if empty_logs:
+                failures.append(
+                    f"{len(empty_logs)} referenced proof log(s) are empty in the archive:"
+                )
+                for p in sorted(empty_logs):
+                    failures.append(f"  empty: {p}")
 
         # 4. Forbidden working-tree paths must be absent
         for name in names:

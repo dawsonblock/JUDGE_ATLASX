@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 class TestGate:
     """Enforces test coverage and quality gates."""
+    __test__ = False
 
     def __init__(self, project_root: str):
         self.project_root = Path(project_root)

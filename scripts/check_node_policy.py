@@ -29,6 +29,15 @@ def _parse_version(version: str) -> tuple[int, int, int] | None:
     )
 
 
+def _major_from_policy(value: str | None) -> int | None:
+    if not value:
+        return None
+    parsed = _parse_version(value)
+    if parsed is None:
+        return None
+    return parsed[0]
+
+
 def _compare_versions(left: tuple[int, int, int], right: tuple[int, int, int]) -> int:
     if left < right:
         return -1
@@ -74,7 +83,11 @@ def _run_version_command(command: list[str]) -> str:
     return proc.stdout.strip()
 
 
-def _resolve_runtime_versions(required_major: str, node_range: str | None) -> tuple[str, str, str]:
+def _resolve_runtime_versions(
+    required_selector: str,
+    required_major: int,
+    node_range: str | None,
+) -> tuple[str, str, str]:
     """Resolve node/npm versions, preferring policy-compliant runtime.
 
     Uses the current shell runtime first. If it does not satisfy the declared
@@ -85,7 +98,7 @@ def _resolve_runtime_versions(required_major: str, node_range: str | None) -> tu
     npm_version = _run_version_command(["npm", "--version"])
 
     parsed = _parse_version(node_version)
-    major_ok = parsed is not None and parsed[0] == int(required_major)
+    major_ok = parsed is not None and parsed[0] == required_major
     range_ok = isinstance(node_range, str) and _satisfies_range(node_version, node_range)
     if major_ok and range_ok:
         return node_version, npm_version, "shell"
@@ -98,7 +111,7 @@ def _resolve_runtime_versions(required_major: str, node_range: str | None) -> tu
     cmd = (
         f'NVM_DIR="{nvm_dir}"; '
         f'[ -s "{nvm_sh}" ] && . "{nvm_sh}"; '
-        f'nvm use {required_major} >/dev/null 2>&1 && node --version && npm --version'
+        f'nvm use {required_selector} >/dev/null 2>&1 && node --version && npm --version'
     )
     proc = subprocess.run(["bash", "-lc", cmd], capture_output=True, text=True, check=False)
     if proc.returncode != 0:
@@ -125,7 +138,9 @@ def _validate_node_value(
     if parsed_value is None:
         return [f"{label}: unable to parse stored node_version '{value}'"]
 
-    declared_major = int(nvmrc_major)
+    declared_major = _major_from_policy(nvmrc_major)
+    if declared_major is None:
+        return [f"{label}: unable to parse .nvmrc value '{nvmrc_major}'"]
     if parsed_value[0] != declared_major:
         errors.append(
             f"{label}: stored node_version '{value}' disagrees with .nvmrc major={nvmrc_major}"
@@ -384,19 +399,26 @@ def main() -> int:
     elif root_major is not None and frontend_major is not None and root_major != frontend_major:
         errors.append(f".nvmrc mismatch: root={root_major} frontend={frontend_major}")
 
-    declared_major = root_major or frontend_major or ""
-    if not declared_major:
-        declared_major = "0"
+    declared_selector = root_major or frontend_major or ""
+    declared_major = _major_from_policy(declared_selector)
+    if declared_major is None:
+        declared_selector = "0"
+        declared_major = 0
 
-    node_version, npm_version, runtime_source = _resolve_runtime_versions(declared_major, node_range)
+    node_version, npm_version, runtime_source = _resolve_runtime_versions(
+        declared_selector,
+        declared_major,
+        node_range,
+    )
 
     parsed_node = _parse_version(node_version)
     if parsed_node is None:
         errors.append(f"Unable to parse node version: {node_version}")
     else:
-        if declared_major.isdigit() and parsed_node[0] != int(declared_major):
+        if parsed_node[0] != declared_major:
             errors.append(
-                f"Node major mismatch: declared .nvmrc={declared_major} but runtime is {node_version}"
+                "Node major mismatch: "
+                f"declared .nvmrc={declared_selector} but runtime is {node_version}"
             )
         if not isinstance(node_range, str) or not _satisfies_range(node_version, node_range):
             errors.append(
@@ -411,7 +433,7 @@ def main() -> int:
     # Validate stored proof metadata for node version drift
     metadata_errors = _validate_stored_metadata(
         repo_root,
-        declared_major,
+        declared_selector,
         node_range,
         npm_range,
         node_version,
@@ -427,6 +449,7 @@ def main() -> int:
     print(f"NODE_RANGE: {node_range}")
     print(f"NPM_RANGE: {npm_range}")
     print(f"DECLARED_NODE_MAJOR: {declared_major}")
+    print(f"DECLARED_NODE_SELECTOR: {declared_selector}")
 
     if errors:
         print("NODE_POLICY: FAIL")

@@ -198,6 +198,7 @@ PROOF_INPUT_PATTERNS = [
 ]
 
 REQUIRED_GATE_NAMES = {
+    "backend_pytest_collect",
     "backend_compile",
     "backend_import",
     "runtime_smoke",
@@ -2117,6 +2118,19 @@ def main() -> int:
             [python_exe, "backend/scripts/proof_backend_import.py"],
         ),
         GateStepSpec(
+            "backend_pytest_collect",
+            "backend_pytest_collect.log",
+            [
+                python_exe,
+                "-m",
+                "pytest",
+                "backend/app/tests",
+                "--collect-only",
+                "--import-mode=importlib",
+                "-q",
+            ],
+        ),
+        GateStepSpec(
             "runtime_smoke",
             "runtime_smoke.log",
             [python_exe, "scripts/runtime_smoke.py"],
@@ -2130,7 +2144,13 @@ def main() -> int:
                 "-lc",
                 (
                     f'JTA_DATABASE_URL="{proof_db_url}" "{python_exe}" '
-                    "-m pytest backend/app/tests --import-mode=importlib -x --tb=short -q --ignore=backend/app/tests/test_release_gate_consistency.py"
+                    "scripts/run_backend_tests_chunked.py "
+                    "--root . "
+                    "--tests-root backend/app/tests "
+                    "--collect-log artifacts/proof/current/backend_pytest_collect.log "
+                    "--status-json artifacts/proof/current/backend_pytest_chunked_status.json "
+                    "--batch-size 40 "
+                    "--ignore backend/app/tests/test_release_gate_consistency.py"
                 ),
             ],
             timeout_seconds=900,

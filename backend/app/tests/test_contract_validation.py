@@ -20,6 +20,8 @@ from app.api.contract_validation import (
 
 class TestInputSchema(BaseModel):
     """Test schema for input validation."""
+    __test__ = False
+
     name: str
     age: int = Field(ge=0, le=150)
     email: str

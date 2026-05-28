@@ -113,6 +113,7 @@ docker-smoke:
 
 proof:
 	@echo "=== Running canonical proof generation ==="
+	@python3 scripts/check_toolchain_versions.py --root .
 	@$(MAKE) release-proof-local
 	@python3 scripts/check_single_proof_authority.py
 	@python3 scripts/check_status_truth_consistency.py --root .
@@ -124,6 +125,7 @@ proof:
 	@echo "Canonical proof: artifacts/proof/current/release_gate.json"
 
 release-proof:
+	@python3 scripts/check_toolchain_versions.py --root .
 	@python3 scripts/check_node_policy.py
 	@python3 scripts/check_frontend_node_gate.py --expected-major 20
 	@python3 scripts/check_false_claims.py
