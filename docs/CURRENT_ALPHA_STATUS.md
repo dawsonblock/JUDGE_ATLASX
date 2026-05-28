@@ -1,10 +1,10 @@
 # CURRENT_ALPHA_STATUS
 
-- generated_at_utc: 2026-05-28T05:13:15.037421+00:00
-- commit_hash: dc13e02b885ce3de6f59fe303a0d8819fc177d17
+- generated_at_utc: 2026-05-28T21:31:24.974348+00:00
+- commit_hash: f0fc4185e576bc2ac195bccc09ccee6412d290f3
 - operational_posture: alpha
 - production_ready: false
-- alpha_gate_passed: true
+- alpha_gate_passed: false
 - proof_freshness_result: PASS
 - release_gate_check_count: 52
 - postgis_proof_result: PASS
@@ -19,4 +19,4 @@
 
 ## Current Blockers
 
-- none
+- check_node_policy

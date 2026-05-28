@@ -109,6 +109,7 @@ For a copy-and-edit production template see `backend/.env.production.example`.
 | `JTA_ENABLE_ADMIN_IMPORTS`                 | bool | `false` | Enable the admin import API.                                                         |
 | `JTA_ENABLE_ADMIN_REVIEW`                  | bool | `false` | Enable the admin review API.                                                         |
 | `JTA_ENABLE_PUBLIC_EVENT_POST`             | bool | `false` | Allow public event POST requests.                                                    |
+| `JTA_ENABLE_PUBLIC_PLATFORM`               | bool | `false` | Enable donor public-platform surfaces. Keep disabled until hardening gates pass.     |
 | `JTA_ENABLE_PUBLIC_RELATIONSHIP_ARCS`      | bool | `false` | Publish relationship arc edges publicly. Requires manual review and policy sign-off. |
 | `JTA_PUBLIC_RELATIONSHIP_ARC_MIN_EVIDENCE` | int  | `2`     | Minimum evidence references required on a published arc edge.                        |
 | `JTA_PUBLIC_RELATIONSHIP_ARC_MAX_RESULTS`  | int  | `250`   | Hard cap on public arc results per request.                                          |

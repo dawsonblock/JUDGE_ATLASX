@@ -63,6 +63,8 @@ def _seed_repo_proof_tree(root: Path) -> str:
         root / "artifacts" / "proof" / "current" / "proof_freshness.log",
         "PROOF_FRESHNESS: PASS\n",
     )
+    release_gate_log = root / "artifacts" / "proof" / "current" / "release_gate.log"
+    _write(release_gate_log, "release gate pass\n")
     _write(
         root / "artifacts" / "proof" / "current" / "required_log_index.json",
         json.dumps(
@@ -73,6 +75,10 @@ def _seed_repo_proof_tree(root: Path) -> str:
                         "path": "artifacts/proof/current/release_gate.log",
                         "exists": True,
                         "status": "PASS",
+                        "recorded_sha256": hashlib.sha256(
+                            release_gate_log.read_bytes()
+                        ).hexdigest(),
+                        "recorded_size_bytes": release_gate_log.stat().st_size,
                     }
                 ],
             }
@@ -99,6 +105,31 @@ def test_alpha_readiness_requires_concrete_proof_artifacts(
 
     assert payload["proof_chain_complete"] is True
     assert payload["archive_self_verifying"] is True
+
+
+def test_alpha_readiness_fails_when_required_log_missing_on_disk(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from app.api.routes import status as status_routes
+
+    repo_root = tmp_path / "repo"
+    _seed_repo_proof_tree(repo_root)
+    (
+        repo_root
+        / "artifacts"
+        / "proof"
+        / "current"
+        / "release_gate.log"
+    ).unlink()
+    monkeypatch.setattr(status_routes, "_repo_root", lambda: repo_root)
+
+    response = client.get("/api/v1/status/alpha-readiness")
+    assert response.status_code == 200
+    payload = response.json()
+
+    assert payload["proof_chain_complete"] is False
+    assert "required_log_missing_on_disk" in payload["warnings"]
 
 
 def test_alpha_readiness_fails_when_proof_freshness_log_missing(

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import OperationalError
 
+from app.db.session import get_db
 from app.db.session import SessionLocal
 from app.main import app
 from app.models.entities import SourceRegistry
@@ -60,3 +62,31 @@ def test_alpha_readiness_source_lifecycle_counts() -> None:
                 synchronize_session=False
             )
             db.commit()
+
+
+def test_alpha_readiness_graceful_when_source_registry_unavailable() -> None:
+    class FailingSession:
+        def scalar(self, _query):
+            raise OperationalError(
+                "select count(*) from source_registry",
+                {},
+                Exception("no such table: source_registry"),
+            )
+
+    def _override_get_db():
+        yield FailingSession()
+
+    app.dependency_overrides[get_db] = _override_get_db
+    try:
+        response = client.get("/api/v1/status/alpha-readiness")
+        assert response.status_code == 200
+        payload = response.json()
+
+        assert payload["total_sources"] == 0
+        assert payload["runnable_sources"] == 0
+        assert payload["enable_ready_sources"] == 0
+        assert payload["deprecated_sources"] == 0
+        assert "source_registry_unavailable" in payload["warnings"]
+        assert "database_not_migrated_or_unreachable" in payload["warnings"]
+    finally:
+        app.dependency_overrides.pop(get_db, None)

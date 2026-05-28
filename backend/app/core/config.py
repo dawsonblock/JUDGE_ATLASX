@@ -110,6 +110,9 @@ class Settings(BaseSettings):
 
     # Experimental live-map public router remains blocked by default.
     enable_experimental_live_map: bool = False
+    # Public-platform endpoints and UI surfaces from feasibility donor code.
+    # Must remain disabled by default until all hardening gates are complete.
+    enable_public_platform: bool = False
     # Workflow admin router remains blocked by default.
     enable_workflow_admin: bool = False
     public_map_min_confidence: float = 0.65

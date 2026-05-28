@@ -77,3 +77,7 @@ This repository is an alpha/research-grade platform, not a production legal syst
 ---
 
 **For detailed proof metadata**, see `artifacts/proof/current/CURRENT_PROOF.md`.
+
+---
+
+> **Release integrity**: The only authoritative release archive is `dist/JUDGE_ATLAS-main-final.zip`. Do not ship manually zipped working trees. `release_gate.json` is only valid as a proof artifact when every log path it references exists inside `artifacts/proof/current/` at packaging time.

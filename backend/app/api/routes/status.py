@@ -27,6 +27,7 @@ from app.models.entities import IngestionRun, SourceRegistry
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy import func, select
+from sqlalchemy.exc import DatabaseError, OperationalError
 from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["status"])
@@ -69,6 +70,7 @@ class AlphaReadinessResponse(BaseModel):
     total_sources: int
     evidence_store: str
     public_review_gate: str
+    public_platform: str
     experimental_live_map: str
     workflow_admin: str
     storage_backend: str
@@ -136,10 +138,38 @@ def _required_logs_complete(repo_root: Path) -> tuple[bool, str | None]:
     for entry in entries:
         if not isinstance(entry, dict):
             return False, "required_log_index_entry_invalid"
+        rel_path = entry.get("path") or entry.get("log_path")
+        if not isinstance(rel_path, str) or not rel_path:
+            return False, "required_log_index_entry_invalid"
+
+        # Resolve against repository root and block path escapes.
+        try:
+            actual_path = (repo_root / rel_path).resolve()
+            actual_path.relative_to(repo_root.resolve())
+        except (OSError, ValueError):
+            return False, "required_log_path_invalid"
+
+        if not actual_path.is_file():
+            return False, "required_log_missing_on_disk"
+        if actual_path.stat().st_size <= 0:
+            return False, "required_log_empty"
+
         if not bool(entry.get("exists", False)):
             return False, "required_logs_missing"
         if str(entry.get("status", "")).upper() != "PASS":
             return False, "required_logs_not_pass"
+
+        expected_hash = entry.get("actual_sha256") or entry.get("recorded_sha256")
+        if isinstance(expected_hash, str) and expected_hash:
+            if _compute_sha256(actual_path) != expected_hash.lower():
+                return False, "required_log_hash_mismatch"
+
+        expected_size = entry.get("actual_size_bytes")
+        if expected_size is None:
+            expected_size = entry.get("recorded_size_bytes")
+        if isinstance(expected_size, int) and expected_size >= 0:
+            if actual_path.stat().st_size != expected_size:
+                return False, "required_log_size_mismatch"
 
     return True, None
 
@@ -337,22 +367,30 @@ def get_alpha_readiness(
         proof_warnings,
     ) = _proof_chain_state(repo_root, release_gate)
 
-    total_sources = db.scalar(select(func.count(SourceRegistry.id))) or 0
-    runnable_sources = db.scalar(
-        select(func.count(SourceRegistry.id)).where(
-            SourceRegistry.lifecycle_state == "runnable"
-        )
-    ) or 0
-    enable_ready_sources = db.scalar(
-        select(func.count(SourceRegistry.id)).where(
-            SourceRegistry.lifecycle_state == "runnable_disabled"
-        )
-    ) or 0
-    deprecated_sources = db.scalar(
-        select(func.count(SourceRegistry.id)).where(
-            SourceRegistry.lifecycle_state == "deprecated"
-        )
-    ) or 0
+    source_registry_unavailable = False
+    total_sources = 0
+    runnable_sources = 0
+    enable_ready_sources = 0
+    deprecated_sources = 0
+    try:
+        total_sources = db.scalar(select(func.count(SourceRegistry.id))) or 0
+        runnable_sources = db.scalar(
+            select(func.count(SourceRegistry.id)).where(
+                SourceRegistry.lifecycle_state == "runnable"
+            )
+        ) or 0
+        enable_ready_sources = db.scalar(
+            select(func.count(SourceRegistry.id)).where(
+                SourceRegistry.lifecycle_state == "runnable_disabled"
+            )
+        ) or 0
+        deprecated_sources = db.scalar(
+            select(func.count(SourceRegistry.id)).where(
+                SourceRegistry.lifecycle_state == "deprecated"
+            )
+        ) or 0
+    except (OperationalError, DatabaseError):
+        source_registry_unavailable = True
 
     warnings: list[str] = []
     if not alpha_gate_passed:
@@ -363,10 +401,15 @@ def get_alpha_readiness(
         warnings.append("proof_chain_incomplete")
     if runnable_sources == 0:
         warnings.append("no_runnable_sources")
+    if source_registry_unavailable:
+        warnings.append("source_registry_unavailable")
+        warnings.append("database_not_migrated_or_unreachable")
     if not settings.evidence_store_required:
         warnings.append("evidence_store_not_required")
     if settings.enable_experimental_live_map:
         warnings.append("experimental_live_map_enabled")
+    if settings.enable_public_platform:
+        warnings.append("public_platform_enabled")
     if settings.enable_workflow_admin:
         warnings.append("workflow_admin_enabled")
 
@@ -386,6 +429,9 @@ def get_alpha_readiness(
         evidence_store="ok" if evidence_store_ok else "missing",
         public_review_gate=(
             "enabled" if settings.enable_admin_review else "disabled"
+        ),
+        public_platform=(
+            "enabled" if settings.enable_public_platform else "disabled"
         ),
         experimental_live_map=(
             "enabled" if settings.enable_experimental_live_map else "disabled"

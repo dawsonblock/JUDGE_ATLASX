@@ -13,6 +13,7 @@ from app.core.config import get_settings
 from app.core.runtime_profile import resolve_runtime_profile, validate_runtime_profile
 from app.db.session import SessionLocal, engine
 from app.db.spatial import initialize_postgis
+from app.middleware.request_id import RequestIdMiddleware
 from app.models import entities  # noqa: F401
 from app.seed.sample_data import seed_sample_data
 from app.seed.source_registry import seed_source_registry
@@ -437,6 +438,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(RequestIdMiddleware)
     app.include_router(router)
     return app
 

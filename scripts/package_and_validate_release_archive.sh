@@ -171,6 +171,11 @@ python scripts/check_required_proof_logs.py --root . --strict-required-files
 python scripts/check_no_local_paths_in_release_proof.py --root .
 python scripts/verify_status_consistency.py --root .
 
+if [[ -f "${ARCHIVE_PATH}" ]]; then
+  log "Removing stale archive before fresh build: ${ARCHIVE_PATH}"
+  rm -f "${ARCHIVE_PATH}" "${ARCHIVE_PATH}.sha256"
+fi
+
 log "Building archive at ${ARCHIVE_PATH}"
 python scripts/build_release_archive.py \
   --output "${ARCHIVE_PATH}" \
@@ -186,7 +191,10 @@ archive_sha256() {
 
 ARCHIVE_BASENAME="$(basename "${ARCHIVE_PATH}")"
 ARCHIVE_SHA256="$(archive_sha256 "${ARCHIVE_PATH}")"
+ARCHIVE_SHA256_FILE="${ARCHIVE_PATH}.sha256"
+printf '%s  %s\n' "${ARCHIVE_SHA256}" "${ARCHIVE_BASENAME}" > "${ARCHIVE_SHA256_FILE}"
 log "Built archive filename=${ARCHIVE_BASENAME} sha256=${ARCHIVE_SHA256}"
+log "Wrote archive digest file ${ARCHIVE_SHA256_FILE}"
 
 log "Generating authoritative handoff from built archive"
 python3 scripts/generate_release_handoff.py \

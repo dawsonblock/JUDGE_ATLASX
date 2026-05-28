@@ -25,7 +25,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
-          version: "latest"
+          version: latest
 
       - name: Install backend dependencies
         working-directory: ./backend
@@ -34,10 +34,17 @@ jobs:
           source .venv/bin/activate
           uv pip install -e ".[test]"
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: ./frontend/package-lock.json
+
       - name: Run proof regeneration
         run: |
           source ./backend/.venv/bin/activate
-          python -m scripts.regenerate_proof --skip-db
+          python scripts/regenerate_proof.py --skip-db
 
       - name: Verify proof artifacts exist
         run: |
@@ -64,10 +71,10 @@ jobs:
           source ./backend/.venv/bin/activate
           python backend/tools/validate_sources.py
 
-      - name: Check for open contradictions
+      - name: Check status truth consistency
         run: |
           source ./backend/.venv/bin/activate
-          python scripts/check_open_contradictions.py || true
+          python scripts/check_status_truth_consistency.py
 
       - name: Verify release gate
         run: |

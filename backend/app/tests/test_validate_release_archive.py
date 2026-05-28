@@ -36,6 +36,7 @@ def _valid_files(root: str = "JUDGE_ATLAS-main") -> dict[str, str]:
         prefix + "scripts/release_gate.py": "print('gate')\n",
         prefix + "artifacts/proof/current/CURRENT_PROOF.md": "current proof\n",
         prefix + "artifacts/proof/current/CURRENT_ALPHA_STATUS.md": "alpha status\n",
+        prefix + "artifacts/proof/current/REPAIR_REPORT.md": "repair report\n",
         prefix + "artifacts/proof/current/FIX_VERIFICATION_REPORT.md": "fixes\n",
         prefix + "artifacts/proof/current/SOURCE_REGISTRY_STATUS.md": "registry status\n",
         prefix + "artifacts/proof/current/proof_manifest.json": (

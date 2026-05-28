@@ -1,9 +1,9 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-28T05:13:15.037421+00:00
-- commit_hash: dc13e02b885ce3de6f59fe303a0d8819fc177d17
-- alpha_gate_status: PASS
-- alpha_gate_passed: true
+- generated_at_utc: 2026-05-28T21:31:24.974348+00:00
+- commit_hash: f0fc4185e576bc2ac195bccc09ccee6412d290f3
+- alpha_gate_status: BLOCKED
+- alpha_gate_passed: false
 - release_gate_check_count: 52
 - docker_available: true
 - postgis_proof_result: PASS
@@ -11,8 +11,8 @@
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
 - archive_validation_result: PASS
-- proof_input_tree_hash: 65e31f7a31832956f00acb7115e7ba9e5b3aca972b37c9c0ba67e77e8876e8c5
-- proof_input_file_count: 1107
+- proof_input_tree_hash: 956692f14793d0e2ddb16d778d5250e7942bfb491ae738faadba68736ae362eb
+- proof_input_file_count: 1110
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
@@ -59,7 +59,7 @@
 
 ## Current Proof Facts
 
-- backend pytest: 417 passed, 0 skipped
+- backend pytest: 403 passed, 0 skipped
 - backend import proof: PASS (112 routes)
 - frontend contracts: 51 passed
 - public API boundary: 55 passed
@@ -70,6 +70,10 @@
 - CanLII staging proof: PASS
 - mutation fail-closed coverage: PASS
 - Alembic migrations: 72
+
+## Failed Checks
+
+- check_node_policy
 
 ## Egress Proxy Coverage
 
