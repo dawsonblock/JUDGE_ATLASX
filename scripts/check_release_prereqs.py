@@ -14,10 +14,17 @@ REQUIRED_REPORTS = [
     "reports/preboard_local_summary.md",
     "reports/implementation_gate_summary.json",
     "reports/implementation_gate_summary.md",
+    "reports/axilite_regfile_sim_summary.json",
+    "reports/packer_axis_sim_summary.json",
     "reports/cdc_critical_summary.json",
     "reports/cdc_cell_match_summary.md",
     "reports/timing_summary.rpt",
     "reports/drc.rpt",
+]
+
+SIM_REPORTS = [
+    "reports/axilite_regfile_sim_summary.json",
+    "reports/packer_axis_sim_summary.json",
 ]
 
 
@@ -78,12 +85,22 @@ def require_implementation_pass() -> int:
     return 0
 
 
+def require_simulation_pass() -> int:
+    for rel in SIM_REPORTS:
+        path = PROJECT_ROOT / rel
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if not bool(data.get("pass", False)):
+            return fail(f"{rel} reports pass=false")
+    return 0
+
+
 def main() -> int:
     for check in [
         require_tools,
         require_reports,
         require_preboard_pass,
         require_implementation_pass,
+        require_simulation_pass,
     ]:
         rc = check()
         if rc != 0:

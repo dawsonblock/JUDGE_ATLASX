@@ -29,6 +29,8 @@ REQUIRED_PROOF = [
     "reports/preboard_local_summary.md",
     "reports/implementation_gate_summary.json",
     "reports/implementation_gate_summary.md",
+    "reports/axilite_regfile_sim_summary.json",
+    "reports/packer_axis_sim_summary.json",
     "reports/cdc_critical_summary.json",
     "reports/cdc_cell_match_summary.md",
     "reports/timing_summary.rpt",
