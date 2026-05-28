@@ -186,7 +186,10 @@ archive_sha256() {
 
 ARCHIVE_BASENAME="$(basename "${ARCHIVE_PATH}")"
 ARCHIVE_SHA256="$(archive_sha256 "${ARCHIVE_PATH}")"
+ARCHIVE_SHA256_FILE="${ARCHIVE_PATH}.sha256"
+printf '%s  %s\n' "${ARCHIVE_SHA256}" "${ARCHIVE_BASENAME}" > "${ARCHIVE_SHA256_FILE}"
 log "Built archive filename=${ARCHIVE_BASENAME} sha256=${ARCHIVE_SHA256}"
+log "Wrote archive digest file ${ARCHIVE_SHA256_FILE}"
 
 log "Generating authoritative handoff from built archive"
 python3 scripts/generate_release_handoff.py \

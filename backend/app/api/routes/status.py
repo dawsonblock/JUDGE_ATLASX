@@ -27,6 +27,7 @@ from app.models.entities import IngestionRun, SourceRegistry
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy import func, select
+from sqlalchemy.exc import DatabaseError, OperationalError
 from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["status"])
@@ -366,22 +367,30 @@ def get_alpha_readiness(
         proof_warnings,
     ) = _proof_chain_state(repo_root, release_gate)
 
-    total_sources = db.scalar(select(func.count(SourceRegistry.id))) or 0
-    runnable_sources = db.scalar(
-        select(func.count(SourceRegistry.id)).where(
-            SourceRegistry.lifecycle_state == "runnable"
-        )
-    ) or 0
-    enable_ready_sources = db.scalar(
-        select(func.count(SourceRegistry.id)).where(
-            SourceRegistry.lifecycle_state == "runnable_disabled"
-        )
-    ) or 0
-    deprecated_sources = db.scalar(
-        select(func.count(SourceRegistry.id)).where(
-            SourceRegistry.lifecycle_state == "deprecated"
-        )
-    ) or 0
+    source_registry_unavailable = False
+    total_sources = 0
+    runnable_sources = 0
+    enable_ready_sources = 0
+    deprecated_sources = 0
+    try:
+        total_sources = db.scalar(select(func.count(SourceRegistry.id))) or 0
+        runnable_sources = db.scalar(
+            select(func.count(SourceRegistry.id)).where(
+                SourceRegistry.lifecycle_state == "runnable"
+            )
+        ) or 0
+        enable_ready_sources = db.scalar(
+            select(func.count(SourceRegistry.id)).where(
+                SourceRegistry.lifecycle_state == "runnable_disabled"
+            )
+        ) or 0
+        deprecated_sources = db.scalar(
+            select(func.count(SourceRegistry.id)).where(
+                SourceRegistry.lifecycle_state == "deprecated"
+            )
+        ) or 0
+    except (OperationalError, DatabaseError):
+        source_registry_unavailable = True
 
     warnings: list[str] = []
     if not alpha_gate_passed:
@@ -392,6 +401,9 @@ def get_alpha_readiness(
         warnings.append("proof_chain_incomplete")
     if runnable_sources == 0:
         warnings.append("no_runnable_sources")
+    if source_registry_unavailable:
+        warnings.append("source_registry_unavailable")
+        warnings.append("database_not_migrated_or_unreachable")
     if not settings.evidence_store_required:
         warnings.append("evidence_store_not_required")
     if settings.enable_experimental_live_map:
