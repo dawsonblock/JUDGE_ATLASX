@@ -254,7 +254,37 @@ def check_forbidden_paths_in_root(root: Path) -> list[str]:
     return errors
 
 
-def validate_final_zip(zip_path: Path) -> dict:
+CANONICAL_ARCHIVE_NAME = "JUDGE_ATLAS-main-final.zip"
+
+
+def validate_referenced_proof_logs(root: Path) -> list[str]:
+    """Check that every log_path referenced in release_gate.json exists inside the extracted root."""
+    gate_json = root / "artifacts" / "proof" / "current" / "release_gate.json"
+    if not gate_json.exists():
+        return ["referenced_proof_logs_check_skipped:release_gate.json_missing"]
+    try:
+        with gate_json.open() as fh:
+            gate = json.load(fh)
+    except Exception as e:
+        return [f"referenced_proof_logs_check_failed:json_parse_error:{e}"]
+
+    referenced: set[str] = set()
+    for check in gate.get("checks", []):
+        lp = check.get("log_path")
+        if lp:
+            referenced.add(lp)
+    for val in gate.get("logs", {}).values():
+        if isinstance(val, str) and val:
+            referenced.add(val)
+
+    missing = []
+    for rel_path in sorted(referenced):
+        if not (root / rel_path).exists():
+            missing.append(f"missing_referenced_log:{rel_path}")
+    return missing
+
+
+def validate_final_zip(zip_path: Path, *, allow_noncanonical: bool = False) -> dict:
     """Main validation routine.
     
     Returns dict with:
@@ -281,6 +311,12 @@ def validate_final_zip(zip_path: Path) -> dict:
         "validated_at_utc": datetime.now(timezone.utc).isoformat(),
     }
     
+    # Check canonical archive name
+    if not allow_noncanonical and zip_path.name != CANONICAL_ARCHIVE_NAME:
+        result["errors"].append(
+            f"archive_name_not_authoritative:expected_{CANONICAL_ARCHIVE_NAME}_got_{zip_path.name}"
+        )
+
     # Check ZIP exists
     if not zip_path.exists():
         result["errors"].append("zip_not_found")
@@ -372,7 +408,11 @@ def validate_final_zip(zip_path: Path) -> dict:
         # Check forbidden in root specifically
         root_forbidden = check_forbidden_paths_in_root(root)
         result["errors"].extend(root_forbidden)
-        
+
+        # Cross-check all log_path references inside release_gate.json
+        missing_logs = validate_referenced_proof_logs(root)
+        result["errors"].extend(missing_logs)
+
         # If we have some critical errors, fail fast
         if result["errors"]:
             return result
@@ -422,11 +462,17 @@ def main() -> int:
         type=Path,
         help="Write validation result to JSON file",
     )
-    
+    parser.add_argument(
+        "--allow-noncanonical",
+        action="store_true",
+        default=False,
+        help="Skip the canonical archive-name check (for CI temp paths).",
+    )
+
     args = parser.parse_args()
     zip_path = Path(args.zip_path)
-    
-    result = validate_final_zip(zip_path)
+
+    result = validate_final_zip(zip_path, allow_noncanonical=args.allow_noncanonical)
     
     # Write result to JSON if requested
     if args.output_json:

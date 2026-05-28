@@ -40,3 +40,7 @@ Historical repair/blocker notes were moved to docs/history/2026-05-27-repair-blo
 
 - Current alpha release state must be read from the canonical gate artifacts for the current run.
 - Deferred scope items are non-blocking only when the current canonical gate artifacts say the alpha gate passed.
+
+---
+
+> **Release integrity**: The only authoritative release archive is `dist/JUDGE_ATLAS-main-final.zip`. Do not ship manually zipped working trees. `release_gate.json` is only valid as a proof artifact when every log path it references exists inside `artifacts/proof/current/` at packaging time.

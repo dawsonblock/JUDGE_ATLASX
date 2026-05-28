@@ -253,6 +253,9 @@ def main() -> int:
             "- Ship only the archive listed above.",
             "- Validation must run against a fresh extraction",
             "  of that archive.",
+            "- `release_gate.json` is only valid as a proof artifact when every",
+            "  log path it references exists inside `artifacts/proof/current/`",
+            "  at packaging time. Do not ship manually zipped working trees.",
             "",
         ]
     )

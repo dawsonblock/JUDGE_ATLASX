@@ -231,3 +231,7 @@
 ---
 
 **Current reality**: This is a working research platform with solid fundamentals but incomplete advanced features. Safe for alpha; not for production.
+
+---
+
+> **Release integrity**: The only authoritative release archive is `dist/JUDGE_ATLAS-main-final.zip`. Do not ship manually zipped working trees. `release_gate.json` is only valid as a proof artifact when every log path it references exists inside `artifacts/proof/current/` at packaging time.

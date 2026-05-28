@@ -60,3 +60,7 @@
 - False-claim scanner, proof consistency, and proof freshness must be confirmed by regenerated artifacts.
 - Node baseline remains 20 in frontend and proof workflows.
 - Python baseline remains 3.11 in proof workflows.
+
+---
+
+> **Release integrity**: The only authoritative release archive is `dist/JUDGE_ATLAS-main-final.zip`. Do not ship manually zipped working trees. `release_gate.json` is only valid as a proof artifact when every log path it references exists inside `artifacts/proof/current/` at packaging time.

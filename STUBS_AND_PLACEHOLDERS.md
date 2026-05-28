@@ -58,7 +58,7 @@
 - **Auto-publication disabled** — All sources default to manual review
 - **No autonomous verdict generation** — AI outputs are hypotheses only, not authoritative
 - **Manual review required** — All public releases require human approval
-- **Incomplete source coverage** — 26 sources registered; 1 actively runnable
+- **Incomplete source coverage** — 26 sources registered; 2 actively runnable (justice_canada_laws_xml, saskatoon_open_data_public_safety); 5 enable-ready sources
 - **No live legal sync** — Sources are static snapshots; real-time updates not implemented
 
 ### Known Incomplete Areas

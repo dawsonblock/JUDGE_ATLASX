@@ -68,3 +68,7 @@ make proof
 
 **Canonical proof entry**: `artifacts/proof/current/CURRENT_PROOF.md`  
 **Release readiness**: `artifacts/proof/current/release_readiness.md`
+
+---
+
+> **Release integrity**: The only authoritative release archive is `dist/JUDGE_ATLAS-main-final.zip`. Do not ship manually zipped working trees. `release_gate.json` is only valid as a proof artifact when every log path it references exists inside `artifacts/proof/current/` at packaging time.

@@ -171,6 +171,11 @@ python scripts/check_required_proof_logs.py --root . --strict-required-files
 python scripts/check_no_local_paths_in_release_proof.py --root .
 python scripts/verify_status_consistency.py --root .
 
+if [[ -f "${ARCHIVE_PATH}" ]]; then
+  log "Removing stale archive before fresh build: ${ARCHIVE_PATH}"
+  rm -f "${ARCHIVE_PATH}" "${ARCHIVE_PATH}.sha256"
+fi
+
 log "Building archive at ${ARCHIVE_PATH}"
 python scripts/build_release_archive.py \
   --output "${ARCHIVE_PATH}" \
