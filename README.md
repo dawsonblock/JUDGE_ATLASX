@@ -1,0 +1,179 @@
+# Waveform Brain v1 Auto Cal
+
+A production-minded FPGA/firmware/userspace stack for GKP-style waveform decoding,
+calibration, and board bring-up.
+
+This repository combines:
+
+- CDC-hardened AXI-Lite control paths
+- pipelined decoder and soft-weighting RTL
+- deterministic RTL-to-golden co-simulation
+- pre-board and implementation gate scripts
+- sign-off packaging for review and handoff
+
+## Why this repo exists
+
+Waveform Brain started as a compact decode/calibration prototype and has been
+iteratively hardened into a bring-up flow with explicit quality gates:
+
+- static and unit validation
+- arithmetic and CDC analysis
+- pre-board local proof generation
+- Vivado implementation gating before board access
+
+## Key capabilities
+
+- **Atomic staged configuration apply**
+  - Config writes are staged, then committed in one operation via `WB_REG_CFG_APPLY`.
+- **CDC-first integration top**
+  - Dedicated CDC wrapper and AXI/fabric clock-domain boundaries with XPM patterns.
+- **Pipelined fixed-point decoder path**
+  - Decoder, polynomial eval, and soft weighting aligned for deterministic behavior.
+- **Health + telemetry visibility**
+  - Saturating counters, telemetry windows, FIFO/stream diagnostics.
+- **Deterministic co-sim**
+  - Golden model vector generation plus optional Icarus harness execution.
+
+## Architecture at a glance
+
+```mermaid
+flowchart LR
+    A[AXI-Lite Host] --> B[axilite_regfile_full]
+    B -->|staged config + commit pulse| C[waveform_brain_cdc_wrapper]
+    C --> D[waveform_control_4q_top]
+    D --> E[gkp_decoder_4q_wrapper]
+    E --> F[gkp_decoder]
+    F --> G[soft_weighting + poly_eval]
+    D --> H[safety_monitor]
+    D --> I[telemetry_counter]
+    D --> J[packer_axis + axis_packet_fifo]
+    H --> B
+    I --> B
+    J --> B
+```
+
+## Quick start
+
+### 1) Prerequisites
+
+- Python 3.10+
+- Optional: Verilator (`verilator`) for lint target
+- Optional: Icarus Verilog (`iverilog`, `vvp`) for local co-sim
+- Vivado (for implementation reports, bitstream, and board sign-off)
+
+### 2) Run the local quality flow
+
+```bash
+make test
+make lint
+make audit-arith
+make gen-lut
+make extract-regs
+make cdc-analyze
+```
+
+Or run the consolidated flow:
+
+```bash
+make validate
+```
+
+### 3) Run optional RTL/golden co-sim
+
+```bash
+make cosim-vectors
+make cosim-gkp
+```
+
+Directed edge-case profile:
+
+```bash
+python3 scripts/run_gkp_cosim.py --profile edge --count 64
+```
+
+### 4) Pre-board gate
+
+```bash
+make preboard-check
+```
+
+Produces:
+
+- `reports/preboard_local_summary.json`
+- `reports/preboard_local_summary.md`
+
+## Vivado/board readiness flow
+
+1. Generate implementation reports in Vivado (`report_cdc`, timing, DRC, etc.).
+2. Parse/gate CDC and implementation outputs.
+3. Build sign-off package for board review.
+
+Key commands:
+
+```bash
+make parse-cdc
+make cdc-gate-check
+make implementation-gate
+make cdc-signoff-package
+make vivado-signoff-package
+```
+
+## Register map and config apply model
+
+Primary register header:
+
+- `firmware/registers.h`
+
+Human-readable register guide:
+
+- `docs/REGISTER_MAP.md`
+
+Generated register artifacts:
+
+- `register_map.json`
+- `register_map.md`
+- `register_map_issues.log`
+
+Atomic config apply helper (userspace):
+
+- `userspace/config_staged_apply.py`
+
+## Important docs
+
+- Overall validation: `docs/VALIDATION_PLAN.md`
+- CDC hardening: `docs/CDC_HARDENING_V14.md`
+- CDC verification flow: `docs/CDC_VERIFICATION_PLAN.md`
+- Pre-board gate: `docs/PREBOARD_GATE_V15.md`
+- Pre-board ordering fix: `docs/PREBOARD_GATE_FIX_V16.md`
+- Vivado flow fixes: `docs/VIVADO_FLOW_FIX_V17.md`
+- AXI-Stream robustness: `docs/STREAMING_ROBUSTNESS_V19.md`
+- Changelog: `docs/CHANGELOG_UPGRADE.md`
+
+## Repository layout
+
+```text
+rtl/        Core RTL modules, wrappers, CDC boundary logic
+firmware/   Register definitions + calibration FSM scaffolding
+userspace/  Golden models, packet parsing, staged apply helpers
+scripts/    Validation, generation, CDC parsing, packaging, flow gates
+tests/      Unit/static regression coverage
+constraints/XDC overlays and CDC-related constraints
+sim/        Co-simulation testbench and generated vectors
+docs/       Design notes, validation plans, versioned hardening docs
+```
+
+## Test status expectations
+
+Current baseline flow targets:
+
+- unit/static tests passing via `python3 -m unittest discover -s tests`
+- reproducible generated artifacts
+- explicit pass/fail summaries for local pre-board and implementation gates
+
+## Notes
+
+- `make validate` is intentionally ordered to keep compact-package tests
+  meaningful before regenerating heavy artifacts.
+- Co-sim is optional in environments without Icarus; Vivado simulator can be
+  used for equivalent checks.
+- Board access should remain blocked unless implementation gate criteria pass.
