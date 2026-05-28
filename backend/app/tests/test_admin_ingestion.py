@@ -7,6 +7,9 @@ Prevents drift like source vs source_name, completed_at vs finished_at, etc.
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import json
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
@@ -550,6 +553,235 @@ class TestAdminSourceEndpoints:
                 SourceRegistry.source_key == "blocked_retry_source"
             ).delete()
             db.commit()
+
+    def test_source_dry_run_returns_readiness_without_persisting_run(self) -> None:
+        """Dry-run should exercise adapter output without creating an ingestion run row."""
+
+        class FakeAdapter:
+            def run(self) -> SimpleNamespace:
+                return SimpleNamespace(
+                    records_fetched=3,
+                    created_records=[{"id": "a"}],
+                    legal_instruments=[],
+                    review_items=[{"id": "r1"}],
+                    raw_snapshot_bytes=b"snapshot",
+                    errors=[],
+                )
+
+        from app.ingestion import source_adapter_factory
+
+        original_build_adapter = source_adapter_factory.build_adapter
+        original_missing_secret = source_adapter_factory.missing_required_secret_for_parser
+        source_adapter_factory.build_adapter = lambda *_args, **_kwargs: FakeAdapter()
+        source_adapter_factory.missing_required_secret_for_parser = (
+            lambda *_args, **_kwargs: None
+        )
+
+        with SessionLocal() as db:
+            source = SourceRegistry(
+                source_key="dry_run_source",
+                source_name="Dry Run Source",
+                source_type="test",
+                source_class="machine_ingest",
+                automation_status="machine_ready_enabled",
+                lifecycle_state="runnable_enabled",
+                is_active=True,
+                terms_url="https://example.test/terms",
+            )
+            db.add(source)
+            db.commit()
+
+        try:
+            response = client.post(
+                "/api/admin/sources/dry_run_source/dry-run",
+                headers=get_admin_headers(),
+            )
+            assert response.status_code == 200
+            payload = response.json()
+            assert payload["source_key"] == "dry_run_source"
+            assert payload["source_reachable"] is True
+            assert payload["legal_note_present"] is True
+            assert payload["sample_records_found"] == 3
+            assert payload["parser_matched_records"] == 2
+            assert payload["claims_would_be_extracted"] is True
+            assert payload["evidence_snapshot_would_be_created"] is True
+            assert payload["public_visibility"] == "pending_review"
+            assert payload["errors"] == []
+            assert payload["success"] is True
+
+            with SessionLocal() as db:
+                runs = (
+                    db.query(IngestionRun)
+                    .filter(IngestionRun.source_name == "dry_run_source")
+                    .all()
+                )
+                assert runs == []
+        finally:
+            source_adapter_factory.build_adapter = original_build_adapter
+            source_adapter_factory.missing_required_secret_for_parser = (
+                original_missing_secret
+            )
+            with SessionLocal() as db:
+                db.query(SourceRegistry).filter(
+                    SourceRegistry.source_key == "dry_run_source"
+                ).delete(synchronize_session=False)
+                db.commit()
+
+    def test_source_dry_run_reports_adapter_missing(self) -> None:
+        """Dry-run should report adapter_missing when no adapter is available."""
+
+        from app.ingestion import source_adapter_factory
+
+        original_build_adapter = source_adapter_factory.build_adapter
+        original_missing_secret = source_adapter_factory.missing_required_secret_for_parser
+        source_adapter_factory.build_adapter = lambda *_args, **_kwargs: None
+        source_adapter_factory.missing_required_secret_for_parser = (
+            lambda *_args, **_kwargs: None
+        )
+
+        with SessionLocal() as db:
+            source = SourceRegistry(
+                source_key="dry_run_missing_adapter",
+                source_name="Dry Run Missing Adapter",
+                source_type="test",
+                source_class="machine_ingest",
+                automation_status="machine_ready_enabled",
+                lifecycle_state="runnable_enabled",
+                is_active=True,
+            )
+            db.add(source)
+            db.commit()
+
+        try:
+            response = client.post(
+                "/api/admin/sources/dry_run_missing_adapter/dry-run",
+                headers=get_admin_headers(),
+            )
+            assert response.status_code == 200
+            payload = response.json()
+            assert payload["success"] is False
+            assert "adapter_missing" in payload["errors"]
+        finally:
+            source_adapter_factory.build_adapter = original_build_adapter
+            source_adapter_factory.missing_required_secret_for_parser = (
+                original_missing_secret
+            )
+            with SessionLocal() as db:
+                db.query(SourceRegistry).filter(
+                    SourceRegistry.source_key == "dry_run_missing_adapter"
+                ).delete(synchronize_session=False)
+                db.commit()
+
+    def test_source_dry_run_fixture_replay_canlii(self) -> None:
+        """Dry-run should support fixture-backed replay through real adapter logic."""
+
+        from app.ingestion import source_adapter_factory
+        from app.ingestion.source_adapters.canlii_api import CanLIIApiAdapter
+
+        fixture_path = (
+            Path(__file__).parent
+            / "fixtures"
+            / "sources"
+            / "sk_courts_qb_decisions"
+            / "sample.json"
+        )
+        fixture_payload = fixture_path.read_bytes()
+        fixture_cases = json.loads(fixture_payload).get("cases", [])
+
+        def _fixture_fetcher(url, allowed_domains, params=None):
+            return SimpleNamespace(
+                raw_content=fixture_payload,
+                error=None,
+                http_status=200,
+                content_type="application/json",
+                final_url=url,
+            )
+
+        def _build_fixture_adapter(source, settings):
+            return CanLIIApiAdapter(
+                source_key=source.source_key,
+                base_url=source.base_url or "https://api.canlii.org/v1",
+                api_key="fixture-key",
+                allowed_domains_json=source.allowed_domains,
+                public_record_authority=source.public_record_authority,
+                databases=["skkb"],
+                result_count=10,
+                offset=0,
+                fetcher=_fixture_fetcher,
+            )
+
+        original_build_adapter = source_adapter_factory.build_adapter
+        original_missing_secret = source_adapter_factory.missing_required_secret_for_parser
+        source_adapter_factory.build_adapter = _build_fixture_adapter
+        source_adapter_factory.missing_required_secret_for_parser = (
+            lambda *_args, **_kwargs: None
+        )
+
+        with SessionLocal() as db:
+            source = SourceRegistry(
+                source_key="dry_run_canlii_fixture",
+                source_name="Dry Run CanLII Fixture",
+                source_type="test",
+                source_class="machine_ingest",
+                parser="canlii_api",
+                automation_status="machine_ready_enabled",
+                lifecycle_state="runnable_enabled",
+                is_active=True,
+                base_url="https://api.canlii.org/v1",
+                allowed_domains='["api.canlii.org", "canlii.org", "www.canlii.org"]',
+                terms_url="https://example.test/terms",
+                public_record_authority="official_court_record",
+            )
+            db.add(source)
+            db.commit()
+
+        try:
+            with SessionLocal() as db:
+                before_runs = (
+                    db.query(IngestionRun)
+                    .filter(IngestionRun.source_name == "dry_run_canlii_fixture")
+                    .count()
+                )
+                before_reviews = db.query(ReviewItem).count()
+                before_snapshots = db.query(SourceSnapshot).count()
+
+            response = client.post(
+                "/api/admin/sources/dry_run_canlii_fixture/dry-run",
+                headers=get_admin_headers(),
+            )
+            assert response.status_code == 200
+            payload = response.json()
+            assert payload["source_key"] == "dry_run_canlii_fixture"
+            assert payload["source_reachable"] is True
+            assert payload["sample_records_found"] == len(fixture_cases)
+            assert payload["parser_matched_records"] == len(fixture_cases)
+            assert payload["evidence_snapshot_would_be_created"] is True
+            assert payload["claims_would_be_extracted"] is True
+            assert payload["errors"] == []
+            assert payload["success"] is True
+
+            with SessionLocal() as db:
+                after_runs = (
+                    db.query(IngestionRun)
+                    .filter(IngestionRun.source_name == "dry_run_canlii_fixture")
+                    .count()
+                )
+                after_reviews = db.query(ReviewItem).count()
+                after_snapshots = db.query(SourceSnapshot).count()
+
+            assert after_runs == before_runs
+            assert after_reviews == before_reviews
+            assert after_snapshots == before_snapshots
+        finally:
+            source_adapter_factory.build_adapter = original_build_adapter
+            source_adapter_factory.missing_required_secret_for_parser = (
+                original_missing_secret
+            )
+            with SessionLocal() as db:
+                db.query(SourceRegistry).filter(
+                    SourceRegistry.source_key == "dry_run_canlii_fixture"
+                ).delete(synchronize_session=False)
+                db.commit()
 
 
 class TestResponseFieldValidation:

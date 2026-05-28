@@ -46,6 +46,7 @@ Evidence is authoritative. AI and memory outputs are derivative only. Public vis
 ## Canonical Status And Proof References
 
 - STATUS.md
+- artifacts/proof/current/release_gate.json
 - artifacts/proof/current/CURRENT_PROOF.md
 - artifacts/proof/current/release_readiness.md
 

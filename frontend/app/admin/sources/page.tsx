@@ -74,6 +74,9 @@ export default async function AdminSourcesPage({
   }
 
   const activeSources = sources.filter((s) => s.is_active);
+  const runnableSources = sources.filter((s) => s.runnable_now);
+  const enableReadySources = sources.filter((s) => Boolean(s.enable_ready));
+  const deprecatedSources = sources.filter((s) => s.lifecycle_state === "deprecated");
   const byAuthority = sources.reduce<Record<string, number>>((acc, s) => {
     acc[s.public_record_authority] = (acc[s.public_record_authority] ?? 0) + 1;
     return acc;
@@ -151,12 +154,25 @@ export default async function AdminSourcesPage({
 
       {/* Summary bar */}
       {!errorMessage && (
-        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="rounded border px-2 py-0.5">
+              Runnable now: {runnableSources.length}
+            </span>
+            <span className="rounded border px-2 py-0.5">
+              Enable-ready: {enableReadySources.length}
+            </span>
+            <span className="rounded border px-2 py-0.5">
+              Deprecated: {deprecatedSources.length}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
           {Object.entries(byAuthority).sort(([, a], [, b]) => b - a).map(([auth, count]) => (
             <span key={auth} className="rounded border px-2 py-0.5">
               {auth.replace(/_/g, " ")}: {count}
             </span>
           ))}
+          </div>
         </div>
       )}
 

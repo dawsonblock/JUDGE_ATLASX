@@ -6,20 +6,21 @@ Current verified counts must remain unchanged during this checklist phase:
 
 - total_sources: 26
 - machine_ingest_sources: 8
-- runnable_now: 1
-- enable_ready: 6
+- runnable_now: 2
+- enable_ready: 5
 - deprecated: 3
-- machine_ready_disabled: 6
+- machine_ready_disabled: 5
 - adapter_missing: 16
 
-All six sources below are intentionally disabled in alpha and require explicit governance sign-off before enablement.
+All five sources below are intentionally disabled in alpha and require explicit governance sign-off before enablement.
 
 ## Global Preconditions (Required For Any Enablement)
 
 - Confirm legal terms of use permit machine ingestion and local evidence retention.
 - Confirm source endpoint availability and stable fetch behavior over multiple runs.
 - Run adapter contract tests and source-specific replay/fixture tests.
-- Run one dry ingestion that preserves raw evidence snapshot bytes.
+- Run one non-publishing dry ingestion via `POST /api/admin/sources/{source_key}/dry-run`.
+- Confirm dry-run indicates expected evidence snapshot behavior before any real run.
 - Verify review queue payload quality and citation/evidence binding quality.
 - Regenerate proof artifacts and verify source registry truth table consistency.
 - Obtain documented approval from release/security/governance owners.
@@ -56,22 +57,6 @@ All six sources below are intentionally disabled in alpha and require explicit g
 - Test files:
   - `backend/app/tests/test_federal_court_html_adapter.py`
 - Fixture: `backend/app/tests/fixtures/sources/federal_court_index.html`
-- Config flags: None (uses source registry enablement)
-
-### `saskatoon_open_data_public_safety`
-
-- [ ] Endpoint reachable and stable over repeated fetch windows.
-- [ ] Terms reviewed for ingest/caching/republication constraints.
-- [ ] Adapter contract + replay tests green.
-- [ ] Dry run evidence snapshot captured and indexed.
-- [ ] Governance approval documented for alpha scope expansion.
-
-**Implementation Details:**
-- Adapter: `backend/app/ingestion/source_adapters/ckan_api.py`
-- Test files:
-  - `backend/app/tests/ingestion/test_ckan_adapter.py`
-  - `backend/app/tests/test_adapter_evidence_contract.py` (TestCKANApiAdapterContract)
-- Fixture: `backend/app/tests/fixtures/sources/saskatoon_open_data_public_safety/sample.json`
 - Config flags: None (uses source registry enablement)
 
 ### `sk_courts_qb_decisions`

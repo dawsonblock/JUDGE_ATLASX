@@ -45,6 +45,12 @@
       "exit_code": 0
     },
     {
+      "name": "frontend_backend_route_contract",
+      "status": "PASS",
+      "log": "artifacts/proof/current/frontend_backend_route_contract.log",
+      "exit_code": 0
+    },
+    {
       "name": "map_route_check",
       "status": "PASS",
       "log": "artifacts/proof/current/map_route_check.log",

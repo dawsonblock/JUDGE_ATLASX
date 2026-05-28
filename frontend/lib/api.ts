@@ -407,6 +407,20 @@ export type SourceRunResult = {
   run_mode: string;
 };
 
+export type SourceDryRunResult = {
+  source_key: string;
+  source_reachable: boolean;
+  legal_note_present: boolean;
+  sample_records_found: number;
+  parser_matched_records: number;
+  evidence_snapshot_would_be_created: boolean;
+  claims_would_be_extracted: boolean;
+  public_visibility: string;
+  warnings: string[];
+  errors: string[];
+  success: boolean;
+};
+
 export type DefendantItem = {
   id: number;
   anonymized_id: string;

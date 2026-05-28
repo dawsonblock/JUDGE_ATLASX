@@ -50,6 +50,10 @@ interface WorkflowRunsPanelProps {
   onOpenReviewQueue?: (runId: string) => void;
 }
 
+interface AdminCapabilities {
+  workflow_admin?: boolean;
+}
+
 export function WorkflowRunsPanel({
   workflowName,
   onRunNow,
@@ -65,8 +69,40 @@ export function WorkflowRunsPanel({
   const [steps, setSteps] = useState<WorkflowStep[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [workflowEnabled, setWorkflowEnabled] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/admin/capabilities", {
+      signal: controller.signal,
+      cache: "no-store",
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Capabilities request failed (${res.status})`);
+        return res.json() as Promise<AdminCapabilities>;
+      })
+      .then((data) => {
+        setWorkflowEnabled(data.workflow_admin === true);
+      })
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setWorkflowEnabled(false);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load admin capabilities",
+        );
+      });
+    return () => controller.abort();
+  }, []);
 
   const fetchRuns = useCallback(async () => {
+    if (workflowEnabled !== true) {
+      setRuns([]);
+      setSelectedRun(null);
+      setSteps([]);
+      return;
+    }
     setIsLoading(true);
     setError(null);
 
@@ -87,7 +123,7 @@ export function WorkflowRunsPanel({
     } finally {
       setIsLoading(false);
     }
-  }, [workflowName]);
+  }, [workflowName, workflowEnabled]);
 
   useEffect(() => {
     fetchRuns();
@@ -150,11 +186,16 @@ export function WorkflowRunsPanel({
 
   return (
     <div className="flex flex-col h-full bg-white border-r border-gray-200">
+      {workflowEnabled === false && (
+        <div className="m-4 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Workflow admin is disabled for this environment.
+        </div>
+      )}
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold">Workflow Runs</h2>
-          {workflowName && (
+          {workflowName && workflowEnabled === true && (
             <button
               onClick={() => onRunNow?.(workflowName)}
               className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -165,7 +206,7 @@ export function WorkflowRunsPanel({
         </div>
         <button
           onClick={fetchRuns}
-          disabled={isLoading}
+          disabled={isLoading || workflowEnabled !== true}
           className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50"
         >
           {isLoading ? "Loading..." : "Refresh"}
@@ -183,7 +224,11 @@ export function WorkflowRunsPanel({
       <div className="flex flex-1 overflow-hidden">
         {/* Runs list */}
         <div className="flex-1 overflow-y-auto border-r border-gray-200">
-          {runs.length === 0 ? (
+          {workflowEnabled !== true ? (
+            <div className="p-8 text-center text-gray-500">
+              <p>Workflow admin disabled</p>
+            </div>
+          ) : runs.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
               <p>No workflow runs found</p>
             </div>

@@ -1,15 +1,15 @@
 # Archive Validation
 
-- validated_at_utc: 2026-05-27T07:58:09.703468+00:00
+- validated_at_utc: 2026-05-27T20:36:14.606963+00:00
 - archive: dist/JUDGE_ATLAS-main-final.zip
-- archive_sha256: 7db65fcad6fc0b2bb44ba0a6a42cc003dea3566885bbac8cc06558994d46d4b3
+- archive_sha256: 936000f2b2e81af514d251d0b46ea4270f1e23798cdb60a9c1570c50a04618cd
 - expected_root: JUDGE_ATLAS-main
 - actual_root: JUDGE_ATLAS-main
 - top_level_roots: JUDGE_ATLAS-main
 - root_match: yes
 - valid: PASS
-- compressed_size_bytes: 2070800
-- uncompressed_size_bytes: 7918364
+- compressed_size_bytes: 2075566
+- uncompressed_size_bytes: 7933001
 
 ## Errors
 
@@ -25,13 +25,13 @@
 |---|---:|---:|
 | JUDGE_ATLAS-main/backend/uv.lock | 769811 | 238625 |
 | JUDGE_ATLAS-main/frontend/package-lock.json | 393441 | 85051 |
-| JUDGE_ATLAS-main/scripts/release_gate.py | 115292 | 21405 |
+| JUDGE_ATLAS-main/scripts/release_gate.py | 115660 | 21441 |
 | JUDGE_ATLAS-main/backend/app/models/entities.py | 101799 | 16701 |
-| JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 91333 | 13472 |
-| JUDGE_ATLAS-main/artifacts/proof/current/docker_smoke.log | 53884 | 10145 |
-| JUDGE_ATLAS-main/artifacts/proof/current/proof_manifest.json | 51541 | 7013 |
+| JUDGE_ATLAS-main/artifacts/proof/current/release_gate.json | 92267 | 13610 |
+| JUDGE_ATLAS-main/artifacts/proof/current/proof_manifest.json | 52553 | 7123 |
 | JUDGE_ATLAS-main/backend/app/memory/contradiction_engine.py | 48640 | 8977 |
-| JUDGE_ATLAS-main/backend/app/ingestion/sources/canada_saskatchewan_sources.yaml | 48464 | 6929 |
+| JUDGE_ATLAS-main/backend/app/ingestion/sources/canada_saskatchewan_sources.yaml | 48453 | 6929 |
+| JUDGE_ATLAS-main/artifacts/proof/current/docker_smoke.log | 48435 | 9102 |
 | JUDGE_ATLAS-main/backend/app/tests/test_api.py | 43536 | 7488 |
 | JUDGE_ATLAS-main/backend/app/api/routes/admin_sources.py | 41311 | 8548 |
 | JUDGE_ATLAS-main/backend/app/tests/test_ingestion_runtime.py | 38018 | 5725 |
@@ -41,23 +41,23 @@
 | JUDGE_ATLAS-main/backend/app/tests/test_admin_ingestion.py | 29007 | 4529 |
 | JUDGE_ATLAS-main/backend/app/tests/test_graph_layer.py | 28216 | 4765 |
 | JUDGE_ATLAS-main/scripts/check_proof_consistency.py | 27804 | 5519 |
-| JUDGE_ATLAS-main/artifacts/proof/current/source_registry_status.json | 27776 | 3325 |
+| JUDGE_ATLAS-main/artifacts/proof/current/source_registry_status.json | 27663 | 3321 |
 | JUDGE_ATLAS-main/backend/app/seed/sample_data.py | 25376 | 4657 |
 
 ## Largest Top-Level Directories
 
 | path | uncompressed |
 |---|---:|
-| backend | 5515163 |
-| frontend | 859370 |
-| scripts | 728793 |
-| docs | 363611 |
-| artifacts | 325108 |
+| backend | 5517350 |
+| frontend | 864407 |
+| scripts | 739565 |
+| docs | 362881 |
+| artifacts | 322317 |
 | .github | 47294 |
 | demo | 26537 |
 | infra | 17264 |
+| Makefile | 7970 |
 | REPO_REALITY.md | 7941 |
-| Makefile | 7808 |
 | STUBS_AND_PLACEHOLDERS.md | 4683 |
 | docker-compose.yml | 2496 |
 | STATUS.md | 2471 |

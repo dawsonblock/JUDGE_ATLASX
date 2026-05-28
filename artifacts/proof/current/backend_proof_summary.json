@@ -63,8 +63,8 @@
       "exit_code": 0
     }
   ],
-  "route_count": 107,
-  "pytest_passed": 3454,
+  "route_count": 108,
+  "pytest_passed": 3455,
   "pytest_skipped": 2,
   "proof_db_counts": {
     "audit_logs": 3,

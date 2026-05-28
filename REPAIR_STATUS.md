@@ -3,21 +3,40 @@
 > [!WARNING]
 > **WARNING:** Read the current truth from `artifacts/proof/current/release_gate.json` and `artifacts/proof/current/release_readiness.md`. Do not deploy as a production release; `production_ready` remains **false** for alpha scope.
 
-## Repair Status Overview
+## Repair Status
 
-- **Branch**: `repair/proof-truth-hardening-main11`
-- **Target Gate State**:
+This file is historical/contextual only.
 
-  ```json
-  {
-    "alpha_gate_passed": false,
-    "release_candidate": false,
-    "production_ready": false
-  }
-  ```
+The authoritative release state is defined by:
 
-- **Current Gate Authority**: `artifacts/proof/current/release_gate.json`
-- **Current Readiness Authority**: `artifacts/proof/current/release_readiness.md`
-- **Current Proof Summary**: `artifacts/proof/current/CURRENT_PROOF.md`
+- `artifacts/proof/current/release_gate.json`
+- `artifacts/proof/current/CURRENT_PROOF.md`
+- `artifacts/proof/current/CURRENT_ALPHA_STATUS.md`
+- `artifacts/proof/current/release_readiness.md`
 
-Do not deploy, release, or merge this code until this status file is formally updated and all verification steps pass.
+Current canonical state:
+
+```json
+{
+  "alpha_gate_passed": true,
+  "release_candidate": true,
+  "production_ready": false
+}
+```
+
+This project is an evidence-governed alpha release candidate. It is not production-ready and is not a public legal authority.
+
+Production-ready=false until all production gates pass.
+
+## Status Matrix
+
+- authority: artifacts/proof/current/release_gate.json
+- alpha_ready: true
+- production_ready: false
+- public_release_safe: false
+- ingestion_coverage: 1/26 runnable sources (from canonical source-registry proof)
+- AI_answering_enabled: true (derivative, evidence-cited alpha mode)
+- workflow_admin_enabled: false (gated/experimental)
+- live_map_enabled: false (gated)
+
+Historical repair/blocker notes were moved to docs/history/2026-05-27-repair-blocker-notes.md.

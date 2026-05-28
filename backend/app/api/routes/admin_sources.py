@@ -793,6 +793,22 @@ class RunResult(BaseModel):
     success: bool = False
 
 
+class DryRunResult(BaseModel):
+    """Result of a non-publishing source dry-run."""
+
+    source_key: str
+    source_reachable: bool
+    legal_note_present: bool
+    sample_records_found: int
+    parser_matched_records: int
+    evidence_snapshot_would_be_created: bool
+    claims_would_be_extracted: bool
+    public_visibility: str = "pending_review"
+    warnings: list[str] = []
+    errors: list[str] = []
+    success: bool = False
+
+
 def _kick_inprocess_job(queue: Any, job_id: str) -> None:
     """Best-effort async runner for in-process queue backend.
 
@@ -1122,6 +1138,128 @@ def run_source_now(
         "warnings": summary.warnings,
         "errors": run_record.errors or [],
         "success": run_record.status in (COMPLETED, COMPLETED_WITH_WARNINGS),
+    }
+
+
+@router.post(
+    "/{source_key}/dry-run",
+    response_model=DryRunResult,
+    dependencies=[Depends(rate_limit_admin)],
+)
+def dry_run_source(
+    source_key: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    actor: AdminActor = Depends(require_source_admin_actor),
+) -> dict[str, Any]:
+    """Execute a non-publishing dry-run for a source.
+
+    Dry-run evaluates source runtime readiness and optionally executes adapter
+    fetch/parse logic via adapter.run() without persisting public records,
+    review items, or snapshots.
+    """
+    enforce_jwt_mutation_authority(actor)
+
+    source = (
+        db.query(SourceRegistry).filter(SourceRegistry.source_key == source_key).first()
+    )
+    if not source:
+        raise HTTPException(status_code=404, detail=f"Source '{source_key}' not found")
+
+    warnings: list[str] = []
+    errors: list[str] = []
+
+    legal_note_present = bool(source.terms_url or source.admin_notes or source.license_url)
+    if not legal_note_present:
+        warnings.append("legal_or_terms_note_missing")
+
+    source_class = getattr(source, "source_class", None)
+    if source_class != "machine_ingest":
+        warnings.append(f"source_class_not_machine_ingest:{source_class}")
+
+    from app.core.config import get_settings
+    from app.ingestion.source_adapter_factory import (
+        build_adapter,
+        missing_required_secret_for_parser,
+    )
+    from app.ingestion.source_config_validator import can_run_source
+
+    runnable, blockers = can_run_source(source)
+    if not runnable:
+        warnings.extend(blockers)
+
+    allowed, reason = check_ingestion_allowed(source)
+    if not allowed:
+        warnings.append(f"ingestion_gate_blocked:{reason}")
+
+    settings = get_settings()
+    missing_secret = missing_required_secret_for_parser(source.parser, settings)
+    if missing_secret is not None:
+        errors.append(f"missing_required_secret:{missing_secret}")
+
+    adapter = build_adapter(source, settings)
+    if adapter is None:
+        errors.append("adapter_missing")
+
+    records_fetched = 0
+    parser_matched = 0
+    evidence_snapshot_would_be_created = bool(source.evidence_required)
+    claims_would_be_extracted = False
+
+    if not errors and adapter is not None:
+        try:
+            result = adapter.run()
+            records_fetched = int(getattr(result, "records_fetched", 0) or 0)
+            parser_matched = (
+                len(getattr(result, "created_records", []) or [])
+                + len(getattr(result, "legal_instruments", []) or [])
+                + len(getattr(result, "review_items", []) or [])
+            )
+            claims_would_be_extracted = (
+                len(getattr(result, "created_records", []) or []) > 0
+                or len(getattr(result, "review_items", []) or []) > 0
+            )
+            evidence_snapshot_would_be_created = evidence_snapshot_would_be_created or bool(
+                getattr(result, "raw_snapshot_bytes", None)
+            )
+            errors.extend(list(getattr(result, "errors", []) or []))
+        except Exception as exc:  # pragma: no cover - defensive runtime catch
+            errors.append(f"adapter_exception:{exc}")
+
+    source_reachable = records_fetched > 0 and not any(e.startswith("adapter_exception:") for e in errors)
+    success = not errors
+
+    log_mutation(
+        action="source.dry_run",
+        entity_type="source_registry",
+        entity_id=source.source_key,
+        payload={
+            "source_key": source.source_key,
+            "records_fetched": records_fetched,
+            "parser_matched_records": parser_matched,
+            "warnings": warnings,
+            "errors": errors,
+            "success": success,
+        },
+        request=request,
+        actor=actor,
+        db=db,
+        fail_closed=True,
+    )
+    db.commit()
+
+    return {
+        "source_key": source.source_key,
+        "source_reachable": source_reachable,
+        "legal_note_present": legal_note_present,
+        "sample_records_found": records_fetched,
+        "parser_matched_records": parser_matched,
+        "evidence_snapshot_would_be_created": evidence_snapshot_would_be_created,
+        "claims_would_be_extracted": claims_would_be_extracted,
+        "public_visibility": "pending_review",
+        "warnings": warnings,
+        "errors": errors,
+        "success": success,
     }
 
 

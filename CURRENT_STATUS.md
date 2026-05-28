@@ -4,6 +4,9 @@
 **Production ready**: NO
 **Last updated**: 2026-05-21
 
+> [!WARNING]
+> Production-ready=false until all production gates pass.
+
 ## Canonical Authority
 
 - Gate status authority: artifacts/proof/current/release_gate.json
@@ -39,6 +42,17 @@
 - STATUS.md
 - artifacts/proof/current/CURRENT_PROOF.md
 - artifacts/proof/current/release_readiness.md
+
+## Status Matrix
+
+- authority: artifacts/proof/current/release_gate.json
+- alpha_ready: true
+- production_ready: false
+- public_release_safe: false
+- ingestion_coverage: 1/26 runnable sources (from canonical source-registry proof)
+- AI_answering_enabled: true (derivative, evidence-cited alpha mode)
+- workflow_admin_enabled: false (gated/experimental)
+- live_map_enabled: false (gated)
 
 ## Clean-Alpha Exit Criteria
 

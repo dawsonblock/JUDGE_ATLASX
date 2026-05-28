@@ -18,6 +18,22 @@ export async function GET(
     );
   }
 
+  const capability = await fetch(`${backendBase}/api/admin/capabilities`, {
+    method: "GET",
+    headers,
+    cache: "no-store",
+  });
+  const capabilityBody = await capability.json().catch(() => ({}));
+  if (!capability.ok || capabilityBody.workflow_admin !== true) {
+    return NextResponse.json(
+      {
+        error: "Workflow admin disabled",
+        workflow_admin: false,
+      },
+      { status: 404 },
+    );
+  }
+
   const searchParams = req.nextUrl.searchParams.toString();
   const url = `${backendBase}/api/admin/workflows/runs/${params.runId}/logs${searchParams ? `?${searchParams}` : ""}`;
   const upstream = await fetch(url, {

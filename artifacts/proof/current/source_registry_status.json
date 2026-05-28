@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-05-27T07:56:38.909366+00:00",
+  "generated_at_utc": "2026-05-27T20:34:21.252318+00:00",
   "total_sources": 26,
   "summary": {
     "total_sources": 26,
     "machine_ingest_sources": 8,
-    "runnable_now": 1,
-    "enable_ready": 6,
+    "runnable_now": 2,
+    "enable_ready": 5,
     "deprecated": 3
   },
   "sources": [
@@ -170,23 +170,20 @@
       "jurisdiction": "CA-SK-Saskatoon",
       "source_class": "machine_ingest",
       "source_type": "aggregate_stats",
-      "lifecycle_state": "runnable_disabled",
+      "lifecycle_state": "runnable",
       "canonical_replacement_key": null,
       "status_reason": "Saskatoon public safety CKAN adapter staged and validated in fixture mode; source remains disabled pending operator review.",
       "operator_next_step": "Run fixture proof target, confirm review-only payloads, then enable only after legal and data-quality verification.",
-      "automation_status": "machine_ready_disabled",
+      "automation_status": "machine_ready_enabled",
       "adapter_key": "ckan_api",
       "adapter_exists": true,
       "adapter_state": "found",
       "parser": "ckan_api",
       "requires_manual_review": true,
-      "runnable_now": false,
+      "runnable_now": true,
       "canonical_now": true,
-      "enable_ready": true,
-      "blockers": [
-        "lifecycle_state=runnable_disabled",
-        "automation_status=machine_ready_disabled"
-      ],
+      "enable_ready": false,
+      "blockers": [],
       "alpha_status": "configured"
     },
     {

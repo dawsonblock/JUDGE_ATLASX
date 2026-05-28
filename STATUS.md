@@ -6,6 +6,9 @@
 **Production ready**: false
 Production ready: FALSE
 
+> [!WARNING]
+> Production-ready=false until all production gates pass.
+
 This repository is an alpha platform and not approved for production deployment.
 This repository is an alpha/research-grade platform, not a production legal system.
 
@@ -46,6 +49,17 @@ This repository is an alpha/research-grade platform, not a production legal syst
 - Release readiness truth is defined only by artifacts/proof/current/release_readiness.md.
 - Human-readable summaries must not override the canonical proof artifacts.
 - Production readiness remains false by design for this alpha scope.
+
+## Status Matrix
+
+- authority: artifacts/proof/current/release_gate.json
+- alpha_ready: true
+- production_ready: false
+- public_release_safe: false
+- ingestion_coverage: 1/26 runnable sources (from canonical source-registry proof)
+- AI_answering_enabled: true (derivative, evidence-cited alpha mode)
+- workflow_admin_enabled: false (gated/experimental)
+- live_map_enabled: false (gated)
 
 ## Known Constraints
 

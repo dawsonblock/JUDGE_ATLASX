@@ -26,8 +26,8 @@ def test_saskatoon_public_safety_registry_state_honest() -> None:
     )
 
     assert entry["parser"] == "ckan_api"
-    assert entry["automation_status"] == "machine_ready_disabled"
-    assert entry["lifecycle_state"] == "runnable_disabled"
+    assert entry["automation_status"] == "machine_ready_enabled"
+    assert entry["lifecycle_state"] == "runnable"
     assert entry["enabled_default"] is False
     assert entry["requires_manual_review"] is True
     assert entry["public_publish_default"] is False

@@ -159,6 +159,11 @@ jobs:
           source backend/.venv/bin/activate
           python scripts/verify_status_consistency.py
 
+      - name: Check status truth consistency
+        run: |
+          source backend/.venv/bin/activate
+          python scripts/check_status_truth_consistency.py --root .
+
       - name: Check duplicate docs
         run: |
           source backend/.venv/bin/activate

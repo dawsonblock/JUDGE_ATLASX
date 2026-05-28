@@ -198,10 +198,45 @@ ALLOWED_POLICY_FILES: dict[str, AllowedPolicyPhrase] = {
         ),
         phrases=("production-ready",),
     ),
+    "STATUS.md": AllowedPolicyPhrase(
+        reason=(
+            "Canonical status doc contains required prohibitory wording that "
+            "the platform is not production-ready."
+        ),
+        phrases=("production-ready",),
+    ),
     "REPAIR_STATUS.md": AllowedPolicyPhrase(
         reason=(
             "Repair status document explicitly states the build is NOT "
             "production-ready; phrase appears in prohibitory/blocked context."
+        ),
+        phrases=("production-ready",),
+    ),
+    "PROOF_STATUS.md": AllowedPolicyPhrase(
+        reason=(
+            "Proof status doc contains required prohibitory wording that "
+            "production gates are not complete."
+        ),
+        phrases=("production-ready",),
+    ),
+    "RELEASE_BLOCKERS.md": AllowedPolicyPhrase(
+        reason=(
+            "Release blocker doc contains required prohibitory wording and "
+            "must not be interpreted as production approval."
+        ),
+        phrases=("production-ready",),
+    ),
+    "docs/history/2026-05-27-repair-blocker-notes.md": AllowedPolicyPhrase(
+        reason=(
+            "Archived historical note preserves the required prohibitory "
+            "warning text."
+        ),
+        phrases=("production-ready",),
+    ),
+    "scripts/check_status_truth_consistency.py": AllowedPolicyPhrase(
+        reason=(
+            "Consistency checker validates presence of the required "
+            "prohibitory production warning text."
         ),
         phrases=("production-ready",),
     ),

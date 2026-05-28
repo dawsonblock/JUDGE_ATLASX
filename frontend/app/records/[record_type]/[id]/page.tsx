@@ -1,22 +1,29 @@
 import { notFound } from "next/navigation";
+import { apiBase } from "@/lib/api";
 
-export async function generateMetadata({ params }: { params: { id: string } }) {
+const ALLOWED_RECORD_TYPES = new Set(["court_event", "reported_incident"]);
+
+type PageParams = {
+  params: {
+    record_type: string;
+    id: string;
+  };
+};
+
+export async function generateMetadata({ params }: PageParams) {
   return {
-    title: `Record ${params.id} | JUDGE`,
+    title: `Record ${params.record_type}/${params.id} | JUDGE`,
     description: "Publicly reviewed court record detail.",
   };
 }
 
-async function fetchRecord(id: string) {
-  const apiBase =
-    process.env.BACKEND_INTERNAL_URL ??
-    process.env.NEXT_PUBLIC_API_BASE_URL ??
-    process.env.NEXT_PUBLIC_API_URL ??
-    "http://localhost:8000";
+async function fetchRecord(recordType: string, id: string) {
+  const safeRecordType = encodeURIComponent(recordType);
+  const safeId = encodeURIComponent(id);
   const res = await fetch(
-    `${apiBase}/api/v1/records/${encodeURIComponent(id)}`,
+    `${apiBase(true)}/api/map/record/${safeRecordType}/${safeId}`,
     {
-      next: { revalidate: 60 },
+      cache: "no-store",
     },
   );
   if (res.status === 404) return null;
@@ -24,12 +31,12 @@ async function fetchRecord(id: string) {
   return res.json();
 }
 
-export default async function RecordDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const record = await fetchRecord(params.id).catch(() => null);
+export default async function RecordDetailPage({ params }: PageParams) {
+  if (!ALLOWED_RECORD_TYPES.has(params.record_type)) {
+    notFound();
+  }
+
+  const record = await fetchRecord(params.record_type, params.id).catch(() => null);
 
   if (!record) {
     notFound();
@@ -40,7 +47,9 @@ export default async function RecordDetailPage({
       <h1 className="text-xl font-semibold text-gray-900 mb-1">
         Public Record
       </h1>
-      <p className="text-sm text-gray-500 mb-6">ID: {params.id}</p>
+      <p className="text-sm text-gray-500 mb-6">
+        Type: {params.record_type} | ID: {params.id}
+      </p>
 
       <div className="rounded border border-gray-200 bg-white divide-y divide-gray-100 text-sm">
         {Object.entries(record as Record<string, unknown>).map(
