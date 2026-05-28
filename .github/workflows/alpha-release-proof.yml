@@ -158,5 +158,6 @@ jobs:
           name: final-release-distributable
           path: |
             dist/JUDGE_ATLAS-main-final.zip
+            dist/JUDGE_ATLAS-main-final.zip.sha256
             FINAL_RELEASE_HANDOFF.md
           retention-days: 90

@@ -116,7 +116,7 @@ archive_sha256() {
 }
 
 if [[ -z "${ARCHIVE_PATH}" ]]; then
-  ARCHIVE_PATH="${TMP_DIR}/judge_atlas_archive.zip"
+  ARCHIVE_PATH="${TMP_DIR}/JUDGE_ATLAS-main-final.zip"
   python3 "${ROOT_DIR}/scripts/build_release_archive.py" \
     --output "${ARCHIVE_PATH}" \
     --root-name "JUDGE_ATLAS-main"

@@ -15,6 +15,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = REPO_ROOT / "dist" / "JUDGE_ATLAS-main-final.zip"
 DEFAULT_ROOT_NAME = "JUDGE_ATLAS-main"
+CANONICAL_ARCHIVE_NAME = "JUDGE_ATLAS-main-final.zip"
+CANONICAL_ROOT_NAME = "JUDGE_ATLAS-main"
 
 DEFAULT_INCLUDE_TOP_LEVEL = (
     ".github",
@@ -214,6 +216,8 @@ def _is_excluded(rel_path: str, include_external: bool, include_proof_archive: b
         return True
     if lower_name in EXCLUDED_FILE_NAMES:
         return True
+    if lower_name.startswith(".env."):
+        return True
     if lower_name.endswith(EXCLUDED_SUFFIXES):
         return True
     return False
@@ -266,6 +270,65 @@ def _load_packaged_proof_paths(repo_root: Path) -> set[str]:
                 continue
             packaged.add(normalized)
     return packaged
+
+
+def _load_json_object(path: Path) -> dict:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"Invalid JSON at {path}: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise SystemExit(f"Invalid payload type at {path}: {type(payload).__name__}")
+    return payload
+
+
+def _collect_proof_manifest_paths(repo_root: Path) -> set[str]:
+    manifest_path = repo_root / "artifacts" / "proof" / "current" / "proof_manifest.json"
+    if not manifest_path.is_file():
+        raise SystemExit(f"Missing canonical proof manifest: {manifest_path}")
+    payload = _load_json_object(manifest_path)
+    proof_commands = payload.get("proof_commands")
+    if not isinstance(proof_commands, list):
+        raise SystemExit("Invalid proof_manifest.json: proof_commands must be a list")
+
+    referenced: set[str] = set()
+    for entry in proof_commands:
+        if not isinstance(entry, dict):
+            continue
+        for key in ("path", "log_path"):
+            value = entry.get(key)
+            if isinstance(value, str) and value:
+                normalized = value.replace("\\", "/")
+                if normalized in PACKAGED_PROOF_EXCLUDED_PATHS:
+                    continue
+                referenced.add(normalized)
+    return referenced
+
+
+def _collect_required_log_index_paths(repo_root: Path) -> tuple[set[str], list[str]]:
+    index_path = repo_root / "artifacts" / "proof" / "current" / "required_log_index.json"
+    if not index_path.is_file():
+        raise SystemExit(f"Missing canonical required log index: {index_path}")
+    payload = _load_json_object(index_path)
+    entries = payload.get("entries")
+    if not isinstance(entries, list):
+        raise SystemExit("Invalid required_log_index.json: entries must be a list")
+
+    referenced: set[str] = set()
+    exists_true_missing: list[str] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        rel_path = entry.get("path")
+        if not isinstance(rel_path, str) or not rel_path:
+            continue
+        normalized = rel_path.replace("\\", "/")
+        if normalized in PACKAGED_PROOF_EXCLUDED_PATHS:
+            continue
+        referenced.add(normalized)
+        if entry.get("exists") is True and not (repo_root / normalized).is_file():
+            exists_true_missing.append(normalized)
+    return referenced, sorted(set(exists_true_missing))
 
 
 def _strip_packaged_archive_validation_metadata(rel: str, payload):
@@ -479,6 +542,8 @@ def build_archive(
     include_external: bool,
     include_proof_archive: bool,
     require_release_candidate: bool = False,
+    allow_noncanonical: bool = False,
+    allow_noncanonical_root: bool = False,
 ) -> dict:
     output_display = (
         _normalize(output.relative_to(REPO_ROOT))
@@ -487,6 +552,17 @@ def build_archive(
     )
 
     release_gate = _load_release_gate(REPO_ROOT)
+
+    if not allow_noncanonical and output.name != CANONICAL_ARCHIVE_NAME:
+        raise SystemExit(
+            "archive_name_not_authoritative:"
+            f"expected_{CANONICAL_ARCHIVE_NAME}_got_{output.name}"
+        )
+    if not allow_noncanonical_root and root_name != CANONICAL_ROOT_NAME:
+        raise SystemExit(
+            "root_name_not_authoritative:"
+            f"expected_{CANONICAL_ROOT_NAME}_got_{root_name}"
+        )
     alpha_gate_passed = bool(release_gate.get("alpha_gate_passed", False))
     release_candidate = bool(release_gate.get("release_candidate", False))
     production_ready = bool(release_gate.get("production_ready", False))
@@ -498,6 +574,10 @@ def build_archive(
         )
 
     packaged_proof_paths = _load_packaged_proof_paths(REPO_ROOT)
+    proof_manifest_paths = _collect_proof_manifest_paths(REPO_ROOT)
+    required_log_index_paths, required_index_exists_true_missing = (
+        _collect_required_log_index_paths(REPO_ROOT)
+    )
 
     missing_required_proof_files = sorted(
         rel_path
@@ -512,20 +592,27 @@ def build_archive(
 
     missing_referenced_proof_paths = sorted(
         rel_path
-        for rel_path in packaged_proof_paths
+        for rel_path in (packaged_proof_paths | proof_manifest_paths | required_log_index_paths)
         if not (REPO_ROOT / rel_path).is_file()
     )
     if missing_referenced_proof_paths:
         raise SystemExit(
-            "Missing packaged proof files required by release_gate.json: "
+            "Missing packaged proof files required by release metadata: "
             + ", ".join(missing_referenced_proof_paths)
+        )
+    if required_index_exists_true_missing:
+        raise SystemExit(
+            "required_log_index_exists_but_missing:"
+            + ",".join(required_index_exists_true_missing)
         )
 
     files, included_top_level, excluded_top_level = _collect_files(
         REPO_ROOT,
         include_external=include_external,
         include_proof_archive=include_proof_archive,
-        packaged_proof_paths=packaged_proof_paths,
+        packaged_proof_paths=(
+            packaged_proof_paths | proof_manifest_paths | required_log_index_paths
+        ),
     )
 
     included_rel_paths = {_normalize(path.relative_to(REPO_ROOT)) for path in files}
@@ -611,6 +698,16 @@ def main() -> int:
         action="store_true",
         help="Fail unless artifacts/proof/current/release_gate.json has release_candidate=true",
     )
+    parser.add_argument(
+        "--allow-noncanonical",
+        action="store_true",
+        help="Allow archive names other than JUDGE_ATLAS-main-final.zip.",
+    )
+    parser.add_argument(
+        "--allow-noncanonical-root",
+        action="store_true",
+        help="Allow archive root names other than JUDGE_ATLAS-main.",
+    )
     args = parser.parse_args()
 
     if args.dry_run:
@@ -643,6 +740,8 @@ def main() -> int:
         include_external=args.include_external,
         include_proof_archive=args.include_proof_archive,
         require_release_candidate=args.require_release_candidate,
+        allow_noncanonical=args.allow_noncanonical,
+        allow_noncanonical_root=args.allow_noncanonical_root,
     )
 
     if args.json:
