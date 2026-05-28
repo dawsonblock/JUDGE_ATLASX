@@ -26,15 +26,18 @@ def run(cmd, *, cwd: Path) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Run GKP decoder co-simulation."
-    )
+    parser_desc = "Run GKP decoder co-simulation."
+    parser = argparse.ArgumentParser(description=parser_desc)
     parser.add_argument(
         "--vectors",
         type=Path,
         default=PROJECT_ROOT / "sim" / "gkp_cosim_vectors.hex",
     )
-    parser.add_argument("--count", type=int, default=64)
+    parser.add_argument(
+        "--count",
+        type=int,
+        default=64,
+    )
     parser.add_argument(
         "--profile",
         choices=["default", "edge"],
@@ -111,7 +114,10 @@ def main() -> int:
     if rc != 0:
         return rc
 
-    rc = run(["vvp", str(out), f"+VECTORS={args.vectors}"], cwd=PROJECT_ROOT)
+    rc = run(
+        ["vvp", str(out), f"+VECTORS={args.vectors}"],
+        cwd=PROJECT_ROOT,
+    )
     return rc
 
 
