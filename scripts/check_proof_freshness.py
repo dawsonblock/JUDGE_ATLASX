@@ -99,6 +99,8 @@ IGNORE_GLOB_PATTERNS = {
     "backend/app/tests/*.db",
     "backend/app/tests/*.sqlite",
     "backend/app/tests/*.sqlite3",
+    "**/.env",
+    "**/.env.*",
     "**/.DS_Store",
 }
 

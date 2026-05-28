@@ -249,6 +249,20 @@ REQUIRED_PROOF_MANIFEST_LOGS = (
     "artifacts/proof/current/runtime_smoke.log",
 )
 
+REQUIRED_PROOF_FILES = (
+    "artifacts/proof/current/CURRENT_PROOF.md",
+    "artifacts/proof/current/CURRENT_ALPHA_STATUS.md",
+    "artifacts/proof/current/SOURCE_REGISTRY_STATUS.md",
+    "artifacts/proof/current/source_registry_status.json",
+    "artifacts/proof/current/release_gate.json",
+    "artifacts/proof/current/proof_manifest.json",
+    "artifacts/proof/current/required_log_index.json",
+    "artifacts/proof/current/REPAIR_REPORT.md",
+    "artifacts/proof/current/FIX_VERIFICATION_REPORT.md",
+    "artifacts/proof/current/release_readiness.md",
+    "artifacts/proof/current/PROOF_POLICY.md",
+)
+
 
 @dataclass
 class GateStep:
@@ -388,6 +402,41 @@ def _missing_logs(repo_root: Path, checks: list[GateStep]) -> list[str]:
         if not (repo_root / check.log_path).exists():
             missing.append(check.log_path)
     return missing
+
+
+def _missing_required_proof_files(repo_root: Path) -> list[str]:
+    return sorted(
+        rel_path
+        for rel_path in REQUIRED_PROOF_FILES
+        if not (repo_root / rel_path).is_file()
+    )
+
+
+def _required_log_index_missing_exists_entries(
+    repo_root: Path, out_dir: Path
+) -> list[str]:
+    index_path = out_dir / "required_log_index.json"
+    if not index_path.exists():
+        return ["artifacts/proof/current/required_log_index.json"]
+    try:
+        payload = json.loads(index_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return ["artifacts/proof/current/required_log_index.json:invalid_json"]
+    entries = payload.get("entries") if isinstance(payload, dict) else None
+    if not isinstance(entries, list):
+        return ["artifacts/proof/current/required_log_index.json:invalid_entries"]
+
+    missing: list[str] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        rel_path = entry.get("path")
+        exists_flag = entry.get("exists")
+        if not isinstance(rel_path, str) or not rel_path:
+            continue
+        if exists_flag is True and not (repo_root / rel_path).is_file():
+            missing.append(rel_path)
+    return sorted(set(missing))
 
 
 def _failed_required_checks(checks: list[GateStep]) -> list[str]:
@@ -3192,9 +3241,15 @@ def main() -> int:
 
     missing_logs = _missing_logs(repo_root, results)
     required_failed_checks = _failed_required_checks(results)
+    missing_required_proof_files = _missing_required_proof_files(repo_root)
+    required_log_index_missing_entries = (
+        _required_log_index_missing_exists_entries(repo_root, out_dir)
+    )
     ok = (
         not required_failed_checks
         and not missing_logs
+        and not missing_required_proof_files
+        and not required_log_index_missing_entries
         and not validation_blockers
     )
     payload["alpha_gate_passed"] = ok
@@ -3226,11 +3281,23 @@ def main() -> int:
     payload["failed_checks"] = (
         required_failed_checks
         + (["missing_logs"] if missing_logs else [])
+        + (
+            ["missing_required_proof_file"]
+            if missing_required_proof_files
+            else []
+        )
+        + (
+            ["required_log_index_exists_but_missing"]
+            if required_log_index_missing_entries
+            else []
+        )
         + validation_blockers
     )
     payload["release_blockers_remaining"] = (
         required_failed_checks
         + (["missing_logs"] if missing_logs else [])
+        + missing_required_proof_files
+        + required_log_index_missing_entries
         + validation_blockers
         if not ok
         else []

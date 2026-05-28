@@ -22,6 +22,7 @@ DEFAULT_REQUIRED_PROOF_FILES = (
     "artifacts/proof/current/release_gate.json",
     "artifacts/proof/current/proof_manifest.json",
     "artifacts/proof/current/required_log_index.json",
+    "artifacts/proof/current/REPAIR_REPORT.md",
     "artifacts/proof/current/FIX_VERIFICATION_REPORT.md",
     "artifacts/proof/current/release_readiness.md",
     "artifacts/proof/current/PROOF_POLICY.md",
@@ -238,6 +239,7 @@ def main() -> int:
             f"- blocked_release_checks: {blocker_text}",
             "",
             "## Build Metadata",
+            f"- created_at_utc: {generated_at}",
             f"- generated_at_utc: {generated_at}",
             f"- git_commit: {commit}",
             (

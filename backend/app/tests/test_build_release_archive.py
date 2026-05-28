@@ -37,8 +37,15 @@ def _seed_repo(root: Path) -> None:
     _write_file(root / "artifacts" / "proof" / "current" / "SOURCE_REGISTRY_STATUS.md", "registry\n")
     _write_file(root / "artifacts" / "proof" / "current" / "source_registry_status.json", "{}\n")
     _write_file(root / "artifacts" / "proof" / "current" / "release_gate.json", json.dumps({"logs": {}}, indent=2) + "\n")
-    _write_file(root / "artifacts" / "proof" / "current" / "proof_manifest.json", "{}\n")
-    _write_file(root / "artifacts" / "proof" / "current" / "required_log_index.json", "{}\n")
+    _write_file(
+        root / "artifacts" / "proof" / "current" / "proof_manifest.json",
+        json.dumps({"required_logs": [], "proof_commands": []}, indent=2)
+        + "\n",
+    )
+    _write_file(
+        root / "artifacts" / "proof" / "current" / "required_log_index.json",
+        json.dumps({"entries": []}, indent=2) + "\n",
+    )
     _write_file(root / "artifacts" / "proof" / "current" / "REPAIR_REPORT.md", "repair report\n")
     _write_file(root / "artifacts" / "proof" / "current" / "FIX_VERIFICATION_REPORT.md", "fixes\n")
     _write_file(root / "artifacts" / "proof" / "current" / "release_readiness.md", "ready\n")
@@ -59,6 +66,7 @@ def test_build_release_archive_excludes_external_and_proof_archive_by_default(tm
         root_name="JUDGE_ATLAS-main",
         include_external=False,
         include_proof_archive=False,
+        allow_noncanonical=True,
     )
 
     assert output.exists()
@@ -146,6 +154,7 @@ def test_archive_validation_files_excluded(tmp_path: Path) -> None:
         root_name="JUDGE_ATLAS-main",
         include_external=False,
         include_proof_archive=False,
+        allow_noncanonical=True,
     )
 
     with zipfile.ZipFile(output, "r") as zf:
@@ -204,11 +213,12 @@ def test_build_release_archive_fails_on_missing_release_gate_referenced_log(tmp_
             root_name="JUDGE_ATLAS-main",
             include_external=False,
             include_proof_archive=False,
+            allow_noncanonical=True,
         )
     except SystemExit as exc:
         message = str(exc)
     else:
         raise AssertionError("Expected build_archive to fail when referenced proof log is missing")
 
-    assert "Missing packaged proof files required by release_gate.json" in message
+    assert "Missing packaged proof files required by release metadata" in message
     assert "artifacts/proof/current/required_proof_logs.log" in message

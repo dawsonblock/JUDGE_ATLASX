@@ -33,6 +33,7 @@ def _seed_repo(root: Path) -> Path:
     _write_file(root / "artifacts" / "proof" / "current" / "source_registry_status.json", "{}\n")
     _write_file(root / "artifacts" / "proof" / "current" / "proof_manifest.json", "{}\n")
     _write_file(root / "artifacts" / "proof" / "current" / "required_log_index.json", "{}\n")
+    _write_file(root / "artifacts" / "proof" / "current" / "REPAIR_REPORT.md", "repair\n")
     _write_file(root / "artifacts" / "proof" / "current" / "FIX_VERIFICATION_REPORT.md", "fix\n")
     _write_file(root / "artifacts" / "proof" / "current" / "release_readiness.md", "ready\n")
     _write_file(root / "artifacts" / "proof" / "current" / "PROOF_POLICY.md", "policy\n")

@@ -102,6 +102,7 @@ def find_forbidden_paths(extract_dir: Path) -> list[str]:
         ".git/",
         "artifacts/history/",
         "artifacts/proof/history/",
+        "artifacts/proof/archive/",
         "artifacts/proof/backend/",
         "artifacts/proof/frontend/",
         ".gitignore",
@@ -143,6 +144,8 @@ def find_forbidden_paths(extract_dir: Path) -> list[str]:
         
         # Check filenames
         if path.name in forbidden_files or path.name.lower() in forbidden_files:
+            found.append(path_str)
+        if path.name.startswith(".env."):
             found.append(path_str)
     
     return sorted(set(found))
@@ -218,9 +221,11 @@ def validate_archive_structure(extract_dir: Path, root: Path) -> tuple[bool, lis
         "backend/app/main.py",
         "frontend/package.json",
         "scripts/release_gate.py",
+        "artifacts/proof/current/release_gate.json",
         "artifacts/proof/current/release_readiness.md",
         "artifacts/proof/current/proof_manifest.json",
         "artifacts/proof/current/required_log_index.json",
+        "artifacts/proof/current/REPAIR_REPORT.md",
         "README.md",
     ]
     
@@ -255,6 +260,7 @@ def check_forbidden_paths_in_root(root: Path) -> list[str]:
 
 
 CANONICAL_ARCHIVE_NAME = "JUDGE_ATLAS-main-final.zip"
+CANONICAL_ROOT_NAME = "JUDGE_ATLAS-main"
 
 
 def validate_referenced_proof_logs(root: Path) -> list[str]:
@@ -282,6 +288,70 @@ def validate_referenced_proof_logs(root: Path) -> list[str]:
         if not (root / rel_path).exists():
             missing.append(f"missing_referenced_log:{rel_path}")
     return missing
+
+
+def _load_json_dict(path: Path, label: str) -> tuple[dict[str, Any] | None, list[str]]:
+    if not path.exists() or not path.is_file():
+        return None, [f"missing_canonical:{label}"]
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None, [f"missing_canonical:{label}"]
+    if not isinstance(payload, dict):
+        return None, [f"missing_canonical:{label}"]
+    return payload, []
+
+
+def _collect_proof_manifest_references(root: Path) -> tuple[set[str], list[str]]:
+    manifest_path = root / "artifacts" / "proof" / "current" / "proof_manifest.json"
+    payload, errors = _load_json_dict(
+        manifest_path, "artifacts/proof/current/proof_manifest.json"
+    )
+    if payload is None:
+        return set(), errors
+
+    references: set[str] = set()
+    proof_commands = payload.get("proof_commands")
+    if isinstance(proof_commands, list):
+        for entry in proof_commands:
+            if not isinstance(entry, dict):
+                continue
+            for key in ("path", "log_path"):
+                val = entry.get(key)
+                if isinstance(val, str) and val:
+                    references.add(val.replace("\\", "/"))
+    required_logs = payload.get("required_logs")
+    if isinstance(required_logs, list):
+        for rel_path in required_logs:
+            if isinstance(rel_path, str) and rel_path:
+                references.add(rel_path.replace("\\", "/"))
+    return references, errors
+
+
+def _collect_required_log_index_references(root: Path) -> tuple[set[str], list[str]]:
+    index_path = root / "artifacts" / "proof" / "current" / "required_log_index.json"
+    payload, errors = _load_json_dict(
+        index_path, "artifacts/proof/current/required_log_index.json"
+    )
+    if payload is None:
+        return set(), errors
+
+    references: set[str] = set()
+    entries = payload.get("entries")
+    if not isinstance(entries, list):
+        return references, errors
+
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        rel_path = entry.get("path")
+        if not isinstance(rel_path, str) or not rel_path:
+            continue
+        normalized = rel_path.replace("\\", "/")
+        references.add(normalized)
+        if entry.get("exists") is True and not (root / normalized).is_file():
+            errors.append(f"required_log_index_exists_but_missing:{normalized}")
+    return references, errors
 
 
 def validate_final_zip(zip_path: Path, *, allow_noncanonical: bool = False) -> dict:
@@ -380,6 +450,11 @@ def validate_final_zip(zip_path: Path, *, allow_noncanonical: bool = False) -> d
         # Exactly one root - validate it
         root = roots[0]
         result["runtime_root"] = str(root.relative_to(tmpdir_path))
+        if result["runtime_root"] != CANONICAL_ROOT_NAME:
+            result["errors"].append(
+                "root_name_not_authoritative:"
+                f"expected_{CANONICAL_ROOT_NAME}_got_{result['runtime_root']}"
+            )
         
         # Validate structure
         valid, struct_errors = validate_archive_structure(tmpdir_path, root)
@@ -388,10 +463,8 @@ def validate_final_zip(zip_path: Path, *, allow_noncanonical: bool = False) -> d
         # Check forbidden paths globally
         forbidden = find_forbidden_paths(tmpdir_path)
         if forbidden:
-            result["errors"].append(f"forbidden_paths_found:{len(forbidden)}")
-            result["errors"].extend([f"  - {p}" for p in forbidden[:10]])  # Show first 10
-            if len(forbidden) > 10:
-                result["errors"].append(f"  ... and {len(forbidden) - 10} more")
+            for rel_path in forbidden:
+                result["errors"].append(f"forbidden_path:{rel_path}")
         
         # Check nested artifacts
         nested = find_nested_artifacts(tmpdir_path, root)
@@ -412,6 +485,33 @@ def validate_final_zip(zip_path: Path, *, allow_noncanonical: bool = False) -> d
         # Cross-check all log_path references inside release_gate.json
         missing_logs = validate_referenced_proof_logs(root)
         result["errors"].extend(missing_logs)
+
+        # Cross-check proof manifest and required log index references.
+        manifest_refs, manifest_errors = _collect_proof_manifest_references(root)
+        result["errors"].extend(manifest_errors)
+        required_index_refs, required_index_errors = (
+            _collect_required_log_index_references(root)
+        )
+        result["errors"].extend(required_index_errors)
+        for rel_path in sorted(manifest_refs | required_index_refs):
+            if not (root / rel_path).is_file():
+                result["errors"].append(f"missing_required_proof_file:{rel_path}")
+
+        gate_json = root / "artifacts" / "proof" / "current" / "release_gate.json"
+        gate_payload, gate_errors = _load_json_dict(
+            gate_json, "artifacts/proof/current/release_gate.json"
+        )
+        result["errors"].extend(gate_errors)
+        if gate_payload and bool(gate_payload.get("alpha_gate_passed", False)):
+            has_missing = any(
+                err.startswith("missing_canonical:")
+                or err.startswith("missing_referenced_log:")
+                or err.startswith("missing_required_proof_file:")
+                or err.startswith("required_log_index_exists_but_missing:")
+                for err in result["errors"]
+            )
+            if has_missing:
+                result["errors"].append("alpha_gate_passed_missing_file")
 
         # If we have some critical errors, fail fast
         if result["errors"]:
