@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import PurePosixPath
 from zipfile import ZipFile
 
@@ -37,6 +38,25 @@ REQUIRED_PROOF = [
     "reports/drc.rpt",
 ]
 
+REQUIRED_PROOF_STRICT = [
+    "reports/cdc_full.rpt",
+    "reports/cdc_critical.rpt",
+    "reports/clock_interaction.rpt",
+    "reports/utilization.rpt",
+    "reports/cosim_gkp.log",
+    "reports/unittest.log",
+    "reports/make_validate.log",
+    "reports/vivado_synth.log",
+    "reports/vivado_impl.log",
+]
+
+REQUIRED_IMPL_CHECKS = [
+    "cdc_critical",
+    "cdc_cell_match",
+    "timing",
+    "drc",
+]
+
 
 def unsafe_entry(name: str) -> bool:
     path = PurePosixPath(name)
@@ -61,6 +81,76 @@ def strip_root(entry: str) -> str:
     return PurePosixPath(*parts[1:]).as_posix()
 
 
+def parse_required_json(
+    *,
+    zf: ZipFile,
+    rel_to_name: dict[str, str],
+    rel: str,
+) -> tuple[dict[str, object] | None, str | None]:
+    name = rel_to_name.get(rel)
+    if name is None:
+        return None, f"missing required proof entry: {rel}"
+    try:
+        payload = zf.read(name)
+    except KeyError:
+        return None, f"missing required proof entry: {rel}"
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError:
+        return None, f"malformed JSON proof entry: {rel}"
+    if not isinstance(data, dict):
+        return None, f"invalid JSON object in proof entry: {rel}"
+    return data, None
+
+
+def validate_proof_semantics(
+    *,
+    zf: ZipFile,
+    rel_to_name: dict[str, str],
+) -> str | None:
+    preboard, err = parse_required_json(
+        zf=zf,
+        rel_to_name=rel_to_name,
+        rel="reports/preboard_local_summary.json",
+    )
+    if err is not None:
+        return err
+    assert preboard is not None
+    if not bool(preboard.get("pass", False)):
+        return "proof semantic failure: preboard_local_summary pass=false"
+
+    impl, err = parse_required_json(
+        zf=zf,
+        rel_to_name=rel_to_name,
+        rel="reports/implementation_gate_summary.json",
+    )
+    if err is not None:
+        return err
+    assert impl is not None
+    if not bool(impl.get("pass", False)):
+        return "proof semantic failure: " "implementation_gate_summary pass=false"
+
+    checks = impl.get("checks")
+    if not isinstance(checks, dict):
+        return (
+            "proof semantic failure: "
+            "implementation_gate_summary missing checks object"
+        )
+
+    for check_name in REQUIRED_IMPL_CHECKS:
+        check_data = checks.get(check_name)
+        if not isinstance(check_data, dict):
+            return (
+                "proof semantic failure: " f"implementation check missing: {check_name}"
+            )
+        if not bool(check_data.get("pass", False)):
+            return (
+                "proof semantic failure: " f"implementation check failed: {check_name}"
+            )
+
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate release archive.")
     parser.add_argument("archive", help="Path to .zip archive")
@@ -70,46 +160,64 @@ def main() -> int:
         required=True,
         help="Expected archive content mode.",
     )
+    parser.add_argument(
+        "--strict-proof",
+        action="store_true",
+        help="Require strict proof artifacts in proof mode.",
+    )
     args = parser.parse_args()
 
     with ZipFile(args.archive, "r") as zf:
         names = [n for n in zf.namelist() if not n.endswith("/")]
 
-    if not names:
-        print("archive is empty")
-        return 1
-
-    for name in names:
-        if unsafe_entry(name):
-            print(f"unsafe zip entry: {name}")
+        if not names:
+            print("archive is empty")
             return 1
 
-    ok_root, root_info = single_root(names)
-    if not ok_root:
-        print(f"archive has multiple roots: {root_info}")
-        return 1
-
-    rel_names = [strip_root(n) for n in names if strip_root(n)]
-    rel_set = set(rel_names)
-
-    if args.mode == "source":
-        for req in REQUIRED_SOURCE:
-            if req not in rel_set:
-                print(f"missing required source entry: {req}")
+        for name in names:
+            if unsafe_entry(name):
+                print(f"unsafe zip entry: {name}")
                 return 1
 
-        for rel in rel_names:
-            if any(rel.startswith(p) for p in FORBIDDEN_SOURCE_PREFIXES):
-                print(f"forbidden source entry: {rel}")
-                return 1
-            if any(rel.endswith(s) for s in FORBIDDEN_SOURCE_SUFFIXES):
-                print(f"forbidden source entry: {rel}")
-                return 1
+        ok_root, root_info = single_root(names)
+        if not ok_root:
+            print(f"archive has multiple roots: {root_info}")
+            return 1
 
-    else:
-        for req in REQUIRED_PROOF:
-            if req not in rel_set:
-                print(f"missing required proof entry: {req}")
+        rel_names = [strip_root(n) for n in names if strip_root(n)]
+        rel_set = set(rel_names)
+
+        if args.mode == "source":
+            for req in REQUIRED_SOURCE:
+                if req not in rel_set:
+                    print(f"missing required source entry: {req}")
+                    return 1
+
+            for rel in rel_names:
+                if any(rel.startswith(p) for p in FORBIDDEN_SOURCE_PREFIXES):
+                    print(f"forbidden source entry: {rel}")
+                    return 1
+                if any(rel.endswith(s) for s in FORBIDDEN_SOURCE_SUFFIXES):
+                    print(f"forbidden source entry: {rel}")
+                    return 1
+
+        else:
+            required_proof = list(REQUIRED_PROOF)
+            if args.strict_proof:
+                required_proof.extend(REQUIRED_PROOF_STRICT)
+
+            for req in required_proof:
+                if req not in rel_set:
+                    print(f"missing required proof entry: {req}")
+                    return 1
+
+            rel_to_name = {strip_root(name): name for name in names if strip_root(name)}
+            semantic_error = validate_proof_semantics(
+                zf=zf,
+                rel_to_name=rel_to_name,
+            )
+            if semantic_error is not None:
+                print(semantic_error)
                 return 1
 
     print(f"archive valid mode={args.mode} entries={len(rel_names)}")

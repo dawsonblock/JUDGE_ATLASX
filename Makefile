@@ -5,7 +5,7 @@ PYTHON ?= python3
 VERILATOR ?= verilator
 RTL_SRCS := $(wildcard rtl/*.v)
 
-.PHONY: all validate test lint audit-arith gen-lut cosim-vectors cosim-gkp sim-axilite sim-packer extract-regs cdc-analyze parse-cdc cdc-gate-check lint-verilator clean-generated size-report cdc-signoff-package preboard-check implementation-gate vivado-signoff-package source-package proof-package proof-package-strict validate-release release-prereqs release-validate release-proof-local
+.PHONY: all validate test lint audit-arith gen-lut cosim-vectors cosim-gkp sim-axilite sim-packer extract-regs cdc-analyze parse-cdc cdc-gate-check lint-verilator clean-generated size-report cdc-signoff-package preboard-check implementation-gate vivado-signoff-package source-package proof-package proof-package-strict validate-release validate-release-strict release-prereqs release-validate release-proof-local
 
 all:
 	@echo "Available targets: validate, test, lint, audit-arith, gen-lut, cosim-vectors, cosim-gkp, sim-axilite, sim-packer, extract-regs, cdc-analyze, parse-cdc, cdc-gate-check, lint-verilator, clean-generated, size-report, cdc-signoff-package, preboard-check, implementation-gate, vivado-signoff-package, source-package, proof-package, release-prereqs, release-validate"
@@ -109,15 +109,34 @@ validate-release:
 	fi; \
 	$(PYTHON) scripts/validate_release_archive.py "$$latest_proof" --mode proof
 
+validate-release-strict:
+	@latest_src=$$(ls -t dist/*-source-*.zip 2>/dev/null | head -1); \
+	if [ -z "$$latest_src" ]; then \
+		echo "No source archive found in dist/. Run make source-package first."; \
+		exit 1; \
+	fi; \
+	$(PYTHON) scripts/validate_release_archive.py "$$latest_src" --mode source
+	@latest_proof=$$(ls -t dist/*-proof-*.zip 2>/dev/null | head -1); \
+	if [ -z "$$latest_proof" ]; then \
+		echo "No proof archive found in dist/. Run make proof-package-strict first."; \
+		exit 1; \
+	fi; \
+	$(PYTHON) scripts/validate_release_archive.py "$$latest_proof" --mode proof --strict-proof
+
 release-prereqs:
 	$(PYTHON) scripts/check_release_prereqs.py
 
-release-validate: preboard-check sim-axilite sim-packer implementation-gate source-package proof-package validate-release
+
+release-validate:
+	$(MAKE) release-prereqs
+	$(MAKE) preboard-check
+	$(MAKE) sim-axilite
+	$(MAKE) sim-packer
+	$(MAKE) implementation-gate
+	$(MAKE) source-package
+	$(MAKE) proof-package-strict
+	$(MAKE) validate-release-strict
 	@echo "release-validate complete"
-
-release-validate: release-prereqs
-
-release-validate: proof-package-strict
 
 release-proof-local: release-validate
 	@echo "release-proof-local complete"

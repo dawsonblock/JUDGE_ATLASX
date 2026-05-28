@@ -55,6 +55,15 @@ PROOF_REQUIRED_STRICT = [
     "reports/cdc_cell_match_summary.md",
     "reports/timing_summary.rpt",
     "reports/drc.rpt",
+    "reports/cdc_full.rpt",
+    "reports/cdc_critical.rpt",
+    "reports/clock_interaction.rpt",
+    "reports/utilization.rpt",
+    "reports/cosim_gkp.log",
+    "reports/unittest.log",
+    "reports/make_validate.log",
+    "reports/vivado_synth.log",
+    "reports/vivado_impl.log",
 ]
 
 PROOF_OPTIONAL = [

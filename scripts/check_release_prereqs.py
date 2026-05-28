@@ -20,11 +20,27 @@ REQUIRED_REPORTS = [
     "reports/cdc_cell_match_summary.md",
     "reports/timing_summary.rpt",
     "reports/drc.rpt",
+    "reports/cdc_full.rpt",
+    "reports/cdc_critical.rpt",
+    "reports/clock_interaction.rpt",
+    "reports/utilization.rpt",
+    "reports/cosim_gkp.log",
+    "reports/unittest.log",
+    "reports/make_validate.log",
+    "reports/vivado_synth.log",
+    "reports/vivado_impl.log",
 ]
 
 SIM_REPORTS = [
     "reports/axilite_regfile_sim_summary.json",
     "reports/packer_axis_sim_summary.json",
+]
+
+REQUIRED_IMPL_CHECKS = [
+    "cdc_critical",
+    "cdc_cell_match",
+    "timing",
+    "drc",
 ]
 
 
@@ -82,6 +98,18 @@ def require_implementation_pass() -> int:
     data = json.loads(path.read_text(encoding="utf-8"))
     if not bool(data.get("pass", False)):
         return fail("implementation_gate_summary.json reports pass=false")
+
+    checks = data.get("checks")
+    if not isinstance(checks, dict):
+        return fail("implementation_gate_summary.json missing checks object")
+
+    for check_name in REQUIRED_IMPL_CHECKS:
+        check_data = checks.get(check_name)
+        if not isinstance(check_data, dict):
+            return fail("implementation_gate_summary missing check: " + check_name)
+        if not bool(check_data.get("pass", False)):
+            return fail("implementation gate check failed: " + check_name)
+
     return 0
 
 
