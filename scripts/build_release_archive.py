@@ -1,0 +1,177 @@
+#!/usr/bin/env python3
+"""Build source or proof release archives for Waveform Brain."""
+
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+from pathlib import Path
+import zipfile
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DIST_DIR = PROJECT_ROOT / "dist"
+
+SOURCE_DIRS = [
+    "constraints",
+    "docs",
+    "firmware",
+    "formal",
+    "rtl",
+    "scripts",
+    "sim",
+    "tests",
+    "userspace",
+]
+
+SOURCE_FILES = [
+    "Makefile",
+    "README.md",
+    ".gitignore",
+]
+
+SOURCE_EXCLUDES = {
+    "sim/build",
+    "sim/gkp_cosim_vectors.hex",
+    "rtl/reciprocal_lut_w16_q24w25.mem",
+    "reciprocal_lut_w16_q24w25.mem",
+    "register_map.json",
+    "register_map.md",
+    "register_map_issues.log",
+    "cdc_crossing_suggestions.json",
+    "cdc_crossing_suggestions.md",
+}
+
+PROOF_REQUIRED = [
+    "reports/preboard_local_summary.json",
+    "reports/preboard_local_summary.md",
+    "reports/implementation_gate_summary.json",
+    "reports/implementation_gate_summary.md",
+]
+
+PROOF_OPTIONAL = [
+    "reports/cdc_critical_summary.json",
+    "reports/cdc_cell_match_summary.md",
+    "reports/cdc_full_summary.json",
+    "reports/timing_summary.rpt",
+    "reports/drc.rpt",
+    "reports/clock_interaction.rpt",
+    "reports/utilization.rpt",
+    "reports/cdc_critical.rpt",
+    "reports/cdc_full.rpt",
+    "reports/rtl_arithmetic_audit.json",
+    "reports/rtl_arithmetic_audit.md",
+    "docs/PHASE1_SIGNOFF_SHEET.md",
+    "docs/BOARD_READY_TEMPLATE.md",
+]
+
+
+def has_excluded_prefix(rel: Path) -> bool:
+    rel_str = rel.as_posix()
+    return any(
+        rel_str == prefix or rel_str.startswith(f"{prefix}/")
+        for prefix in SOURCE_EXCLUDES
+    )
+
+
+def collect_source_files() -> list[Path]:
+    collected: list[Path] = []
+
+    for rel_file in SOURCE_FILES:
+        path = PROJECT_ROOT / rel_file
+        if path.exists():
+            collected.append(path)
+
+    for rel_dir in SOURCE_DIRS:
+        base = PROJECT_ROOT / rel_dir
+        if not base.exists():
+            continue
+        for item in base.rglob("*"):
+            if item.is_dir():
+                continue
+            rel_path = item.relative_to(PROJECT_ROOT)
+            rel_str = rel_path.as_posix()
+            if "/__pycache__/" in f"/{rel_str}/":
+                continue
+            if rel_str.endswith(".pyc"):
+                continue
+            if has_excluded_prefix(rel_path):
+                continue
+            collected.append(item)
+
+    return sorted(set(collected))
+
+
+def collect_proof_files() -> tuple[list[Path], list[str]]:
+    files: list[Path] = []
+    missing_required: list[str] = []
+
+    for rel in PROOF_REQUIRED:
+        path = PROJECT_ROOT / rel
+        if path.exists():
+            files.append(path)
+        else:
+            missing_required.append(rel)
+
+    for rel in PROOF_OPTIONAL:
+        path = PROJECT_ROOT / rel
+        if path.exists():
+            files.append(path)
+
+    return sorted(set(files)), missing_required
+
+
+def write_zip(files: list[Path], *, root_name: str, out_path: Path) -> None:
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for path in files:
+            rel = path.relative_to(PROJECT_ROOT).as_posix()
+            zf.write(path, f"{root_name}/{rel}")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Build source or proof release archive."
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["source", "proof"],
+        required=True,
+        help="Archive type to build.",
+    )
+    parser.add_argument(
+        "--name",
+        default="waveform_brain-main",
+        help="Root folder prefix inside archive.",
+    )
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="Output archive path. Defaults to dist/<name>-<mode>.zip",
+    )
+    args = parser.parse_args()
+
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    out_path = args.out or DIST_DIR / f"{args.name}-{args.mode}-{stamp}.zip"
+    root_name = f"{args.name}-{args.mode}"
+
+    if args.mode == "source":
+        files = collect_source_files()
+        write_zip(files, root_name=root_name, out_path=out_path)
+        print(f"mode=source files={len(files)} out={out_path}")
+        return 0
+
+    files, missing_required = collect_proof_files()
+    if missing_required:
+        print("missing required proof files:")
+        for rel in missing_required:
+            print(f"  {rel}")
+        return 1
+
+    write_zip(files, root_name=root_name, out_path=out_path)
+    print(f"mode=proof files={len(files)} out={out_path}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

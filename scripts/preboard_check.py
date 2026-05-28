@@ -28,23 +28,13 @@ REPORT_DIR = PROJECT_ROOT / "reports"
 SUMMARY_JSON = REPORT_DIR / "preboard_local_summary.json"
 SUMMARY_MD = REPORT_DIR / "preboard_local_summary.md"
 
-GENERATED_ARTIFACTS = [
-    "rtl/reciprocal_lut_w16_q24w25.mem",
-    "reciprocal_lut_w16_q24w25.mem",
-    "sim/gkp_cosim_vectors.hex",
-    "register_map.json",
-    "register_map.md",
-    "register_map_issues.log",
-    "cdc_crossing_suggestions.json",
-    "cdc_crossing_suggestions.md",
-]
-
 
 def clean_generated_artifacts() -> None:
-    for rel in GENERATED_ARTIFACTS:
-        p = PROJECT_ROOT / rel
-        if p.exists():
-            p.unlink()
+    subprocess.run(
+        [sys.executable, "scripts/clean_generated_artifacts.py"],
+        cwd=PROJECT_ROOT,
+        check=False,
+    )
 
 
 def run(cmd: list[str], *, required: bool = True, timeout: int = 120) -> dict:
@@ -128,9 +118,7 @@ def main() -> int:
         files.append(exists(rel))
 
     # 1) Static/unit tests run while generated heavy artifacts are absent.
-    checks.append(
-        run([sys.executable, "-m", "unittest", "discover", "-s", "tests"])
-    )
+    checks.append(run([sys.executable, "-m", "unittest", "discover", "-s", "tests"]))
     checks.append(run([sys.executable, "scripts/rtl_sanity_check.py"]))
     checks.append(run([sys.executable, "scripts/audit_rtl_arithmetic.py"]))
 

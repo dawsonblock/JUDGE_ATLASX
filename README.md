@@ -1,6 +1,6 @@
 # Waveform Brain v1 Auto Cal
 
-A production-minded FPGA/firmware/userspace stack for GKP-style waveform decoding,
+A pre-board FPGA validation stack for GKP-style waveform decoding,
 calibration, and board bring-up.
 
 This repository combines:

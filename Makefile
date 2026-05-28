@@ -5,10 +5,10 @@ PYTHON ?= python3
 VERILATOR ?= verilator
 RTL_SRCS := $(wildcard rtl/*.v)
 
-.PHONY: all validate test lint audit-arith gen-lut cosim-vectors cosim-gkp extract-regs cdc-analyze parse-cdc cdc-gate-check lint-verilator clean-generated size-report cdc-signoff-package preboard-check implementation-gate vivado-signoff-package
+.PHONY: all validate test lint audit-arith gen-lut cosim-vectors cosim-gkp extract-regs cdc-analyze parse-cdc cdc-gate-check lint-verilator clean-generated size-report cdc-signoff-package preboard-check implementation-gate vivado-signoff-package source-package proof-package validate-release release-validate release-proof-local
 
 all:
-	@echo "Available targets: validate, test, lint, audit-arith, gen-lut, cosim-vectors, cosim-gkp, extract-regs, cdc-analyze, parse-cdc, cdc-gate-check, lint-verilator, clean-generated, size-report, cdc-signoff-package, preboard-check, implementation-gate, vivado-signoff-package"
+	@echo "Available targets: validate, test, lint, audit-arith, gen-lut, cosim-vectors, cosim-gkp, extract-regs, cdc-analyze, parse-cdc, cdc-gate-check, lint-verilator, clean-generated, size-report, cdc-signoff-package, preboard-check, implementation-gate, vivado-signoff-package, source-package, proof-package, release-validate"
 
 # Keep tests before generated heavy artifacts are recreated, otherwise compact-package
 # tests correctly fail.
@@ -66,10 +66,7 @@ cosim-gkp:
 	$(PYTHON) scripts/run_gkp_cosim.py
 
 clean-generated:
-	rm -f register_map.json register_map.md register_map_issues.log
-	rm -f cdc_crossing_suggestions.json cdc_crossing_suggestions.md
-	rm -f sim/gkp_cosim_vectors.hex
-	rm -f rtl/reciprocal_lut_w16_q24w25.mem reciprocal_lut_w16_q24w25.mem
+	$(PYTHON) scripts/clean_generated_artifacts.py
 
 cdc-signoff-package:
 	$(PYTHON) scripts/package_cdc_signoff.py
@@ -82,3 +79,29 @@ implementation-gate:
 
 vivado-signoff-package:
 	$(PYTHON) scripts/package_vivado_signoff.py
+
+source-package:
+	$(PYTHON) scripts/build_release_archive.py --mode source
+
+proof-package:
+	$(PYTHON) scripts/build_release_archive.py --mode proof
+
+validate-release:
+	@latest_src=$$(ls -t dist/*-source-*.zip 2>/dev/null | head -1); \
+	if [ -z "$$latest_src" ]; then \
+		echo "No source archive found in dist/. Run make source-package first."; \
+		exit 1; \
+	fi; \
+	$(PYTHON) scripts/validate_release_archive.py "$$latest_src" --mode source
+	@latest_proof=$$(ls -t dist/*-proof-*.zip 2>/dev/null | head -1); \
+	if [ -z "$$latest_proof" ]; then \
+		echo "No proof archive found in dist/. Run make proof-package first."; \
+		exit 1; \
+	fi; \
+	$(PYTHON) scripts/validate_release_archive.py "$$latest_proof" --mode proof
+
+release-validate: preboard-check implementation-gate source-package proof-package validate-release
+	@echo "release-validate complete"
+
+release-proof-local: release-validate
+	@echo "release-proof-local complete"
