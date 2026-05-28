@@ -116,6 +116,7 @@ make cdc-gate-check
 make implementation-gate
 make cdc-signoff-package
 make vivado-signoff-package
+make vivado-bitstream
 ```
 
 ## Register map and config apply model
@@ -147,6 +148,8 @@ Atomic config apply helper (userspace):
 - Pre-board ordering fix: `docs/PREBOARD_GATE_FIX_V16.md`
 - Vivado flow fixes: `docs/VIVADO_FLOW_FIX_V17.md`
 - AXI-Stream robustness: `docs/STREAMING_ROBUSTNESS_V19.md`
+- Atomic config and decoder hardening: `docs/ATOMIC_CONFIG_DECODER_HARDENING_V20.md`
+- PRBS and safety hardening: `docs/PRBS_SAFETY_HARDENING_V21.md`
 - Changelog: `docs/CHANGELOG_UPGRADE.md`
 
 ## Repository layout
@@ -170,10 +173,34 @@ Current baseline flow targets:
 - reproducible generated artifacts
 - explicit pass/fail summaries for local pre-board and implementation gates
 
+Strict release flow targets:
+
+- `make sim-axilite`
+- `make sim-packer`
+- `make sim-safety`
+- `make release-prereqs`
+- `make proof-package-board`
+- `make validate-release-board`
+
+## Readiness matrix
+
+| Capability | Status | Evidence |
+| --- | --- | --- |
+| Implemented | Yes | RTL + scripts + userspace in tree |
+| Locally tested | Yes | `make validate`, unit/static checks |
+| Simulated | Partial | AXI-Lite and AXI-Stream behavior sims; co-sim requires simulator availability |
+| Vivado proven | No (gated) | Requires CDC/timing/DRC/utilization/clock-interaction reports and passing implementation gate |
+| Board proven | No (gated) | Requires board smoke evidence after Vivado-proven build |
+
 ## Notes
 
 - `make validate` is intentionally ordered to keep compact-package tests
   meaningful before regenerating heavy artifacts.
 - Co-sim is optional in environments without Icarus; Vivado simulator can be
   used for equivalent checks.
+- Proof packaging has two levels:
+  - local: `proof-package-local` / `validate-release-local`
+  - board: `proof-package-board` / `validate-release-board`
+- Strict board proof is fail-closed and requires semantic pass summaries plus
+  Vivado reports and raw evidence logs in proof packaging.
 - Board access should remain blocked unless implementation gate criteria pass.

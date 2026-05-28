@@ -37,7 +37,19 @@ def clean_generated_artifacts() -> None:
     )
 
 
-def run(cmd: list[str], *, required: bool = True, timeout: int = 120) -> dict:
+def write_log(rel_path: str, content: str) -> None:
+    path = PROJECT_ROOT / rel_path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+
+
+def run(
+    cmd: list[str],
+    *,
+    required: bool = True,
+    timeout: int = 120,
+    log_rel: str | None = None,
+) -> dict:
     print("+", " ".join(cmd))
     try:
         proc = subprocess.run(
@@ -51,6 +63,8 @@ def run(cmd: list[str], *, required: bool = True, timeout: int = 120) -> dict:
         ok = proc.returncode == 0
         if not ok:
             print(proc.stdout)
+        if log_rel is not None:
+            write_log(log_rel, proc.stdout)
         return {
             "cmd": cmd,
             "required": required,
@@ -65,6 +79,8 @@ def run(cmd: list[str], *, required: bool = True, timeout: int = 120) -> dict:
             out = out.decode("utf-8", errors="replace")
         out += f"\nTimed out after {timeout} seconds."
         print(out)
+        if log_rel is not None:
+            write_log(log_rel, out)
         return {
             "cmd": cmd,
             "required": required,
@@ -118,7 +134,13 @@ def main() -> int:
         files.append(exists(rel))
 
     # 1) Static/unit tests run while generated heavy artifacts are absent.
-    checks.append(run([sys.executable, "-m", "unittest", "discover", "-s", "tests"]))
+    checks.append(
+        run(
+            [sys.executable, "-m", "unittest", "discover", "-s", "tests"],
+            log_rel="reports/unittest.log",
+            timeout=300,
+        )
+    )
     checks.append(run([sys.executable, "scripts/rtl_sanity_check.py"]))
     checks.append(run([sys.executable, "scripts/audit_rtl_arithmetic.py"]))
 
@@ -145,9 +167,15 @@ def main() -> int:
                 [sys.executable, "scripts/run_gkp_cosim.py", "--count", "16"],
                 required=True,
                 timeout=180,
+                log_rel="reports/cosim_gkp.log",
             )
         )
     else:
+        skip_msg = (
+            "Skipped: iverilog/vvp not found. "
+            "Use Vivado xsim or install Icarus Verilog."
+        )
+        write_log("reports/cosim_gkp.log", skip_msg + "\n")
         checks.append(
             {
                 "cmd": ["python3", "scripts/run_gkp_cosim.py"],
@@ -155,10 +183,7 @@ def main() -> int:
                 "returncode": 2,
                 "pass": True,
                 "raw_pass": False,
-                "stdout_tail": (
-                    "Skipped: iverilog/vvp not found. "
-                    "Use Vivado xsim or install Icarus Verilog."
-                ),
+                "stdout_tail": skip_msg,
             }
         )
 

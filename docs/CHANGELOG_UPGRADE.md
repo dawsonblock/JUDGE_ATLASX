@@ -129,7 +129,7 @@ This document summarises the key improvements and fixes introduced in the upgrad
 - Added a **packet packer** (`packer_axis.v`) as a placeholder for AXI4‑Stream integration.
 - Added a **top‑level integration module** (`waveform_control_4q_top.v`) that wires together the decoders, safety monitor, PRBS generator, and packet packer.
 - Added a **register file** (`axilite_regfile.v`) with build ID, status, fault flags, configuration registers, and a clear faults control.
- - Added a **telemetry counter** (`telemetry_counter.v`) with **windowed measurement**.  Software can configure a measurement window (`TELEM_WINDOW`), pulse `TELEM_CTRL[0]` to start a sample, and read back the number of flips detected in that window (`TELEM_FLIPS_DELTA`).  A running total of flips is maintained and can be cleared via `TELEM_CTRL[1]`.  Status bits (`TELEM_STATUS`) indicate when a sample is active and when it has completed.
+- Added a **telemetry counter** (`telemetry_counter.v`) with **windowed measurement**.  Software can configure a measurement window (`TELEM_WINDOW`), pulse `TELEM_CTRL[0]` to start a sample, and read back the number of flips detected in that window (`TELEM_FLIPS_DELTA`).  A running total of flips is maintained and can be cleared via `TELEM_CTRL[1]`.  Status bits (`TELEM_STATUS`) indicate when a sample is active and when it has completed.
 - Added **calibration FSM skeleton** (`firmware/calibration_fsm.c`) and a corresponding header file with register offsets.
 - Added documentation: `BOARD_VERIFICATION_CHECKLIST.md`, `REGISTER_MAP.md`, `VALIDATION_PLAN.md`, and this change log.
 
@@ -142,15 +142,17 @@ This document summarises the key improvements and fixes introduced in the upgrad
 
 ## Known Limitations
 
-- The **soft weighting division** still uses a hardware division. For high‑frequency operation on RFSoC, replace this with a LUT or reciprocal multiply to achieve timing closure.
-- The **packet packer** is a simple proof‑of‑concept. It does not fully implement AXI4‑Stream handshaking or payload framing.
+- Historical note: soft-weighting hardware division was removed in v0.9 by the
+  reciprocal ROM + multiplier pipeline. This limitation no longer applies.
+- The stream path now preserves `TVALID/TDATA/TLAST` stability under backpressure,
+  but the full end-to-end decoder source path is still bounded-loss rather than
+  lossless under sustained downstream stalls.
 - The **calibration FSM** is a skeleton. It must be completed with real control logic tied to the specific optical experiment and hardware.
 - The **register file** implements a minimal subset of AXI‑Lite functionality. A production design should include proper ready/valid handshaking and possibly bus protocol checks.
 
 ## Next Steps
 
-- Replace the division in `soft_weighting.v` with a LUT or pipelined reciprocal to improve timing.
 - Implement the full calibration FSM state machine, including PRBS‑driven latency measurement, LO phase control, GKP scale search, and alpha tuning.
-- Expand the packet packer to handle backpressure and multi‑packet transfers.
+- Complete board-level smoke automation and integrate strict release evidence logs.
 - Perform full RTL simulation and timing analysis on RFSoC‑specific constraints.
 - Develop and integrate a DMA driver and host‑side software for real‑time data streaming and visualisation.

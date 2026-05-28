@@ -16,6 +16,7 @@ REQUIRED_REPORTS = [
     "reports/implementation_gate_summary.md",
     "reports/axilite_regfile_sim_summary.json",
     "reports/packer_axis_sim_summary.json",
+    "reports/safety_monitor_sim_summary.json",
     "reports/cdc_critical_summary.json",
     "reports/cdc_cell_match_summary.md",
     "reports/timing_summary.rpt",
@@ -34,6 +35,7 @@ REQUIRED_REPORTS = [
 SIM_REPORTS = [
     "reports/axilite_regfile_sim_summary.json",
     "reports/packer_axis_sim_summary.json",
+    "reports/safety_monitor_sim_summary.json",
 ]
 
 REQUIRED_IMPL_CHECKS = [

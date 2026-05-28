@@ -5,10 +5,10 @@ PYTHON ?= python3
 VERILATOR ?= verilator
 RTL_SRCS := $(wildcard rtl/*.v)
 
-.PHONY: all validate test lint audit-arith gen-lut cosim-vectors cosim-gkp sim-axilite sim-packer extract-regs cdc-analyze parse-cdc cdc-gate-check lint-verilator clean-generated size-report cdc-signoff-package preboard-check implementation-gate vivado-signoff-package source-package proof-package proof-package-strict validate-release validate-release-strict release-prereqs release-validate release-proof-local
+.PHONY: all validate test lint audit-arith gen-lut cosim-vectors cosim-gkp sim-axilite sim-packer sim-safety extract-regs cdc-analyze parse-cdc cdc-gate-check lint-verilator clean-generated size-report cdc-signoff-package preboard-check implementation-gate vivado-signoff-package vivado-bitstream source-package proof-package proof-package-local proof-package-board proof-package-strict validate-release validate-release-local validate-release-board validate-release-strict make-validate-log release-prereqs release-validate release-proof-local
 
 all:
-	@echo "Available targets: validate, test, lint, audit-arith, gen-lut, cosim-vectors, cosim-gkp, sim-axilite, sim-packer, extract-regs, cdc-analyze, parse-cdc, cdc-gate-check, lint-verilator, clean-generated, size-report, cdc-signoff-package, preboard-check, implementation-gate, vivado-signoff-package, source-package, proof-package, release-prereqs, release-validate"
+	@echo "Available targets: validate, test, lint, audit-arith, gen-lut, cosim-vectors, cosim-gkp, sim-axilite, sim-packer, sim-safety, extract-regs, cdc-analyze, parse-cdc, cdc-gate-check, lint-verilator, clean-generated, size-report, cdc-signoff-package, preboard-check, implementation-gate, vivado-signoff-package, vivado-bitstream, source-package, proof-package-local, proof-package-board, release-prereqs, release-validate"
 
 # Keep tests before generated heavy artifacts are recreated, otherwise compact-package
 # tests correctly fail.
@@ -71,6 +71,9 @@ sim-axilite:
 sim-packer:
 	$(PYTHON) scripts/run_packer_axis_sim.py
 
+sim-safety:
+	$(PYTHON) scripts/run_safety_monitor_sim.py
+
 clean-generated:
 	$(PYTHON) scripts/clean_generated_artifacts.py
 
@@ -86,16 +89,33 @@ implementation-gate:
 vivado-signoff-package:
 	$(PYTHON) scripts/package_vivado_signoff.py
 
+vivado-bitstream:
+	@if command -v vivado >/dev/null 2>&1; then \
+		vivado -mode batch -source scripts/waveform_brain_bitstream.tcl; \
+	else \
+		echo "Vivado not installed; cannot run bitstream/report flow"; \
+		exit 1; \
+	fi
+
 source-package:
 	$(PYTHON) scripts/build_release_archive.py --mode source
 
 proof-package:
-	$(PYTHON) scripts/build_release_archive.py --mode proof
+	$(PYTHON) scripts/build_release_archive.py --mode proof-local
+
+proof-package-local:
+	$(PYTHON) scripts/build_release_archive.py --mode proof-local
+
+proof-package-board:
+	$(PYTHON) scripts/build_release_archive.py --mode proof-board
 
 proof-package-strict:
-	$(PYTHON) scripts/build_release_archive.py --mode proof --strict
+	$(PYTHON) scripts/build_release_archive.py --mode proof-board
 
 validate-release:
+	$(MAKE) validate-release-local
+
+validate-release-local:
 	@latest_src=$$(ls -t dist/*-source-*.zip 2>/dev/null | head -1); \
 	if [ -z "$$latest_src" ]; then \
 		echo "No source archive found in dist/. Run make source-package first."; \
@@ -104,12 +124,15 @@ validate-release:
 	$(PYTHON) scripts/validate_release_archive.py "$$latest_src" --mode source
 	@latest_proof=$$(ls -t dist/*-proof-*.zip 2>/dev/null | head -1); \
 	if [ -z "$$latest_proof" ]; then \
-		echo "No proof archive found in dist/. Run make proof-package first."; \
+		echo "No proof archive found in dist/. Run make proof-package-local first."; \
 		exit 1; \
 	fi; \
-	$(PYTHON) scripts/validate_release_archive.py "$$latest_proof" --mode proof
+	$(PYTHON) scripts/validate_release_archive.py "$$latest_proof" --mode proof-local
 
 validate-release-strict:
+	$(MAKE) validate-release-board
+
+validate-release-board:
 	@latest_src=$$(ls -t dist/*-source-*.zip 2>/dev/null | head -1); \
 	if [ -z "$$latest_src" ]; then \
 		echo "No source archive found in dist/. Run make source-package first."; \
@@ -118,24 +141,29 @@ validate-release-strict:
 	$(PYTHON) scripts/validate_release_archive.py "$$latest_src" --mode source
 	@latest_proof=$$(ls -t dist/*-proof-*.zip 2>/dev/null | head -1); \
 	if [ -z "$$latest_proof" ]; then \
-		echo "No proof archive found in dist/. Run make proof-package-strict first."; \
+		echo "No proof archive found in dist/. Run make proof-package-board first."; \
 		exit 1; \
 	fi; \
-	$(PYTHON) scripts/validate_release_archive.py "$$latest_proof" --mode proof --strict-proof
+	$(PYTHON) scripts/validate_release_archive.py "$$latest_proof" --mode proof-board
+
+make-validate-log:
+	$(PYTHON) scripts/run_make_validate_with_log.py
 
 release-prereqs:
 	$(PYTHON) scripts/check_release_prereqs.py
 
 
 release-validate:
-	$(MAKE) release-prereqs
+	$(MAKE) make-validate-log
 	$(MAKE) preboard-check
 	$(MAKE) sim-axilite
 	$(MAKE) sim-packer
+	$(MAKE) sim-safety
 	$(MAKE) implementation-gate
+	$(MAKE) release-prereqs
 	$(MAKE) source-package
-	$(MAKE) proof-package-strict
-	$(MAKE) validate-release-strict
+	$(MAKE) proof-package-board
+	$(MAKE) validate-release-board
 	@echo "release-validate complete"
 
 release-proof-local: release-validate

@@ -25,20 +25,21 @@ FORBIDDEN_SOURCE_SUFFIXES = [
     ".pyc",
 ]
 
-REQUIRED_PROOF = [
+REQUIRED_PROOF_LOCAL = [
     "reports/preboard_local_summary.json",
     "reports/preboard_local_summary.md",
-    "reports/implementation_gate_summary.json",
-    "reports/implementation_gate_summary.md",
     "reports/axilite_regfile_sim_summary.json",
     "reports/packer_axis_sim_summary.json",
+    "reports/safety_monitor_sim_summary.json",
+]
+
+REQUIRED_PROOF_BOARD = [
+    "reports/implementation_gate_summary.json",
+    "reports/implementation_gate_summary.md",
     "reports/cdc_critical_summary.json",
     "reports/cdc_cell_match_summary.md",
     "reports/timing_summary.rpt",
     "reports/drc.rpt",
-]
-
-REQUIRED_PROOF_STRICT = [
     "reports/cdc_full.rpt",
     "reports/cdc_critical.rpt",
     "reports/clock_interaction.rpt",
@@ -103,7 +104,7 @@ def parse_required_json(
     return data, None
 
 
-def validate_proof_semantics(
+def validate_preboard_semantics(
     *,
     zf: ZipFile,
     rel_to_name: dict[str, str],
@@ -119,6 +120,14 @@ def validate_proof_semantics(
     if not bool(preboard.get("pass", False)):
         return "proof semantic failure: preboard_local_summary pass=false"
 
+    return None
+
+
+def validate_board_impl_semantics(
+    *,
+    zf: ZipFile,
+    rel_to_name: dict[str, str],
+) -> str | None:
     impl, err = parse_required_json(
         zf=zf,
         rel_to_name=rel_to_name,
@@ -156,7 +165,7 @@ def main() -> int:
     parser.add_argument("archive", help="Path to .zip archive")
     parser.add_argument(
         "--mode",
-        choices=["source", "proof"],
+        choices=["source", "proof", "proof-local", "proof-board"],
         required=True,
         help="Expected archive content mode.",
     )
@@ -166,6 +175,11 @@ def main() -> int:
         help="Require strict proof artifacts in proof mode.",
     )
     args = parser.parse_args()
+    mode = args.mode
+    if mode == "proof":
+        mode = "proof-local"
+    if args.strict_proof and mode == "proof-local":
+        mode = "proof-board"
 
     with ZipFile(args.archive, "r") as zf:
         names = [n for n in zf.namelist() if not n.endswith("/")]
@@ -187,7 +201,7 @@ def main() -> int:
         rel_names = [strip_root(n) for n in names if strip_root(n)]
         rel_set = set(rel_names)
 
-        if args.mode == "source":
+        if mode == "source":
             for req in REQUIRED_SOURCE:
                 if req not in rel_set:
                     print(f"missing required source entry: {req}")
@@ -202,9 +216,9 @@ def main() -> int:
                     return 1
 
         else:
-            required_proof = list(REQUIRED_PROOF)
-            if args.strict_proof:
-                required_proof.extend(REQUIRED_PROOF_STRICT)
+            required_proof = list(REQUIRED_PROOF_LOCAL)
+            if mode == "proof-board":
+                required_proof.extend(REQUIRED_PROOF_BOARD)
 
             for req in required_proof:
                 if req not in rel_set:
@@ -212,7 +226,7 @@ def main() -> int:
                     return 1
 
             rel_to_name = {strip_root(name): name for name in names if strip_root(name)}
-            semantic_error = validate_proof_semantics(
+            semantic_error = validate_preboard_semantics(
                 zf=zf,
                 rel_to_name=rel_to_name,
             )
@@ -220,7 +234,16 @@ def main() -> int:
                 print(semantic_error)
                 return 1
 
-    print(f"archive valid mode={args.mode} entries={len(rel_names)}")
+            if mode == "proof-board":
+                semantic_error = validate_board_impl_semantics(
+                    zf=zf,
+                    rel_to_name=rel_to_name,
+                )
+                if semantic_error is not None:
+                    print(semantic_error)
+                    return 1
+
+    print(f"archive valid mode={mode} entries={len(rel_names)}")
     print(f"archive root={root_info}")
     return 0
 

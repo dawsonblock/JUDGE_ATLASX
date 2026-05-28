@@ -53,35 +53,52 @@ module waveform_control_4q_top #(
     output logic [31:0]                 axis_sequence_count
 );
 
-    // Internal PRBS generator for each channel
+    // Internal PRBS generator source.
+    // The same PRBS sample is fanned out to all channels when enabled.
+    logic [30:0] prbs_word;
+    logic        prbs_trigger;
+
     prbs_gen prbs_inst (
         .clk    (clk),
         .rst_n  (rst_n),
         .enable (prbs_enable),
-        .prbs_out(),
-        .trigger()
+        .prbs_out(prbs_word),
+        .trigger(prbs_trigger)
     );
-    // For demonstration, we ignore PRBS output. In a real design, this would
-    // override adc_in when prbs_enable is asserted.
 
-    // Safety monitor
-    // Monitor only channel 0 for simplicity.  Expose the kill signal and a
-    // latched fault bit.  Avoid self‑referential fault_flags wiring by
-    // capturing the latched fault into an internal signal and then
-    // replicating or mapping it into fault_flags at the top level.
-    logic safety_fault_latched;
-    safety_monitor #(.ADC_WIDTH(ADC_WIDTH)) safety_mon_inst (
-        .clk         (clk),
-        .rst_n       (rst_n),
-        .adc_in      (adc_in[0]),
-        .kill_threshold(kill_threshold),
-        .clear_faults(clear_faults),
-        .safety_kill (safety_kill),
-        .fault_latched(safety_fault_latched)
-    );
-    // Replicate the safety fault into bit0 of fault_flags.  The remaining bits
-    // are reserved and set to zero.  Do not self‑drive fault_flags[0].
-    assign fault_flags = {15'b0, safety_fault_latched};
+    logic signed [ADC_WIDTH-1:0] prbs_sample;
+    logic signed [ADC_WIDTH-1:0] effective_adc [0:3];
+
+    assign prbs_sample = $signed(prbs_word[ADC_WIDTH-1:0]);
+
+    generate
+        for (genvar ch = 0; ch < 4; ch++) begin : g_effective_adc
+            assign effective_adc[ch] = prbs_enable ? prbs_sample : adc_in[ch];
+        end
+    endgenerate
+
+    // Four-channel safety monitoring with aggregate kill output.
+    logic [3:0] safety_fault_latched_ch;
+    logic [3:0] safety_kill_ch;
+    logic       safety_fault_latched;
+
+    generate
+        for (genvar ch = 0; ch < 4; ch++) begin : g_safety
+            safety_monitor #(.ADC_WIDTH(ADC_WIDTH)) safety_mon_inst (
+                .clk          (clk),
+                .rst_n        (rst_n),
+                .adc_in       (effective_adc[ch]),
+                .kill_threshold(kill_threshold),
+                .clear_faults (clear_faults),
+                .safety_kill  (safety_kill_ch[ch]),
+                .fault_latched(safety_fault_latched_ch[ch])
+            );
+        end
+    endgenerate
+
+    assign safety_kill = |safety_kill_ch;
+    assign safety_fault_latched = |safety_fault_latched_ch;
+    assign fault_flags = {12'b0, safety_fault_latched_ch};
 
     // GKP decoder wrapper
     logic [3:0] dec_valid_in;
@@ -95,7 +112,7 @@ module waveform_control_4q_top #(
         .clk       (clk),
         .rst_n     (rst_n),
         .valid_in  (dec_valid_in),
-        .adc_in    (adc_in),
+        .adc_in    (effective_adc),
         .inv_delta_q(inv_delta_q),
         .delta_adc_q(delta_adc_q),
         .coeffs    (coeffs),

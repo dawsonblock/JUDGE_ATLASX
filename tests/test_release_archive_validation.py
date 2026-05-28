@@ -38,11 +38,17 @@ def build_proof_root(base: Path) -> Path:
     (reports / "implementation_gate_summary.json").write_text(
         json.dumps(impl), encoding="utf-8"
     )
-    (reports / "implementation_gate_summary.md").write_text("ok\n", encoding="utf-8")
+    (reports / "implementation_gate_summary.md").write_text(
+        "ok\n",
+        encoding="utf-8",
+    )
     (reports / "axilite_regfile_sim_summary.json").write_text(
         json.dumps({"pass": True}), encoding="utf-8"
     )
     (reports / "packer_axis_sim_summary.json").write_text(
+        json.dumps({"pass": True}), encoding="utf-8"
+    )
+    (reports / "safety_monitor_sim_summary.json").write_text(
         json.dumps({"pass": True}), encoding="utf-8"
     )
     (reports / "cdc_critical_summary.json").write_text(
@@ -64,6 +70,11 @@ def build_proof_root(base: Path) -> Path:
         encoding="utf-8",
     )
     (reports / "utilization.rpt").write_text("No issues\n", encoding="utf-8")
+    (reports / "vivado_synth.log").write_text("synth ok\n", encoding="utf-8")
+    (reports / "vivado_impl.log").write_text("impl ok\n", encoding="utf-8")
+    (reports / "unittest.log").write_text("tests ok\n", encoding="utf-8")
+    (reports / "cosim_gkp.log").write_text("cosim ok\n", encoding="utf-8")
+    (reports / "make_validate.log").write_text("validate ok\n", encoding="utf-8")
 
     return root
 
@@ -83,6 +94,7 @@ class TestReleaseArchiveValidation(unittest.TestCase):
     def run_validator(
         self,
         archive: Path,
+        mode: str = "proof-local",
         *extra_args: str,
     ) -> subprocess.CompletedProcess[str]:
         cmd = [
@@ -90,7 +102,7 @@ class TestReleaseArchiveValidation(unittest.TestCase):
             "scripts/validate_release_archive.py",
             str(archive),
             "--mode",
-            "proof",
+            mode,
             *extra_args,
         ]
         return subprocess.run(
@@ -112,7 +124,7 @@ class TestReleaseArchiveValidation(unittest.TestCase):
 
             archive = td_path / "proof.zip"
             zip_tree(root, archive)
-            proc = self.run_validator(archive)
+            proc = self.run_validator(archive, "proof-local")
             self.assertNotEqual(proc.returncode, 0)
             self.assertIn("preboard_local_summary pass=false", proc.stdout)
 
@@ -128,18 +140,19 @@ class TestReleaseArchiveValidation(unittest.TestCase):
 
             archive = td_path / "proof.zip"
             zip_tree(root, archive)
-            proc = self.run_validator(archive)
+            proc = self.run_validator(archive, "proof-board")
             self.assertNotEqual(proc.returncode, 0)
             self.assertIn("implementation check failed: timing", proc.stdout)
 
-    def test_strict_proof_requires_raw_logs(self):
+    def test_board_proof_requires_raw_logs(self):
         with tempfile.TemporaryDirectory() as td:
             td_path = Path(td)
             root = build_proof_root(td_path)
+            (root / "reports" / "cosim_gkp.log").unlink()
             archive = td_path / "proof.zip"
             zip_tree(root, archive)
 
-            proc = self.run_validator(archive, "--strict-proof")
+            proc = self.run_validator(archive, "proof-board")
             self.assertNotEqual(proc.returncode, 0)
             self.assertIn("missing required proof entry", proc.stdout)
             self.assertIn("reports/cosim_gkp.log", proc.stdout)

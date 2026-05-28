@@ -13,6 +13,8 @@ set script_dir   [file dirname [file normalize [info script]]]
 set project_root [file dirname $script_dir]
 set build_dir    [file join $project_root build_dir]
 set report_dir   [file join $project_root reports]
+set synth_log    [file join $report_dir vivado_synth.log]
+set impl_log     [file join $report_dir vivado_impl.log]
 
 cd $project_root
 
@@ -61,21 +63,50 @@ update_compile_order -fileset sources_1
 # - Add real IO/pin constraints.
 # - Confirm generated clocks and clock names used in CDC reports.
 
+file mkdir $report_dir
+
+set synth_fp [open $synth_log "w"]
+puts $synth_fp "Vivado synthesis stage"
+puts $synth_fp "top=$WB_TOP"
+puts $synth_fp "part=$WB_PART"
+puts $synth_fp "status=running"
+close $synth_fp
+
 launch_runs synth_1 -jobs $WB_JOBS
 wait_on_run synth_1
 if {[get_property PROGRESS [get_runs synth_1]] ne "100%"} {
+    set synth_fp [open $synth_log "a"]
+    puts $synth_fp "status=failed"
+    close $synth_fp
     puts "*** SYNTHESIS DID NOT COMPLETE ***"
     exit 1
 }
 
+set synth_fp [open $synth_log "a"]
+puts $synth_fp "status=completed"
+close $synth_fp
+
+set impl_fp [open $impl_log "w"]
+puts $impl_fp "Vivado implementation stage"
+puts $impl_fp "top=$WB_TOP"
+puts $impl_fp "part=$WB_PART"
+puts $impl_fp "status=running"
+close $impl_fp
+
 launch_runs impl_1 -to_step route_design -jobs $WB_JOBS
 wait_on_run impl_1
 if {[get_property PROGRESS [get_runs impl_1]] ne "100%"} {
+    set impl_fp [open $impl_log "a"]
+    puts $impl_fp "status=failed"
+    close $impl_fp
     puts "*** IMPLEMENTATION DID NOT COMPLETE ***"
     exit 1
 }
 
-file mkdir $report_dir
+set impl_fp [open $impl_log "a"]
+puts $impl_fp "status=completed"
+close $impl_fp
+
 open_run impl_1
 
 report_timing_summary    -file [file join $report_dir timing_summary.rpt]

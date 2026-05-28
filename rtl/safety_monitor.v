@@ -15,14 +15,15 @@ module safety_monitor #(
     output logic                     safety_kill,
     output logic                     fault_latched
 );
+    logic signed [ADC_WIDTH:0] adc_ext;
     logic [ADC_WIDTH:0] adc_mag;
 
     always_comb begin
-        if (adc_in[ADC_WIDTH-1]) begin
-            // Widen before negate to preserve magnitude at minimum negative value.
-            adc_mag = $unsigned(-$signed({1'b0, adc_in}));
+        adc_ext = {adc_in[ADC_WIDTH-1], adc_in};
+        if (adc_ext < 0) begin
+            adc_mag = $unsigned(-adc_ext);
         end else begin
-            adc_mag = $unsigned({1'b0, adc_in});
+            adc_mag = $unsigned(adc_ext);
         end
     end
 
