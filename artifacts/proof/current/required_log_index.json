@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-28T20:02:44.940852+00:00",
+  "generated_at": "2026-05-28T20:31:25.451526+00:00",
   "proof_root": "artifacts/proof/current",
   "required_logs_total": 7,
   "missing_required_logs": [],
@@ -8,18 +8,18 @@
       "path": "artifacts/proof/current/release_gate.log",
       "location_scope": "archive_internal",
       "exists": true,
-      "recorded_sha256": "c25708919568e19727011817e43c46a4a6aba2cf2ecc826d4e14b5652c19d804",
-      "actual_sha256": "c25708919568e19727011817e43c46a4a6aba2cf2ecc826d4e14b5652c19d804",
-      "recorded_size_bytes": 4206,
-      "actual_size_bytes": 4206,
+      "recorded_sha256": "6f96f5f66e1b3a330a8412f58c664a635614cbbe96a617334037ba3e5e1f5107",
+      "actual_sha256": "6f96f5f66e1b3a330a8412f58c664a635614cbbe96a617334037ba3e5e1f5107",
+      "recorded_size_bytes": 4202,
+      "actual_size_bytes": 4202,
       "status": "PASS"
     },
     {
       "path": "artifacts/proof/current/backend_pytest.log",
       "location_scope": "archive_internal",
       "exists": true,
-      "recorded_sha256": "3965959a626536066710292490c18ac22fb217d346356e5a89469653187d1208",
-      "actual_sha256": "3965959a626536066710292490c18ac22fb217d346356e5a89469653187d1208",
+      "recorded_sha256": "572199efbc2d8a289996ba489e8e037fc2979f8af212531ce20eb3cc2566ed53",
+      "actual_sha256": "572199efbc2d8a289996ba489e8e037fc2979f8af212531ce20eb3cc2566ed53",
       "recorded_size_bytes": 31553,
       "actual_size_bytes": 31553,
       "status": "PASS"
@@ -58,10 +58,10 @@
       "path": "artifacts/proof/current/docker_smoke.log",
       "location_scope": "archive_internal",
       "exists": true,
-      "recorded_sha256": "09f707117e752ada687d9e1495c6ff95f3675b075d517a1c8ec130c18b9857a4",
-      "actual_sha256": "09f707117e752ada687d9e1495c6ff95f3675b075d517a1c8ec130c18b9857a4",
-      "recorded_size_bytes": 48800,
-      "actual_size_bytes": 48800,
+      "recorded_sha256": "e69d524a6a9197afcb46be9af54727e8442088362c8af47d827460e48a2c4d78",
+      "actual_sha256": "e69d524a6a9197afcb46be9af54727e8442088362c8af47d827460e48a2c4d78",
+      "recorded_size_bytes": 48979,
+      "actual_size_bytes": 48979,
       "status": "PASS"
     },
     {
