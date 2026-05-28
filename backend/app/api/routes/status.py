@@ -48,6 +48,8 @@ class AlphaReadinessResponse(BaseModel):
     proof_chain_complete: bool
     archive_self_verifying: bool
     runnable_sources: int
+    enable_ready_sources: int
+    deprecated_sources: int
     total_sources: int
     evidence_store: str
     public_review_gate: str
@@ -99,7 +101,10 @@ def get_ingestion_status(
         .group_by(IngestionRun.status)
     ).all()
 
-    bucket_map: dict[str, int] = {r.status: r.count for r in rows}
+    bucket_map: dict[str, int] = {
+        str(row[0]): int(row[1] or 0)
+        for row in rows
+    }
     total = sum(bucket_map.values())
 
     last_run_at = db.scalar(
@@ -152,6 +157,16 @@ def get_alpha_readiness(db: Session = Depends(get_db)) -> AlphaReadinessResponse
     runnable_sources = db.scalar(
         select(func.count(SourceRegistry.id)).where(SourceRegistry.lifecycle_state == "runnable")
     ) or 0
+    enable_ready_sources = db.scalar(
+        select(func.count(SourceRegistry.id)).where(
+            SourceRegistry.lifecycle_state == "runnable_disabled"
+        )
+    ) or 0
+    deprecated_sources = db.scalar(
+        select(func.count(SourceRegistry.id)).where(
+            SourceRegistry.lifecycle_state == "deprecated"
+        )
+    ) or 0
 
     warnings: list[str] = []
     if not alpha_gate_passed:
@@ -181,6 +196,8 @@ def get_alpha_readiness(db: Session = Depends(get_db)) -> AlphaReadinessResponse
         proof_chain_complete=proof_chain_complete,
         archive_self_verifying=archive_self_verifying,
         runnable_sources=int(runnable_sources),
+        enable_ready_sources=int(enable_ready_sources),
+        deprecated_sources=int(deprecated_sources),
         total_sources=int(total_sources),
         evidence_store="ok" if evidence_store_ok else "missing",
         public_review_gate="enabled" if settings.enable_admin_review else "disabled",

@@ -16,6 +16,12 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings, get_settings
 from app.core.rate_limit import rate_limit_map
 from app.db.session import get_db
+from app.policies.public_status import (
+    PUBLIC_REDACTED,
+    PUBLIC_SAFE,
+    PUBLIC_VISIBLE_STATUSES,
+    REVIEW_APPROVED,
+)
 from app.schemas.geo_legal_event import GeoLegalEvent
 
 router = APIRouter()
@@ -108,10 +114,10 @@ def _apply_public_filters(
     filtered = []
     for event in events:
         # Only return public-safe or public-redacted events
-        if event.publish_status not in ["public_safe", "public_redacted"]:
+        if event.publish_status not in PUBLIC_VISIBLE_STATUSES:
             continue
         # Only return approved events
-        if event.review_status != "approved":
+        if event.review_status != REVIEW_APPROVED:
             continue
         # Only return events above confidence threshold
         if event.confidence < min_confidence:
@@ -225,8 +231,8 @@ def get_live_map_events(
         "to_date": to_date.isoformat() if to_date else None,
         "min_confidence": min_confidence,
         "source": source,
-        "review_status": "approved",
-        "publish_statuses": ["public_safe", "public_redacted"],
+        "review_status": REVIEW_APPROVED,
+        "publish_statuses": [PUBLIC_SAFE, PUBLIC_REDACTED],
         "min_confidence_threshold": float(
             getattr(settings, "public_map_min_confidence", 0.7)
         ),

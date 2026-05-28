@@ -47,6 +47,14 @@ export function AlphaReadinessPanel({ status }: Props) {
           <div>{status.runnable_sources} / {status.total_sources}</div>
         </div>
         <div>
+          <div className="text-xs text-muted-foreground">Enable-ready sources</div>
+          <div>{status.enable_ready_sources}</div>
+        </div>
+        <div>
+          <div className="text-xs text-muted-foreground">Deprecated sources</div>
+          <div>{status.deprecated_sources}</div>
+        </div>
+        <div>
           <div className="text-xs text-muted-foreground">Evidence store</div>
           <div>{status.evidence_store}</div>
         </div>

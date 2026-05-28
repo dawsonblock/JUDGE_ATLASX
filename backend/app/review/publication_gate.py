@@ -21,6 +21,12 @@ from app.models.entities import CrimeIncident, LegalInstrument, Location, Review
 from app.models.geocode_cache import GeocodeCache
 from app.models.geo_legal_event import GeoLegalEvent
 from app.policies.publication_policy import can_publish_entity, entity_public_visibility
+from app.policies.public_status import (
+    PUBLIC_REDACTED,
+    PUBLIC_SAFE,
+    PUBLIC_VISIBLE_STATUSES,
+    REVIEW_APPROVED,
+)
 from app.policies.state_model import (
     ReviewQueueDecision,
     normalize_review_queue_decision,
@@ -284,15 +290,15 @@ def assert_geo_legal_event_publication_ready(
     - No unresolved high-risk contradictions in linked claims
     """
     # Check review status
-    if event.review_status != "approved":
+    if event.review_status != REVIEW_APPROVED:
         raise PublicationBlockedError(
-            f"GeoLegalEvent {event.id} review_status='{event.review_status}' — must be 'approved'"
+            f"GeoLegalEvent {event.id} review_status='{event.review_status}' — must be '{REVIEW_APPROVED}'"
         )
 
     # Check publish status
-    if event.publish_status not in ["public_safe", "public_redacted"]:
+    if event.publish_status not in PUBLIC_VISIBLE_STATUSES:
         raise PublicationBlockedError(
-            f"GeoLegalEvent {event.id} publish_status='{event.publish_status}' — must be 'public_safe' or 'public_redacted'"
+            f"GeoLegalEvent {event.id} publish_status='{event.publish_status}' — must be '{PUBLIC_SAFE}' or '{PUBLIC_REDACTED}'"
         )
 
     # Check confidence
