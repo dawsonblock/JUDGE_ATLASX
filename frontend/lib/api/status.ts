@@ -6,6 +6,8 @@ export type AlphaReadinessStatus = {
   proof_chain_complete: boolean;
   archive_self_verifying: boolean;
   runnable_sources: number;
+  enable_ready_sources: number;
+  deprecated_sources: number;
   total_sources: number;
   evidence_store: string;
   public_review_gate: string;

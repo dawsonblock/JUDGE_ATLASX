@@ -25,6 +25,14 @@ from app.review.publication_gate import (
     assert_legal_instrument_publication_ready,
     assert_memory_claim_publication_ready,
 )
+from app.policies.public_status import (
+    PUBLIC_ADMIN_ONLY,
+    PUBLIC_PRIVATE,
+    PUBLIC_REDACTED,
+    PUBLIC_SAFE,
+    REVIEW_APPROVED,
+    REVIEW_PENDING,
+)
 from app.schemas.geo_legal_event import (
     EVENT_TYPES,
     GeoLegalEvent,
@@ -77,16 +85,16 @@ def materialize_from_event(event: Event, db: Session) -> GeoLegalEvent | None:
             confidence = 0.85
 
         # Determine review status
-        review_status = event.review_status or "needs_review"
-        if event.verified_flag and review_status == "needs_review":
-            review_status = "approved"
+        review_status = event.review_status or REVIEW_PENDING
+        if event.verified_flag and review_status == REVIEW_PENDING:
+            review_status = REVIEW_APPROVED
 
         # Determine publish status
-        publish_status = "public_safe"
+        publish_status = PUBLIC_SAFE
         if not event.verified_flag:
-            publish_status = "admin_only"
-        if review_status != "approved":
-            publish_status = "private"
+            publish_status = PUBLIC_ADMIN_ONLY
+        if review_status != REVIEW_APPROVED:
+            publish_status = PUBLIC_PRIVATE
 
         # Build tags
         tags = ["court_event"]
@@ -166,16 +174,16 @@ def materialize_from_crime_incident(
             confidence = 0.6
 
         # Determine review status
-        review_status = incident.review_status or "needs_review"
+        review_status = incident.review_status or REVIEW_PENDING
 
         # Determine publish status
-        publish_status = "public_safe"
+        publish_status = PUBLIC_SAFE
         if not incident.is_public:
-            publish_status = "private"
-        if review_status != "approved":
-            publish_status = "admin_only"
+            publish_status = PUBLIC_PRIVATE
+        if review_status != REVIEW_APPROVED:
+            publish_status = PUBLIC_ADMIN_ONLY
         if incident.precision_level in ["exact_address", "street_level"]:
-            publish_status = "admin_only"
+            publish_status = PUBLIC_ADMIN_ONLY
 
         # Build tags
         tags = ["crime_event"]
@@ -272,14 +280,14 @@ def materialize_from_memory_claim(
         has_contradiction = open_contradictions is not None and len(open_contradictions) > 0
 
         # Determine publish status
-        publish_status = "public_safe"
+        publish_status = PUBLIC_SAFE
         if has_contradiction:
-            publish_status = "admin_only"
+            publish_status = PUBLIC_ADMIN_ONLY
         if claim.claim_sensitivity in [
             "criminal_allegation_named_person",
             "criminal_allegation_private_person",
         ]:
-            publish_status = "public_redacted"
+            publish_status = PUBLIC_REDACTED
 
         # Build tags
         tags = [claim.claim_type]

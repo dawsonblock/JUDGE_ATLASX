@@ -8,6 +8,13 @@ from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
+from app.policies.public_status import (
+    PUBLIC_ADMIN_ONLY,
+    PUBLIC_BLOCKED,
+    PUBLIC_PRIVATE,
+    PUBLIC_REDACTED,
+    PUBLIC_SAFE,
+)
 
 
 class GeoLegalEvent(BaseModel):
@@ -121,11 +128,11 @@ REVIEW_STATUSES = [
 
 # Publish statuses
 PUBLISH_STATUSES = [
-    "private",
-    "admin_only",
-    "public_safe",
-    "public_redacted",
-    "blocked",
+    PUBLIC_PRIVATE,
+    PUBLIC_ADMIN_ONLY,
+    PUBLIC_SAFE,
+    PUBLIC_REDACTED,
+    PUBLIC_BLOCKED,
 ]
 
 # Confidence labels
