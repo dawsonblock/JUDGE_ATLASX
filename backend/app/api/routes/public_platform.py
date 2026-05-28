@@ -25,6 +25,7 @@ from app.models.entities import (
     LegalInstrument,
     LegalSection,
 )
+from app.policies.public_status import PUBLIC_VISIBLE_STATUSES, REVIEW_APPROVED
 from app.services.public_release_policy import PublicReleasePolicy
 from app.api.schemas.public_schemas import (
     PublicIncidentMapItem,
@@ -106,7 +107,7 @@ def get_map_incidents(
                 GeoLegalEvent.lat <= bbox_max_lat,
                 GeoLegalEvent.lng >= bbox_min_lng,
                 GeoLegalEvent.lng <= bbox_max_lng,
-                GeoLegalEvent.publish_status == "published",
+                GeoLegalEvent.publish_status.in_(PUBLIC_VISIBLE_STATUSES),
             )
         )
 
@@ -170,6 +171,8 @@ def get_map_incidents(
             )
             features.append(item)
 
+        # total_count must only count publicly visible records to avoid
+        # leaking the existence of private/admin/blocked incidents.
         logger.info(f"[v0] Returning {len(features)} publicly releasable incidents")
         return PublicMapIncidentsResponse(
             incidents=features,
@@ -177,7 +180,7 @@ def get_map_incidents(
             bbox_min_lng=bbox_min_lng,
             bbox_max_lat=bbox_max_lat,
             bbox_max_lng=bbox_max_lng,
-            total_count=len(incidents),
+            total_count=len(public_incidents),
             returned_count=len(features),
         )
 
@@ -194,7 +197,7 @@ def get_map_incidents(
 @router.get("/incident/{incident_id}")
 def get_incident_detail(
     incident_id: str,
-    session: AsyncSession = Depends(get_async_session),
+    session: Session = Depends(get_db),
 ) -> dict:
     """
     Get full details for a specific incident.
@@ -214,13 +217,13 @@ def get_incident_detail(
         )
         incident = result.scalar()
 
-        if not incident or incident.publish_status != "published":
+        if not incident or incident.publish_status not in PUBLIC_VISIBLE_STATUSES:
             raise HTTPException(status_code=404, detail="Incident not found")
 
         # Fetch linked statutes
         statute_links_result = session.execute(
             select(StatuteIncidentLink)
-            .filter_by(incident_id=incident_id, review_status="approved")
+            .filter_by(incident_id=incident_id, review_status=REVIEW_APPROVED)
             .order_by(StatuteIncidentLink.confidence_score.desc())
         )
         statute_links = statute_links_result.scalars().all()
@@ -315,7 +318,7 @@ def search_statutes(
     ),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
-    session: AsyncSession = Depends(get_async_session),
+    session: Session = Depends(get_db),
 ) -> dict:
     """
     Search and list Canadian statutes.
@@ -406,7 +409,7 @@ def search_statutes(
 def get_statute_detail(
     statute_id: int,
     limit_incidents: int = Query(20, ge=1, le=100),
-    session: AsyncSession = Depends(get_async_session),
+    session: Session = Depends(get_db),
 ) -> dict:
     """
     Get full details for a statute, including linked incidents.
@@ -437,7 +440,7 @@ def get_statute_detail(
         # Fetch linked incidents
         incidents_result = session.execute(
             select(StatuteIncidentLink)
-            .filter_by(review_status="approved")
+            .filter_by(review_status=REVIEW_APPROVED)
             .join(LegalSection)
             .filter(
                 LegalSection.legal_instrument_id == statute_id

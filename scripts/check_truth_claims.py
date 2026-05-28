@@ -261,6 +261,103 @@ ALLOWED_POLICY_FILES: dict[str, AllowedPolicyPhrase] = {
         ),
         phrases=("criminal history",),
     ),
+    # ---- language guard service and its tests ---------------------------------
+    "backend/app/services/public_language_guard.py": AllowedPolicyPhrase(
+        reason=(
+            "Defines the suppression block-list and example phrasing for the "
+            "public language guard. Phrases appear as detection targets and "
+            "safe-phrasing examples, not as platform assertions."
+        ),
+        phrases=("convicted of", "found guilty"),
+    ),
+    "backend/tests/test_public_language_guard.py": AllowedPolicyPhrase(
+        reason=(
+            "Tests that the public language guard correctly blocks these phrases "
+            "in unattributed public output. Phrases are test inputs, not platform claims."
+        ),
+        phrases=("is corrupt", "convicted of", "found guilty", "is guilty"),
+    ),
+    # ---- source health monitor ------------------------------------------------
+    "backend/app/services/source_health_monitor.py": AllowedPolicyPhrase(
+        reason=(
+            "Docstring says 'not fully automated without review' — phrase appears "
+            "in a safety-negation context describing what the platform is NOT."
+        ),
+        phrases=("fully automated",),
+    ),
+    # ---- backend proof consistency checker ------------------------------------
+    "backend/scripts/check_proof_consistency.py": AllowedPolicyPhrase(
+        reason=(
+            "Script checks that production-ready claims are absent from release "
+            "artifacts. Phrase appears in prohibitory check logic and docstrings, "
+            "not as an assertion of readiness."
+        ),
+        phrases=("production-ready",),
+    ),
+    "backend/scripts/complete_all_phases.sh": AllowedPolicyPhrase(
+        reason=(
+            "Shell script that removes production-ready language from docs. "
+            "The phrase appears in sed replacement commands targeting old language, "
+            "not as a claim of readiness."
+        ),
+        phrases=("production-ready",),
+    ),
+    # ---- historical planning / repair summary docs ---------------------------
+    # These files contain 'production-ready' in prohibitory, meta-planning, or
+    # archival contexts (e.g. 'replace production-ready -> alpha-ready',
+    # 'No false production-ready claims', 'production-ready: false').
+    # They are historical records, not current status claims.
+    "ALL_PHASES_COMPLETE.md": AllowedPolicyPhrase(
+        reason=(
+            "Historical planning document. 'production-ready' appears only in "
+            "prohibitory context (documenting what must be removed). "
+            "Not a current status claim."
+        ),
+        phrases=("production-ready",),
+    ),
+    "COMPREHENSIVE_REPAIR_PLAN.md": AllowedPolicyPhrase(
+        reason=(
+            "Historical repair planning document. 'production-ready' appears in "
+            "meta-description of false claims being fixed, not as an assertion."
+        ),
+        phrases=("production-ready",),
+    ),
+    "FILE_INVENTORY.md": AllowedPolicyPhrase(
+        reason=(
+            "Historical file inventory. 'production-ready' appears in column "
+            "headers and status field descriptions for archival reference. "
+            "Not a current status claim."
+        ),
+        phrases=("production-ready",),
+    ),
+    "FINAL_REPAIR_REPORT.md": AllowedPolicyPhrase(
+        reason=(
+            "Historical repair completion report. 'production-ready' appears "
+            "in descriptions of what was corrected, not as a current claim."
+        ),
+        phrases=("production-ready",),
+    ),
+    "FINAL_SUMMARY.txt": AllowedPolicyPhrase(
+        reason=(
+            "Historical summary of completed repair phases. 'production-ready' "
+            "appears in a description of false claims that were removed."
+        ),
+        phrases=("production-ready",),
+    ),
+    "REPAIR_SUMMARY.md": AllowedPolicyPhrase(
+        reason=(
+            "Historical repair summary. 'production-ready' appears in "
+            "context of documenting what was fixed, not asserting readiness."
+        ),
+        phrases=("production-ready",),
+    ),
+    "SASKATCHEWAN_IMPLEMENTATION.md": AllowedPolicyPhrase(
+        reason=(
+            "Historical implementation planning document. 'production-ready' "
+            "appears in archival planning context, not as a current status claim."
+        ),
+        phrases=("production-ready",),
+    ),
 }
 
 SKIP_DIRS = {

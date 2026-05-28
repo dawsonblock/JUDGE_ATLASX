@@ -18,12 +18,9 @@ from sqlalchemy.orm import Session
 
 from app.models.geo_legal_event import GeoLegalEvent
 from app.models.entities import StatuteIncidentLink, IncidentNewsLink
+from app.policies.public_status import PUBLIC_VISIBLE_STATUSES, REVIEW_APPROVED
 
 logger = logging.getLogger(__name__)
-
-# Expected publish/review statuses for public release
-PUBLISHED_STATUS = "published"
-APPROVED_REVIEW_STATUS = "approved"
 
 
 class PublicReleasePolicy:
@@ -38,8 +35,8 @@ class PublicReleasePolicy:
         Determine if an incident can be shown publicly.
 
         An incident is publicly releasable if:
-        1. publish_status == "published"
-        2. review_status == "approved" (if applicable)
+        1. publish_status in PUBLIC_VISIBLE_STATUSES (public_safe or public_redacted)
+        2. review_status == REVIEW_APPROVED ("approved")
         3. Has linked evidence (via source_ids or evidence_ids)
         4. Not marked as suppressed, disputed, or private
         5. Has valid geospatial coordinates
@@ -52,20 +49,22 @@ class PublicReleasePolicy:
         Returns:
             True if the incident can be shown publicly
         """
-        # Rule 1: Must be published
-        if incident.publish_status != PUBLISHED_STATUS:
+        # Rule 1: publish_status must be public_safe or public_redacted.
+        # "published" is a legacy value that must NOT grant public visibility.
+        if incident.publish_status not in PUBLIC_VISIBLE_STATUSES:
             logger.debug(
                 f"[v0] Incident {incident.id} not public: "
-                f"publish_status={incident.publish_status} (expected {PUBLISHED_STATUS})"
+                f"publish_status={incident.publish_status!r} not in "
+                f"{sorted(PUBLIC_VISIBLE_STATUSES)}"
             )
             return False
 
-        # Rule 2: Must be approved (if review_status field is used)
+        # Rule 2: Must be approved
         if hasattr(incident, "review_status"):
-            if incident.review_status != APPROVED_REVIEW_STATUS:
+            if incident.review_status != REVIEW_APPROVED:
                 logger.debug(
                     f"[v0] Incident {incident.id} not public: "
-                    f"review_status={incident.review_status} (expected {APPROVED_REVIEW_STATUS})"
+                    f"review_status={incident.review_status!r} (expected {REVIEW_APPROVED!r})"
                 )
                 return False
 
@@ -132,8 +131,8 @@ class PublicReleasePolicy:
         Returns:
             True if the link can be shown publicly
         """
-        # Must be approved
-        if link.review_status != "approved":
+        # Must be approved by a human reviewer
+        if link.review_status != REVIEW_APPROVED:
             return False
 
         # Must have confidence

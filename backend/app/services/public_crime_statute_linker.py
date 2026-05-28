@@ -1,49 +1,74 @@
 """
-Crime-to-Statute Linking Service for Public Platform
+Crime-to-Statute Candidate Linking Service (Alpha — Disabled)
 
-This service uses an LLM (via abstracted provider) to automatically link crime 
-incidents to relevant Canadian federal statutes. Each link includes a confidence 
-score and explanation of why the statute is relevant to the specific crime.
+Alpha status: DISABLED. This service is syntactically valid and importable
+but returns [] for all calls until evidence-grounded linking is implemented
+and passes internal review.
 
-Usage:
-    service = CrimeStatuteLinker(llm_provider)
-    links = service.link_incident_to_statutes(
-        session=db_session,
-        incident_id="crime-12345",
-        crime_type="assault",
-        description="Physical altercation...",
-        location="Toronto, ON"
-    )
+Rationale:
+- LLM-inferred statute applicability from free-text incident descriptions
+  alone does not meet the evidence-grounded standard required for legal/crime
+  data.
+- Any StatuteIncidentLink this service creates must have
+  review_status=LINK_REVIEW_STATUS_PENDING and must never appear in a
+  public API response without human approval.
+- This service must never publish statute conclusions.
+
+When re-enabled, this service must:
+1. Verify reviewed evidence exists for the incident before running.
+2. Use LLMProvider (not a direct Anthropic/OpenAI client) via ReviewerAssistant.
+3. Import LLMTaskType (not TaskType) from app.llm.schemas.
+4. Be fully synchronous — use sqlalchemy.orm.Session, not AsyncSession.
+5. Set every link to review_status=LINK_REVIEW_STATUS_PENDING only.
 """
 
 import logging
 from datetime import datetime
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.entities import LegalInstrument, LegalSection, StatuteIncidentLink
-from app.db.session import get_db
 from app.services.public_link_statuses import LINK_REVIEW_STATUS_PENDING
-from app.llm.provider import LLMProvider
-from app.llm.schemas import LLMRequest, TaskType
 
 logger = logging.getLogger(__name__)
 
+# Alpha guard — set to True only after evidence-grounded implementation
+# has passed internal review and boundary tests.
+_LINKER_ENABLED = False
+
 
 class CrimeStatuteLinker:
-    """Links crimes to relevant Canadian statutes using an LLM provider."""
+    """
+    Candidate linker: crime incidents -> Canadian federal statute sections.
+
+    Alpha status: disabled. All calls return [] until evidence-grounded
+    linking passes internal review.
+
+    When enabled this service produces pending-review candidates only:
+    - review_status is always LINK_REVIEW_STATUS_PENDING on every link.
+    - No link is ever published or exposed to any public API by this service.
+    - Human review via the admin queue is required before any link is visible.
+    """
 
     AI_MODEL_VERSION = "1.0"
 
-    def __init__(self, llm_provider: LLMProvider):
-        """Initialize with an LLM provider.
+    def __init__(self, llm_provider=None):
+        """
+        Accept an optional LLM provider for future use.
 
         Args:
-            llm_provider: Configured LLMProvider instance (e.g., OpenAI, Ollama)
+            llm_provider: LLMProvider instance (unused while alpha-disabled).
         """
         self.llm = llm_provider
-        logger.info(f"[v0] CrimeStatuteLinker initialized with {self.llm.provider_name}")
+        if _LINKER_ENABLED:
+            logger.info(
+                "[v0] CrimeStatuteLinker initialized — ENABLED "
+                "(produces pending candidates only)"
+            )
+        else:
+            logger.info(
+                "[v0] CrimeStatuteLinker initialized — DISABLED in alpha "
+                "(returns [] for all calls)"
+            )
 
     def link_incident_to_statutes(
         self,
@@ -55,84 +80,35 @@ class CrimeStatuteLinker:
         occurred_at: datetime | None = None,
     ) -> list[dict]:
         """
-        Link a crime incident to relevant Canadian statutes.
+        Return candidate statute links for admin review.
 
-        Args:
-            session: Database session
-            incident_id: ID of the GeoLegalEvent (crime incident)
-            crime_type: Type of crime (e.g., "assault", "theft", "murder")
-            description: Plain-language description of the incident
-            location: Where the crime occurred
-            occurred_at: When the crime occurred
+        Alpha: always returns [].
+        Re-enable only after evidence-grounded implementation and proof review.
 
         Returns:
-            List of statute links with confidence scores and explanations
+            list[dict] — always [] while _LINKER_ENABLED is False.
         """
-        logger.info(
-            f"[v0] Linking incident {incident_id} ({crime_type}) to Canadian statutes"
-        )
-
-        # Fetch all Canadian federal statutes from database
-        result = session.execute(
-            select(LegalInstrument).filter_by(jurisdiction="CA", public_visibility="public")
-        )
-        statutes = result.scalars().all()
-
-        if not statutes:
-            logger.warning("[v0] No Canadian statutes found in database")
+        if not _LINKER_ENABLED:
+            logger.warning(
+                "[v0] CrimeStatuteLinker is disabled in alpha until "
+                "evidence-grounded linking is implemented and reviewed. "
+                "Returning []."
+            )
             return []
 
-        # Build statute reference list for AI
-        statute_refs = []
-        for statute in statutes[:50]:  # Limit to first 50 for token budget
-            statute_refs.append(
-                {
-                    "id": statute.id,
-                    "title": statute.title or statute.short_title or "Unknown",
-                    "citation": statute.citation or "",
-                    "sections": [
-                        {
-                            "id": section.id,
-                            "label": section.section_label,
-                            "title": section.marginal_note or "",
-                        }
-                        for section in statute.sections[:3]  # First 3 sections only
-                    ],
-                }
-            )
-
-        # Call Claude to identify relevant statutes
-        prompt = self._build_linking_prompt(
-            crime_type=crime_type,
-            description=description,
-            location=location,
-            occurred_at=occurred_at,
-            statute_refs=statute_refs,
+        # Unreachable in alpha — implementation placeholder only.
+        # Steps required when re-enabling:
+        # 1. Verify incident has reviewed evidence via session query.
+        # 2. Fetch statutes with session.execute(...) — no await.
+        # 3. Build prompt via _build_linking_prompt().
+        # 4. Call self.llm.complete(...) via ReviewerAssistant boundary.
+        # 5. Parse response and call _parse_and_persist_links(session, ...).
+        # 6. Never set any link review_status to "approved" here.
+        logger.error(
+            "[v0] CrimeStatuteLinker._LINKER_ENABLED is True but "
+            "implementation is not complete. This path must not be reached."
         )
-
-        try:
-            message = client.messages.create(
-                model=self.MODEL,
-                max_tokens=2000,
-                messages=[{"role": "user", "content": prompt}],
-            )
-
-            response_text = message.content[0].text
-            logger.debug(f"[v0] Claude response:\n{response_text[:500]}")
-
-            # Parse AI response and create database records
-            links = await self._parse_and_persist_links(
-                session=session,
-                incident_id=incident_id,
-                response_text=response_text,
-                statute_refs=statute_refs,
-            )
-
-            return links
-
-        except Exception as e:
-            logger.error(f"[v0] Error linking incident {incident_id}: {str(e)}")
-            return []
+        return []
 
     def _build_linking_prompt(
         self,
@@ -142,67 +118,61 @@ class CrimeStatuteLinker:
         occurred_at: datetime | None,
         statute_refs: list,
     ) -> str:
-        """Build the prompt for Claude to identify relevant statutes."""
-        
+        """
+        Build a candidate-linking prompt (kept for test reference only).
+
+        This method does NOT call any LLM. It constructs a prompt string
+        for use when the linker is re-enabled under the LLMProvider /
+        ReviewerAssistant boundary.
+        """
         date_str = occurred_at.strftime("%Y-%m-%d") if occurred_at else "Unknown date"
-        
+
         statute_list = "\n".join(
             [
                 f"  - {s['citation']}: {s['title']}\n"
                 + "".join(
                     [
                         f"    * Section {sec['label']}: {sec['title']}\n"
-                        for sec in s["sections"]
+                        for sec in s.get("sections", [])
                     ]
                 )
-                for s in statute_refs[:30]  # Limit to 30 statutes in prompt
+                for s in statute_refs[:30]
             ]
         )
 
-        return f"""You are a Canadian legal expert analyzing a crime incident to identify relevant federal statutes.
+        return (
+            f"INCIDENT: {crime_type} at {location} on {date_str}.\n"
+            f"Description: {description}\n\n"
+            f"CANADIAN FEDERAL STATUTES:\n{statute_list}\n\n"
+            f"Identify candidate statute sections relevant to this incident. "
+            f"Return JSON with: statute_citation, section_id, confidence (0-100), "
+            f"reason. All candidates require human review before use. "
+            f"Do not state that a statute applies — only that it is a candidate "
+            f"for review."
+        )
 
-INCIDENT DETAILS:
-- Type: {crime_type}
-- Location: {location}
-- Date: {date_str}
-- Description: {description}
-
-CANADIAN FEDERAL STATUTES (Criminal Code, etc.):
-{statute_list}
-
-TASK:
-1. Identify which statutes are DIRECTLY relevant to this crime
-2. For each relevant statute, explain WHY it's relevant
-3. Rate confidence (0-100) for each match
-4. Return ONLY JSON, no other text
-
-RESPONSE FORMAT (valid JSON only):
-{{
-  "links": [
-    {{
-      "statute_citation": "Criminal Code s. 235",
-      "section_id": <numeric_id>,
-      "confidence": 95,
-      "reason": "This statute defines murder, which directly applies to this homicide case."
-    }}
-  ]
-}}
-
-Return ONLY the JSON object, no markdown, no explanation."""
-
-    async def _parse_and_persist_links(
+    def _parse_and_persist_links(
         self,
-        session: AsyncSession,
+        session: Session,
         incident_id: str,
         response_text: str,
         statute_refs: list,
     ) -> list[dict]:
-        """Parse AI response and save statute links to database."""
-        
-        links = []
+        """
+        Parse LLM response and save pending-review statute links to the DB.
+
+        All links are created with review_status=LINK_REVIEW_STATUS_PENDING.
+        No link is published or made public by this method.
+
+        Note: this method is unreachable while _LINKER_ENABLED is False.
+        """
+        import json
+        from sqlalchemy import select
+        from app.models.entities import StatuteIncidentLink
+
+        links: list[dict] = []
 
         try:
-            # Clean response (remove markdown code blocks if present)
             json_text = response_text.strip()
             if json_text.startswith("```"):
                 json_text = json_text.split("```")[1]
@@ -211,30 +181,26 @@ Return ONLY the JSON object, no markdown, no explanation."""
             if json_text.endswith("```"):
                 json_text = json_text[:-3]
 
-            import json
-
             parsed = json.loads(json_text.strip())
 
             for link_data in parsed.get("links", []):
                 try:
-                    # Find the section in database
                     section_id = link_data.get("section_id")
-                    confidence = link_data.get("confidence", 0) / 100.0  # Convert to 0-1
+                    confidence = link_data.get("confidence", 0) / 100.0
                     reason = link_data.get("reason", "")
 
                     if not section_id or confidence < 0.3:
-                        continue  # Skip low-confidence links
+                        continue
 
-                    # Check if link already exists
-                    existing = await session.execute(
+                    existing = session.execute(
                         select(StatuteIncidentLink).filter_by(
-                            incident_id=incident_id, legal_section_id=section_id
+                            incident_id=incident_id,
+                            legal_section_id=section_id,
                         )
                     )
                     if existing.scalars().first():
-                        continue  # Already exists
+                        continue
 
-                    # Create new link
                     link = StatuteIncidentLink(
                         incident_id=incident_id,
                         legal_section_id=section_id,
@@ -254,16 +220,19 @@ Return ONLY the JSON object, no markdown, no explanation."""
                     )
 
                 except Exception as e:
-                    logger.warning(f"[v0] Error processing link: {str(e)}")
+                    logger.warning(f"[v0] Error processing candidate link: {e}")
                     continue
 
-            await session.commit()
-            logger.info(f"[v0] Created {len(links)} statute links for incident {incident_id}")
+            session.commit()
+            logger.info(
+                f"[v0] Created {len(links)} pending-review statute candidates "
+                f"for incident {incident_id}"
+            )
 
         except Exception as e:
             logger.error(
-                f"[v0] Error parsing AI response for incident {incident_id}: {str(e)}"
+                f"[v0] Error parsing LLM response for incident {incident_id}: {e}"
             )
-            await session.rollback()
+            session.rollback()
 
         return links

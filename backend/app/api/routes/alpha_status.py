@@ -16,6 +16,11 @@ from app.core.config import get_settings
 from app.core.runtime_profile import get_active_profile, get_profile_warnings
 from app.db.session import get_db
 from app.models.entities import SourceRegistry
+from app.policies.source_lifecycle import (
+    SOURCE_RUNNABLE,
+    SOURCE_RUNNABLE_DISABLED,
+    SOURCE_DEPRECATED,
+)
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -74,6 +79,32 @@ def _proof_chain_complete() -> bool:
     return any(p.exists() and p.stat().st_size > 0 for p in candidates)
 
 
+def _source_lifecycle_counts(db: Session) -> dict[str, int]:
+    """
+    Return DB-accurate counts for each source lifecycle state.
+
+    Keys use the DB-level state names.  Callers that need report labels
+    should translate via LIFECYCLE_REPORT_LABELS from source_lifecycle.py.
+    """
+    return {
+        SOURCE_RUNNABLE: db.scalar(
+            select(func.count(SourceRegistry.id)).where(
+                SourceRegistry.lifecycle_state == SOURCE_RUNNABLE
+            )
+        ) or 0,
+        SOURCE_RUNNABLE_DISABLED: db.scalar(
+            select(func.count(SourceRegistry.id)).where(
+                SourceRegistry.lifecycle_state == SOURCE_RUNNABLE_DISABLED
+            )
+        ) or 0,
+        SOURCE_DEPRECATED: db.scalar(
+            select(func.count(SourceRegistry.id)).where(
+                SourceRegistry.lifecycle_state == SOURCE_DEPRECATED
+            )
+        ) or 0,
+    }
+
+
 @router.get("/alpha-readiness", response_model=AlphaReadinessResponse)
 def get_alpha_readiness(db: Session = Depends(get_db)) -> AlphaReadinessResponse:
     """Return structured alpha readiness status for admin dashboard."""
@@ -81,21 +112,25 @@ def get_alpha_readiness(db: Session = Depends(get_db)) -> AlphaReadinessResponse
     profile = get_active_profile()
     profile_warnings = get_profile_warnings(profile)
 
-    # Source coverage from DB
+    # Source coverage from DB.
+    # Filter on DB-level lifecycle_state values, not report labels.
+    # DB "runnable"         -> report label "runnable_now"
+    # DB "runnable_disabled"-> report label "enable_ready"
+    # DB "deprecated"       -> report label "deprecated"
     total_sources = db.scalar(select(func.count(SourceRegistry.id))) or 0
     runnable_sources = db.scalar(
         select(func.count(SourceRegistry.id)).where(
-            SourceRegistry.lifecycle_state == "runnable_now"
+            SourceRegistry.lifecycle_state == SOURCE_RUNNABLE
         )
     ) or 0
     enable_ready_sources = db.scalar(
         select(func.count(SourceRegistry.id)).where(
-            SourceRegistry.lifecycle_state == "enable_ready"
+            SourceRegistry.lifecycle_state == SOURCE_RUNNABLE_DISABLED
         )
     ) or 0
     deprecated_sources = db.scalar(
         select(func.count(SourceRegistry.id)).where(
-            SourceRegistry.lifecycle_state == "deprecated"
+            SourceRegistry.lifecycle_state == SOURCE_DEPRECATED
         )
     ) or 0
 
