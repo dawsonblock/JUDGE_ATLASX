@@ -5,16 +5,19 @@ These are the authoritative DB-level values.  Import these constants instead
 of hardcoding strings throughout the codebase.
 
 publish_status values (GeoLegalEvent.publish_status):
-    private         — not visible outside admin context
-    admin_only      — visible to admin users only
-    public_safe     — safe for public display (no redactions needed)
-    public_redacted — public with sensitive fields redacted
-    blocked         — blocked from publication (legal hold, dispute, etc.)
+    private              — not visible outside admin context
+    admin_only           — visible to admin users only
+    internal_published   — published internally, not cleared for public (post-migration
+                           resting place for old "published" rows without approval)
+    public_safe          — reviewed, approved, and cleared for full public display
+    public_redacted      — approved for public display with sensitive fields redacted
+    blocked              — blocked from publication (legal hold, dispute, etc.)
 
-    LEGACY / INVALID:
-    published       — old value, never valid for new records.
-                      Migration target: published -> public_safe (if approved+evidence)
-                                                  -> admin_only  (otherwise)
+    LEGACY / INVALID (must not be written to new records):
+    published            — pre-migration value.
+                           Migration target (20260527_0004):
+                             published + review=approved → public_safe
+                             published + other review   → internal_published
 
 review_status values (GeoLegalEvent.review_status, StatuteIncidentLink.review_status):
     needs_review    — awaiting human review
@@ -30,13 +33,21 @@ from __future__ import annotations
 
 PUBLIC_PRIVATE: str = "private"
 PUBLIC_ADMIN_ONLY: str = "admin_only"
+PUBLIC_INTERNAL_PUBLISHED: str = "internal_published"  # post-migration, not public
 PUBLIC_SAFE: str = "public_safe"
 PUBLIC_REDACTED: str = "public_redacted"
 PUBLIC_BLOCKED: str = "blocked"
 
-# All valid publish_status values.
+# All valid post-migration publish_status values.
 ALL_PUBLISH_STATUSES: frozenset[str] = frozenset(
-    {PUBLIC_PRIVATE, PUBLIC_ADMIN_ONLY, PUBLIC_SAFE, PUBLIC_REDACTED, PUBLIC_BLOCKED}
+    {
+        PUBLIC_PRIVATE,
+        PUBLIC_ADMIN_ONLY,
+        PUBLIC_INTERNAL_PUBLISHED,
+        PUBLIC_SAFE,
+        PUBLIC_REDACTED,
+        PUBLIC_BLOCKED,
+    }
 )
 
 # publish_status values that allow public API visibility.
