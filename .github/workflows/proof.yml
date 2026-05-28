@@ -144,6 +144,11 @@ jobs:
           source backend/.venv/bin/activate
           python scripts/check_proof_manifest.py
 
+      - name: Check required proof logs (strict)
+        run: |
+          source backend/.venv/bin/activate
+          python scripts/check_required_proof_logs.py --root . --strict-required-files
+
       - name: Check proof consistency
         run: |
           source backend/.venv/bin/activate
