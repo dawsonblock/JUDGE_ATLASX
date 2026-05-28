@@ -1,0 +1,14 @@
+{
+  "_fixture_note": "Synthetic deterministic test record. Not real government data.",
+  "source_key": "justice_canada_laws_xml",
+  "record_type": "legislation",
+  "title": "Criminal Code",
+  "bill_number": "C-46",
+  "in_force_date": "1985-07-01",
+  "last_amended": "2024-01-01",
+  "jurisdiction": "canada_federal",
+  "review_status": "pending_review",
+  "public_visibility": "hidden",
+  "sections_parsed": 2,
+  "parser_version": "1.0"
+}

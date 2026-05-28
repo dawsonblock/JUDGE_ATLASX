@@ -1,0 +1,4 @@
+incident_id,incident_type,reported_date,neighbourhood,city,province,latitude,longitude
+SYNTH-001,Theft Under $5000,2024-06-01,Downtown,Saskatoon,SK,52.1332,-106.6700
+SYNTH-002,Mischief,2024-06-02,Riversdale,Saskatoon,SK,52.1250,-106.6830
+SYNTH-003,Break and Enter,2024-06-03,Nutana,Saskatoon,SK,52.1280,-106.6510
