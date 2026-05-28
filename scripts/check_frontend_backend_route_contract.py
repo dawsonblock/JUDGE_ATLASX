@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""Validate frontend API call paths against backend and internal Next.js API routes."""
+"""Validate frontend API call paths against backend and Next.js API routes."""
 
 from __future__ import annotations
 
 import json
 import re
-import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FRONTEND_ROOT = REPO_ROOT / "frontend"
@@ -17,9 +16,12 @@ ALLOWLIST_PATH = REPO_ROOT / "scripts" / "route_contract_allowlist.json"
 FRONTEND_EXTENSIONS = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"}
 
 API_PATH_RE = re.compile(r"/api/[A-Za-z0-9_\-./\[\]{}$:=?&]+")
-ROUTER_PREFIX_RE = re.compile(r"APIRouter\([^\)]*prefix\s*=\s*[\"']([^\"']+)[\"']")
+ROUTER_PREFIX_RE = re.compile(
+    r"APIRouter\([^\)]*prefix\s*=\s*[\"']([^\"']+)[\"']"
+)
 DECORATOR_RE = re.compile(
-    r"@router\.(?:get|post|put|patch|delete|options|head)\(\s*[\"']([^\"']+)[\"']"
+    r"@router\.(?:get|post|put|patch|delete|options|head)"
+    r"\(\s*[\"']([^\"']+)[\"']"
 )
 
 
@@ -48,7 +50,7 @@ def _normalize_path(path: str) -> str:
     value = value[api_idx:]
     value = value.split("?", 1)[0].split("#", 1)[0]
 
-    # Normalize dynamic placeholders from TS template literals and route params.
+    # Normalize placeholders from TS template literals and route params.
     value = re.sub(r"\$\{[^}]*\}?", "{param}", value)
     value = re.sub(r"\[[^\]/]+\]", "{param}", value)
     value = re.sub(r":([A-Za-z_][A-Za-z0-9_]*)", "{param}", value)
@@ -70,7 +72,8 @@ def _normalize_path(path: str) -> str:
 
 def _load_allowlist() -> tuple[set[str], list[str]]:
     if not ALLOWLIST_PATH.exists():
-        return set(), [f"missing allowlist file: {ALLOWLIST_PATH.relative_to(REPO_ROOT)}"]
+        missing = ALLOWLIST_PATH.relative_to(REPO_ROOT)
+        return set(), [f"missing allowlist file: {missing}"]
 
     try:
         payload = json.loads(ALLOWLIST_PATH.read_text(encoding="utf-8"))
@@ -92,11 +95,15 @@ def _load_allowlist() -> tuple[set[str], list[str]]:
             errors.append(f"allowlist[{idx}].path must be a non-empty string")
             continue
         if not isinstance(reason, str) or not reason.strip():
-            errors.append(f"allowlist[{idx}].reason must be a non-empty string")
+            errors.append(
+                f"allowlist[{idx}].reason must be a non-empty string"
+            )
             continue
         normalized = _normalize_path(path)
         if not normalized:
-            errors.append(f"allowlist[{idx}].path is not a supported /api path: {path}")
+            errors.append(
+                f"allowlist[{idx}].path is not a supported /api path: {path}"
+            )
             continue
         allowed.add(normalized)
 
@@ -108,6 +115,12 @@ def _extract_frontend_api_calls() -> dict[str, list[str]]:
     for path in _iter_files(FRONTEND_ROOT):
         text = path.read_text(encoding="utf-8", errors="ignore")
         for match in API_PATH_RE.finditer(text):
+            # Ignore /api-like substrings that are part of identifiers/import
+            # paths,
+            # such as "@/lib/api/status".
+            prior = text[match.start() - 1] if match.start() > 0 else ""
+            if prior and re.match(r"[A-Za-z0-9_]", prior):
+                continue
             normalized = _normalize_path(match.group(0))
             if not normalized:
                 continue
@@ -119,7 +132,8 @@ def _extract_frontend_api_calls() -> dict[str, list[str]]:
 
 
 def _path_matches_pattern(path: str, pattern: str) -> bool:
-    expr = "^" + re.escape(pattern).replace(re.escape("{param}"), "[^/]+") + "$"
+    expr = "^" + re.escape(pattern).replace(re.escape("{param}"), "[^/]+")
+    expr += "$"
     return re.match(expr, path) is not None
 
 
@@ -134,7 +148,9 @@ def _extract_backend_routes() -> set[str]:
     routes: set[str] = set()
     for path in BACKEND_ROUTES_ROOT.rglob("*.py"):
         text = path.read_text(encoding="utf-8", errors="ignore")
-        prefixes = [m.group(1) for m in ROUTER_PREFIX_RE.finditer(text)] or [""]
+        prefixes = [m.group(1) for m in ROUTER_PREFIX_RE.finditer(text)]
+        if not prefixes:
+            prefixes = [""]
         for route_match in DECORATOR_RE.finditer(text):
             route_path = route_match.group(1)
             for prefix in prefixes:
