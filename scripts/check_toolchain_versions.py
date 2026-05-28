@@ -13,7 +13,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _run_version(command: list[str]) -> tuple[int, str]:
-    proc = subprocess.run(command, capture_output=True, text=True, check=False)
+    try:
+        proc = subprocess.run(command, capture_output=True, text=True, check=False)
+    except FileNotFoundError:
+        return 127, "missing"
     output = (proc.stdout or proc.stderr or "").strip()
     return proc.returncode, output
 
