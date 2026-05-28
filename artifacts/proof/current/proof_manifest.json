@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-27T07:57:47.289351+00:00",
+  "generated_at": "2026-05-28T03:00:00.000000+00:00",
   "archive_hash": "435817cb8573d8962d8cf26a3a5c43e04a4afb7c",
   "platform": "macOS-26.2-arm64-arm-64bit",
   "python_version": "3.11.7",
@@ -7,7 +7,7 @@
   "node_version": "v20.20.2",
   "frontend_node_gate_version": "v20.20.2",
   "npm_version": "10.8.2",
-  "proof_input_tree_hash": "04b9c205984ec2a52d4784e212c3ee35097d2bd996fd4f21066450e49719764f",
+  "proof_input_tree_hash": "276455a825d6c2a347e5fb22261b73dd42dcaee0e1da53c907885cdf5dfd314b",
   "proof_input_tree_hash_algorithm": "sha256",
   "proof_input_file_count": 1086,
   "proof_root": "artifacts/proof/current",
@@ -1113,5 +1113,6 @@
       "proof_source": "static_guards",
       "failure_reason": null
     }
-  ]
+  ],
+  "commit_hash": "b60b194cb1f8b4592bd9e6c4030341ebcf1f37bb"
 }

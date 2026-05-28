@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -13,14 +13,14 @@ interface Statute {
   last_amended: string | null;
 }
 
-export default function StatutesBrowserPage() {
+function StatutesBrowser() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [statutes, setStatutes] = useState<Statute[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
   const [sortBy, setSortBy] = useState<"frequency" | "title" | "recent">(
-    (searchParams.get("sort") as any) || "frequency"
+    (searchParams.get("sort") as "frequency" | "title" | "recent") || "frequency"
   );
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -29,6 +29,7 @@ export default function StatutesBrowserPage() {
 
   useEffect(() => {
     fetchStatutes();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, sortBy, page]);
 
   const fetchStatutes = async () => {
@@ -72,7 +73,7 @@ export default function StatutesBrowserPage() {
           <div className="flex justify-between items-center mb-4">
             <div>
               <Link href="/" className="text-xl font-bold text-slate-900">
-                Crime & Law Explorer
+                Crime &amp; Law Explorer
               </Link>
             </div>
             <nav className="flex gap-6">
@@ -116,7 +117,7 @@ export default function StatutesBrowserPage() {
           <select
             value={sortBy}
             onChange={(e) => {
-              setSortBy(e.target.value as any);
+              setSortBy(e.target.value as "frequency" | "title" | "recent");
               setPage(1);
             }}
             className="px-4 py-2 border border-slate-300 rounded-lg bg-white"
@@ -206,12 +207,26 @@ export default function StatutesBrowserPage() {
             )}
 
             <p className="text-center text-sm text-slate-600 mt-6">
-              Showing {(page - 1) * limit + 1}-
+              Showing {(page - 1) * limit + 1}–
               {Math.min(page * limit, total)} of {total} statutes
             </p>
           </>
         )}
       </div>
     </div>
+  );
+}
+
+export default function StatutesBrowserPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+          <p className="text-slate-600">Loading statutes...</p>
+        </div>
+      }
+    >
+      <StatutesBrowser />
+    </Suspense>
   );
 }

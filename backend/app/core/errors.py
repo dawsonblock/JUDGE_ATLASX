@@ -153,9 +153,13 @@ def _make_error_response(
             request_id=_get_request_id(request),
         )
     )
+    content = envelope.model_dump(exclude_none=True)
+    # Add a top-level ``detail`` key so that tests and clients that rely on
+    # the classic FastAPI HTTPException shape ({"detail": "..."}) still work.
+    content["detail"] = message
     return JSONResponse(
         status_code=status_code,
-        content=envelope.model_dump(exclude_none=True),
+        content=content,
     )
 
 

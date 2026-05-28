@@ -2438,6 +2438,8 @@ class UserSession(Base):
     )
     user_agent: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
+    user: Mapped["User"] = relationship("User", back_populates="sessions")
+
 
 class StatuteIncidentLink(Base, TimestampMixin):
     """Links a GeoLegalEvent (crime incident) to relevant Canadian statutes.

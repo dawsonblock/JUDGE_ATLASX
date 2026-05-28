@@ -12,7 +12,7 @@ These tables enable the public platform to show citizens:
 - News coverage of incidents (news links)
 
 Revision ID: 20260527_0003
-Revises: 20260516_0002
+Revises: 20260522_0001
 Create Date: 2026-05-27 12:00:00
 
 """
@@ -20,7 +20,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = '20260527_0003'
-down_revision = ''
+down_revision = '20260522_0001'
 branch_labels = None
 depends_on = None
 

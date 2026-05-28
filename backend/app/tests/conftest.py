@@ -89,6 +89,12 @@ def db_session():
 
 
 @pytest.fixture
+def db(db_session):
+    """Alias for db_session — many tests use the shorter name ``db``."""
+    yield db_session
+
+
+@pytest.fixture
 def repo_root() -> Path:
     """Return the repository root directory (parent of backend/)."""
     return Path(__file__).parent.parent.parent.parent

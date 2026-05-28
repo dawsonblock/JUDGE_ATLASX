@@ -366,9 +366,10 @@ def search_statutes(
                 )
             )
 
-        # Paginate
-        total_query = query.statement.with_only_columns(func.count())
-        total = (session.execute(total_query)).scalar() or 0
+        # Paginate — use a subquery for count (compatible with SQLAlchemy 2.x)
+        count_subquery = query.subquery()
+        total_query = select(func.count()).select_from(count_subquery)
+        total = session.execute(total_query).scalar() or 0
 
         query = query.offset(offset).limit(limit)
         result = session.execute(query)
