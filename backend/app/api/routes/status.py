@@ -9,13 +9,20 @@ is included in the public response.
 from __future__ import annotations
 
 import json
+import hashlib
+import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from app.core.config import get_settings
 from app.core.runtime_profile import resolve_runtime_profile
 from app.db.session import get_db
-from app.ingestion.statuses import COMPLETED, COMPLETED_WITH_WARNINGS, FAILED, RUNNING
+from app.ingestion.statuses import (
+    COMPLETED,
+    COMPLETED_WITH_WARNINGS,
+    FAILED,
+    RUNNING,
+)
 from app.models.entities import IngestionRun, SourceRegistry
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
@@ -23,6 +30,15 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["status"])
+
+_HANDOFF_PATH_RE = re.compile(
+    r"^\s*-\s*Path:\s*(.+?)\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+_HANDOFF_SHA_RE = re.compile(
+    r"^\s*-\s*SHA-256:\s*([0-9a-fA-F]{64})\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
 
 
 class StatusBucket(BaseModel):
@@ -81,6 +97,173 @@ def _check_exists(path_value: str | None) -> bool:
         return False
 
 
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[4]
+
+
+def _compute_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _required_logs_complete(repo_root: Path) -> tuple[bool, str | None]:
+    index_path = (
+        repo_root
+        / "artifacts"
+        / "proof"
+        / "current"
+        / "required_log_index.json"
+    )
+    if not index_path.is_file():
+        return False, "required_log_index_missing"
+
+    try:
+        payload = json.loads(index_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return False, "required_log_index_invalid_json"
+
+    missing_required = payload.get("missing_required_logs")
+    if isinstance(missing_required, list) and missing_required:
+        return False, "required_logs_missing"
+
+    entries = payload.get("entries")
+    if not isinstance(entries, list) or not entries:
+        return False, "required_log_index_entries_missing"
+
+    for entry in entries:
+        if not isinstance(entry, dict):
+            return False, "required_log_index_entry_invalid"
+        if not bool(entry.get("exists", False)):
+            return False, "required_logs_missing"
+        if str(entry.get("status", "")).upper() != "PASS":
+            return False, "required_logs_not_pass"
+
+    return True, None
+
+
+def _proof_freshness_complete(repo_root: Path) -> tuple[bool, str | None]:
+    freshness_log = (
+        repo_root
+        / "artifacts"
+        / "proof"
+        / "current"
+        / "proof_freshness.log"
+    )
+    if not freshness_log.is_file():
+        return False, "proof_freshness_missing_or_failed"
+
+    text = freshness_log.read_text(encoding="utf-8", errors="ignore")
+    normalized = text.lower()
+    if "proof_freshness: pass" in normalized:
+        return True, None
+    if "status\": \"pass\"" in normalized:
+        return True, None
+    return False, "proof_freshness_missing_or_failed"
+
+
+def _archive_handoff_verified(repo_root: Path) -> tuple[bool, str | None]:
+    archive_path = repo_root / "dist" / "JUDGE_ATLAS-main-final.zip"
+    if not archive_path.is_file():
+        return False, "release_archive_missing"
+
+    handoff_path = repo_root / "FINAL_RELEASE_HANDOFF.md"
+    if not handoff_path.is_file():
+        return False, "release_handoff_missing"
+
+    handoff_text = handoff_path.read_text(encoding="utf-8", errors="ignore")
+    path_match = _HANDOFF_PATH_RE.search(handoff_text)
+    sha_match = _HANDOFF_SHA_RE.search(handoff_text)
+    if not path_match or not sha_match:
+        return False, "release_handoff_missing_claims"
+
+    claimed_path = path_match.group(1).strip()
+    claimed_sha = sha_match.group(1).lower()
+    resolved_claim_path = Path(claimed_path)
+    if not resolved_claim_path.is_absolute():
+        resolved_claim_path = (repo_root / resolved_claim_path).resolve()
+    else:
+        resolved_claim_path = resolved_claim_path.resolve()
+
+    if resolved_claim_path != archive_path.resolve():
+        return False, "release_handoff_path_mismatch"
+
+    actual_sha = _compute_sha256(archive_path)
+    if actual_sha != claimed_sha:
+        return False, "release_handoff_hash_mismatch"
+
+    return True, None
+
+
+def _proof_chain_state(
+    repo_root: Path,
+    release_gate: dict,
+) -> tuple[bool, bool, list[str]]:
+    warnings: list[str] = []
+
+    proof_manifest_path = (
+        repo_root / "artifacts" / "proof" / "current" / "proof_manifest.json"
+    )
+    release_readiness_path = (
+        repo_root
+        / "artifacts"
+        / "proof"
+        / "current"
+        / "release_readiness.md"
+    )
+    release_gate_path = (
+        repo_root / "artifacts" / "proof" / "current" / "release_gate.json"
+    )
+
+    if not release_gate_path.is_file():
+        warnings.append("release_gate_missing")
+    if not proof_manifest_path.is_file():
+        warnings.append("proof_manifest_missing")
+    if not release_readiness_path.is_file():
+        warnings.append("release_readiness_missing")
+
+    required_logs_ok, required_logs_warning = _required_logs_complete(
+        repo_root
+    )
+    if required_logs_warning:
+        warnings.append(required_logs_warning)
+
+    proof_freshness_ok, proof_freshness_warning = _proof_freshness_complete(
+        repo_root
+    )
+    if proof_freshness_warning:
+        warnings.append(proof_freshness_warning)
+
+    handoff_ok, handoff_warning = _archive_handoff_verified(repo_root)
+    if handoff_warning:
+        warnings.append(handoff_warning)
+
+    checks = release_gate.get("checks")
+    check_items = checks if isinstance(checks, list) else []
+    archive_check_pass = any(
+        isinstance(item, dict)
+        and item.get("name") == "archive_validation"
+        and str(item.get("status", "")).upper() == "PASS"
+        for item in check_items
+    )
+    if not archive_check_pass:
+        warnings.append("archive_validation_not_verified")
+
+    archive_self_verifying = archive_check_pass and handoff_ok
+    proof_chain_complete = (
+        release_gate_path.is_file()
+        and proof_manifest_path.is_file()
+        and release_readiness_path.is_file()
+        and required_logs_ok
+        and proof_freshness_ok
+        and archive_self_verifying
+    )
+
+    return proof_chain_complete, archive_self_verifying, warnings
+
+
 @router.get("/api/v1/status/ingestion", response_model=IngestionStatusResponse)
 @router.get("/status/ingestion", response_model=IngestionStatusResponse)
 def get_ingestion_status(
@@ -89,7 +272,7 @@ def get_ingestion_status(
     ),
     db: Session = Depends(get_db),
 ) -> IngestionStatusResponse:
-    """Return ingestion run status summary for the last *window_hours* hours."""
+    """Return ingestion run status summary for the last look-back window."""
     since = datetime.now(tz=timezone.utc) - timedelta(hours=window_hours)
 
     rows = db.execute(
@@ -126,36 +309,39 @@ def get_ingestion_status(
         other=other,
         last_run_at=last_run_at,
         buckets=[
-            StatusBucket(status=k, count=v) for k, v in sorted(bucket_map.items())
+            StatusBucket(status=k, count=v)
+            for k, v in sorted(bucket_map.items())
         ],
     )
 
 
 @router.get("/status/alpha-readiness", response_model=AlphaReadinessResponse)
-@router.get("/api/v1/status/alpha-readiness", response_model=AlphaReadinessResponse)
-def get_alpha_readiness(db: Session = Depends(get_db)) -> AlphaReadinessResponse:
+@router.get(
+    "/api/v1/status/alpha-readiness",
+    response_model=AlphaReadinessResponse,
+)
+def get_alpha_readiness(
+    db: Session = Depends(get_db),
+) -> AlphaReadinessResponse:
     settings = get_settings()
     runtime_profile = resolve_runtime_profile(settings)
 
-    repo_root = Path(__file__).resolve().parents[4]
+    repo_root = _repo_root()
     release_gate = _load_release_gate(repo_root)
-    checks = release_gate.get("checks")
-    check_items = checks if isinstance(checks, list) else []
 
     alpha_gate_passed = bool(release_gate.get("alpha_gate_passed", False))
     production_ready = bool(release_gate.get("production_ready", False))
-    proof_chain_complete = bool(release_gate) and len(check_items) > 0
-
-    archive_self_verifying = any(
-        isinstance(item, dict)
-        and item.get("name") == "archive_validation"
-        and str(item.get("status", "")).upper() == "PASS"
-        for item in check_items
-    )
+    (
+        proof_chain_complete,
+        archive_self_verifying,
+        proof_warnings,
+    ) = _proof_chain_state(repo_root, release_gate)
 
     total_sources = db.scalar(select(func.count(SourceRegistry.id))) or 0
     runnable_sources = db.scalar(
-        select(func.count(SourceRegistry.id)).where(SourceRegistry.lifecycle_state == "runnable")
+        select(func.count(SourceRegistry.id)).where(
+            SourceRegistry.lifecycle_state == "runnable"
+        )
     ) or 0
     enable_ready_sources = db.scalar(
         select(func.count(SourceRegistry.id)).where(
@@ -175,8 +361,6 @@ def get_alpha_readiness(db: Session = Depends(get_db)) -> AlphaReadinessResponse
         warnings.append("production_ready_true_requires_manual_verification")
     if not proof_chain_complete:
         warnings.append("proof_chain_incomplete")
-    if not archive_self_verifying:
-        warnings.append("archive_validation_not_verified")
     if runnable_sources == 0:
         warnings.append("no_runnable_sources")
     if not settings.evidence_store_required:
@@ -200,11 +384,21 @@ def get_alpha_readiness(db: Session = Depends(get_db)) -> AlphaReadinessResponse
         deprecated_sources=int(deprecated_sources),
         total_sources=int(total_sources),
         evidence_store="ok" if evidence_store_ok else "missing",
-        public_review_gate="enabled" if settings.enable_admin_review else "disabled",
-        experimental_live_map="enabled" if settings.enable_experimental_live_map else "disabled",
-        workflow_admin="enabled" if settings.enable_workflow_admin else "disabled",
+        public_review_gate=(
+            "enabled" if settings.enable_admin_review else "disabled"
+        ),
+        experimental_live_map=(
+            "enabled" if settings.enable_experimental_live_map else "disabled"
+        ),
+        workflow_admin=(
+            "enabled" if settings.enable_workflow_admin else "disabled"
+        ),
         storage_backend=settings.storage_backend,
         queue_backend=settings.ingestion_queue_backend,
         rate_limit_backend=settings.rate_limit_backend,
-        warnings=warnings + [f"runtime_profile={runtime_profile.name}"],
+        warnings=(
+            warnings
+            + proof_warnings
+            + [f"runtime_profile={runtime_profile.name}"]
+        ),
     )

@@ -56,7 +56,7 @@ This repository is an alpha/research-grade platform, not a production legal syst
 - alpha_ready: true
 - production_ready: false
 - public_release_safe: false
-- ingestion_coverage: 1/26 runnable sources (from canonical source-registry proof)
+- ingestion_coverage: 2/26 runnable sources (from canonical source-registry proof)
 - AI_answering_enabled: true (derivative, evidence-cited alpha mode)
 - workflow_admin_enabled: false (gated/experimental)
 - live_map_enabled: false (gated)

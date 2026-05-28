@@ -7,7 +7,7 @@ Generated at: 2026-05-26T04:59:12.396532+00:00
 
 - total_sources: 26
 - machine_ingest_sources: 8
-- runnable_now: 1
+- runnable_now: 2
 - enable_ready: 6
 - deprecated: 3
 
