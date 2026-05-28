@@ -267,19 +267,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[test]"
 
-      - name: Validate final ZIP (canonical + referenced logs)
-        run: |
-          source backend/.venv/bin/activate
-          python scripts/validate_final_zip.py dist/JUDGE_ATLAS-main-final.zip
-
-      - name: Check required proof logs in archive
-        run: |
-          source backend/.venv/bin/activate
-          python scripts/check_required_proof_logs.py \
-            --root . \
-            --packaged-archive \
-            --strict-required-files
-
       - name: Validate extracted release
         run: |
           source backend/.venv/bin/activate

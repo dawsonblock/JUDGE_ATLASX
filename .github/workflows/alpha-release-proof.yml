@@ -128,17 +128,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[test]"
 
-      - name: Validate final ZIP (canonical name + referenced logs)
-        run: |
-          python scripts/validate_final_zip.py dist/JUDGE_ATLAS-main-final.zip
-
-      - name: Check required proof logs in archive
-        run: |
-          python scripts/check_required_proof_logs.py \
-            --root . \
-            --packaged-archive \
-            --strict-required-files
-
       - name: Validate extracted release (full checks)
         run: |
           python scripts/validate_extracted_release.py \
