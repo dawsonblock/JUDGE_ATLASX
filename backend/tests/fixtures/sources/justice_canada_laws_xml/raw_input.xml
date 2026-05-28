@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Minimal deterministic fixture for Justice Canada Laws XML adapter tests.
+     This is synthetic test data, not a real government document. -->
+<Acts xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Act>
+    <Identification language="eng">
+      <LongTitle>Criminal Code</LongTitle>
+      <ShortTitle>Criminal Code</ShortTitle>
+      <BillNumber>C-46</BillNumber>
+      <chapter>C-46</chapter>
+      <InForce>1985-07-01</InForce>
+      <LastAmendmentDate>2024-01-01</LastAmendmentDate>
+    </Identification>
+    <Body>
+      <Section id="1">
+        <Label>1</Label>
+        <MarginalNote>Short title</MarginalNote>
+        <Text>This Act may be cited as the Criminal Code.</Text>
+      </Section>
+      <Section id="2">
+        <Label>2</Label>
+        <MarginalNote>Definitions</MarginalNote>
+        <Text>In this Act, "act" includes an omission and a thing omitted to be done.</Text>
+      </Section>
+    </Body>
+  </Act>
+</Acts>

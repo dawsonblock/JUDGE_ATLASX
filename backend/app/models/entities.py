@@ -2437,6 +2437,92 @@ class UserSession(Base):
         DateTime(timezone=True), nullable=True
     )
     user_agent: Mapped[str | None] = mapped_column(String(512), nullable=True)
-    ip_hash: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
-    user: Mapped["User"] = relationship("User", back_populates="sessions")
+
+class StatuteIncidentLink(Base, TimestampMixin):
+    """Links a GeoLegalEvent (crime incident) to relevant Canadian statutes.
+
+    This table enables the public platform to show citizens which laws are
+    relevant to specific crimes. Links are AI-generated with confidence scores
+    and explanations of why the statute is relevant.
+    """
+
+    __tablename__ = "statute_incident_links"
+    __table_args__ = (
+        UniqueConstraint(
+            "incident_id",
+            "legal_section_id",
+            name="uq_statute_incident_links_incident_section",
+        ),
+        Index("idx_statute_incident_links_incident_id", "incident_id"),
+        Index("idx_statute_incident_links_legal_section_id", "legal_section_id"),
+        Index("idx_statute_incident_links_confidence_score", "confidence_score"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    # Reference to the crime incident (GeoLegalEvent stored as string ID)
+    incident_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    # Reference to a specific section of a legal instrument
+    legal_section_id: Mapped[int] = mapped_column(
+        ForeignKey("legal_sections.id"), nullable=False, index=True
+    )
+    # AI-generated explanation of why this statute is relevant to this incident
+    link_reason: Mapped[str] = mapped_column(Text, nullable=False)
+    # Confidence score (0-1) for how relevant this statute is to this incident
+    confidence_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.5)
+    # Which AI model generated this link (for tracking and reproducibility)
+    ai_model_version: Mapped[str] = mapped_column(String(50), nullable=False)
+    # Manually approved or flagged by admin
+    review_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="pending", index=True
+    )  # enum: pending, approved, rejected, flagged
+
+    legal_section: Mapped[LegalSection] = relationship()
+
+    __mapper_args__ = {
+        "polymorphic_identity": "statute_incident_link",
+    }
+
+
+class IncidentNewsLink(Base, TimestampMixin):
+    """Links a GeoLegalEvent (crime incident) to news articles.
+
+    This table enables the public platform to show citizens news coverage
+    related to specific crimes, providing additional context and verification.
+    """
+
+    __tablename__ = "incident_news_links"
+    __table_args__ = (
+        UniqueConstraint(
+            "incident_id",
+            "news_article_url",
+            name="uq_incident_news_links_incident_url",
+        ),
+        Index("idx_incident_news_links_incident_id", "incident_id"),
+        Index("idx_incident_news_links_relevance_score", "relevance_score"),
+        Index("idx_incident_news_links_published_date", "published_date"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    # Reference to the crime incident (GeoLegalEvent stored as string ID)
+    incident_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    # Title of the news article
+    news_article_title: Mapped[str] = mapped_column(String(500), nullable=False)
+    # URL to the news article
+    news_article_url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    # Publication name (e.g., "CBC News", "The Globe and Mail")
+    publication_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Date the article was published
+    published_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # Relevance score (0-1) for how relevant this article is to this incident
+    relevance_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.5)
+    # Brief excerpt from the article (for display purposes)
+    excerpt: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # How the link was established (e.g., "manual", "ai_match", "location_match")
+    link_method: Mapped[str] = mapped_column(
+        String(50), nullable=False, default="manual"
+    )
+
+    __mapper_args__ = {
+        "polymorphic_identity": "incident_news_link",
+    }

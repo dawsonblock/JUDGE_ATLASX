@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     enable_admin_imports: bool = False
     enable_admin_review: bool = False
     enable_public_event_post: bool = False
+    enable_public_platform: bool = False  # Public platform disabled by default
     admin_token: str | None = None
     admin_review_token: str | None = None
     geonames_username: str | None = None

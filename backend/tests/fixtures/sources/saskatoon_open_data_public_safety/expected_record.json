@@ -1,0 +1,15 @@
+{
+  "_fixture_note": "Synthetic deterministic test record. Not real incident data.",
+  "source_key": "saskatoon_open_data_public_safety",
+  "record_type": "crime_incident_aggregate",
+  "incident_type": "Theft Under $5000",
+  "reported_date": "2024-06-01",
+  "neighbourhood": "Downtown",
+  "city": "Saskatoon",
+  "province": "SK",
+  "latitude": 52.1332,
+  "longitude": -106.6700,
+  "review_status": "pending_review",
+  "public_visibility": "hidden",
+  "parser_version": "1.0"
+}
