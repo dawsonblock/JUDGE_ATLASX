@@ -1,12 +1,13 @@
 python3 scripts/clean_generated_artifacts.py
 removed_count=8
 PYTHONPATH=. python3 -m unittest discover -s tests
-.....................................................................
+........................................................................
 ----------------------------------------------------------------------
-Ran 69 tests in 0.746s
+Ran 72 tests in 0.886s
 
 OK
 python3 scripts/rtl_sanity_check.py
+WARNING: waveform_brain_cdc_wrapper.v: always_ff without explicit reset condition
 Sanity check complete.
 python3 scripts/generate_reciprocal_lut.py
 Wrote 131072 entries to /Users/dawsonblock/Downloads/waveform_brain_v1_auto_cal/rtl/reciprocal_lut_w16_q24w25.mem

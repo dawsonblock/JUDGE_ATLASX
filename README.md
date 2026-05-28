@@ -175,6 +175,8 @@ Current baseline flow targets:
 
 Strict release flow targets:
 
+- `make release-validate-local`
+- `make release-validate-board`
 - `make sim-axilite`
 - `make sim-packer`
 - `make sim-safety`
@@ -201,6 +203,9 @@ Strict release flow targets:
 - Proof packaging has two levels:
   - local: `proof-package-local` / `validate-release-local`
   - board: `proof-package-board` / `validate-release-board`
+- End-to-end release flows are separated:
+  - local: `release-validate-local` or `release-proof-local`
+  - board: `release-validate-board` (alias: `release-validate`)
 - Strict board proof is fail-closed and requires semantic pass summaries plus
   Vivado reports and raw evidence logs in proof packaging.
 - Board access should remain blocked unless implementation gate criteria pass.

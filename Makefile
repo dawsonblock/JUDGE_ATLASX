@@ -5,7 +5,7 @@ PYTHON ?= python3
 VERILATOR ?= verilator
 RTL_SRCS := $(wildcard rtl/*.v)
 
-.PHONY: all validate test lint audit-arith gen-lut cosim-vectors cosim-gkp sim-axilite sim-packer sim-safety extract-regs cdc-analyze parse-cdc cdc-gate-check lint-verilator clean-generated size-report cdc-signoff-package preboard-check implementation-gate vivado-signoff-package vivado-bitstream source-package proof-package proof-package-local proof-package-board proof-package-strict validate-release validate-release-local validate-release-board validate-release-strict make-validate-log release-prereqs release-validate release-proof-local
+.PHONY: all validate test lint audit-arith gen-lut cosim-vectors cosim-gkp sim-axilite sim-packer sim-safety extract-regs cdc-analyze parse-cdc cdc-gate-check lint-verilator clean-generated size-report cdc-signoff-package preboard-check implementation-gate vivado-signoff-package vivado-bitstream source-package proof-package proof-package-local proof-package-board proof-package-strict validate-release validate-release-local validate-release-board validate-release-strict make-validate-log release-prereqs release-validate release-validate-local release-validate-board release-proof-local
 
 all:
 	@echo "Available targets: validate, test, lint, audit-arith, gen-lut, cosim-vectors, cosim-gkp, sim-axilite, sim-packer, sim-safety, extract-regs, cdc-analyze, parse-cdc, cdc-gate-check, lint-verilator, clean-generated, size-report, cdc-signoff-package, preboard-check, implementation-gate, vivado-signoff-package, vivado-bitstream, source-package, proof-package-local, proof-package-board, release-prereqs, release-validate"
@@ -122,7 +122,7 @@ validate-release-local:
 		exit 1; \
 	fi; \
 	$(PYTHON) scripts/validate_release_archive.py "$$latest_src" --mode source
-	@latest_proof=$$(ls -t dist/*-proof-*.zip 2>/dev/null | head -1); \
+	@latest_proof=$$(ls -t dist/*-proof-local-*.zip 2>/dev/null | head -1); \
 	if [ -z "$$latest_proof" ]; then \
 		echo "No proof archive found in dist/. Run make proof-package-local first."; \
 		exit 1; \
@@ -139,7 +139,7 @@ validate-release-board:
 		exit 1; \
 	fi; \
 	$(PYTHON) scripts/validate_release_archive.py "$$latest_src" --mode source
-	@latest_proof=$$(ls -t dist/*-proof-*.zip 2>/dev/null | head -1); \
+	@latest_proof=$$(ls -t dist/*-proof-board-*.zip 2>/dev/null | head -1); \
 	if [ -z "$$latest_proof" ]; then \
 		echo "No proof archive found in dist/. Run make proof-package-board first."; \
 		exit 1; \
@@ -153,7 +153,18 @@ release-prereqs:
 	$(PYTHON) scripts/check_release_prereqs.py
 
 
-release-validate:
+release-validate-local:
+	$(MAKE) make-validate-log
+	$(MAKE) preboard-check
+	$(MAKE) sim-axilite
+	$(MAKE) sim-packer
+	$(MAKE) sim-safety
+	$(MAKE) source-package
+	$(MAKE) proof-package-local
+	$(MAKE) validate-release-local
+	@echo "release-validate-local complete"
+
+release-validate-board:
 	$(MAKE) make-validate-log
 	$(MAKE) preboard-check
 	$(MAKE) sim-axilite
@@ -164,7 +175,10 @@ release-validate:
 	$(MAKE) source-package
 	$(MAKE) proof-package-board
 	$(MAKE) validate-release-board
+	@echo "release-validate-board complete"
+
+release-validate: release-validate-board
 	@echo "release-validate complete"
 
-release-proof-local: release-validate
+release-proof-local: release-validate-local
 	@echo "release-proof-local complete"

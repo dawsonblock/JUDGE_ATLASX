@@ -86,9 +86,7 @@ def require_preboard_pass() -> int:
 
     latest = cosim_checks[-1]
     if not bool(latest.get("required", False)):
-        return fail(
-            "run_gkp_cosim was optional during preboard; " "release requires it"
-        )
+        return fail("run_gkp_cosim was optional during preboard; release requires it")
     if not bool(latest.get("raw_pass", False)):
         return fail("run_gkp_cosim did not pass in preboard summary")
 
