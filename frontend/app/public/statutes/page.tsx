@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -10,219 +10,340 @@ interface Statute {
   citation: string;
   short_title: string;
   type: string;
+  incident_count?: number;
   last_amended: string | null;
 }
 
+// ── Skeleton row ──────────────────────────────────────────────────────────────
+function SkeletonRow() {
+  return (
+    <div
+      className="rounded-lg p-5 animate-pulse"
+      style={{ background: "var(--pub-surface)", border: "1px solid var(--pub-border)" }}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <div className="h-3 w-28 rounded mb-2" style={{ background: "var(--pub-border)" }} />
+          <div className="h-4 w-64 rounded mb-1.5" style={{ background: "var(--pub-border)" }} />
+          <div className="h-3 w-40 rounded" style={{ background: "var(--pub-border)" }} />
+        </div>
+        <div className="h-5 w-14 rounded" style={{ background: "var(--pub-border)" }} />
+      </div>
+    </div>
+  );
+}
+
+// ── Core browser component ────────────────────────────────────────────────────
 function StatutesBrowser() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
   const [statutes, setStatutes] = useState<Statute[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
+  const [draftSearch, setDraftSearch] = useState(searchParams.get("q") || "");
   const [sortBy, setSortBy] = useState<"frequency" | "title" | "recent">(
     (searchParams.get("sort") as "frequency" | "title" | "recent") || "frequency"
   );
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  const limit = 20;
+  const LIMIT = 20;
 
-  useEffect(() => {
-    fetchStatutes();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, sortBy, page]);
-
-  const fetchStatutes = async () => {
+  const fetchStatutes = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams({
-        limit: limit.toString(),
-        offset: ((page - 1) * limit).toString(),
+        limit: LIMIT.toString(),
+        offset: ((page - 1) * LIMIT).toString(),
         sort_by: sortBy,
       });
-
       if (searchTerm) params.append("search", searchTerm);
-
-      const response = await fetch(`/api/public/statutes?${params.toString()}`);
-
-      if (!response.ok) throw new Error("Failed to fetch statutes");
-
-      const data = await response.json();
+      const res = await fetch(`/api/public/statutes?${params}`);
+      if (!res.ok) throw new Error("Failed to fetch statutes");
+      const data = await res.json();
       setStatutes(data.items || []);
       setTotal(data.total || 0);
-    } catch (error) {
-      console.error("[v0] Error fetching statutes:", error);
+    } catch {
+      setStatutes([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchTerm, sortBy, page]);
+
+  useEffect(() => {
+    fetchStatutes();
+  }, [fetchStatutes]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setSearchTerm(draftSearch);
     setPage(1);
-    router.push(`/public/statutes?q=${encodeURIComponent(searchTerm)}`);
+    if (draftSearch) {
+      router.push(`/public/statutes?q=${encodeURIComponent(draftSearch)}`);
+    } else {
+      router.push("/public/statutes");
+    }
   };
 
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = Math.ceil(total / LIMIT);
+  const from = (page - 1) * LIMIT + 1;
+  const to = Math.min(page * LIMIT, total);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <Link href="/" className="text-xl font-bold text-slate-900">
-                Crime &amp; Law Explorer
-              </Link>
-            </div>
-            <nav className="flex gap-6">
-              <Link href="/public/map" className="text-slate-700 hover:text-slate-900">
-                Map
-              </Link>
-              <Link href="/public/statutes" className="text-blue-600 font-semibold">
-                Laws
-              </Link>
-              <Link href="/public/about" className="text-slate-700 hover:text-slate-900">
-                About
-              </Link>
-            </nav>
-          </div>
+    <div style={{ background: "var(--pub-bg)" }}>
+      {/* ── Page header ──────────────────────────────── */}
+      <div
+        className="px-6 py-8"
+        style={{
+          background: "var(--pub-surface)",
+          borderBottom: "1px solid var(--pub-border)",
+        }}
+      >
+        <div className="max-w-5xl mx-auto">
+          <h1
+            className="text-2xl font-bold mb-1 text-balance"
+            style={{ color: "var(--pub-ink)", letterSpacing: "-0.01em" }}
+          >
+            Canadian Federal Statutes
+          </h1>
+          <p className="text-sm mb-6" style={{ color: "var(--pub-muted)" }}>
+            Browse statutes linked to crime incidents. Click any entry to see all related incidents.
+          </p>
 
-          {/* Search Bar */}
-          <form onSubmit={handleSearch} className="flex gap-3">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search statutes..."
-              className="flex-1 px-4 py-2 border border-slate-300 rounded-lg"
-            />
+          {/* Search + sort row */}
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-col sm:flex-row gap-3"
+          >
+            <div className="flex-1 relative">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ color: "var(--pub-muted)" }}
+                aria-hidden="true"
+              >
+                <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M10.5 10.5L13 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              <input
+                type="search"
+                value={draftSearch}
+                onChange={(e) => setDraftSearch(e.target.value)}
+                placeholder="Search by statute title or citation…"
+                className="w-full pl-9 pr-4 py-2.5 rounded text-sm"
+                style={{
+                  border: "1px solid var(--pub-border-md)",
+                  background: "var(--pub-bg)",
+                  color: "var(--pub-ink)",
+                  outline: "none",
+                }}
+              />
+            </div>
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+              className="px-5 py-2.5 rounded text-sm font-semibold transition-opacity hover:opacity-90"
+              style={{ background: "var(--pub-navy)", color: "#fff" }}
             >
               Search
             </button>
+            <select
+              value={sortBy}
+              onChange={(e) => {
+                setSortBy(e.target.value as "frequency" | "title" | "recent");
+                setPage(1);
+              }}
+              className="px-3 py-2.5 rounded text-sm"
+              style={{
+                border: "1px solid var(--pub-border-md)",
+                background: "var(--pub-bg)",
+                color: "var(--pub-ink)",
+              }}
+            >
+              <option value="frequency">Most incidents</option>
+              <option value="title">A – Z</option>
+              <option value="recent">Recently amended</option>
+            </select>
           </form>
         </div>
-      </header>
+      </div>
 
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-slate-900">
-            Canadian Federal Statutes
-          </h1>
-          <select
-            value={sortBy}
-            onChange={(e) => {
-              setSortBy(e.target.value as "frequency" | "title" | "recent");
-              setPage(1);
-            }}
-            className="px-4 py-2 border border-slate-300 rounded-lg bg-white"
-          >
-            <option value="frequency">Most Incidents</option>
-            <option value="title">A-Z</option>
-            <option value="recent">Recently Amended</option>
-          </select>
-        </div>
+      {/* ── Results ──────────────────────────────────── */}
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* Result count */}
+        {!isLoading && total > 0 && (
+          <p className="text-xs mb-4" style={{ color: "var(--pub-muted)" }}>
+            Showing {from}–{to} of {total} statutes
+            {searchTerm && (
+              <>
+                {" "}for <span style={{ color: "var(--pub-ink)" }}>&ldquo;{searchTerm}&rdquo;</span>
+              </>
+            )}
+          </p>
+        )}
 
         {isLoading ? (
-          <div className="text-center py-12">
-            <p className="text-slate-600">Loading statutes...</p>
+          <div className="flex flex-col gap-3">
+            {[...Array(8)].map((_, i) => <SkeletonRow key={i} />)}
           </div>
         ) : statutes.length === 0 ? (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <p className="text-slate-700">
-              No statutes found. Try a different search term.
+          <div
+            className="rounded-lg px-6 py-8 text-center"
+            style={{ background: "var(--pub-warn-bg)", border: "1px solid #FDE68A" }}
+          >
+            <p className="text-sm font-semibold mb-1" style={{ color: "var(--pub-warn)" }}>
+              No statutes found
+            </p>
+            <p className="text-xs" style={{ color: "var(--pub-warn)" }}>
+              Try a different search term or{" "}
+              <button
+                onClick={() => { setDraftSearch(""); setSearchTerm(""); setPage(1); }}
+                className="underline font-medium"
+              >
+                clear the search
+              </button>
+              .
             </p>
           </div>
         ) : (
-          <>
-            <div className="space-y-4 mb-8">
-              {statutes.map((statute) => (
-                <Link
-                  key={statute.id}
-                  href={`/public/statute/${statute.id}`}
-                  className="block bg-white border border-slate-200 rounded-lg p-6 hover:border-blue-300 hover:bg-blue-50 transition"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <p className="font-mono text-sm text-blue-600 mb-1">
-                        {statute.citation}
-                      </p>
-                      <h3 className="text-lg font-semibold text-slate-900">
-                        {statute.title}
-                      </h3>
-                      {statute.short_title && statute.short_title !== statute.title && (
-                        <p className="text-sm text-slate-600 mt-1">
-                          {statute.short_title}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right text-sm text-slate-500">
-                      {statute.type}
-                    </div>
+          <div className="flex flex-col gap-2.5 mb-8">
+            {statutes.map((statute) => (
+              <Link
+                key={statute.id}
+                href={`/public/statute/${statute.id}`}
+                className="flex items-start justify-between gap-4 rounded-lg px-5 py-4 transition-colors group"
+                style={{
+                  background: "var(--pub-surface)",
+                  border: "1px solid var(--pub-border)",
+                }}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span
+                      className="text-xs font-mono font-semibold"
+                      style={{ color: "var(--pub-navy)" }}
+                    >
+                      {statute.citation}
+                    </span>
+                    <span
+                      className="text-xs px-1.5 py-0.5 rounded"
+                      style={{
+                        background: "var(--pub-bg)",
+                        color: "var(--pub-muted)",
+                        border: "1px solid var(--pub-border)",
+                      }}
+                    >
+                      {statute.type || "Federal"}
+                    </span>
                   </div>
-                </Link>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center gap-2 mt-8">
-                <button
-                  onClick={() => setPage(Math.max(1, page - 1))}
-                  disabled={page === 1}
-                  className="px-4 py-2 border border-slate-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                <div className="flex items-center gap-2">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (p) => (
-                      <button
-                        key={p}
-                        onClick={() => setPage(p)}
-                        className={`px-4 py-2 rounded-lg border ${
-                          p === page
-                            ? "bg-blue-600 text-white border-blue-600"
-                            : "border-slate-300 hover:border-blue-300"
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    )
+                  <p
+                    className="text-sm font-semibold mb-0.5 group-hover:underline"
+                    style={{ color: "var(--pub-ink)" }}
+                  >
+                    {statute.title}
+                  </p>
+                  {statute.short_title && statute.short_title !== statute.title && (
+                    <p className="text-xs" style={{ color: "var(--pub-muted)" }}>
+                      {statute.short_title}
+                    </p>
                   )}
                 </div>
-                <button
-                  onClick={() => setPage(Math.min(totalPages, page + 1))}
-                  disabled={page === totalPages}
-                  className="px-4 py-2 border border-slate-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
-              </div>
-            )}
+                <div className="flex-shrink-0 text-right">
+                  {statute.incident_count !== undefined && (
+                    <div
+                      className="text-xs font-semibold px-2.5 py-1 rounded"
+                      style={{
+                        background: statute.incident_count > 0
+                          ? "rgba(15,76,117,0.08)"
+                          : "var(--pub-bg)",
+                        color: statute.incident_count > 0
+                          ? "var(--pub-navy)"
+                          : "var(--pub-muted)",
+                      }}
+                    >
+                      {statute.incident_count} incident{statute.incident_count !== 1 ? "s" : ""}
+                    </div>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
 
-            <p className="text-center text-sm text-slate-600 mt-6">
-              Showing {(page - 1) * limit + 1}–
-              {Math.min(page * limit, total)} of {total} statutes
-            </p>
-          </>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-4 py-2 rounded text-sm font-medium disabled:opacity-40"
+              style={{
+                border: "1px solid var(--pub-border-md)",
+                color: "var(--pub-text)",
+                background: "var(--pub-surface)",
+              }}
+            >
+              Previous
+            </button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                const p = i + 1;
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className="w-9 h-9 rounded text-sm font-medium transition-colors"
+                    style={{
+                      background: p === page ? "var(--pub-navy)" : "var(--pub-surface)",
+                      color: p === page ? "#fff" : "var(--pub-text)",
+                      border: p === page ? "1px solid var(--pub-navy)" : "1px solid var(--pub-border-md)",
+                    }}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-4 py-2 rounded text-sm font-medium disabled:opacity-40"
+              style={{
+                border: "1px solid var(--pub-border-md)",
+                color: "var(--pub-text)",
+                background: "var(--pub-surface)",
+              }}
+            >
+              Next
+            </button>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
+// ── Page export ───────────────────────────────────────────────────────────────
 export default function StatutesBrowserPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-          <p className="text-slate-600">Loading statutes...</p>
+        <div
+          className="flex items-center justify-center py-24"
+          style={{ background: "var(--pub-bg)" }}
+        >
+          <div className="text-center">
+            <div
+              className="w-7 h-7 rounded-full border-2 border-t-transparent animate-spin mx-auto mb-3"
+              style={{ borderColor: "var(--pub-navy)" }}
+            />
+            <p className="text-sm" style={{ color: "var(--pub-muted)" }}>
+              Loading statutes…
+            </p>
+          </div>
         </div>
       }
     >

@@ -60,7 +60,38 @@
   }
 }
 
-/* Leaflet map overrides */
+/* =====================================================
+   PUBLIC PLATFORM DESIGN TOKENS
+   Civic education platform — trustworthy, data-first
+   ===================================================== */
+.public-theme {
+  /* Core palette — 5 colors maximum */
+  --pub-bg:        #F8F7F4;   /* warm off-white — primary surface */
+  --pub-surface:   #FFFFFF;   /* card / panel surface */
+  --pub-navy:      #0F4C75;   /* deep navy — authority, primary actions */
+  --pub-navy-dark: #0A3254;   /* pressed / hover state */
+  --pub-teal:      #1B8A5A;   /* trust green — positive, verified, accent */
+  --pub-teal-dark: #156E48;   /* hover state */
+
+  /* Neutrals */
+  --pub-ink:       #1C1C1E;   /* near-black — headings */
+  --pub-text:      #374151;   /* body copy */
+  --pub-muted:     #6B7280;   /* secondary text, metadata */
+  --pub-border:    #E5E7EB;   /* subtle dividers */
+  --pub-border-md: #D1D5DB;   /* medium-weight borders */
+
+  /* Semantic */
+  --pub-warn:      #B45309;   /* amber — caution notices */
+  --pub-warn-bg:   #FFFBEB;   /* amber tint surface */
+  --pub-danger:    #991B1B;   /* red — error, blocked */
+  --pub-danger-bg: #FEF2F2;   /* red tint surface */
+
+  /* Spacing rhythm */
+  --pub-radius:    6px;
+}
+
+/* =====================================================
+   LEAFLET MAP OVERRIDES */
 .leaflet-container {
   height: 100%;
   width: 100%;
