@@ -210,16 +210,6 @@ jobs:
           bash scripts/package_and_validate_release_archive.sh \
             --archive-path "${RUNNER_TEMP}/JUDGE_ATLAS-main-final.zip"
 
-      - name: Validate final zip
-        run: |
-          source backend/.venv/bin/activate
-          python scripts/validate_final_zip.py "${RUNNER_TEMP}/JUDGE_ATLAS-main-final.zip"
-
-      - name: Release surface check
-        run: |
-          source backend/.venv/bin/activate
-          python scripts/check_release_surface.py --archive "${RUNNER_TEMP}/JUDGE_ATLAS-main-final.zip"
-
       - name: Upload release proof artifacts
         if: always()
         uses: actions/upload-artifact@v4

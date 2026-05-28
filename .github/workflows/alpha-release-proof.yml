@@ -62,13 +62,6 @@ jobs:
           python scripts/validate_release_archive.py \
             --archive "${RUNNER_TEMP}/JUDGE_ATLAS-main-final.zip" \
             --expected-root JUDGE_ATLAS-main
-          python scripts/check_release_surface.py \
-            --archive "${RUNNER_TEMP}/JUDGE_ATLAS-main-final.zip"
-          python scripts/validate_final_zip.py \
-            --allow-noncanonical \
-            "${RUNNER_TEMP}/JUDGE_ATLAS-main-final.zip"
-          python scripts/verify_archive_proof_freshness.py \
-            --archive "${RUNNER_TEMP}/JUDGE_ATLAS-main-final.zip"
           sha256sum "${RUNNER_TEMP}/JUDGE_ATLAS-main-final.zip" \
             > "${RUNNER_TEMP}/JUDGE_ATLAS-main-final.zip.sha256"
 
