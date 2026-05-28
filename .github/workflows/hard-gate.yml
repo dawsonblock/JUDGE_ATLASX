@@ -64,10 +64,10 @@ jobs:
           source ./backend/.venv/bin/activate
           python backend/tools/validate_sources.py
 
-      - name: Check for open contradictions
+      - name: Check status truth consistency
         run: |
           source ./backend/.venv/bin/activate
-          python scripts/check_open_contradictions.py || true
+          python scripts/check_status_truth_consistency.py
 
       - name: Verify release gate
         run: |
