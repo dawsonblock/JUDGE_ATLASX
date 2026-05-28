@@ -28,6 +28,7 @@ Use explicit alpha-safe defaults:
 - JTA_EVIDENCE_STORE_ROOT=/app/evidence
 - JTA_EVIDENCE_STORE_REQUIRED=true
 - JTA_STORAGE_BACKEND=local (or object storage backend when configured)
+- JTA_ENABLE_PUBLIC_PLATFORM=false
 - JTA_ENABLE_EXPERIMENTAL_LIVE_MAP=false
 - JTA_ENABLE_WORKFLOW_ADMIN=false
 - JTA_ENABLE_LEGACY_ADMIN_TOKEN=false

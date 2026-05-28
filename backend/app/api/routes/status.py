@@ -69,6 +69,7 @@ class AlphaReadinessResponse(BaseModel):
     total_sources: int
     evidence_store: str
     public_review_gate: str
+    public_platform: str
     experimental_live_map: str
     workflow_admin: str
     storage_backend: str
@@ -367,6 +368,8 @@ def get_alpha_readiness(
         warnings.append("evidence_store_not_required")
     if settings.enable_experimental_live_map:
         warnings.append("experimental_live_map_enabled")
+    if settings.enable_public_platform:
+        warnings.append("public_platform_enabled")
     if settings.enable_workflow_admin:
         warnings.append("workflow_admin_enabled")
 
@@ -386,6 +389,9 @@ def get_alpha_readiness(
         evidence_store="ok" if evidence_store_ok else "missing",
         public_review_gate=(
             "enabled" if settings.enable_admin_review else "disabled"
+        ),
+        public_platform=(
+            "enabled" if settings.enable_public_platform else "disabled"
         ),
         experimental_live_map=(
             "enabled" if settings.enable_experimental_live_map else "disabled"
