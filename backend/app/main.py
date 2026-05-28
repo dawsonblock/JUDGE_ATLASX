@@ -10,8 +10,11 @@ from starlette.responses import JSONResponse
 
 from app.api.routes import router
 from app.core.config import get_settings
+from app.core.errors import register_exception_handlers
+from app.core.logging_config import configure_logging
 from app.db.session import SessionLocal, engine
 from app.db.spatial import initialize_postgis
+from app.middleware.request_id import RequestIDMiddleware
 from app.models import entities  # noqa: F401
 from app.seed.sample_data import seed_sample_data
 from app.seed.source_registry import seed_source_registry
@@ -404,7 +407,16 @@ def create_app() -> FastAPI:
         if scheduler is not None:
             scheduler.shutdown(wait=False)
 
+    # Configure structured logging before anything else
+    configure_logging(
+        level="DEBUG" if settings.app_env == "development" else "INFO",
+        json_logs=settings.app_env in ("production", "staging"),
+    )
+
     app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
+
+    # Register structured error handlers (must come before routers)
+    register_exception_handlers(app)
 
     # Configure rate limiting (simple in-memory limiter raises HTTPException(429) directly)
     from app.core.rate_limit import get_rate_limiter
@@ -412,6 +424,9 @@ def create_app() -> FastAPI:
     limiter = get_rate_limiter()
     if limiter:
         app.state.limiter = limiter
+
+    # Attach request ID to every request (outermost middleware)
+    app.add_middleware(RequestIDMiddleware)
 
     # Configure request size limits
     app.add_middleware(
