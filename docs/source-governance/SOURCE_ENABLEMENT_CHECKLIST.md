@@ -19,7 +19,8 @@ All five sources below are intentionally disabled in alpha and require explicit 
 - Confirm legal terms of use permit machine ingestion and local evidence retention.
 - Confirm source endpoint availability and stable fetch behavior over multiple runs.
 - Run adapter contract tests and source-specific replay/fixture tests.
-- Run one dry ingestion that preserves raw evidence snapshot bytes.
+- Run one non-publishing dry ingestion via `POST /api/admin/sources/{source_key}/dry-run`.
+- Confirm dry-run indicates expected evidence snapshot behavior before any real run.
 - Verify review queue payload quality and citation/evidence binding quality.
 - Regenerate proof artifacts and verify source registry truth table consistency.
 - Obtain documented approval from release/security/governance owners.

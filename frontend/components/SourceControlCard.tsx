@@ -14,8 +14,9 @@ import {
   Play,
   Loader2,
   RefreshCw,
+  FlaskConical,
 } from "lucide-react";
-import { AdminSourceItem, SourceRunResult } from "@/lib/api";
+import { AdminSourceItem, SourceDryRunResult, SourceRunResult } from "@/lib/api";
 import { authorityColour, sourceClassLabel, sourceClassColour, lifecycleStateLabel, lifecycleStateColour } from "@/lib/sourceContracts";
 
 function AuthorityBadge({ authority }: { authority: string }) {
@@ -37,8 +38,10 @@ export function SourceControlCard({
   const [source, setSource] = useState<AdminSourceItem>(initialSource);
   const [toggleLoading, setToggleLoading] = useState(false);
   const [runLoading, setRunLoading] = useState(false);
+  const [dryRunLoading, setDryRunLoading] = useState(false);
   const [retryLoading, setRetryLoading] = useState(false);
   const [runResult, setRunResult] = useState<SourceRunResult | null>(null);
+  const [dryRunResult, setDryRunResult] = useState<SourceDryRunResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [csrfToken, setCsrfToken] = useState<string | null>(null);
 
@@ -122,6 +125,26 @@ export function SourceControlCard({
       setError(e instanceof Error ? e.message : "Run failed");
     } finally {
       setRunLoading(false);
+    }
+  }
+
+  async function handleDryRun() {
+    setDryRunLoading(true);
+    setError(null);
+    setDryRunResult(null);
+    try {
+      const resp = await adminPost(`/api/admin/sources/${source.source_key}/dry-run`);
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(
+          data?.detail || data?.error || `Dry-run failed: ${resp.status}`,
+        );
+      }
+      setDryRunResult(data as SourceDryRunResult);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Dry-run failed");
+    } finally {
+      setDryRunLoading(false);
     }
   }
 
@@ -290,6 +313,21 @@ export function SourceControlCard({
         <div className="flex gap-2 pt-1 flex-wrap">
           <Button
             size="sm"
+            variant="outline"
+            disabled={dryRunLoading}
+            onClick={handleDryRun}
+            className="h-7 text-xs"
+          >
+            {dryRunLoading ? (
+              <Loader2 className="h-3 w-3 animate-spin mr-1" />
+            ) : (
+              <FlaskConical className="h-3 w-3 mr-1" />
+            )}
+            Dry Run
+          </Button>
+
+          <Button
+            size="sm"
             variant={source.is_active ? "outline" : "default"}
             disabled={toggleLoading || (!source.is_active && !canEnable)}
             title={
@@ -397,6 +435,40 @@ export function SourceControlCard({
                 )}
                 Retry
               </Button>
+            )}
+          </div>
+        )}
+
+        {dryRunResult && (
+          <div
+            className={`rounded p-2 text-xs ${
+              dryRunResult.success
+                ? "bg-sky-50 text-sky-900"
+                : "bg-amber-50 text-amber-900"
+            }`}
+          >
+            <p className="font-medium">
+              Dry-run {dryRunResult.success ? "passed" : "reported issues"}
+            </p>
+            <p>
+              Reachable: {dryRunResult.source_reachable ? "yes" : "no"} · Sample: {dryRunResult.sample_records_found} · Parsed: {dryRunResult.parser_matched_records}
+            </p>
+            <p>
+              Legal note: {dryRunResult.legal_note_present ? "present" : "missing"} · Snapshot: {dryRunResult.evidence_snapshot_would_be_created ? "yes" : "no"} · Claims: {dryRunResult.claims_would_be_extracted ? "yes" : "no"}
+            </p>
+            {dryRunResult.warnings.length > 0 && (
+              <ul className="mt-1 space-y-0.5 list-disc pl-4">
+                {dryRunResult.warnings.map((warning, i) => (
+                  <li key={`dry-warning-${i}`}>{warning}</li>
+                ))}
+              </ul>
+            )}
+            {dryRunResult.errors.length > 0 && (
+              <ul className="mt-1 space-y-0.5 list-disc pl-4">
+                {dryRunResult.errors.map((dryError, i) => (
+                  <li key={`dry-error-${i}`}>{dryError}</li>
+                ))}
+              </ul>
             )}
           </div>
         )}

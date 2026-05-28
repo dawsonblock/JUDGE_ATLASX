@@ -10,6 +10,7 @@ TEST_DB = Path(tempfile.gettempdir()) / f"jta_backend_tests_{os.getpid()}.db"
 if TEST_DB.exists():
     TEST_DB.unlink()
 os.environ["JTA_APP_ENV"] = "development"
+os.environ["JTA_RUNTIME_PROFILE"] = "test"
 os.environ["JTA_ADMIN_TOKEN"] = "test-token"
 os.environ["JTA_DATABASE_URL"] = f"sqlite:///{TEST_DB}"
 os.environ["JTA_AUTO_SEED"] = "true"

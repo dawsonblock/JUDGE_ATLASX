@@ -13,6 +13,14 @@ class Settings(BaseSettings):
     courtlistener_max_dockets_per_run: int = 100
     courtlistener_timeout_seconds: int = 60
     app_env: str = "development"
+    runtime_profile: Literal[
+        "development",
+        "alpha_local",
+        "alpha_docker",
+        "staging",
+        "production",
+        "test",
+    ] = "development"
     auto_seed: bool = False
     # Independent gate for source registry seeding (prod-safe, defaults True)
     seed_source_registry: bool = True

@@ -10,6 +10,7 @@ from starlette.responses import JSONResponse
 
 from app.api.routes import router
 from app.core.config import get_settings
+from app.core.runtime_profile import resolve_runtime_profile, validate_runtime_profile
 from app.db.session import SessionLocal, engine
 from app.db.spatial import initialize_postgis
 from app.models import entities  # noqa: F401
@@ -343,6 +344,15 @@ def create_app() -> FastAPI:
     from app.services.evidence_store_validation import validate_evidence_store_root
 
     settings = get_settings()
+
+    runtime_profile = resolve_runtime_profile(settings)
+    profile_errors, profile_warnings = validate_runtime_profile(settings, runtime_profile)
+    for warning in profile_warnings:
+        print(f"[STARTUP WARNING] {warning}")
+    if profile_errors:
+        for error in profile_errors:
+            print(f"ERROR: {error}")
+        sys.exit(1)
 
     # Validate production safety before proceeding
     _validate_production_safety(settings)

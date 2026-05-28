@@ -1,4 +1,4 @@
-.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof release-proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup release-zip build-clean-release validate-release-zip proof-static validate-archive-freshness validate-handoff-consistency saskatoon-staging-proof canlii-staging-contract statscan-boundary-proof validate-smoke-workspace validate-full-workspace validate-docker-workspace check-route-contract
+.PHONY: backend-install backend-test frontend-install frontend-check frontend-typecheck verify docker-smoke proof release-proof backend-proof frontend-build bootstrap-backend bootstrap-frontend bootstrap truth-check full-proof clean-clone-proof release-proof-local release-package-proof-local nox test check-generated dev stop setup release-zip build-clean-release validate-release-zip proof-static validate-archive-freshness validate-handoff-consistency saskatoon-staging-proof canlii-staging-contract statscan-boundary-proof validate-smoke-workspace validate-full-workspace validate-docker-workspace check-route-contract check-local-env check-config-docs
 
 backend-install:
 	cd backend && python -m pip install -e ".[test]"
@@ -63,9 +63,16 @@ stop:
 truth-check:
 	python3 scripts/check_truth_claims.py --root .
 	python3 scripts/check_status_truth_consistency.py --root .
+	python3 scripts/check_config_docs_consistency.py --root .
 	python3 scripts/validate_workflows.py
 	python3 scripts/check_source_keys.py
 	python3 scripts/check_statuses.py
+
+check-local-env:
+	python3 scripts/check_local_dev_environment.py
+
+check-config-docs:
+	python3 scripts/check_config_docs_consistency.py --root .
 
 check-generated:
 	python3 scripts/check_no_generated_files.py --root .
