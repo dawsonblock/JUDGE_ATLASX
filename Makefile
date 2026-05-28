@@ -5,10 +5,10 @@ PYTHON ?= python3
 VERILATOR ?= verilator
 RTL_SRCS := $(wildcard rtl/*.v)
 
-.PHONY: all validate test lint audit-arith gen-lut cosim-vectors cosim-gkp extract-regs cdc-analyze parse-cdc cdc-gate-check lint-verilator clean-generated size-report cdc-signoff-package preboard-check implementation-gate vivado-signoff-package source-package proof-package validate-release release-validate release-proof-local
+.PHONY: all validate test lint audit-arith gen-lut cosim-vectors cosim-gkp sim-axilite sim-packer extract-regs cdc-analyze parse-cdc cdc-gate-check lint-verilator clean-generated size-report cdc-signoff-package preboard-check implementation-gate vivado-signoff-package source-package proof-package proof-package-strict validate-release release-prereqs release-validate release-proof-local
 
 all:
-	@echo "Available targets: validate, test, lint, audit-arith, gen-lut, cosim-vectors, cosim-gkp, extract-regs, cdc-analyze, parse-cdc, cdc-gate-check, lint-verilator, clean-generated, size-report, cdc-signoff-package, preboard-check, implementation-gate, vivado-signoff-package, source-package, proof-package, release-validate"
+	@echo "Available targets: validate, test, lint, audit-arith, gen-lut, cosim-vectors, cosim-gkp, sim-axilite, sim-packer, extract-regs, cdc-analyze, parse-cdc, cdc-gate-check, lint-verilator, clean-generated, size-report, cdc-signoff-package, preboard-check, implementation-gate, vivado-signoff-package, source-package, proof-package, release-prereqs, release-validate"
 
 # Keep tests before generated heavy artifacts are recreated, otherwise compact-package
 # tests correctly fail.
@@ -65,6 +65,12 @@ cosim-vectors:
 cosim-gkp:
 	$(PYTHON) scripts/run_gkp_cosim.py
 
+sim-axilite:
+	$(PYTHON) scripts/run_axilite_regfile_sim.py
+
+sim-packer:
+	$(PYTHON) scripts/run_packer_axis_sim.py
+
 clean-generated:
 	$(PYTHON) scripts/clean_generated_artifacts.py
 
@@ -86,6 +92,9 @@ source-package:
 proof-package:
 	$(PYTHON) scripts/build_release_archive.py --mode proof
 
+proof-package-strict:
+	$(PYTHON) scripts/build_release_archive.py --mode proof --strict
+
 validate-release:
 	@latest_src=$$(ls -t dist/*-source-*.zip 2>/dev/null | head -1); \
 	if [ -z "$$latest_src" ]; then \
@@ -100,8 +109,15 @@ validate-release:
 	fi; \
 	$(PYTHON) scripts/validate_release_archive.py "$$latest_proof" --mode proof
 
-release-validate: preboard-check implementation-gate source-package proof-package validate-release
+release-prereqs:
+	$(PYTHON) scripts/check_release_prereqs.py
+
+release-validate: preboard-check sim-axilite sim-packer implementation-gate source-package proof-package validate-release
 	@echo "release-validate complete"
+
+release-validate: release-prereqs
+
+release-validate: proof-package-strict
 
 release-proof-local: release-validate
 	@echo "release-proof-local complete"

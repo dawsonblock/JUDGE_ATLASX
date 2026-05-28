@@ -29,6 +29,10 @@ REQUIRED_PROOF = [
     "reports/preboard_local_summary.md",
     "reports/implementation_gate_summary.json",
     "reports/implementation_gate_summary.md",
+    "reports/cdc_critical_summary.json",
+    "reports/cdc_cell_match_summary.md",
+    "reports/timing_summary.rpt",
+    "reports/drc.rpt",
 ]
 
 
@@ -106,9 +110,8 @@ def main() -> int:
                 print(f"missing required proof entry: {req}")
                 return 1
 
-    print(
-        f"archive valid mode={args.mode} entries={len(rel_names)} " f"root={root_info}"
-    )
+    print(f"archive valid mode={args.mode} entries={len(rel_names)}")
+    print(f"archive root={root_info}")
     return 0
 
 

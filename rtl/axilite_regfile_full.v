@@ -127,6 +127,7 @@ module axilite_regfile_full (
     logic [7:0]  awaddr_q;
     logic [31:0] wdata_q;
     logic [3:0]  wstrb_q;
+    logic [31:0] applied_value;
 
     // Byte-enable helper.
     function automatic [31:0] apply_wstrb(
@@ -283,7 +284,12 @@ module axilite_regfile_full (
 
                 unique case (awaddr_q)
                     8'h0C: begin
-                        shd_prbs_enable <= apply_wstrb({31'h0, shd_prbs_enable}, wdata_q, wstrb_q)[0];
+                        applied_value = apply_wstrb(
+                            {31'h0, shd_prbs_enable},
+                            wdata_q,
+                            wstrb_q
+                        );
+                        shd_prbs_enable <= applied_value[0];
                     end
                     8'h10: begin
                         shd_inv_delta_q <= apply_wstrb(shd_inv_delta_q, wdata_q, wstrb_q);
@@ -304,10 +310,20 @@ module axilite_regfile_full (
                         shd_coeff3 <= apply_wstrb(shd_coeff3, wdata_q, wstrb_q);
                     end
                     8'h28: begin
-                        shd_alpha <= apply_wstrb({16'h0, shd_alpha}, wdata_q, wstrb_q)[15:0];
+                        applied_value = apply_wstrb(
+                            {16'h0, shd_alpha},
+                            wdata_q,
+                            wstrb_q
+                        );
+                        shd_alpha <= applied_value[15:0];
                     end
                     8'h2C: begin
-                        shd_kill_threshold <= apply_wstrb({16'h0, shd_kill_threshold}, wdata_q, wstrb_q)[15:0];
+                        applied_value = apply_wstrb(
+                            {16'h0, shd_kill_threshold},
+                            wdata_q,
+                            wstrb_q
+                        );
+                        shd_kill_threshold <= applied_value[15:0];
                     end
                     8'h30: clear_faults_pulse <= wdata_q[0];
                     8'h34: begin
@@ -318,7 +334,8 @@ module axilite_regfile_full (
                         shd_telem_window <= apply_wstrb(shd_telem_window, wdata_q, wstrb_q);
                     end
                     8'h70: begin
-                        if (apply_wstrb(32'h0, wdata_q, wstrb_q)[0]) begin
+                        applied_value = apply_wstrb(32'h0, wdata_q, wstrb_q);
+                        if (applied_value[0]) begin
                             reg_prbs_enable    <= shd_prbs_enable;
                             reg_inv_delta_q    <= shd_inv_delta_q;
                             reg_delta_adc_q    <= shd_delta_adc_q;

@@ -48,6 +48,13 @@ PROOF_REQUIRED = [
     "reports/implementation_gate_summary.md",
 ]
 
+PROOF_REQUIRED_STRICT = [
+    "reports/cdc_critical_summary.json",
+    "reports/cdc_cell_match_summary.md",
+    "reports/timing_summary.rpt",
+    "reports/drc.rpt",
+]
+
 PROOF_OPTIONAL = [
     "reports/cdc_critical_summary.json",
     "reports/cdc_cell_match_summary.md",
@@ -101,11 +108,14 @@ def collect_source_files() -> list[Path]:
     return sorted(set(collected))
 
 
-def collect_proof_files() -> tuple[list[Path], list[str]]:
+def collect_proof_files(*, strict: bool) -> tuple[list[Path], list[str]]:
     files: list[Path] = []
     missing_required: list[str] = []
+    required = list(PROOF_REQUIRED)
+    if strict:
+        required.extend(PROOF_REQUIRED_STRICT)
 
-    for rel in PROOF_REQUIRED:
+    for rel in required:
         path = PROJECT_ROOT / rel
         if path.exists():
             files.append(path)
@@ -149,6 +159,11 @@ def main() -> int:
         default=None,
         help="Output archive path. Defaults to dist/<name>-<mode>.zip",
     )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Require strict proof artifacts when mode=proof.",
+    )
     args = parser.parse_args()
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -161,7 +176,7 @@ def main() -> int:
         print(f"mode=source files={len(files)} out={out_path}")
         return 0
 
-    files, missing_required = collect_proof_files()
+    files, missing_required = collect_proof_files(strict=args.strict)
     if missing_required:
         print("missing required proof files:")
         for rel in missing_required:
