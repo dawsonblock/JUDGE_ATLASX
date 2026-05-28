@@ -331,6 +331,61 @@ def _collect_required_log_index_paths(repo_root: Path) -> tuple[set[str], list[s
     return referenced, sorted(set(exists_true_missing))
 
 
+def _collect_proof_preconditions(repo_root: Path) -> dict[str, object]:
+    packaged_proof_paths = _load_packaged_proof_paths(repo_root)
+    proof_manifest_paths = _collect_proof_manifest_paths(repo_root)
+    required_log_index_paths, required_index_exists_true_missing = (
+        _collect_required_log_index_paths(repo_root)
+    )
+
+    missing_required_proof_files = sorted(
+        rel_path
+        for rel_path in DEFAULT_INCLUDE_PROOF_FILES
+        if not (repo_root / rel_path).is_file()
+    )
+    all_referenced_proof_paths = (
+        packaged_proof_paths | proof_manifest_paths | required_log_index_paths
+    )
+    missing_referenced_proof_paths = sorted(
+        rel_path
+        for rel_path in all_referenced_proof_paths
+        if not (repo_root / rel_path).is_file()
+    )
+
+    return {
+        "packaged_proof_paths": packaged_proof_paths,
+        "proof_manifest_paths": proof_manifest_paths,
+        "required_log_index_paths": required_log_index_paths,
+        "required_index_exists_true_missing": required_index_exists_true_missing,
+        "missing_required_proof_files": missing_required_proof_files,
+        "missing_referenced_proof_paths": missing_referenced_proof_paths,
+        "all_referenced_proof_paths": all_referenced_proof_paths,
+    }
+
+
+def _enforce_proof_preconditions(preconditions: dict[str, object]) -> None:
+    missing_required_proof_files = preconditions["missing_required_proof_files"]
+    missing_referenced_proof_paths = preconditions["missing_referenced_proof_paths"]
+    required_index_exists_true_missing = preconditions["required_index_exists_true_missing"]
+
+    if missing_required_proof_files:
+        raise SystemExit(
+            "Missing required proof files for archive packaging: "
+            + ", ".join(missing_required_proof_files)
+        )
+
+    if missing_referenced_proof_paths:
+        raise SystemExit(
+            "Missing packaged proof files required by release metadata: "
+            + ", ".join(missing_referenced_proof_paths)
+        )
+    if required_index_exists_true_missing:
+        raise SystemExit(
+            "required_log_index_exists_but_missing:"
+            + ",".join(required_index_exists_true_missing)
+        )
+
+
 def _strip_packaged_archive_validation_metadata(rel: str, payload):
     if rel.endswith("artifacts/proof/current/release_gate.json") and isinstance(payload, dict):
         logs = payload.get("logs")
@@ -573,38 +628,11 @@ def build_archive(
             "(use without --require-release-candidate only for blocked proof snapshots)."
         )
 
-    packaged_proof_paths = _load_packaged_proof_paths(REPO_ROOT)
-    proof_manifest_paths = _collect_proof_manifest_paths(REPO_ROOT)
-    required_log_index_paths, required_index_exists_true_missing = (
-        _collect_required_log_index_paths(REPO_ROOT)
-    )
-
-    missing_required_proof_files = sorted(
-        rel_path
-        for rel_path in DEFAULT_INCLUDE_PROOF_FILES
-        if not (REPO_ROOT / rel_path).is_file()
-    )
-    if missing_required_proof_files:
-        raise SystemExit(
-            "Missing required proof files for archive packaging: "
-            + ", ".join(missing_required_proof_files)
-        )
-
-    missing_referenced_proof_paths = sorted(
-        rel_path
-        for rel_path in (packaged_proof_paths | proof_manifest_paths | required_log_index_paths)
-        if not (REPO_ROOT / rel_path).is_file()
-    )
-    if missing_referenced_proof_paths:
-        raise SystemExit(
-            "Missing packaged proof files required by release metadata: "
-            + ", ".join(missing_referenced_proof_paths)
-        )
-    if required_index_exists_true_missing:
-        raise SystemExit(
-            "required_log_index_exists_but_missing:"
-            + ",".join(required_index_exists_true_missing)
-        )
+    preconditions = _collect_proof_preconditions(REPO_ROOT)
+    _enforce_proof_preconditions(preconditions)
+    packaged_proof_paths = preconditions["packaged_proof_paths"]
+    proof_manifest_paths = preconditions["proof_manifest_paths"]
+    required_log_index_paths = preconditions["required_log_index_paths"]
 
     files, included_top_level, excluded_top_level = _collect_files(
         REPO_ROOT,
@@ -692,6 +720,11 @@ def main() -> int:
         help="Include artifacts/proof/archive/ in archive",
     )
     parser.add_argument("--dry-run", action="store_true", help="List files that would be archived without writing")
+    parser.add_argument(
+        "--strict-dry-run",
+        action="store_true",
+        help="Return non-zero when dry-run detects non-canonical output or missing proof preconditions.",
+    )
     parser.add_argument("--json", action="store_true", help="Print JSON output")
     parser.add_argument(
         "--require-release-candidate",
@@ -711,16 +744,53 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.dry_run:
+        dry_run_errors: list[str] = []
+        if not args.allow_noncanonical and Path(args.output).name != CANONICAL_ARCHIVE_NAME:
+            dry_run_errors.append(
+                f"archive_name_not_authoritative:expected_{CANONICAL_ARCHIVE_NAME}_got_{Path(args.output).name}"
+            )
+        if not args.allow_noncanonical_root and args.root_name != CANONICAL_ROOT_NAME:
+            dry_run_errors.append(
+                f"root_name_not_authoritative:expected_{CANONICAL_ROOT_NAME}_got_{args.root_name}"
+            )
+
+        preconditions: dict[str, object] | None = None
+        try:
+            preconditions = _collect_proof_preconditions(REPO_ROOT)
+        except SystemExit as exc:
+            dry_run_errors.append(str(exc))
+
+        packaged_paths_for_collection = _load_packaged_proof_paths(REPO_ROOT)
+        missing_required_proof_files: list[str] = []
+        missing_referenced_proof_paths: list[str] = []
+        required_index_exists_true_missing: list[str] = []
+        if preconditions is not None:
+            packaged_paths_for_collection = preconditions["all_referenced_proof_paths"]
+            missing_required_proof_files = preconditions["missing_required_proof_files"]
+            missing_referenced_proof_paths = preconditions["missing_referenced_proof_paths"]
+            required_index_exists_true_missing = preconditions["required_index_exists_true_missing"]
+
         files, included_top_level, excluded_top_level = _collect_files(
             REPO_ROOT,
             include_external=args.include_external,
             include_proof_archive=args.include_proof_archive,
-            packaged_proof_paths=_load_packaged_proof_paths(REPO_ROOT),
+            packaged_proof_paths=packaged_paths_for_collection,
+        )
+        dry_run_valid = (
+            not dry_run_errors
+            and not missing_required_proof_files
+            and not missing_referenced_proof_paths
+            and not required_index_exists_true_missing
         )
         result = {
             "dry_run": True,
+            "dry_run_valid": dry_run_valid,
             "root_name": args.root_name,
             "file_count": len(files),
+            "missing_required_proof_files": missing_required_proof_files,
+            "missing_referenced_proof_files": missing_referenced_proof_paths,
+            "required_log_index_exists_but_missing": required_index_exists_true_missing,
+            "errors": dry_run_errors,
             "included_top_level_paths": sorted(included_top_level),
             "excluded_top_level_paths": sorted(excluded_top_level),
             "files": [_normalize(f.relative_to(REPO_ROOT)) for f in files],
@@ -729,8 +799,27 @@ def main() -> int:
             print(json.dumps(result, indent=2))
         else:
             print(f"[dry-run] Would archive {result['file_count']} files under root '{args.root_name}'")
+            print(f"[dry-run] valid={dry_run_valid}")
+            if dry_run_errors:
+                print("[dry-run] errors:")
+                for error in dry_run_errors:
+                    print(f"  {error}")
+            if missing_required_proof_files:
+                print("[dry-run] missing required proof files:")
+                for path in missing_required_proof_files:
+                    print(f"  {path}")
+            if missing_referenced_proof_paths:
+                print("[dry-run] missing referenced proof files:")
+                for path in missing_referenced_proof_paths:
+                    print(f"  {path}")
+            if required_index_exists_true_missing:
+                print("[dry-run] required_log_index exists=true but missing on disk:")
+                for path in required_index_exists_true_missing:
+                    print(f"  {path}")
             for f in result["files"]:
                 print(f"  {f}")
+        if args.strict_dry_run and not dry_run_valid:
+            return 1
         return 0
 
     output = Path(args.output).resolve()

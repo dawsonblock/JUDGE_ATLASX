@@ -160,10 +160,9 @@ jobs:
           python scripts/check_source_registry_docs.py
 
       - name: Guard — no direct ingestion network clients
-        working-directory: ./backend
         run: |
-          source .venv/bin/activate
-          PYTHONDONTWRITEBYTECODE=1 python scripts/check_no_direct_ingestion_network_clients.py
+          source ./backend/.venv/bin/activate
+          PYTHONDONTWRITEBYTECODE=1 python backend/scripts/check_no_direct_ingestion_network_clients.py
 
       - name: Guard — repo boundary enforcement
         run: |

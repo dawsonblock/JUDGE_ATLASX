@@ -106,6 +106,87 @@ def test_dry_run_does_not_write_zip(tmp_path: Path) -> None:
     assert not output.exists(), "dry-run must not write the zip file"
 
 
+def test_dry_run_reports_invalid_when_referenced_log_missing(tmp_path: Path) -> None:
+    module = _load_module()
+    root = tmp_path / "repo"
+    _seed_repo(root)
+    _write_file(
+        root / "artifacts" / "proof" / "current" / "release_gate.json",
+        json.dumps(
+            {
+                "checks": [
+                    {
+                        "name": "required_proof_logs",
+                        "log_path": "artifacts/proof/current/required_proof_logs.log",
+                    }
+                ],
+                "logs": {
+                    "required_proof_logs": "artifacts/proof/current/required_proof_logs.log"
+                },
+            },
+            indent=2,
+        )
+        + "\n",
+    )
+    module.REPO_ROOT = root
+
+    output = tmp_path / "dist" / "dry.zip"
+    old_argv = sys.argv
+    try:
+        sys.argv = ["prog", "--dry-run", "--json", "--output", str(output)]
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            ret = module.main()
+    finally:
+        sys.argv = old_argv
+
+    payload = json.loads(buf.getvalue())
+    assert ret == 0
+    assert payload["dry_run"] is True
+    assert payload["dry_run_valid"] is False
+    assert "artifacts/proof/current/required_proof_logs.log" in payload["missing_referenced_proof_files"]
+    assert not output.exists(), "dry-run must not write the zip file"
+
+
+def test_strict_dry_run_fails_on_missing_referenced_log(tmp_path: Path) -> None:
+    module = _load_module()
+    root = tmp_path / "repo"
+    _seed_repo(root)
+    _write_file(
+        root / "artifacts" / "proof" / "current" / "release_gate.json",
+        json.dumps(
+            {
+                "checks": [
+                    {
+                        "name": "required_proof_logs",
+                        "log_path": "artifacts/proof/current/required_proof_logs.log",
+                    }
+                ],
+                "logs": {
+                    "required_proof_logs": "artifacts/proof/current/required_proof_logs.log"
+                },
+            },
+            indent=2,
+        )
+        + "\n",
+    )
+    module.REPO_ROOT = root
+
+    output = tmp_path / "dist" / "dry.zip"
+    old_argv = sys.argv
+    try:
+        sys.argv = ["prog", "--dry-run", "--strict-dry-run", "--output", str(output)]
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            ret = module.main()
+    finally:
+        sys.argv = old_argv
+
+    assert ret == 1
+    assert "required_proof_logs.log" in buf.getvalue()
+    assert not output.exists(), "strict dry-run must not write the zip file"
+
+
 def test_archive_validation_files_excluded(tmp_path: Path) -> None:
     module = _load_module()
     root = tmp_path / "repo"
