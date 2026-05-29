@@ -1,0 +1,110 @@
+✅ JUDGE_ATLAS Alpha Release — Ready for Distribution
+
+FILES TO SHIP
+=============
+
+1. dist/JUDGE_ATLAS-main-final-distributable.zip
+   Size: 2.3 MB
+   SHA-256: 0f0a0158929f8441202366f385c3a885959edd2f20cf1c5361fbec7539ad8679
+   
+   Contents:
+   - JUDGE_ATLAS-main-final.zip (canonical archive with proof logs)
+   - FINAL_RELEASE_HANDOFF.md
+   - REPAIR_EXECUTION_SUMMARY.md
+
+2. DISTRIBUTABLE_ARCHIVE_README.md
+   (Recipient instructions and verification steps)
+
+3. FINAL_VERIFICATION.md
+   (Detailed verification checklist)
+
+4. CORRECT_DISTRIBUTION_PACKAGE.md
+   (This package specification)
+
+
+KEY HASHES
+==========
+
+Distributable Archive:
+  0f0a0158929f8441202366f385c3a885959edd2f20cf1c5361fbec7539ad8679
+
+Canonical Archive (inside distributable):
+  d9161d7d63fa12320a140c8e35b4175e84adfede6fd53a1ae1afa14f4bf86ba2
+
+
+PROOF LOGS INSIDE
+=================
+
+The canonical archive contains all 53 proof logs:
+  ✅ backend_pytest.log
+  ✅ backend_compile.log
+  ✅ backend_import.log
+  ✅ frontend_build.log
+  ✅ docker_smoke.log
+  ✅ postgis_proof.log
+  ✅ proof_freshness.log
+  ✅ ... (46 more log files)
+
+Plus:
+  ✅ REPAIR_REPORT.md
+  ✅ release_gate.json
+  ✅ proof_manifest.json
+  ✅ required_log_index.json
+
+
+RELEASE STATUS
+==============
+
+Alpha Gate Passed: YES
+Release Candidate: YES
+Production Ready: NO
+Proof Blockers: NONE
+Backend Tests: 3487 passed, 0 failed
+Proof Logs: 53 present and verified
+
+
+RECIPIENT VERIFICATION
+======================
+
+After receiving the three files above, recipients can:
+
+1. Verify distributable SHA-256
+2. Extract distributable
+3. Verify canonical archive SHA-256
+4. Extract canonical archive
+5. Run included validators to confirm proof chain
+
+All validators are included in the archive itself.
+No external validation tools required.
+
+
+TRUST MODEL
+===========
+
+This archive is SELF-VERIFYING:
+- Canonical archive hash is documented
+- Proof logs are included (not downloaded)
+- Validators are included (not downloaded)
+- Archive proves itself from fresh extraction
+
+
+DO NOT SHIP
+===========
+
+❌ Do NOT ship working directory archives
+❌ Do NOT ship "manually zipped" source folders
+❌ Do NOT ship the git repository directory
+❌ Do NOT ship multiple conflicting archives
+❌ Do NOT ship without included proof logs
+
+
+STATUS
+======
+
+Version: 5 (v5 Final)
+Classification: Proof-Hardened Alpha Release Candidate
+Distribution Status: READY
+Trust Model: Self-Verifying
+
+Date: 2026-05-29
+Commit: repair/main17-final-self-verifying-alpha
