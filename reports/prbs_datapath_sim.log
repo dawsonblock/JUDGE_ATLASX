@@ -34,6 +34,6 @@ rtl/gkp_decoder.v:82: sorry: constant selects in always_* processes are not curr
 rtl/gkp_decoder.v:82: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
 rtl/gkp_decoder.v:82: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
 rtl/gkp_decoder.v:82: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
-rtl/axis_packet_fifo.v:89: vvp.tgt sorry: Case unique/unique0 qualities are ignored.
+rtl/axis_packet_fifo.v:90: vvp.tgt sorry: Case unique/unique0 qualities are ignored.
 
 TB_PASS tb_prbs_datapath

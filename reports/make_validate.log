@@ -3,9 +3,9 @@ removed_count=0
 python3 scripts/check_source_tree_clean.py
 source-tree-clean: PASS
 PYTHONPATH=. python3 -m unittest discover -s tests
-.......................................................................................
+............................................................................................
 ----------------------------------------------------------------------
-Ran 87 tests in 1.491s
+Ran 92 tests in 1.871s
 
 OK
 python3 scripts/rtl_sanity_check.py
@@ -34,8 +34,8 @@ python3 scripts/analyze_cdc_crossings.py
 - TELEM_CTRL (0x34): AXI -> Fabric -> xpm_cdc_single for single-bit pulses; xpm_cdc_handshake for multi-bit config; constrain synchronized endpoints
 - TELEM_WINDOW (0x38): AXI -> Fabric -> xpm_cdc_single for single-bit pulses; xpm_cdc_handshake for multi-bit config; constrain synchronized endpoints
 - TELEM_STATUS (0x3C): Fabric -> AXI -> xpm_cdc_single for single-bit status; xpm_cdc_gray for counters/FSM; add set_bus_skew for gray buses
-- TELEM_FLIPS_DELTA (0x40): Fabric -> AXI -> xpm_cdc_single for single-bit status; xpm_cdc_gray for counters/FSM; add set_bus_skew for gray buses
-- TELEM_TOTAL_FLIPS (0x44): Fabric -> AXI -> xpm_cdc_single for single-bit status; xpm_cdc_gray for counters/FSM; add set_bus_skew for gray buses
+- TELEM_FLIPS_DELTA (0x40): Fabric -> AXI -> xpm_cdc_handshake for coherent window payload transfer; tie event pulse to payload delivery
+- TELEM_TOTAL_FLIPS (0x44): Fabric -> AXI -> xpm_cdc_handshake for coherent window payload transfer; tie event pulse to payload delivery
 - HEALTH_STATUS (0x48): Fabric -> AXI -> xpm_cdc_single for single-bit status; xpm_cdc_gray for counters/FSM; add set_bus_skew for gray buses
 - HEALTH_TELEM_DONE (0x58): Fabric -> AXI -> xpm_cdc_single for single-bit status; xpm_cdc_gray for counters/FSM; add set_bus_skew for gray buses
 Wrote cdc_crossing_suggestions.md
