@@ -6,15 +6,15 @@ Manual edits are not authoritative.
 
 ## Authoritative Archive
 - Path: dist/JUDGE_ATLAS-main-final.zip
-- SHA-256: 81742f38c587c170bfdd2246dcbb8ee83d1b0568ea5647618507b6faa9b3c659
+- SHA-256: 2d35cf76cb23891443bc77596c9b63f43f7b15998b46d4e139fa5fb2cc9caf9e
 
 ## Proof Anchors
 - release_gate_path: artifacts/proof/current/release_gate.json
-- release_gate_sha256: 1758cb9e1db3460cf4a4188786942db1b00d59a8853f48c72f06b1cab359eae9
+- release_gate_sha256: 42ff58cf9a6f15e56ed095b62c20f637d133f9bf98e0cac1876df16cd3d8315e
 - proof_manifest_path: artifacts/proof/current/proof_manifest.json
-- proof_manifest_sha256: 5da664f7c02a5fe7d52da3ba88ba0864d5ff98982855b961bae44f14a54c3bcb
+- proof_manifest_sha256: f5057063f8e5ad36e32d2d3aeaf93f66528028bd5d18cf0e8cae2be864760b82
 - required_log_index_path: artifacts/proof/current/required_log_index.json
-- required_log_index_sha256: 87ab2e6aeb7e0184cddc57d43a4fe2e2e06db92eb48522351af816458136aee1
+- required_log_index_sha256: ef0c81f189ce1b487afcd5b4a1cf594bde8f6ba627eff53f7b967ad42d8b0644
 
 ## Release Status
 - release_classification: proof-blocked alpha proof snapshot
@@ -22,11 +22,11 @@ Manual edits are not authoritative.
 - release_candidate: false
 - production_ready: false
 - proof_complete: false
-- blocked_release_checks: ["check_no_pyc", "backend_pytest", "repo_generated_files"]
+- blocked_release_checks: ["backend_pytest"]
 
 ## Build Metadata
-- created_at_utc: 2026-05-29T02:01:29.212736+00:00
-- generated_at_utc: 2026-05-29T16:00:00+00:00
+- created_at_utc: 2026-05-29T04:03:55.684763+00:00
+- generated_at_utc: 2026-05-29T04:03:55.684763+00:00
 - git_commit: unknown
 - python: unknown
 - node: unknown

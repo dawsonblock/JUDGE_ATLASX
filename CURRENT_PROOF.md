@@ -1,7 +1,7 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-29T16:00:00+00:00
-- commit_hash: unknown
+- generated_at_utc: 2026-05-29T04:03:10.100234+00:00
+- commit_hash: d0c67be8509754d370c3d2807bba0f54082ceb99
 - alpha_gate_status: BLOCKED
 - alpha_gate_passed: false
 - release_gate_check_count: 52
@@ -11,8 +11,8 @@
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
 - archive_validation_result: PASS
-- proof_input_tree_hash: da1296766be5798e3485de76cd65f52092300fdc58e8e91bb41f7ef8417ff45d
-- proof_input_file_count: 1109
+- proof_input_tree_hash: 1a1428599c11a14614e30f816828d78ad14caed49e04076a0d5ff0700735d5f3
+- proof_input_file_count: 1110
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
 
@@ -73,9 +73,7 @@
 
 ## Failed Checks
 
-- check_no_pyc
 - backend_pytest
-- repo_generated_files
 
 ## Egress Proxy Coverage
 

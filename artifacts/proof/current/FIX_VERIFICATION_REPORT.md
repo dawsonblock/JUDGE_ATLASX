@@ -1,7 +1,7 @@
 # FIX_VERIFICATION_REPORT
 
-- generated_at_utc: 2026-05-29T01:25:28.408438+00:00
-- commit_hash: unknown
+- generated_at_utc: 2026-05-29T04:03:10.100234+00:00
+- commit_hash: d0c67be8509754d370c3d2807bba0f54082ceb99
 - alpha_gate_passed: false
 
 ## Required Gate Signals
@@ -19,9 +19,7 @@
 
 ## Release Blockers
 
-- check_no_pyc
 - backend_pytest
-- repo_generated_files
 
 ## Canonical Artifacts
 
