@@ -29,6 +29,12 @@ GENERATED_ARTIFACTS = [
     "reports/board_prbs_capture_smoke.json",
     "reports/board_axis_capture_smoke.json",
     "reports/board_telemetry_window_smoke.json",
+    "reports/q15_16_mult_sim_summary.json",
+    "reports/q15_16_mult_sim_summary.md",
+    "reports/q15_16_mult_sim.log",
+    "reports/telemetry_counter_sim_summary.json",
+    "reports/telemetry_counter_sim_summary.md",
+    "reports/telemetry_counter_sim.log",
 ]
 
 GENERATED_DIRS = [

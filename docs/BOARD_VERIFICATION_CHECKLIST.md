@@ -27,7 +27,7 @@ Pass criteria: The bitstream loads cleanly, control registers function, and temp
 
 ## Phase 2 — PRBS + ILA determinism
 
-- Enable PRBS test mode (register `0x60`).
+- Enable PRBS test mode (register `0x0C`).
 - Arm the ILA on trigger word `0xACCE5515`.
 - Capture raw path, decoder stages, packet output, and status flags.
 - Compare the capture against the golden model using the Python tools.

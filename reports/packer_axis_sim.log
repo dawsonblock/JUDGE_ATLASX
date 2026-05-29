@@ -1,5 +1,8 @@
++ iverilog -V
++ vvp -V
++ iverilog -g2012 -Wall -o /Users/dawsonblock/Downloads/waveform_brain_v1_auto_cal/sim/build/tb_packer_axis_stall.vvp sim/tb_packer_axis_stall.sv rtl/packer_axis.v
 rtl/packer_axis.v:32: warning: timescale for packer_axis inherited from another file.
 sim/tb_packer_axis_stall.sv:1: ...: The inherited timescale is here.
-
++ vvp /Users/dawsonblock/Downloads/waveform_brain_v1_auto_cal/sim/build/tb_packer_axis_stall.vvp
 TB_PASS tb_packer_axis_stall
 sim/tb_packer_axis_stall.sv:167: $finish called at 135000 (1ps)

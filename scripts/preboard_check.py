@@ -246,7 +246,12 @@ def main() -> int:
     )
     checks.append(
         run(
-            [sys.executable, "scripts/hash_source_tree.py"],
+            [
+                sys.executable,
+                "scripts/hash_source_tree.py",
+                "--out-txt",
+                "reports/source_tree_hash.txt",
+            ],
             log_rel="reports/source_tree_hash.log",
         )
     )
