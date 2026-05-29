@@ -221,25 +221,25 @@ release-validate-local:
 check-proof-invariant:
 	@echo "Checking proof manifest invariants..."
 	manifest=reports/proof_manifest_local.json; \
-if [ ! -f "$$manifest" ]; then \
-	echo "Proof manifest not found: $$manifest"; exit 1; \
-fi; \
-hash_in_manifest=$$(jq -r '.source_tree_hash' "$$manifest"); \
-hash_in_txt=$$(cat reports/source_tree_hash.txt 2>/dev/null || echo MISSING); \
-if [ "$$hash_in_manifest" != "$$hash_in_txt" ]; then \
-	echo "source_tree_hash mismatch: manifest=$$hash_in_manifest, txt=$$hash_in_txt"; exit 1; \
-fi; \
-files=$$(jq -r '.files[]' "$$manifest"); \
-missing=0; \
-for f in $$files; do \
-	if [ ! -f "$$f" ]; then \
-		echo "Missing required proof file: $$f"; missing=1; \
+	if [ ! -f "$$manifest" ]; then \
+		echo "Proof manifest not found: $$manifest"; exit 1; \
 	fi; \
-done; \
-if [ $$missing -ne 0 ]; then \
-	echo "One or more required proof files are missing."; exit 1; \
-fi; \
-echo "Proof manifest invariants OK."
+	hash_in_manifest=$$(jq -r '.source_tree_hash' "$$manifest" | tr -d '[:space:]'); \
+	hash_in_txt=$$(cat reports/source_tree_hash.txt 2>/dev/null | tr -d '[:space:]' || echo MISSING); \
+	if [ "$$hash_in_manifest" != "$$hash_in_txt" ]; then \
+		echo "source_tree_hash mismatch: manifest=$$hash_in_manifest, txt=$$hash_in_txt"; exit 1; \
+	fi; \
+	files=$$(jq -r '.files[].path' "$$manifest"); \
+	missing=0; \
+	for f in $$files; do \
+		if [ ! -f "$$f" ]; then \
+			echo "Missing required proof file: $$f"; missing=1; \
+		fi; \
+	done; \
+	if [ $$missing -ne 0 ]; then \
+		echo "One or more required proof files are missing."; exit 1; \
+	fi; \
+	echo "Proof manifest invariants OK."
 
 release-validate-board:
 	@if [ -z "$(BOARD_DEVICE)" ]; then \

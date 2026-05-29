@@ -29,6 +29,8 @@
 // frame_drop_count. This is a visibility feature, not a substitute for upstream
 // backpressure.
 
+`timescale 1ns/1ps
+
 module packer_axis #(
     parameter int DATA_WIDTH = 16
 )(
