@@ -60,7 +60,7 @@ def clean_generated_artifacts(*, verbose: bool = False) -> list[Path]:
                 print(f"removed {path.relative_to(PROJECT_ROOT)}")
 
     for pattern in GLOB_PATTERNS:
-        for path in PROJECT_ROOT.glob(pattern):
+        for path in list(PROJECT_ROOT.glob(pattern)):
             if ".git" in path.parts:
                 continue
             if path.is_dir():
