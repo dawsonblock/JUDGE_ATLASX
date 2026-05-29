@@ -1,18 +1,27 @@
 {
   "profile": "smoke",
   "overall_status": "passed",
-  "target_count": 3,
-  "passed_count": 3,
+  "target_count": 4,
+  "passed_count": 4,
   "failed_count": 0,
   "checks": [
+    {
+      "name": "runtime_smoke",
+      "status": "passed",
+      "exit_code": 0,
+      "error": null,
+      "log_path": ".validation_logs/runtime_smoke.log",
+      "started_at": "2026-05-29T20:33:58.524565+00:00",
+      "finished_at": "2026-05-29T20:34:02.612552+00:00"
+    },
     {
       "name": "check_dockerfile_copy_paths",
       "status": "passed",
       "exit_code": 0,
       "error": null,
       "log_path": ".validation_logs/runtime_check_dockerfile_copy_paths.log",
-      "started_at": "2026-05-25T06:18:31.855118+00:00",
-      "finished_at": "2026-05-25T06:18:33.178426+00:00"
+      "started_at": "2026-05-29T20:34:02.612622+00:00",
+      "finished_at": "2026-05-29T20:34:03.313587+00:00"
     },
     {
       "name": "check_compose_auth_defaults",
@@ -20,8 +29,8 @@
       "exit_code": 0,
       "error": null,
       "log_path": ".validation_logs/runtime_check_compose_auth_defaults.log",
-      "started_at": "2026-05-25T06:18:33.178470+00:00",
-      "finished_at": "2026-05-25T06:18:33.204336+00:00"
+      "started_at": "2026-05-29T20:34:03.313627+00:00",
+      "finished_at": "2026-05-29T20:34:03.338948+00:00"
     },
     {
       "name": "check_frontend_node_gate",
@@ -29,9 +38,9 @@
       "exit_code": 0,
       "error": null,
       "log_path": ".validation_logs/runtime_check_frontend_node_gate.log",
-      "started_at": "2026-05-25T06:18:33.204364+00:00",
-      "finished_at": "2026-05-25T06:18:34.257141+00:00"
+      "started_at": "2026-05-29T20:34:03.338974+00:00",
+      "finished_at": "2026-05-29T20:34:04.505473+00:00"
     }
   ],
-  "generated_at": "2026-05-25T06:18:34.257373+00:00"
+  "generated_at": "2026-05-29T20:34:04.505818+00:00"
 }

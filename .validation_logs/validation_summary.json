@@ -5,15 +5,13 @@
     "preflight": "passed",
     "artifact_build": "passed",
     "runtime_smoke": "passed",
-    "docker_preflight": "passed",
-    "docker_smoke": "passed"
+    "docker": "skipped"
   },
   "capabilities": {
     "toolathlon_profile": "smoke",
-    "run_docker": true,
+    "run_docker": false,
     "python_version": "3.11.7",
     "is_experimental_full": false
   },
-  "generated_at": "2026-05-25T22:19:00.000000+00:00",
-  "note": "Updated to reflect passing docker_smoke (health endpoint fixed to 'healthy', --no-cache removed) and passing runtime_smoke. Verified by gate run at 2026-05-25T22:32:42Z."
+  "generated_at": "2026-05-29T20:34:04.505977+00:00"
 }
