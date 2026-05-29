@@ -6,7 +6,7 @@ Manual edits are not authoritative.
 
 ## Authoritative Archive
 - Path: dist/JUDGE_ATLAS-main-final.zip
-- SHA-256: 00155369aa6b9c8c139b9ca296960a0b7faf7cce74b9c23f04fa8944bac973f7
+- SHA-256: 81742f38c587c170bfdd2246dcbb8ee83d1b0568ea5647618507b6faa9b3c659
 
 ## Proof Anchors
 - release_gate_path: artifacts/proof/current/release_gate.json
@@ -25,8 +25,8 @@ Manual edits are not authoritative.
 - blocked_release_checks: ["check_no_pyc", "backend_pytest", "repo_generated_files"]
 
 ## Build Metadata
-- created_at_utc: 2026-05-29T01:26:21.919883+00:00
-- generated_at_utc: 2026-05-29T01:26:21.919883+00:00
+- created_at_utc: 2026-05-29T02:01:29.212736+00:00
+- generated_at_utc: 2026-05-29T02:01:29.212736+00:00
 - git_commit: unknown
 - python: unknown
 - node: unknown
