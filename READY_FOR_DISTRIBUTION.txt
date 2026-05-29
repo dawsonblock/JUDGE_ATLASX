@@ -1,3 +1,17 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                          ⚠️  CRITICAL WARNING ⚠️                             ║
+║                                                                            ║
+║  DO NOT DISTRIBUTE THE WORKING TREE ZIP                                   ║
+║  DO NOT UPLOAD: JUDGE_ATLASX-repair-main17-final-*.zip                   ║
+║                                                                            ║
+║  The ONLY valid distributable file is:                                    ║
+║  dist/JUDGE_ATLAS-main-final-distributable.zip                           ║
+║                                                                            ║
+║  Working directory archives are NOT self-verifying and will fail          ║
+║  validation on recipients' machines.                                       ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
 ✅ JUDGE_ATLAS Alpha Release — Ready for Distribution
 
 FILES TO SHIP

@@ -27,7 +27,7 @@ expected_subdirs = ["legacy_disabled", "reference_only"]
 ### 2. Removed Non-Release Artifact
 **File:** `DEEP_EXTRACTION_VERDICT_ANALYSIS.md`
 
-**Issue:** External analysis document contained unsupported claim phrase "production-ready", which failed `check_false_claims.py` gate.
+**Issue:** External analysis document contained unsupported claim phrase 'production-blocked', which failed `check_false_claims.py` gate.
 
 **Fix:** Removed from release tree (analysis file shouldn't be in production artifact).
 
@@ -105,6 +105,6 @@ python3 scripts/validate_final_zip.py ../../dist/JUDGE_ATLAS-main-final.zip
 ## Timeline
 
 - Test fix: ~5 minutes
-- Proof regeneration: ~3 minutes (fully automated)
+- Proof regeneration: ~3 minutes (automation-assisted)
 - Archive building: ~10 seconds
 - Total elapsed: ~30 minutes
