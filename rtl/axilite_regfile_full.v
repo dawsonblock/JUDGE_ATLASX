@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 // axilite_regfile_full.v
 //
 // Standards-oriented AXI4-Lite register file for Waveform Brain v1.0.

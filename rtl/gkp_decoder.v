@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 // gkp_decoder.v
 //
 // Pipelined soft-decision square-GKP-style decoder for one quadrature.

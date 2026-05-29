@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 // safety_monitor.v
 // Monitors the ADC values for over‑range conditions and triggers a safety
 // kill signal when a configurable threshold is exceeded. Faults are
