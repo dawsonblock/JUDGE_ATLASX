@@ -18,6 +18,17 @@ GENERATED_ARTIFACTS = [
     "register_map_issues.log",
     "cdc_crossing_suggestions.json",
     "cdc_crossing_suggestions.md",
+    "reports/board_smoke_summary.json",
+    "reports/board_smoke_summary.md",
+    "reports/board_capture_prbs.hex",
+    "reports/board_capture_packets.jsonl",
+    "reports/board_read_build_id.json",
+    "reports/board_axi_lite_smoke.json",
+    "reports/board_config_apply_smoke.json",
+    "reports/board_safety_trip_smoke.json",
+    "reports/board_prbs_capture_smoke.json",
+    "reports/board_axis_capture_smoke.json",
+    "reports/board_telemetry_window_smoke.json",
 ]
 
 GENERATED_DIRS = [

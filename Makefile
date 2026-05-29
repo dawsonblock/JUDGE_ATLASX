@@ -4,8 +4,9 @@ size-report:
 PYTHON ?= python3
 VERILATOR ?= verilator
 RTL_SRCS := $(wildcard rtl/*.v)
+BOARD_DEVICE ?=
 
-.PHONY: all validate test test-static test-sim lint audit-arith gen-lut cosim-vectors cosim-gkp sim-axilite sim-packer sim-safety sim-prbs extract-regs cdc-analyze parse-cdc cdc-gate-check cdc-manifest-check lint-verilator lint-verilator-strict check-source-clean clean-generated size-report cdc-signoff-package preboard-check implementation-gate vivado-signoff-package vivado-bitstream source-package proof-package proof-package-local proof-package-board proof-package-strict validate-release validate-release-local validate-release-board validate-release-strict make-validate-log release-prereqs release-validate release-validate-local release-validate-board release-proof-local
+.PHONY: all validate test test-static test-sim lint audit-arith gen-lut cosim-vectors cosim-gkp sim-axilite sim-packer sim-safety sim-prbs extract-regs cdc-analyze parse-cdc cdc-gate-check cdc-manifest-check lint-verilator lint-verilator-strict check-source-clean clean-generated size-report cdc-signoff-package preboard-check implementation-gate vivado-signoff-package vivado-bitstream source-package proof-package proof-package-local proof-package-board proof-package-strict validate-release validate-release-local validate-release-board validate-release-strict make-validate-log release-prereqs release-validate release-validate-local release-validate-board release-proof-local board-smoke
 
 all:
 	@echo "Available targets: validate, test, lint, audit-arith, gen-lut, cosim-vectors, cosim-gkp, sim-axilite, sim-packer, sim-safety, extract-regs, cdc-analyze, parse-cdc, cdc-gate-check, lint-verilator, clean-generated, size-report, cdc-signoff-package, preboard-check, implementation-gate, vivado-signoff-package, vivado-bitstream, source-package, proof-package-local, proof-package-board, release-prereqs, release-validate"
@@ -221,3 +222,6 @@ release-validate: release-validate-board
 
 release-proof-local: release-validate-local
 	@echo "release-proof-local complete"
+
+board-smoke:
+	$(PYTHON) board_tests/run_board_smoke.py --device "$(BOARD_DEVICE)" --reports-dir reports
