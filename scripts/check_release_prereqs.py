@@ -10,6 +10,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
+from hash_source_tree import compute_source_tree_hash  # type: ignore
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED_REPORTS_LOCAL = [
@@ -215,6 +217,15 @@ def require_hash_consistency() -> dict[str, object]:
             "HASH_TEXT_MISMATCH",
             "reports/source_tree_hash.txt does not match "
             "reports/source_tree_hash_summary.json",
+        )
+
+    fresh_hash = compute_source_tree_hash(PROJECT_ROOT)
+    if fresh_hash != canonical_hash:
+        return _fail(
+            "hash_consistency",
+            "STALE_SOURCE_HASH",
+            "reported source_tree_hash does not match "
+            "freshly computed source tree hash",
         )
 
     for rel in HASH_STAMPED_JSONS:
