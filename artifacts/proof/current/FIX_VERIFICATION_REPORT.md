@@ -1,14 +1,14 @@
 # FIX_VERIFICATION_REPORT
 
-- generated_at_utc: 2026-05-29T04:03:10.100234+00:00
-- commit_hash: d0c67be8509754d370c3d2807bba0f54082ceb99
-- alpha_gate_passed: false
+- generated_at_utc: 2026-05-29T06:24:13.647838+00:00
+- commit_hash: 14f8b7157d8d78ab0c84dd8e518ef4eca0e8478c
+- alpha_gate_passed: true
 
 ## Required Gate Signals
 
 - backend_compile: PASS
 - backend_import: PASS
-- backend_pytest: FAIL
+- backend_pytest: PASS
 - verify_evidence_store: PASS
 - verify_audit_chain: PASS
 - public_api_boundary: PASS
@@ -19,7 +19,7 @@
 
 ## Release Blockers
 
-- backend_pytest
+- none
 
 ## Canonical Artifacts
 

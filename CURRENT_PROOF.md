@@ -1,9 +1,9 @@
 # CURRENT_PROOF
 
-- generated_at_utc: 2026-05-29T04:03:10.100234+00:00
-- commit_hash: d0c67be8509754d370c3d2807bba0f54082ceb99
-- alpha_gate_status: BLOCKED
-- alpha_gate_passed: false
+- generated_at_utc: 2026-05-29T06:24:13.647838+00:00
+- commit_hash: 14f8b7157d8d78ab0c84dd8e518ef4eca0e8478c
+- alpha_gate_status: PASS
+- alpha_gate_passed: true
 - release_gate_check_count: 52
 - docker_available: true
 - postgis_proof_result: PASS
@@ -11,7 +11,7 @@
 - demo_proof_result: PASS
 - proof_freshness_result: PASS
 - archive_validation_result: PASS
-- proof_input_tree_hash: 1a1428599c11a14614e30f816828d78ad14caed49e04076a0d5ff0700735d5f3
+- proof_input_tree_hash: c45dab5e111c11f6324cacf34241333b7b530aaacb9ae3845a801e20970aead3
 - proof_input_file_count: 1110
 - egress_proxy_proof_log: artifacts/proof/current/egress_proxy_proof.log
 - demo_proof_log: artifacts/proof/current/demo_proof.log
@@ -19,7 +19,7 @@
 ## Runtime Metadata
 
 - gate_runner_python_version: 3.11.7
-- gate_runner_python_executable: [REDACTED_LOCAL_PATH]/backend/.venv/bin/python3
+- gate_runner_python_executable: [REDACTED_LOCAL_PATH]
 - backend_test_python_version: 3.11.7
 - backend_test_python_executable: [REDACTED_LOCAL_PATH]/backend/.venv/bin/python
 - backend_required_python: >=3.11
@@ -70,10 +70,6 @@
 - CanLII staging proof: PASS
 - mutation fail-closed coverage: PASS
 - Alembic migrations: 72
-
-## Failed Checks
-
-- backend_pytest
 
 ## Egress Proxy Coverage
 

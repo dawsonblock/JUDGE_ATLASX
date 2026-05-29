@@ -116,11 +116,10 @@ def test_external_reference_directory_isolated():
         "All non-runtime code should be in external_reference/."
     )
     
-    # Verify subdirectories exist
+    # Verify subdirectories exist (actual structure in this repo)
     expected_subdirs = [
-        "external_repos",
-        "legacy_disabled",
-        "archived_research",
+        "legacy_disabled",  # archived disabled code
+        "reference_only",   # reference implementations
     ]
     
     for subdir in expected_subdirs:
