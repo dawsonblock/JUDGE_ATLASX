@@ -18,8 +18,8 @@ Current canonical state:
 
 ```json
 {
-  "alpha_gate_passed": true,
-  "release_candidate": true,
+  "alpha_gate_passed": false,
+  "release_candidate": false,
   "production_ready": false
 }
 ```
@@ -31,7 +31,7 @@ Production-ready=false until all production gates pass.
 ## Status Matrix
 
 - authority: artifacts/proof/current/release_gate.json
-- alpha_ready: true
+- alpha_ready: false
 - production_ready: false
 - public_release_safe: false
 - ingestion_coverage: 2/26 runnable sources (from canonical source-registry proof)

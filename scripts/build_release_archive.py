@@ -108,6 +108,7 @@ EXCLUDED_SUFFIXES = (
 )
 EXCLUDED_FILE_NAMES = {
     ".env",
+    ".env.example",
     ".env.local",
     ".env.production",
     ".env.development",
@@ -179,6 +180,10 @@ def _normalize(path: Path) -> str:
 
 
 def _is_excluded(rel_path: str, include_external: bool, include_proof_archive: bool) -> bool:
+    # DO NOT exclude artifacts/proof/current/*.log - these are required proof artifacts
+    if rel_path.startswith("artifacts/proof/current/") and rel_path.endswith(".log"):
+        return False
+    
     # Normalise first path component (strip + casefold) so case/whitespace
     # variants like "Research /" or "External/" are caught by EXCLUDED_PREFIXES.
     _parts = Path(rel_path).parts
