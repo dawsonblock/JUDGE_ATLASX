@@ -215,13 +215,19 @@ release-validate-local:
 	@echo "release-validate-local complete"
 
 release-validate-board:
+	@if [ -z "$(BOARD_DEVICE)" ]; then \
+		echo "BOARD_DEVICE is required for board proof flow (example: make release-validate-board BOARD_DEVICE=<device-id>)"; \
+		exit 1; \
+	fi
 	$(MAKE) make-validate-log
 	$(MAKE) preboard-check
 	$(MAKE) sim-axilite
 	$(MAKE) sim-packer
 	$(MAKE) sim-safety
 	$(MAKE) sim-prbs
+	$(MAKE) vivado-bitstream
 	$(MAKE) implementation-gate
+	$(MAKE) board-smoke BOARD_DEVICE="$(BOARD_DEVICE)"
 	$(MAKE) release-prereqs
 	$(MAKE) proof-manifest-board
 	$(MAKE) source-package
@@ -236,4 +242,8 @@ release-proof-local: release-validate-local
 	@echo "release-proof-local complete"
 
 board-smoke:
+	@if [ -z "$(BOARD_DEVICE)" ]; then \
+		echo "BOARD_DEVICE is required for board-smoke"; \
+		exit 1; \
+	fi
 	$(PYTHON) board_tests/run_board_smoke.py --device "$(BOARD_DEVICE)" --reports-dir reports
