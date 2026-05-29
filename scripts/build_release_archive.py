@@ -36,6 +36,7 @@ SOURCE_EXCLUDES = {
     "__MACOSX",
     "sim/build",
     "build_dir",
+    "reports",
     "sim/gkp_cosim_vectors.hex",
     "rtl/reciprocal_lut_w16_q24w25.mem",
     "reciprocal_lut_w16_q24w25.mem",
@@ -103,31 +104,6 @@ PROOF_BOARD_REQUIRED = [
     "reports/proof_manifest_board.json",
 ]
 
-PROOF_OPTIONAL = [
-    "reports/implementation_gate_summary.json",
-    "reports/implementation_gate_summary.md",
-    "reports/axilite_regfile_sim_summary.md",
-    "reports/packer_axis_sim_summary.md",
-    "reports/safety_monitor_sim_summary.md",
-    "reports/prbs_datapath_sim_summary.md",
-    "reports/gkp_decoder_sim_summary.md",
-    "reports/cosim_gkp.log",
-    "reports/cosim_gkp_summary.json",
-    "reports/cdc_critical_summary.json",
-    "reports/cdc_cell_match_summary.md",
-    "reports/cdc_full_summary.json",
-    "reports/timing_summary.rpt",
-    "reports/drc.rpt",
-    "reports/clock_interaction.rpt",
-    "reports/utilization.rpt",
-    "reports/cdc_critical.rpt",
-    "reports/cdc_full.rpt",
-    "reports/rtl_arithmetic_audit.json",
-    "reports/rtl_arithmetic_audit.md",
-    "docs/PHASE1_SIGNOFF_SHEET.md",
-    "docs/BOARD_READY_TEMPLATE.md",
-]
-
 
 def has_excluded_prefix(rel: Path) -> bool:
     rel_str = rel.as_posix()
@@ -182,11 +158,6 @@ def collect_proof_files(*, mode: str) -> tuple[list[Path], list[str]]:
             files.append(path)
         else:
             missing_required.append(rel)
-
-    for rel in PROOF_OPTIONAL:
-        path = PROJECT_ROOT / rel
-        if path.exists():
-            files.append(path)
 
     return sorted(set(files)), missing_required
 

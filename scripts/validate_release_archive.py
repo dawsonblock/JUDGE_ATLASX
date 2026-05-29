@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import PurePosixPath
 from zipfile import ZipFile
@@ -23,6 +24,7 @@ FORBIDDEN_SOURCE_PREFIXES = [
     "__MACOSX/",
     "sim/build/",
     "build_dir/",
+    "reports/",
 ]
 
 FORBIDDEN_SOURCE_SUFFIXES = [
@@ -123,6 +125,10 @@ REQUIRED_METADATA_FIELDS = [
 
 HASH_CANONICAL_SUMMARY = "reports/source_tree_hash_summary.json"
 HASH_TEXT_FILE = "reports/source_tree_hash.txt"
+
+
+def sha256_bytes(payload: bytes) -> str:
+    return hashlib.sha256(payload).hexdigest()
 
 
 def unsafe_entry(name: str) -> bool:
@@ -403,6 +409,7 @@ def validate_proof_manifest_semantics(
     *,
     zf: ZipFile,
     rel_to_name: dict[str, str],
+    rel_set: set[str],
     mode: str,
 ) -> str | None:
     rel = "reports/proof_manifest_local.json"
@@ -463,6 +470,76 @@ def validate_proof_manifest_semantics(
         return (
             "proof semantic failure: "
             f"{rel} files length mismatch vs required_file_count"
+        )
+
+    manifest_paths: set[str] = set()
+    for index, file_entry in enumerate(files):
+        if not isinstance(file_entry, dict):
+            return (
+                "proof semantic failure: "
+                f"{rel} files[{index}] is not an object"
+            )
+        entry_path = file_entry.get("path")
+        entry_size = file_entry.get("size")
+        entry_sha256 = file_entry.get("sha256")
+        if not isinstance(entry_path, str) or not entry_path:
+            return (
+                "proof semantic failure: "
+                f"{rel} files[{index}] missing path"
+            )
+        if unsafe_entry(entry_path):
+            return (
+                "proof semantic failure: "
+                f"{rel} invalid listed path {entry_path}"
+            )
+        if not isinstance(entry_size, int) or entry_size < 0:
+            return (
+                "proof semantic failure: "
+                f"{rel} invalid size for {entry_path}"
+            )
+        if not isinstance(entry_sha256, str) or len(entry_sha256) != 64:
+            return (
+                "proof semantic failure: "
+                f"{rel} invalid sha256 for {entry_path}"
+            )
+        if entry_path in manifest_paths:
+            return (
+                "proof semantic failure: "
+                f"{rel} duplicate listed path {entry_path}"
+            )
+
+        archive_name = rel_to_name.get(entry_path)
+        if archive_name is None:
+            return (
+                "proof semantic failure: "
+                f"{rel} lists missing file {entry_path}"
+            )
+        file_bytes = zf.read(archive_name)
+        if len(file_bytes) != entry_size:
+            return (
+                "proof semantic failure: "
+                f"{rel} size mismatch for {entry_path}"
+            )
+        actual_sha256 = sha256_bytes(file_bytes)
+        if actual_sha256 != entry_sha256.lower():
+            return (
+                "proof semantic failure: "
+                f"{rel} hash mismatch for {entry_path}"
+            )
+        manifest_paths.add(entry_path)
+
+    allowed_extra_paths = {rel}
+    if mode == "proof-board":
+        allowed_extra_paths.add("reports/proof_manifest_local.json")
+
+    for archive_path in rel_set:
+        if archive_path in manifest_paths:
+            continue
+        if archive_path in allowed_extra_paths:
+            continue
+        return (
+            "proof semantic failure: "
+            f"{rel} does not list archive file {archive_path}"
         )
 
     return None
@@ -589,6 +666,7 @@ def main() -> int:
             semantic_error = validate_proof_manifest_semantics(
                 zf=zf,
                 rel_to_name=rel_to_name,
+                rel_set=rel_set,
                 mode=mode,
             )
             if semantic_error is not None:

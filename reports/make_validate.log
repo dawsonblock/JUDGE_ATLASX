@@ -3,9 +3,9 @@ removed_count=0
 python3 scripts/check_source_tree_clean.py
 source-tree-clean: PASS
 PYTHONPATH=. python3 -m unittest discover -s tests
-............................................................................................
+................................................................................................
 ----------------------------------------------------------------------
-Ran 92 tests in 1.871s
+Ran 96 tests in 2.069s
 
 OK
 python3 scripts/rtl_sanity_check.py

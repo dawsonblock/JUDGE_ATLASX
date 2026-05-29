@@ -27,6 +27,15 @@ jobs:
             - name: Enforce proof-local prereqs
               run: python3 scripts/check_release_prereqs.py --mode proof-local
 
+            - name: Validate source archive discipline
+              run: |
+                  latest_source=$(ls -t dist/*-source-*.zip | head -1)
+                  if [ -z "$latest_source" ]; then
+                    echo "No source archive generated"
+                    exit 1
+                  fi
+                  python3 scripts/validate_release_archive.py "$latest_source" --mode source
+
             - name: Validate latest proof-local archive
               id: validate_proof_archive
               run: |

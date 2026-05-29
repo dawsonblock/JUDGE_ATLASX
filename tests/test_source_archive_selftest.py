@@ -50,6 +50,12 @@ class TestSourceArchiveSelfTest(unittest.TestCase):
             self.assertEqual(validate_proc.returncode, 0, validate_proc.stdout)
 
             with ZipFile(archive) as zf:
+                report_entries = [
+                    name
+                    for name in zf.namelist()
+                    if "/reports/" in name and not name.endswith("/")
+                ]
+                self.assertEqual(report_entries, [])
                 roots = {
                     Path(name).parts[0]
                     for name in zf.namelist()
