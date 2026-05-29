@@ -77,6 +77,8 @@ PROOF_LOCAL_REQUIRED = [
     "reports/rtl_arithmetic_audit.md",
     "reports/rtl_arithmetic_audit.log",
     "reports/rtl_sanity.log",
+    "reports/release_prereq_summary_local.json",
+    "reports/proof_manifest_local.json",
 ]
 
 PROOF_BOARD_REQUIRED = [
@@ -94,6 +96,8 @@ PROOF_BOARD_REQUIRED = [
     "reports/utilization.rpt",
     "reports/vivado_synth.log",
     "reports/vivado_impl.log",
+    "reports/release_prereq_summary_board.json",
+    "reports/proof_manifest_board.json",
 ]
 
 PROOF_OPTIONAL = [

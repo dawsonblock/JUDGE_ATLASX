@@ -6,7 +6,7 @@ VERILATOR ?= verilator
 RTL_SRCS := $(wildcard rtl/*.v)
 BOARD_DEVICE ?=
 
-.PHONY: all validate test test-static test-sim lint audit-arith gen-lut cosim-vectors cosim-gkp sim-axilite sim-packer sim-safety sim-prbs extract-regs cdc-analyze parse-cdc cdc-gate-check cdc-manifest-check lint-verilator lint-verilator-strict check-source-clean clean-generated size-report cdc-signoff-package preboard-check implementation-gate vivado-signoff-package vivado-bitstream source-package proof-package proof-package-local proof-package-board proof-package-strict validate-release validate-release-local validate-release-board validate-release-strict make-validate-log release-prereqs release-validate release-validate-local release-validate-board release-proof-local board-smoke
+.PHONY: all validate test test-static test-sim lint audit-arith gen-lut cosim-vectors cosim-gkp sim-axilite sim-packer sim-safety sim-prbs extract-regs cdc-analyze parse-cdc cdc-gate-check cdc-manifest-check lint-verilator lint-verilator-strict check-source-clean clean-generated size-report cdc-signoff-package preboard-check implementation-gate vivado-signoff-package vivado-bitstream source-package proof-package proof-package-local proof-package-board proof-package-strict proof-manifest-local proof-manifest-board validate-release validate-release-local validate-release-board validate-release-strict make-validate-log release-prereqs release-prereqs-local release-validate release-validate-local release-validate-board release-proof-local board-smoke
 
 all:
 	@echo "Available targets: validate, test, lint, audit-arith, gen-lut, cosim-vectors, cosim-gkp, sim-axilite, sim-packer, sim-safety, extract-regs, cdc-analyze, parse-cdc, cdc-gate-check, lint-verilator, clean-generated, size-report, cdc-signoff-package, preboard-check, implementation-gate, vivado-signoff-package, vivado-bitstream, source-package, proof-package-local, proof-package-board, release-prereqs, release-validate"
@@ -150,6 +150,12 @@ proof-package-board:
 proof-package-strict:
 	$(PYTHON) scripts/build_release_archive.py --mode proof-board
 
+proof-manifest-local:
+	$(PYTHON) scripts/generate_proof_manifest.py --mode proof-local
+
+proof-manifest-board:
+	$(PYTHON) scripts/generate_proof_manifest.py --mode proof-board
+
 validate-release:
 	$(MAKE) validate-release-local
 
@@ -188,7 +194,10 @@ make-validate-log:
 	$(PYTHON) scripts/run_make_validate_with_log.py
 
 release-prereqs:
-	$(PYTHON) scripts/check_release_prereqs.py
+	$(PYTHON) scripts/check_release_prereqs.py --mode proof-board
+
+release-prereqs-local:
+	$(PYTHON) scripts/check_release_prereqs.py --mode proof-local
 
 
 release-validate-local:
@@ -198,6 +207,8 @@ release-validate-local:
 	$(MAKE) sim-packer
 	$(MAKE) sim-safety
 	$(MAKE) sim-prbs
+	$(MAKE) release-prereqs-local
+	$(MAKE) proof-manifest-local
 	$(MAKE) source-package
 	$(MAKE) proof-package-local
 	$(MAKE) validate-release-local
@@ -212,6 +223,7 @@ release-validate-board:
 	$(MAKE) sim-prbs
 	$(MAKE) implementation-gate
 	$(MAKE) release-prereqs
+	$(MAKE) proof-manifest-board
 	$(MAKE) source-package
 	$(MAKE) proof-package-board
 	$(MAKE) validate-release-board

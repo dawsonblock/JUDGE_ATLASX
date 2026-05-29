@@ -68,6 +68,8 @@ REQUIRED_PROOF_LOCAL = [
     "reports/rtl_arithmetic_audit.md",
     "reports/rtl_arithmetic_audit.log",
     "reports/rtl_sanity.log",
+    "reports/release_prereq_summary_local.json",
+    "reports/proof_manifest_local.json",
 ]
 
 REQUIRED_PROOF_BOARD = [
@@ -87,6 +89,8 @@ REQUIRED_PROOF_BOARD = [
     "reports/make_validate.log",
     "reports/vivado_synth.log",
     "reports/vivado_impl.log",
+    "reports/release_prereq_summary_board.json",
+    "reports/proof_manifest_board.json",
 ]
 
 REQUIRED_IMPL_CHECKS = [
@@ -354,6 +358,113 @@ def validate_board_impl_semantics(
     return None
 
 
+def validate_prereq_summary_semantics(
+    *,
+    zf: ZipFile,
+    rel_to_name: dict[str, str],
+    mode: str,
+) -> str | None:
+    rel = "reports/release_prereq_summary_local.json"
+    expected_mode = "proof-local"
+    if mode == "proof-board":
+        rel = "reports/release_prereq_summary_board.json"
+        expected_mode = "proof-board"
+
+    payload, err = _read_json_or_error(
+        zf=zf,
+        rel_to_name=rel_to_name,
+        rel=rel,
+    )
+    if err is not None:
+        return err
+    assert payload is not None
+
+    if not bool(payload.get("pass", False)):
+        return f"proof semantic failure: {rel} pass=false"
+
+    actual_mode = payload.get("mode")
+    if actual_mode != expected_mode:
+        return (
+            "proof semantic failure: "
+            f"{rel} mode mismatch (expected {expected_mode})"
+        )
+
+    checks = payload.get("checks")
+    if not isinstance(checks, list) or not checks:
+        return f"proof semantic failure: {rel} missing checks list"
+
+    return None
+
+
+def validate_proof_manifest_semantics(
+    *,
+    zf: ZipFile,
+    rel_to_name: dict[str, str],
+    mode: str,
+) -> str | None:
+    rel = "reports/proof_manifest_local.json"
+    expected_mode = "proof-local"
+    if mode == "proof-board":
+        rel = "reports/proof_manifest_board.json"
+        expected_mode = "proof-board"
+
+    payload, err = _read_json_or_error(
+        zf=zf,
+        rel_to_name=rel_to_name,
+        rel=rel,
+    )
+    if err is not None:
+        return err
+    assert payload is not None
+
+    if not bool(payload.get("pass", False)):
+        return f"proof semantic failure: {rel} pass=false"
+
+    actual_mode = payload.get("mode")
+    if actual_mode != expected_mode:
+        return (
+            "proof semantic failure: "
+            f"{rel} mode mismatch (expected {expected_mode})"
+        )
+
+    manifest_hash = payload.get("source_tree_hash")
+    if not isinstance(manifest_hash, str) or not manifest_hash.strip():
+        return f"proof semantic failure: {rel} missing source_tree_hash"
+
+    canonical_summary, err = _read_json_or_error(
+        zf=zf,
+        rel_to_name=rel_to_name,
+        rel=HASH_CANONICAL_SUMMARY,
+    )
+    if err is not None:
+        return err
+    assert canonical_summary is not None
+    canonical_hash = canonical_summary.get("source_tree_hash")
+    if not isinstance(canonical_hash, str) or not canonical_hash.strip():
+        return (
+            "proof semantic failure: "
+            f"{HASH_CANONICAL_SUMMARY} missing source_tree_hash"
+        )
+
+    if manifest_hash.strip() != canonical_hash.strip():
+        return (
+            "proof freshness failure: "
+            f"{rel} hash mismatch vs {HASH_CANONICAL_SUMMARY}"
+        )
+
+    file_count = payload.get("required_file_count")
+    files = payload.get("files")
+    if not isinstance(file_count, int) or file_count <= 0:
+        return f"proof semantic failure: {rel} invalid required_file_count"
+    if not isinstance(files, list) or len(files) != file_count:
+        return (
+            "proof semantic failure: "
+            f"{rel} files length mismatch vs required_file_count"
+        )
+
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate release archive.")
     parser.add_argument("archive", help="Path to .zip archive")
@@ -458,6 +569,24 @@ def main() -> int:
             semantic_error = validate_proof_local_semantics(
                 zf=zf,
                 rel_to_name=rel_to_name,
+            )
+            if semantic_error is not None:
+                print(semantic_error)
+                return 1
+
+            semantic_error = validate_prereq_summary_semantics(
+                zf=zf,
+                rel_to_name=rel_to_name,
+                mode=mode,
+            )
+            if semantic_error is not None:
+                print(semantic_error)
+                return 1
+
+            semantic_error = validate_proof_manifest_semantics(
+                zf=zf,
+                rel_to_name=rel_to_name,
+                mode=mode,
             )
             if semantic_error is not None:
                 print(semantic_error)
