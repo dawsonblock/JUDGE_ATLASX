@@ -34,6 +34,8 @@ REQUIRED_REPORTS_LOCAL = [
 REQUIRED_REPORTS_BOARD = [
     "reports/implementation_gate_summary.json",
     "reports/implementation_gate_summary.md",
+    "reports/board_smoke_summary.json",
+    "reports/board_capture_summary.json",
     "reports/cdc_critical_summary.json",
     "reports/cdc_cell_match_summary.md",
     "reports/timing_summary.rpt",

@@ -153,6 +153,87 @@ def build_proof_root(base: Path) -> Path:
         "validate ok\n",
         encoding="utf-8",
     )
+
+    prereq_local = {
+        "schema_version": 1,
+        "mode": "proof-local",
+        "generated_at_utc": metadata["generated_at_utc"],
+        "command": (
+            "python3 scripts/check_release_prereqs.py "
+            "--mode proof-local"
+        ),
+        "pass": True,
+        "checks": [{"name": "tools", "pass": True}],
+    }
+    (reports / "release_prereq_summary_local.json").write_text(
+        json.dumps(prereq_local),
+        encoding="utf-8",
+    )
+
+    prereq_board = {
+        "schema_version": 1,
+        "mode": "proof-board",
+        "generated_at_utc": metadata["generated_at_utc"],
+        "command": (
+            "python3 scripts/check_release_prereqs.py "
+            "--mode proof-board"
+        ),
+        "pass": True,
+        "checks": [{"name": "tools", "pass": True}],
+    }
+    (reports / "release_prereq_summary_board.json").write_text(
+        json.dumps(prereq_board),
+        encoding="utf-8",
+    )
+
+    manifest_local = {
+        "schema_version": 1,
+        "mode": "proof-local",
+        "generated_at_utc": metadata["generated_at_utc"],
+        "command": (
+            "python3 scripts/generate_proof_manifest.py "
+            "--mode proof-local"
+        ),
+        "pass": True,
+        "source_tree_hash": metadata["source_tree_hash"],
+        "required_file_count": 1,
+        "files": [
+            {
+                "path": "reports/preboard_local_summary.json",
+                "size": 1,
+                "sha256": "a" * 64,
+            }
+        ],
+    }
+    (reports / "proof_manifest_local.json").write_text(
+        json.dumps(manifest_local),
+        encoding="utf-8",
+    )
+
+    manifest_board = {
+        "schema_version": 1,
+        "mode": "proof-board",
+        "generated_at_utc": metadata["generated_at_utc"],
+        "command": (
+            "python3 scripts/generate_proof_manifest.py "
+            "--mode proof-board"
+        ),
+        "pass": True,
+        "source_tree_hash": metadata["source_tree_hash"],
+        "required_file_count": 1,
+        "files": [
+            {
+                "path": "reports/preboard_local_summary.json",
+                "size": 1,
+                "sha256": "a" * 64,
+            }
+        ],
+    }
+    (reports / "proof_manifest_board.json").write_text(
+        json.dumps(manifest_board),
+        encoding="utf-8",
+    )
+
     (reports / "board_smoke_summary.json").write_text(
         json.dumps({"pass": True}),
         encoding="utf-8",

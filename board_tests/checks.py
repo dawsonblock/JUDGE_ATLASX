@@ -7,8 +7,20 @@ implemented. They still emit structured evidence so the flow is auditable.
 
 from __future__ import annotations
 
+import importlib
 from datetime import datetime, timezone
 from pathlib import Path
+
+if __package__:
+    _adapter_contract = importlib.import_module(
+        ".adapter_contract",
+        __package__,
+    )
+else:
+    _adapter_contract = importlib.import_module("adapter_contract")
+
+ADAPTER_CONTRACT_VERSION = _adapter_contract.ADAPTER_CONTRACT_VERSION
+code_for_check = _adapter_contract.code_for_check
 
 
 def utc_now() -> str:
@@ -20,6 +32,9 @@ def blocked_result(name: str, reason: str) -> dict[str, object]:
         "name": name,
         "pass": False,
         "status": "blocked",
+        "fail_closed": True,
+        "adapter_contract_version": ADAPTER_CONTRACT_VERSION,
+        "reason_code": code_for_check(name),
         "timestamp_utc": utc_now(),
         "reason": reason,
     }

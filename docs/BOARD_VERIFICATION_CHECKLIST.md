@@ -5,6 +5,12 @@
 Icarus/Vivado simulation is optional for exploration only. Release validation
 and board proof packaging require simulator evidence and Vivado report gates.
 
+The board smoke scaffold is fail-closed by contract until real hardware
+adapters are implemented. See `board_tests/adapter_contract.py` for
+`ADAPTER_CONTRACT_VERSION` and standardized blocked `reason_code` values.
+Any blocked board smoke output is evidence of missing adapter implementation,
+not a passing hardware result.
+
 This checklist outlines the steps required to verify the Waveform Brain v1.0 hardware before connecting any optical components. It mirrors the pocket version provided earlier.
 
 ## Phase 0 — Pre-power checks
