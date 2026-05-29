@@ -141,6 +141,7 @@ class TestReleaseArchiveValidation(unittest.TestCase):
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            timeout=90,
         )
 
     def test_proof_semantics_fail_when_preboard_failed(self):

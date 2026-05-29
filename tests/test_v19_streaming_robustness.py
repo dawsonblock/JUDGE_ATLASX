@@ -62,6 +62,7 @@ class TestV19StreamingRobustness(unittest.TestCase):
                 text=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
+                timeout=60,
             )
             self.assertNotEqual(proc.returncode, 0)
             self.assertIn("sequence", proc.stdout)

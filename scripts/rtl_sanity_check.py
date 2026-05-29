@@ -8,6 +8,12 @@ import pathlib
 import re
 
 ASSIGN_RE = re.compile(r"\bassign\s+(\w+)\s*=")
+ALWAYS_FF_BLOCK_RE = re.compile(
+    r"always_ff\s*@\((?P<sensitivity>[^)]*)\)\s*begin"
+    r"(?P<body>.*?)"
+    r"(?=\n\s*always_ff\s*@|\n\s*endmodule\b|\Z)",
+    re.DOTALL,
+)
 
 
 def check_unconnected_prbs(file_contents: str, filename: str) -> list[str]:
@@ -68,22 +74,22 @@ def check_missing_reset(file_contents: str, filename: str):
     if "always_ff" not in file_contents:
         return
 
-    reset_edges = re.findall(
-        r"always_ff\s*@\([^)]*negedge\s+([A-Za-z_][A-Za-z0-9_]*)",
-        file_contents,
-    )
-    if not reset_edges:
-        return
-
-    for reset_sig in sorted(set(reset_edges)):
-        if (
-            f"if (!{reset_sig})" not in file_contents
-            and f"if(~{reset_sig})" not in file_contents
-        ):
-            print(
-                f"WARNING: {filename}: always_ff with negedge {reset_sig} "
-                "without explicit reset condition"
-            )
+    for block in ALWAYS_FF_BLOCK_RE.finditer(file_contents):
+        sensitivity = block.group("sensitivity")
+        body = block.group("body")
+        reset_edges = re.findall(
+            r"\bnegedge\s+([A-Za-z_][A-Za-z0-9_]*)",
+            sensitivity,
+        )
+        for reset_sig in sorted(set(reset_edges)):
+            if not re.search(
+                rf"\bif\s*\(\s*(?:!|~)\s*{re.escape(reset_sig)}\s*\)",
+                body,
+            ):
+                print(
+                    f"WARNING: {filename}: always_ff with negedge {reset_sig} "
+                    "without explicit reset condition"
+                )
 
 
 def check_implicit_width(file_contents: str, filename: str):
