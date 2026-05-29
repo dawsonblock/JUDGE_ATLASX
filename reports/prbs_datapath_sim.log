@@ -1,6 +1,3 @@
-+ iverilog -V
-+ vvp -V
-+ iverilog -g2012 -Wall -o /Users/dawsonblock/Downloads/waveform_brain_v1_auto_cal/sim/build/tb_prbs_datapath.vvp sim/tb_prbs_datapath.sv rtl/prbs_gen.v rtl/safety_monitor.v rtl/telemetry_counter.v rtl/health_monitor.v rtl/axis_skid_buffer.v rtl/axis_packet_fifo.v rtl/packer_axis.v rtl/poly_eval.v rtl/soft_weighting.v rtl/gkp_decoder.v rtl/gkp_decoder_4q_wrapper.v rtl/waveform_control_4q_top.v
 rtl/prbs_gen.v:7: warning: timescale for prbs_gen inherited from another file.
 sim/tb_prbs_datapath.sv:1: ...: The inherited timescale is here.
 rtl/safety_monitor.v:7: warning: timescale for safety_monitor inherited from another file.
@@ -38,5 +35,5 @@ rtl/gkp_decoder.v:82: sorry: constant selects in always_* processes are not curr
 rtl/gkp_decoder.v:82: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
 rtl/gkp_decoder.v:82: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
 rtl/axis_packet_fifo.v:89: vvp.tgt sorry: Case unique/unique0 qualities are ignored.
-+ vvp /Users/dawsonblock/Downloads/waveform_brain_v1_auto_cal/sim/build/tb_prbs_datapath.vvp
+
 TB_PASS tb_prbs_datapath

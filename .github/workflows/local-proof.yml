@@ -21,20 +21,21 @@ jobs:
             - name: Python compile
               run: python3 -m compileall -q userspace scripts tests firmware
 
-            - name: Validate
-              run: make validate
-
-            - name: Sim AXI-Lite
-              run: make sim-axilite
-
-            - name: Sim packer
-              run: make sim-packer
-
-            - name: Sim safety
-              run: make sim-safety
-
-            - name: Co-sim GKP
-              run: make cosim-gkp
-
-            - name: Local release
+            - name: Canonical local release validation
               run: make release-validate-local
+
+            - name: Validate latest proof-local archive
+              run: |
+                  latest_proof=$(ls -t dist/*-proof-local-*.zip | head -1)
+                  if [ -z "$latest_proof" ]; then
+                    echo "No proof-local archive generated"
+                    exit 1
+                  fi
+                  python3 scripts/validate_release_archive.py "$latest_proof" --mode proof-local
+
+            - name: Upload proof-local archive
+              uses: actions/upload-artifact@v4
+              with:
+                  name: waveform-brain-proof-local
+                  path: dist/*-proof-local-*.zip
+                  if-no-files-found: error

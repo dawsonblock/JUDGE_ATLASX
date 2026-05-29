@@ -1,11 +1,8 @@
-+ iverilog -V
-+ vvp -V
-+ iverilog -g2012 -Wall -o /Users/dawsonblock/Downloads/waveform_brain_v1_auto_cal/sim/build/tb_safety_monitor.vvp sim/tb_safety_monitor.sv rtl/safety_monitor.v
 rtl/safety_monitor.v:7: warning: timescale for safety_monitor inherited from another file.
 sim/tb_safety_monitor.sv:1: ...: The inherited timescale is here.
 rtl/safety_monitor.v:21: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
 rtl/safety_monitor.v:21: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
 rtl/safety_monitor.v:21: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
 rtl/safety_monitor.v:21: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
-+ vvp /Users/dawsonblock/Downloads/waveform_brain_v1_auto_cal/sim/build/tb_safety_monitor.vvp
+
 TB_PASS tb_safety_monitor

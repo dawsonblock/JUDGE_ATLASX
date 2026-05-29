@@ -27,9 +27,9 @@
       "primitive": "xpm_cdc_single",
       "wrapper_instance": "u_telem_active_single"
     },
-    "telem_done_pulse": {
-      "primitive": "xpm_cdc_pulse",
-      "wrapper_instance": "u_telem_done_pulse"
+    "telem_done_event": {
+      "primitive": "xpm_cdc_handshake",
+      "wrapper_instance": "u_telem_payload_hs"
     },
     "fault_flags_snapshot": {
       "primitive": "xpm_cdc_array_single",
@@ -48,12 +48,12 @@
       "wrapper_instance": "u_axis_fifo_level_array"
     },
     "telem_flips_delta": {
-      "primitive": "xpm_cdc_gray",
-      "wrapper_instance": "u_telem_flips_delta_gray"
+      "primitive": "xpm_cdc_handshake",
+      "wrapper_instance": "u_telem_payload_hs"
     },
     "telem_total_flips": {
-      "primitive": "xpm_cdc_gray",
-      "wrapper_instance": "u_telem_total_flips_gray"
+      "primitive": "xpm_cdc_handshake",
+      "wrapper_instance": "u_telem_payload_hs"
     },
     "health_safety_trip_count": {
       "primitive": "xpm_cdc_gray",
