@@ -47,6 +47,9 @@ jobs:
                   python3 scripts/validate_release_archive.py "$latest_proof" --mode proof-local
                   echo "proof_archive=$latest_proof" >> "$GITHUB_OUTPUT"
 
+            - name: Enforce proof manifest invariants
+              run: make check-proof-invariant
+
             - name: Upload proof-local archive
               uses: actions/upload-artifact@v4
               with:
