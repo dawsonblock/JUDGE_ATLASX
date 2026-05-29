@@ -1,0 +1,109 @@
+# JUDGE_ATLAS v5 Final Release Archives
+
+## Distributable Archive (UPLOAD THIS)
+
+File: dist/JUDGE_ATLAS-main-final-distributable.zip
+SHA-256: a2d0ad2074e383460f2214cb93cfa2bc32f748da215cf4f2d19d3e352b943041
+Size: 2.3 MB
+Built: 2026-05-29T01:22:00Z
+
+Contents:
+  JUDGE_ATLAS-main-final-release/
+    ├── JUDGE_ATLAS-main-final.zip (canonical inner archive with proof logs)
+    ├── FINAL_RELEASE_HANDOFF.md
+    ├── REPAIR_EXECUTION_SUMMARY.md
+    └── DISTRIBUTION_INDEX.txt
+
+This is the ONLY file to upload to recipients.
+
+
+## Canonical Inner Archive (inside distributable)
+
+File: dist/JUDGE_ATLAS-main-final.zip
+SHA-256: 11e22eb97bb75a542f8bc1fe9cd41e37816c4beb96bef1f5920a0b598a022d63
+Size: 2.3 MB
+Files: 1,300
+
+Root: JUDGE_ATLAS-main/
+
+Contains:
+  - backend/ (804 source files)
+  - frontend/ (180 source files)
+  - docs/ (documentation)
+  - scripts/ (validators, build tools)
+  - artifacts/proof/current/ (all proof logs + metadata)
+    - *.log files (backend_compile, backend_pytest, check_*, etc.)
+    - REPAIR_REPORT.md
+    - release_gate.json
+    - proof_manifest.json
+    - required_log_index.json
+  - FINAL_RELEASE_HANDOFF.md
+
+
+## Verification Procedure
+
+For Recipients:
+
+1. Verify distributable archive hash
+   shasum -a 256 dist/JUDGE_ATLAS-main-final-distributable.zip
+   Should match: a2d0ad2074e383460f2214cb93cfa2bc32f748da215cf4f2d19d3e352b943041
+
+2. Extract distributable
+   unzip dist/JUDGE_ATLAS-main-final-distributable.zip
+   cd JUDGE_ATLAS-main-final-release
+
+3. Verify canonical inner archive hash
+   shasum -a 256 JUDGE_ATLAS-main-final.zip
+   Should match: 11e22eb97bb75a542f8bc1fe9cd41e37816c4beb96bef1f5920a0b598a022d63
+
+4. Extract canonical inner archive
+   unzip JUDGE_ATLAS-main-final.zip
+   cd JUDGE_ATLAS-main
+
+5. Verify archive self-verifies
+   python3 scripts/check_proof_consistency.py --root .
+   Should return: PASS
+
+6. Confirm proof logs present
+   ls -1 artifacts/proof/current/*.log | wc -l
+   Should show: 53+
+
+
+## Build Information
+
+Branch: repair/main17-final-self-verifying-alpha
+Latest Commit: 99250bd
+Build Date: 2026-05-29
+Build Status: COMPLETE
+Release Status: Alpha (not production-ready)
+
+Build Phases: 1-14
+  - Phases 1-3: Packaging architecture & cleanup
+  - Phases 4-6: Evidence generation
+  - Phases 7-12: Archive building
+  - Phases 13-14: Verification & upload prep
+
+Key Achievement:
+  Transitioned from working-directory ZIPs to canonical distributable model.
+  Archive contains all proof evidence. Recipients can verify self-contained.
+
+
+## Critical Rules
+
+1. Proof logs MUST exist before claiming alpha_gate_passed=true
+2. Proof logs MUST be packaged inside archive
+3. Archive root MUST be JUDGE_ATLAS-main/
+4. Only valid upload: dist/JUDGE_ATLAS-main-final-distributable.zip
+5. Never upload working-directory ZIPs
+6. Recipients verify from fresh extraction (self-verifying)
+
+
+## Distribution Ready
+
+Status: ✅ READY FOR DISTRIBUTION
+
+Upload: dist/JUDGE_ATLAS-main-final-distributable.zip
+Include: ARCHIVE_MANIFEST.txt (this file)
+Include: DISTRIBUTION_INDEX.txt (from distributable)
+Include: DISTRIBUTABLE_ARCHIVE_README.md (recipient guide)
+
