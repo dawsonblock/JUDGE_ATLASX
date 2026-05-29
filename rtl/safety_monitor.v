@@ -6,8 +6,8 @@
 // latched until cleared by clear_faults. Additional variance monitoring
 // can be added in a future version.
 
-`timescale 1ns/1ps
 
+module safety_monitor #(
 module safety_monitor #(
     parameter int ADC_WIDTH = 16
 )(

@@ -9,8 +9,8 @@
 //   - Aligns position/syndrome with poly/weight latency.
 //   - Adds a register before saturation to shorten the final timing path.
 
-`timescale 1ns/1ps
 
+module gkp_decoder #(
 module gkp_decoder #(
     parameter int ADC_WIDTH   = 16,
     parameter int SCALE_WIDTH = 32

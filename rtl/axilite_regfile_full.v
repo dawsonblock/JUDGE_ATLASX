@@ -11,8 +11,8 @@
 // It is provided as an optional integration target. The existing
 // axilite_regfile.v remains available for the lightweight scaffold path.
 
-`timescale 1ns/1ps
 
+module axilite_regfile_full (
 module axilite_regfile_full (
     input  logic                         s_axi_aclk,
     input  logic                         s_axi_aresetn,
