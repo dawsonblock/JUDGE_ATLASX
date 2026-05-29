@@ -1,11 +1,11 @@
-`timescale 1ns/1ps
-
 // axis_packet_fifo.v
 //
 // Small synchronous AXI4-Stream FIFO for packet buffering between packer_axis
 // and DMA/host streaming logic.
 //
 // This is not a clock-crossing FIFO. It assumes one clock domain.
+
+`timescale 1ns/1ps
 
 module axis_packet_fifo #(
     parameter int DATA_WIDTH = 64,

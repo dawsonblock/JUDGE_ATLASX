@@ -1,5 +1,3 @@
-`timescale 1ns/1ps
-
 // packer_axis.v
 //
 // AXI4-Stream compliant two-beat packet packer for Waveform Brain.
