@@ -12,13 +12,20 @@ def build_proof_root(base: Path) -> Path:
     reports = root / "reports"
     reports.mkdir(parents=True, exist_ok=True)
 
+    metadata = {
+        "schema_version": 1,
+        "generated_at_utc": "2026-05-28T00:00:00Z",
+        "command": "python3 scripts/preboard_check.py --mode proof",
+        "source_tree_hash": "abcd" * 16,
+    }
     preboard = {
-        "timestamp_utc": "2026-05-28T00:00:00Z",
+        **metadata,
         "pass": True,
+        "overall_pass": True,
         "checks": [],
     }
     impl = {
-        "timestamp_utc": "2026-05-28T00:00:00Z",
+        "generated_at_utc": "2026-05-28T00:00:00Z",
         "pass": True,
         "checks": {
             "cdc_critical": {"pass": True, "detail": "ok"},
@@ -35,6 +42,30 @@ def build_proof_root(base: Path) -> Path:
         "ok\n",
         encoding="utf-8",
     )
+    (reports / "local_toolchain_summary.json").write_text(
+        json.dumps({**metadata, "pass": True}),
+        encoding="utf-8",
+    )
+    (reports / "source_tree_hash_summary.json").write_text(
+        json.dumps({**metadata, "pass": True, "command": "hash"}),
+        encoding="utf-8",
+    )
+    (reports / "source_tree_hash.txt").write_text(
+        f"{metadata['source_tree_hash']}\n",
+        encoding="utf-8",
+    )
+    (reports / "source_tree_clean_summary.json").write_text(
+        json.dumps({**metadata, "pass": True, "command": "clean"}),
+        encoding="utf-8",
+    )
+    (reports / "cdc_static_summary.json").write_text(
+        json.dumps({**metadata, "pass": True, "command": "cdc"}),
+        encoding="utf-8",
+    )
+    (reports / "register_map.json").write_text(
+        json.dumps({"registers": []}),
+        encoding="utf-8",
+    )
     (reports / "implementation_gate_summary.json").write_text(
         json.dumps(impl), encoding="utf-8"
     )
@@ -43,28 +74,36 @@ def build_proof_root(base: Path) -> Path:
         encoding="utf-8",
     )
     (reports / "axilite_regfile_sim_summary.json").write_text(
-        json.dumps({"pass": True}), encoding="utf-8"
+        json.dumps({**metadata, "pass": True}), encoding="utf-8"
     )
     (reports / "axilite_regfile_sim.log").write_text(
         "axilite sim ok\n",
         encoding="utf-8",
     )
     (reports / "packer_axis_sim_summary.json").write_text(
-        json.dumps({"pass": True}), encoding="utf-8"
+        json.dumps({**metadata, "pass": True}), encoding="utf-8"
     )
     (reports / "packer_axis_sim.log").write_text(
         "packer sim ok\n",
         encoding="utf-8",
     )
     (reports / "safety_monitor_sim_summary.json").write_text(
-        json.dumps({"pass": True}), encoding="utf-8"
+        json.dumps({**metadata, "pass": True}), encoding="utf-8"
     )
     (reports / "safety_monitor_sim.log").write_text(
         "safety sim ok\n",
         encoding="utf-8",
     )
     (reports / "prbs_datapath_sim_summary.json").write_text(
-        json.dumps({"pass": True}),
+        json.dumps({**metadata, "pass": True}),
+        encoding="utf-8",
+    )
+    (reports / "gkp_decoder_sim_summary.json").write_text(
+        json.dumps({**metadata, "pass": True}),
+        encoding="utf-8",
+    )
+    (reports / "gkp_decoder_sim.log").write_text(
+        "gkp sim ok\n",
         encoding="utf-8",
     )
     (reports / "prbs_datapath_sim.log").write_text(
@@ -77,6 +116,14 @@ def build_proof_root(base: Path) -> Path:
     )
     (reports / "rtl_arithmetic_audit.md").write_text(
         "audit ok\n",
+        encoding="utf-8",
+    )
+    (reports / "rtl_arithmetic_audit.log").write_text(
+        "audit log\n",
+        encoding="utf-8",
+    )
+    (reports / "rtl_sanity.log").write_text(
+        "rtl sanity ok\n",
         encoding="utf-8",
     )
     (reports / "cdc_critical_summary.json").write_text(
@@ -104,6 +151,14 @@ def build_proof_root(base: Path) -> Path:
     (reports / "cosim_gkp.log").write_text("cosim ok\n", encoding="utf-8")
     (reports / "make_validate.log").write_text(
         "validate ok\n",
+        encoding="utf-8",
+    )
+    (reports / "board_smoke_summary.json").write_text(
+        json.dumps({"pass": True}),
+        encoding="utf-8",
+    )
+    (reports / "board_capture_summary.json").write_text(
+        json.dumps({"pass": True}),
         encoding="utf-8",
     )
 
@@ -180,14 +235,68 @@ class TestReleaseArchiveValidation(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             td_path = Path(td)
             root = build_proof_root(td_path)
-            (root / "reports" / "cosim_gkp.log").unlink()
+            (root / "reports" / "gkp_decoder_sim.log").unlink()
             archive = td_path / "proof.zip"
             zip_tree(root, archive)
 
             proc = self.run_validator(archive, "proof-board")
             self.assertNotEqual(proc.returncode, 0)
             self.assertIn("missing required proof entry", proc.stdout)
-            self.assertIn("reports/cosim_gkp.log", proc.stdout)
+            self.assertIn("reports/gkp_decoder_sim.log", proc.stdout)
+
+    def test_proof_semantics_fail_when_metadata_missing(self):
+        with tempfile.TemporaryDirectory() as td:
+            td_path = Path(td)
+            root = build_proof_root(td_path)
+            p = root / "reports" / "packer_axis_sim_summary.json"
+            data = json.loads(p.read_text(encoding="utf-8"))
+            data.pop("generated_at_utc", None)
+            p.write_text(json.dumps(data), encoding="utf-8")
+
+            archive = td_path / "proof.zip"
+            zip_tree(root, archive)
+            proc = self.run_validator(archive, "proof-local")
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn(
+                "missing metadata field generated_at_utc",
+                proc.stdout,
+            )
+
+    def test_proof_semantics_fail_when_hash_text_mismatch(self):
+        with tempfile.TemporaryDirectory() as td:
+            td_path = Path(td)
+            root = build_proof_root(td_path)
+            (root / "reports" / "source_tree_hash.txt").write_text(
+                "f" * 64 + "\n",
+                encoding="utf-8",
+            )
+
+            archive = td_path / "proof.zip"
+            zip_tree(root, archive)
+            proc = self.run_validator(archive, "proof-local")
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn(
+                "proof freshness failure",
+                proc.stdout,
+            )
+
+    def test_proof_semantics_fail_when_summary_hash_mismatch(self):
+        with tempfile.TemporaryDirectory() as td:
+            td_path = Path(td)
+            root = build_proof_root(td_path)
+            p = root / "reports" / "packer_axis_sim_summary.json"
+            data = json.loads(p.read_text(encoding="utf-8"))
+            data["source_tree_hash"] = "0" * 64
+            p.write_text(json.dumps(data), encoding="utf-8")
+
+            archive = td_path / "proof.zip"
+            zip_tree(root, archive)
+            proc = self.run_validator(archive, "proof-local")
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn(
+                "hash mismatch",
+                proc.stdout,
+            )
 
 
 if __name__ == "__main__":

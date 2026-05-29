@@ -119,7 +119,7 @@ cdc-signoff-package:
 	$(PYTHON) scripts/package_cdc_signoff.py
 
 preboard-check:
-	$(PYTHON) scripts/preboard_check.py
+	$(PYTHON) scripts/preboard_check.py --mode proof
 
 implementation-gate:
 	$(PYTHON) scripts/implementation_gate.py

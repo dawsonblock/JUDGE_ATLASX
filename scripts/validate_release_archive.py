@@ -46,9 +46,15 @@ FORBIDDEN_SOURCE_EXACT = [
 REQUIRED_PROOF_LOCAL = [
     "reports/preboard_local_summary.json",
     "reports/preboard_local_summary.md",
+    "reports/local_toolchain_summary.json",
+    "reports/source_tree_hash_summary.json",
+    "reports/source_tree_hash.txt",
+    "reports/source_tree_clean_summary.json",
+    "reports/cdc_static_summary.json",
+    "reports/register_map.json",
     "reports/unittest.log",
     "reports/make_validate.log",
-    "reports/cosim_gkp.log",
+    "reports/gkp_decoder_sim.log",
     "reports/axilite_regfile_sim_summary.json",
     "reports/axilite_regfile_sim.log",
     "reports/packer_axis_sim_summary.json",
@@ -57,13 +63,18 @@ REQUIRED_PROOF_LOCAL = [
     "reports/safety_monitor_sim.log",
     "reports/prbs_datapath_sim_summary.json",
     "reports/prbs_datapath_sim.log",
+    "reports/gkp_decoder_sim_summary.json",
     "reports/rtl_arithmetic_audit.json",
     "reports/rtl_arithmetic_audit.md",
+    "reports/rtl_arithmetic_audit.log",
+    "reports/rtl_sanity.log",
 ]
 
 REQUIRED_PROOF_BOARD = [
     "reports/implementation_gate_summary.json",
     "reports/implementation_gate_summary.md",
+    "reports/board_smoke_summary.json",
+    "reports/board_capture_summary.json",
     "reports/cdc_critical_summary.json",
     "reports/cdc_cell_match_summary.md",
     "reports/timing_summary.rpt",
@@ -72,7 +83,6 @@ REQUIRED_PROOF_BOARD = [
     "reports/cdc_critical.rpt",
     "reports/clock_interaction.rpt",
     "reports/utilization.rpt",
-    "reports/cosim_gkp.log",
     "reports/unittest.log",
     "reports/make_validate.log",
     "reports/vivado_synth.log",
@@ -85,6 +95,27 @@ REQUIRED_IMPL_CHECKS = [
     "timing",
     "drc",
 ]
+
+REQUIRED_PROOF_PASS_JSONS = [
+    "reports/preboard_local_summary.json",
+    "reports/local_toolchain_summary.json",
+    "reports/source_tree_hash_summary.json",
+    "reports/source_tree_clean_summary.json",
+    "reports/cdc_static_summary.json",
+    "reports/axilite_regfile_sim_summary.json",
+    "reports/packer_axis_sim_summary.json",
+    "reports/safety_monitor_sim_summary.json",
+    "reports/prbs_datapath_sim_summary.json",
+    "reports/gkp_decoder_sim_summary.json",
+]
+
+REQUIRED_METADATA_FIELDS = [
+    "generated_at_utc",
+    "command",
+]
+
+HASH_CANONICAL_SUMMARY = "reports/source_tree_hash_summary.json"
+HASH_TEXT_FILE = "reports/source_tree_hash.txt"
 
 
 def unsafe_entry(name: str) -> bool:
@@ -134,6 +165,53 @@ def parse_required_json(
     return data, None
 
 
+def _read_json_or_error(
+    *,
+    zf: ZipFile,
+    rel_to_name: dict[str, str],
+    rel: str,
+) -> tuple[dict[str, object] | None, str | None]:
+    data, err = parse_required_json(zf=zf, rel_to_name=rel_to_name, rel=rel)
+    if err is not None:
+        return None, err
+    assert data is not None
+    return data, None
+
+
+def validate_common_summary_metadata(
+    *,
+    zf: ZipFile,
+    rel_to_name: dict[str, str],
+    rel: str,
+) -> str | None:
+    payload, err = _read_json_or_error(zf=zf, rel_to_name=rel_to_name, rel=rel)
+    if err is not None:
+        return err
+    assert payload is not None
+
+    for field in REQUIRED_METADATA_FIELDS:
+        value = payload.get(field)
+        if not isinstance(value, str) or not value.strip():
+            return (
+                f"proof semantic failure: {rel} "
+                f"missing metadata field {field}"
+            )
+
+    if not (
+        isinstance(payload.get("source_tree_hash"), str)
+        and payload.get("source_tree_hash")
+    ) and not (
+        isinstance(payload.get("source_sha256"), str)
+        and payload.get("source_sha256")
+    ):
+        return (
+            "proof semantic failure: "
+            f"{rel} missing source_tree_hash/source_sha256"
+        )
+
+    return None
+
+
 def validate_preboard_semantics(
     *,
     zf: ZipFile,
@@ -149,6 +227,87 @@ def validate_preboard_semantics(
     assert preboard is not None
     if not bool(preboard.get("pass", False)):
         return "proof semantic failure: preboard_local_summary pass=false"
+
+    if not bool(preboard.get("overall_pass", False)):
+        return (
+            "proof semantic failure: "
+            "preboard_local_summary overall_pass=false"
+        )
+
+    return None
+
+
+def validate_proof_local_semantics(
+    *,
+    zf: ZipFile,
+    rel_to_name: dict[str, str],
+) -> str | None:
+    canonical_hash = ""
+    canonical_summary, err = _read_json_or_error(
+        zf=zf,
+        rel_to_name=rel_to_name,
+        rel=HASH_CANONICAL_SUMMARY,
+    )
+    if err is not None:
+        return err
+    assert canonical_summary is not None
+    hash_val = canonical_summary.get("source_tree_hash")
+    if isinstance(hash_val, str):
+        canonical_hash = hash_val.strip()
+    if not canonical_hash:
+        return (
+            "proof semantic failure: "
+            "reports/source_tree_hash_summary.json missing source_tree_hash"
+        )
+
+    txt_name = rel_to_name.get(HASH_TEXT_FILE)
+    if txt_name is None:
+        return f"missing required proof entry: {HASH_TEXT_FILE}"
+    txt_val = zf.read(txt_name).decode("utf-8", errors="replace").strip()
+    if txt_val != canonical_hash:
+        return (
+            "proof freshness failure: "
+            f"{HASH_TEXT_FILE} does not match {HASH_CANONICAL_SUMMARY}"
+        )
+
+    for rel in REQUIRED_PROOF_PASS_JSONS:
+        payload, err = _read_json_or_error(
+            zf=zf,
+            rel_to_name=rel_to_name,
+            rel=rel,
+        )
+        if err is not None:
+            return err
+        assert payload is not None
+        if not bool(payload.get("pass", False)):
+            return f"proof semantic failure: {rel} pass=false"
+        metadata_err = validate_common_summary_metadata(
+            zf=zf,
+            rel_to_name=rel_to_name,
+            rel=rel,
+        )
+        if metadata_err is not None:
+            return metadata_err
+
+        payload_hash = payload.get("source_tree_hash")
+        payload_sha = payload.get("source_sha256")
+        current_hash = ""
+        if isinstance(payload_hash, str) and payload_hash.strip():
+            current_hash = payload_hash.strip()
+        elif isinstance(payload_sha, str) and payload_sha.strip():
+            current_hash = payload_sha.strip()
+
+        if current_hash and current_hash != canonical_hash:
+            return (
+                "proof freshness failure: "
+                f"{rel} hash mismatch vs {HASH_CANONICAL_SUMMARY}"
+            )
+
+    if (
+        rel_to_name.get("reports/register_map.json") is None
+        and rel_to_name.get("register_map.json") is None
+    ):
+        return "missing required proof entry: reports/register_map.json"
 
     return None
 
@@ -200,7 +359,14 @@ def main() -> int:
     parser.add_argument("archive", help="Path to .zip archive")
     parser.add_argument(
         "--mode",
-        choices=["source", "proof", "proof-local", "proof-board"],
+        choices=[
+            "source",
+            "proof",
+            "proof-local",
+            "proof-board",
+            "board-impl",
+            "board-capture",
+        ],
         required=True,
         help="Expected archive content mode.",
     )
@@ -213,6 +379,10 @@ def main() -> int:
     mode = args.mode
     if mode == "proof":
         mode = "proof-local"
+    if mode == "board-impl":
+        mode = "proof-board"
+    if mode == "board-capture":
+        mode = "proof-board"
     if args.strict_proof and mode == "proof-local":
         mode = "proof-board"
 
@@ -278,6 +448,14 @@ def main() -> int:
                 if strip_root(name)
             }
             semantic_error = validate_preboard_semantics(
+                zf=zf,
+                rel_to_name=rel_to_name,
+            )
+            if semantic_error is not None:
+                print(semantic_error)
+                return 1
+
+            semantic_error = validate_proof_local_semantics(
                 zf=zf,
                 rel_to_name=rel_to_name,
             )

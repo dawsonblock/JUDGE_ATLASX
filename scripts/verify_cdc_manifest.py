@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 from pathlib import Path
@@ -91,6 +92,14 @@ def report_has_nonzero_match(report_text: str, primitive: str) -> bool:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Verify CDC manifest")
+    parser.add_argument(
+        "--static-only",
+        action="store_true",
+        help="Skip cdc_cell_match_summary.md checks.",
+    )
+    args = parser.parse_args()
+
     if not MANIFEST_PATH.exists():
         rel_manifest = MANIFEST_PATH.relative_to(PROJECT_ROOT)
         print(f"cdc-manifest-fail: missing {rel_manifest}")
@@ -99,7 +108,7 @@ def main() -> int:
         rel_wrapper = WRAPPER_PATH.relative_to(PROJECT_ROOT)
         print(f"cdc-manifest-fail: missing {rel_wrapper}")
         return 1
-    if not CELLMATCH_PATH.exists():
+    if not args.static_only and not CELLMATCH_PATH.exists():
         rel_cellmatch = CELLMATCH_PATH.relative_to(PROJECT_ROOT)
         print(f"cdc-manifest-fail: missing {rel_cellmatch}")
         return 1
@@ -110,7 +119,9 @@ def main() -> int:
         return 1
 
     wrapper_text = WRAPPER_PATH.read_text(encoding="utf-8")
-    report_text = CELLMATCH_PATH.read_text(encoding="utf-8")
+    report_text = ""
+    if not args.static_only:
+        report_text = CELLMATCH_PATH.read_text(encoding="utf-8")
 
     failures: list[str] = []
     for crossing_name, primitive, instance in required_crossings(manifest):
@@ -126,12 +137,13 @@ def main() -> int:
                 f"{crossing_name} -> {instance}"
             )
 
-    for primitive in sorted(required_primitive_types(manifest)):
-        if not report_has_nonzero_match(report_text, primitive):
-            failures.append(
-                "required primitive has zero/missing cell "
-                f"matches: {primitive}"
-            )
+    if not args.static_only:
+        for primitive in sorted(required_primitive_types(manifest)):
+            if not report_has_nonzero_match(report_text, primitive):
+                failures.append(
+                    "required primitive has zero/missing cell "
+                    f"matches: {primitive}"
+                )
 
     if failures:
         print("cdc-manifest-fail")

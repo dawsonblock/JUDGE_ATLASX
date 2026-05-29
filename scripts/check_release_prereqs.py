@@ -18,6 +18,7 @@ REQUIRED_REPORTS = [
     "reports/packer_axis_sim_summary.json",
     "reports/safety_monitor_sim_summary.json",
     "reports/prbs_datapath_sim_summary.json",
+    "reports/gkp_decoder_sim_summary.json",
     "reports/cdc_critical_summary.json",
     "reports/cdc_cell_match_summary.md",
     "reports/timing_summary.rpt",
@@ -26,7 +27,7 @@ REQUIRED_REPORTS = [
     "reports/cdc_critical.rpt",
     "reports/clock_interaction.rpt",
     "reports/utilization.rpt",
-    "reports/cosim_gkp.log",
+    "reports/gkp_decoder_sim.log",
     "reports/unittest.log",
     "reports/make_validate.log",
     "reports/vivado_synth.log",
@@ -38,6 +39,7 @@ SIM_REPORTS = [
     "reports/packer_axis_sim_summary.json",
     "reports/safety_monitor_sim_summary.json",
     "reports/prbs_datapath_sim_summary.json",
+    "reports/gkp_decoder_sim_summary.json",
 ]
 
 REQUIRED_IMPL_CHECKS = [
@@ -54,14 +56,25 @@ def fail(msg: str) -> int:
 
 
 def require_tools() -> int:
-    missing = [tool for tool in ["iverilog", "vvp"] if shutil.which(tool) is None]
+    missing = [
+        tool
+        for tool in ["iverilog", "vvp"]
+        if shutil.which(tool) is None
+    ]
     if missing:
-        return fail("missing simulator tools for release flow: " + ", ".join(missing))
+        return fail(
+            "missing simulator tools for release flow: "
+            + ", ".join(missing)
+        )
     return 0
 
 
 def require_reports() -> int:
-    missing = [rel for rel in REQUIRED_REPORTS if not (PROJECT_ROOT / rel).exists()]
+    missing = [
+        rel
+        for rel in REQUIRED_REPORTS
+        if not (PROJECT_ROOT / rel).exists()
+    ]
     if missing:
         print("release-prereq-fail: missing required reports:")
         for rel in missing:
@@ -76,19 +89,24 @@ def require_preboard_pass() -> int:
 
     if not bool(data.get("pass", False)):
         return fail("preboard_local_summary.json reports pass=false")
+    if not bool(data.get("overall_pass", False)):
+        return fail("preboard_local_summary.json reports overall_pass=false")
 
     checks = data.get("checks", [])
     cosim_checks = [
         item
         for item in checks
-        if "scripts/run_gkp_cosim.py" in " ".join(item.get("cmd", []))
+        if "scripts/run_gkp_cosim.py" in str(item.get("cmd", ""))
     ]
     if not cosim_checks:
         return fail("no run_gkp_cosim check found in preboard summary")
 
     latest = cosim_checks[-1]
     if not bool(latest.get("required", False)):
-        return fail("run_gkp_cosim was optional during preboard; release requires it")
+        return fail(
+            "run_gkp_cosim was optional during preboard; "
+            "release requires it"
+        )
     if not bool(latest.get("raw_pass", False)):
         return fail("run_gkp_cosim did not pass in preboard summary")
 
@@ -108,7 +126,9 @@ def require_implementation_pass() -> int:
     for check_name in REQUIRED_IMPL_CHECKS:
         check_data = checks.get(check_name)
         if not isinstance(check_data, dict):
-            return fail("implementation_gate_summary missing check: " + check_name)
+            return fail(
+                "implementation_gate_summary missing check: " + check_name
+            )
         if not bool(check_data.get("pass", False)):
             return fail("implementation gate check failed: " + check_name)
 
