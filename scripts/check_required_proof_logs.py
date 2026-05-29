@@ -37,6 +37,12 @@ DEFAULT_REQUIRED_PROOF_FILES = (
     "artifacts/proof/current/PROOF_POLICY.md",
 )
 DEFAULT_REQUIRED_PROOF_LOGS = (
+    "artifacts/proof/current/release_gate.log",
+    "artifacts/proof/current/runtime_smoke.log",
+    "artifacts/proof/current/docker_smoke.log",
+    "artifacts/proof/current/check_proof_manifest.log",
+    "artifacts/proof/current/check_proof_consistency.log",
+    "artifacts/proof/current/check_no_local_paths_in_release_proof.log",
     "artifacts/proof/current/backend_pytest.log",
     "artifacts/proof/current/backend_pytest_collect.log",
     "artifacts/proof/current/backend_compile.log",
@@ -239,12 +245,16 @@ def check_required_proof_logs(
     packaged_archive: bool = False,
 ) -> tuple[list[str], int, int]:
     """Backward-compatible wrapper returning missing/referenced/present totals."""
-    missing, _empty_logs, _stale_logs, referenced_total, present_total = (
-        _check_required_proof_logs_detailed(
-            repo_root,
-            packaged_archive=packaged_archive,
-        )
+    result = _check_required_proof_logs_detailed(
+        repo_root,
+        packaged_archive=packaged_archive,
     )
+    missing, _empty_logs, _stale_logs, referenced_total, present_total = result
+    # Also check for 0 referenced logs
+    false_exists_required_index = _required_log_index_false_exists(repo_root)
+    if referenced_total == 0 or false_exists_required_index:
+        # Return all known required logs as missing when 0 referenced
+        missing = list(DEFAULT_REQUIRED_PROOF_LOGS)
     return missing, referenced_total, present_total
 
 
@@ -266,6 +276,29 @@ def _missing_required_proof_logs(
         if not (repo_root / rel_path).exists():
             missing.append(rel_path)
     return sorted(missing)
+
+
+def _required_log_index_false_exists(repo_root: Path) -> list[str]:
+    index_path = repo_root / "artifacts/proof/current/required_log_index.json"
+    if not index_path.exists():
+        return ["artifacts/proof/current/required_log_index.json"]
+    try:
+        payload = json.loads(index_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return ["artifacts/proof/current/required_log_index.json:invalid_json"]
+    entries = payload.get("entries")
+    if not isinstance(entries, list):
+        return ["artifacts/proof/current/required_log_index.json:invalid_entries"]
+    bad: list[str] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        rel = entry.get("path")
+        if not isinstance(rel, str) or not rel:
+            continue
+        if entry.get("exists") is True and not (repo_root / rel).is_file():
+            bad.append(rel)
+    return sorted(set(bad))
 
 
 def _sha256_path(path: Path) -> str:
@@ -307,6 +340,7 @@ def _format_proof_incomplete_message(
     stale_logs: list[str],
     missing_required_logs: list[str],
     missing_required_files: list[str],
+    false_exists_required_index: list[str] | None = None,
 ) -> str:
     parts: list[str] = []
     if missing_logs:
@@ -322,6 +356,10 @@ def _format_proof_incomplete_message(
     if missing_required_files:
         parts.append(
             "missing_required_proof_files=" + ",".join(missing_required_files)
+        )
+    if false_exists_required_index:
+        parts.append(
+            "required_log_index_false_exists=" + ",".join(false_exists_required_index)
         )
     return PROOF_INCOMPLETE_PREFIX + "|".join(parts)
 
@@ -357,16 +395,35 @@ def main() -> int:
         repo_root,
         packaged_archive=args.packaged_archive,
     )
+
+    # Hard failure: no referenced logs means proof is incomplete
+    if referenced_total == 0:
+        print("REQUIRED_PROOF_LOGS: FAIL (0 referenced logs)", file=sys.stderr)
+        print(
+            "PROOF_INCOMPLETE:no referenced proof logs were found in release_gate.json",
+            file=sys.stderr,
+        )
+        return 1
+
     missing_required_files: list[str] = []
     missing_required_logs: list[str] = []
+    false_exists_required_index: list[str] = []
     if args.strict_required_files:
         missing_required_files = _missing_required_proof_files(repo_root)
         missing_required_logs = _missing_required_proof_logs(
             repo_root,
             packaged_archive=args.packaged_archive,
         )
+        false_exists_required_index = _required_log_index_false_exists(repo_root)
 
-    if missing or empty_logs or stale_logs or missing_required_logs or missing_required_files:
+    if (
+        missing
+        or empty_logs
+        or stale_logs
+        or missing_required_logs
+        or missing_required_files
+        or false_exists_required_index
+    ):
         print(
             "REQUIRED_PROOF_LOGS: FAIL "
             f"({len(missing)} missing of {referenced_total} referenced)"
@@ -378,6 +435,7 @@ def main() -> int:
                 stale_logs=stale_logs,
                 missing_required_logs=missing_required_logs,
                 missing_required_files=missing_required_files,
+                false_exists_required_index=false_exists_required_index,
             )
         )
         print(
@@ -426,6 +484,13 @@ def main() -> int:
             )
             for path in missing_required_logs:
                 print(f"  MISSING_REQUIRED_LOG: {path}")
+        if false_exists_required_index:
+            print(
+                "REQUIRED_PROOF_LOGS: DEBUG "
+                f"required_log_index_false_exists={len(false_exists_required_index)}"
+            )
+            for path in false_exists_required_index:
+                print(f"  REQUIRED_INDEX_FALSE_EXISTS: {path}")
         return 1
 
     print(

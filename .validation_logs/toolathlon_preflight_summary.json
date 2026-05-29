@@ -4,17 +4,15 @@
   "required_commands": [
     "python3",
     "node",
-    "npm",
-    "docker"
+    "npm"
   ],
   "found": [
     "python3",
     "node",
-    "npm",
-    "docker"
+    "npm"
   ],
   "missing": [],
-  "found_count": 4,
+  "found_count": 3,
   "missing_count": 0,
-  "generated_at": "2026-05-25T06:18:29.168337+00:00"
+  "generated_at": "2026-05-29T20:33:53.650590+00:00"
 }
