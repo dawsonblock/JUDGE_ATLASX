@@ -63,6 +63,14 @@ def build_proof_root(base: Path) -> Path:
         "safety sim ok\n",
         encoding="utf-8",
     )
+    (reports / "prbs_datapath_sim_summary.json").write_text(
+        json.dumps({"pass": True}),
+        encoding="utf-8",
+    )
+    (reports / "prbs_datapath_sim.log").write_text(
+        "prbs sim ok\n",
+        encoding="utf-8",
+    )
     (reports / "rtl_arithmetic_audit.json").write_text(
         json.dumps({"pass": True}),
         encoding="utf-8",

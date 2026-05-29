@@ -55,6 +55,8 @@ REQUIRED_PROOF_LOCAL = [
     "reports/packer_axis_sim.log",
     "reports/safety_monitor_sim_summary.json",
     "reports/safety_monitor_sim.log",
+    "reports/prbs_datapath_sim_summary.json",
+    "reports/prbs_datapath_sim.log",
     "reports/rtl_arithmetic_audit.json",
     "reports/rtl_arithmetic_audit.md",
 ]

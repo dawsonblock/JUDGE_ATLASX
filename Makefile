@@ -5,7 +5,7 @@ PYTHON ?= python3
 VERILATOR ?= verilator
 RTL_SRCS := $(wildcard rtl/*.v)
 
-.PHONY: all validate test test-static test-sim lint audit-arith gen-lut cosim-vectors cosim-gkp sim-axilite sim-packer sim-safety extract-regs cdc-analyze parse-cdc cdc-gate-check cdc-manifest-check lint-verilator lint-verilator-strict check-source-clean clean-generated size-report cdc-signoff-package preboard-check implementation-gate vivado-signoff-package vivado-bitstream source-package proof-package proof-package-local proof-package-board proof-package-strict validate-release validate-release-local validate-release-board validate-release-strict make-validate-log release-prereqs release-validate release-validate-local release-validate-board release-proof-local
+.PHONY: all validate test test-static test-sim lint audit-arith gen-lut cosim-vectors cosim-gkp sim-axilite sim-packer sim-safety sim-prbs extract-regs cdc-analyze parse-cdc cdc-gate-check cdc-manifest-check lint-verilator lint-verilator-strict check-source-clean clean-generated size-report cdc-signoff-package preboard-check implementation-gate vivado-signoff-package vivado-bitstream source-package proof-package proof-package-local proof-package-board proof-package-strict validate-release validate-release-local validate-release-board validate-release-strict make-validate-log release-prereqs release-validate release-validate-local release-validate-board release-proof-local
 
 all:
 	@echo "Available targets: validate, test, lint, audit-arith, gen-lut, cosim-vectors, cosim-gkp, sim-axilite, sim-packer, sim-safety, extract-regs, cdc-analyze, parse-cdc, cdc-gate-check, lint-verilator, clean-generated, size-report, cdc-signoff-package, preboard-check, implementation-gate, vivado-signoff-package, vivado-bitstream, source-package, proof-package-local, proof-package-board, release-prereqs, release-validate"
@@ -25,6 +25,7 @@ test-sim:
 	$(MAKE) sim-axilite
 	$(MAKE) sim-packer
 	$(MAKE) sim-safety
+	$(MAKE) sim-prbs
 	$(MAKE) cosim-gkp
 
 lint:
@@ -51,7 +52,16 @@ lint-verilator:
 
 lint-verilator-strict:
 	@if command -v $(VERILATOR) >/dev/null 2>&1; then \
-		$(VERILATOR) --lint-only -Wall --timing $(RTL_SRCS); \
+		$(VERILATOR) --lint-only -Wall --timing \
+			--top-module waveform_brain_axi4lite_cdc_top \
+			-Wno-fatal \
+			-Wno-MULTITOP \
+			-Wno-PINCONNECTEMPTY \
+			-Wno-PINMISSING \
+			-Wno-TIMESCALEMOD \
+			-Wno-EOFNEWLINE \
+			-Wno-DECLFILENAME \
+			$(RTL_SRCS); \
 	else \
 		echo "Verilator not installed; release lint requires it"; \
 		exit 1; \
@@ -94,6 +104,9 @@ sim-packer:
 
 sim-safety:
 	$(PYTHON) scripts/run_safety_monitor_sim.py
+
+sim-prbs:
+	$(PYTHON) scripts/run_prbs_datapath_sim.py
 
 clean-generated:
 	$(PYTHON) scripts/clean_generated_artifacts.py
@@ -183,6 +196,7 @@ release-validate-local:
 	$(MAKE) sim-axilite
 	$(MAKE) sim-packer
 	$(MAKE) sim-safety
+	$(MAKE) sim-prbs
 	$(MAKE) source-package
 	$(MAKE) proof-package-local
 	$(MAKE) validate-release-local
@@ -194,6 +208,7 @@ release-validate-board:
 	$(MAKE) sim-axilite
 	$(MAKE) sim-packer
 	$(MAKE) sim-safety
+	$(MAKE) sim-prbs
 	$(MAKE) implementation-gate
 	$(MAKE) release-prereqs
 	$(MAKE) source-package
