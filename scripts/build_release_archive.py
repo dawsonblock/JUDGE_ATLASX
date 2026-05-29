@@ -12,6 +12,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DIST_DIR = PROJECT_ROOT / "dist"
 
 SOURCE_DIRS = [
+    ".github",
+    ".trunk",
+    "board_tests",
     "constraints",
     "docs",
     "firmware",

@@ -13,6 +13,9 @@ REQUIRED_SOURCE = [
     "README.md",
     "rtl/axilite_regfile_full.v",
     "scripts/preboard_check.py",
+    "board_tests/run_board_smoke.py",
+    "board_tests/adapter_contract.py",
+    "tests/test_board_smoke_scaffold.py",
     "tests/test_axilite_regfile_static.py",
 ]
 
