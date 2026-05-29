@@ -31,7 +31,7 @@ def required_primitive_types(manifest: dict[str, object]) -> set[str]:
 
 
 def count_primitive_in_wrapper(wrapper_text: str, primitive: str) -> int:
-    return len(re.findall(rf"\\b{re.escape(primitive)}\\b", wrapper_text))
+    return len(re.findall(rf"\b{re.escape(primitive)}\b", wrapper_text))
 
 
 def report_has_nonzero_match(report_text: str, primitive: str) -> bool:
