@@ -1,0 +1,324 @@
+# Instincts generated from https://github.com/dawsonblock/JUDGE_ATLASX
+# Generated: 2026-05-17T05:36:44.930Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: JUDGE_ATLASX-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/dawsonblock/JUDGE_ATLASX
+---
+
+# JUDGE_ATLASX Commit Length
+
+## Action
+
+Write moderate-length commit messages (~65 characters)
+
+## Evidence
+
+- Average commit message length: 65 chars
+- Based on 1 commits
+
+---
+id: JUDGE_ATLASX-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/dawsonblock/JUDGE_ATLASX
+---
+
+# JUDGE_ATLASX Naming Files
+
+## Action
+
+Use snake_case naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: snake_case
+
+---
+id: JUDGE_ATLASX-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/dawsonblock/JUDGE_ATLASX
+---
+
+# JUDGE_ATLASX Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: JUDGE_ATLASX-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/dawsonblock/JUDGE_ATLASX
+---
+
+# JUDGE_ATLASX Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: JUDGE_ATLASX-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/dawsonblock/JUDGE_ATLASX
+---
+
+# JUDGE_ATLASX Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: JUDGE_ATLASX-workflow-proof-batch-generation
+trigger: "when doing proof batch generation"
+confidence: 0.75
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/dawsonblock/JUDGE_ATLASX
+---
+
+# JUDGE_ATLASX Workflow Proof Batch Generation
+
+## Action
+
+Follow the proof-batch-generation workflow:
+1. Run system proof and validation processes.
+2. Generate logs for backend, frontend, and various checks.
+3. Produce summary JSON and markdown files for status and readiness.
+4. Archive all generated artifacts under a timestamped directory.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~5x per month
+- Files: artifacts/history/proof/*/CURRENT_ALPHA_STATUS.md, artifacts/history/proof/*/PROOF_POLICY.md, artifacts/history/proof/*/SOURCE_REGISTRY_STATUS.md
+
+---
+id: judge_atlasx-instinct-file-naming
+trigger: "When creating a new file in the codebase."
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: dawsonblock/JUDGE_ATLASX
+---
+
+# Judge_atlasx Instinct File Naming
+
+## Action
+
+Name the file using snake_case.
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.files
+
+---
+id: judge_atlasx-instinct-function-naming
+trigger: "When defining a new function."
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: dawsonblock/JUDGE_ATLASX
+---
+
+# Judge_atlasx Instinct Function Naming
+
+## Action
+
+Name the function using camelCase.
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.functions
+
+---
+id: judge_atlasx-instinct-class-naming
+trigger: "When defining a new class."
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: dawsonblock/JUDGE_ATLASX
+---
+
+# Judge_atlasx Instinct Class Naming
+
+## Action
+
+Name the class using PascalCase.
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.classes
+
+---
+id: judge_atlasx-instinct-constant-naming
+trigger: "When declaring a constant."
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: dawsonblock/JUDGE_ATLASX
+---
+
+# Judge_atlasx Instinct Constant Naming
+
+## Action
+
+Name the constant using SCREAMING_SNAKE_CASE.
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.constants
+
+---
+id: judge_atlasx-instinct-import-style
+trigger: "When importing modules within the codebase."
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: dawsonblock/JUDGE_ATLASX
+---
+
+# Judge_atlasx Instinct Import Style
+
+## Action
+
+Use relative import paths.
+
+## Evidence
+
+- Pattern in codeStyle.importStyle
+
+---
+id: judge_atlasx-instinct-export-style
+trigger: "When exporting functions, classes, or constants."
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: dawsonblock/JUDGE_ATLASX
+---
+
+# Judge_atlasx Instinct Export Style
+
+## Action
+
+Use named exports.
+
+## Evidence
+
+- Pattern in codeStyle.exportStyle
+
+---
+id: judge_atlasx-instinct-test-location
+trigger: "When adding new tests."
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: dawsonblock/JUDGE_ATLASX
+---
+
+# Judge_atlasx Instinct Test Location
+
+## Action
+
+Place test files in a separate directory from source files.
+
+## Evidence
+
+- Pattern in architecture.folderStructure.testLocation
+
+---
+id: judge_atlasx-instinct-test-coverage
+trigger: "When adding or modifying legacy ingestion routes or audit chain logic."
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: dawsonblock/JUDGE_ATLASX
+---
+
+# Judge_atlasx Instinct Test Coverage
+
+## Action
+
+Add or update tests to cover the new or changed logic.
+
+## Evidence
+
+- Seen in commit: 'Add tests for legacy ingestion routes and audit chain concurrency'
+
+---
+id: judge_atlasx-instinct-commit-format
+trigger: "When writing a commit message."
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: dawsonblock/JUDGE_ATLASX
+---
+
+# Judge_atlasx Instinct Commit Format
+
+## Action
+
+Write a concise, freeform message describing the change, averaging around 65 characters.
+
+## Evidence
+
+- Pattern in commits.averageLength
+- Example: 'Add tests for legacy ingestion routes and audit chain concurrency'
+
+---
+id: judge_atlasx-instinct-proof-batch-generation
+trigger: "When a snapshot of the system's proof, status, and readiness is needed (e.g., after major changes, repairs, or before a release)."
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: dawsonblock/JUDGE_ATLASX
+---
+
+# Judge_atlasx Instinct Proof Batch Generation
+
+## Action
+
+Run the proof-batch-generation workflow to generate logs, summaries, and archive artifacts under a timestamped directory.
+
+## Evidence
+
+- Workflow: proof-batch-generation
+- Files: artifacts/history/proof/*/CURRENT_ALPHA_STATUS.md, ...
+- Commit sequence: Run system proof and validation processes, etc.
+
